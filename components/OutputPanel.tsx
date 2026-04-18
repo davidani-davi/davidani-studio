@@ -29,7 +29,7 @@ export default function OutputPanel({ current, history, onSelectHistory, onClear
   function download(url: string) {
     const a = document.createElement("a");
     a.href = url;
-    a.download = `outlight-${Date.now()}.png`;
+    a.download = `davidani-${Date.now()}.png`;
     a.target = "_blank";
     a.rel = "noopener";
     document.body.appendChild(a);

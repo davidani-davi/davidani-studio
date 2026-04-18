@@ -15,7 +15,7 @@ function deriveOverlayMode(showName: boolean, showNumber: boolean): OverlayMode 
   return "none";
 }
 
-const HISTORY_KEY = "outlight_history_v1";
+const HISTORY_KEY = "davidani_history_v1";
 
 /**
  * Fetch a JSON endpoint and return the parsed body. If the response body is

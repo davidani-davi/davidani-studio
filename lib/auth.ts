@@ -1,7 +1,7 @@
 // Minimal signed-cookie auth using Web Crypto (Edge-runtime compatible).
 // A single shared password unlocks the app for the whole team.
 
-const COOKIE_NAME = "outlight_session";
+const COOKIE_NAME = "davidani_session";
 const MAX_AGE_SECONDS = 60 * 60 * 24 * 30; // 30 days
 
 function b64urlEncode(buf: ArrayBuffer | Uint8Array): string {
