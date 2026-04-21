@@ -7,9 +7,14 @@ export interface ModelInfo {
   id: ModelId;
   label: string;
   badge: string;
+  /** Backend-specific identifier. For fal.ai this is a full slug like
+   * "fal-ai/nano-banana/edit"; for kie.ai it's the model id like
+   * "nano-banana-2". The generate() dispatcher uses `inputShape` to know
+   * which backend to talk to. */
   endpoint: string;
-  /** How this model's input maps to fal.ai args */
-  inputShape: "image_urls" | "image_urls_seedream" | "gpt";
+  /** How this model's input maps to backend args. "kie" routes to kie.ai,
+   * everything else routes to fal.ai. */
+  inputShape: "image_urls" | "image_urls_seedream" | "gpt" | "kie";
   description: string;
 }
 
@@ -18,9 +23,13 @@ export const MODELS: Record<ModelId, ModelInfo> = {
     id: "nano-banana",
     label: "Nano Banana 2",
     badge: "V2",
-    endpoint: "fal-ai/nano-banana/edit",
-    inputShape: "image_urls",
-    description: "Google Gemini image edit — best for surgical swaps, cheap & fast.",
+    // kie.ai model ID — proxies the current Nano Banana 2 (Gemini 3.1
+    // Flash Image). Previously pointed at fal.ai's `fal-ai/nano-banana/edit`
+    // which served an older, darker variant that dropped fine details like
+    // fringe. Switched over April 2026.
+    endpoint: "nano-banana-2",
+    inputShape: "kie",
+    description: "Google Nano Banana 2 via kie.ai — best for surgical swaps, cheap & fast.",
   },
   "seedream-4": {
     id: "seedream-4",

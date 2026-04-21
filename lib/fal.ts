@@ -112,12 +112,124 @@ function inferGarmentCategory(prompt: string): StyleReferenceKind {
   return "other";
 }
 
+/* ===========================================================================
+ * DESCRIPTOR DISCIPLINE — derived from one-word-at-a-time prompt tests.
+ * ---------------------------------------------------------------------------
+ * Two findings drive this:
+ *
+ *   1. Duplicates kill.  When the same descriptor token appears twice in the
+ *      final assembled prompt (e.g. "soft sweater handfeel" in FEATURES and
+ *      "soft folds" in the template), the edit model's attention on that
+ *      slot diffuses and the output reliably degrades — sometimes to a
+ *      no-edit pass-through.
+ *
+ *   2. Non-physical descriptors dilute the slot they occupy.  Words like
+ *      "easy", "medium", "moderate", "basic", "nice", "standard" don't
+ *      name a visible/renderable property, so the image model treats the
+ *      whole clause as low-signal.
+ *
+ * We enforce both at assembly time: the analyzer output (GARMENT, FEATURES,
+ * or the five Model Studio fields) is scanned, forbidden descriptors are
+ * removed, and any descriptor-token that already appears in the static
+ * template text is stripped from the analyzer output so the final prompt
+ * contains each descriptor at most once.
+ * ======================================================================== */
+
+/**
+ * Descriptor tokens that function as load-bearing adjective-slot words in
+ * garment prompts. Test evidence shows duplicating any of these across the
+ * final prompt degrades edit quality. Nouns and pattern names (e.g. "ribbed",
+ * "quilted", "knit", "denim") are intentionally omitted because those bind
+ * to concrete garment parts and repeating them is descriptive, not diluting.
+ */
+const DESCRIPTOR_TOKENS = new Set<string>([
+  // drape / fit / silhouette character
+  "soft", "gentle", "natural", "relaxed", "loose", "light", "subtle",
+  "tailored", "crisp", "smooth", "clean", "fresh", "defined", "balanced",
+  "delicate", "cozy", "rich", "fine", "even",
+  "structured", "fluid", "fitted", "cropped", "oversized", "slim", "boxy",
+  // manner / quality adverbs
+  "perfect", "perfectly", "neat", "neatly", "freshly",
+  // color intensity / temperature
+  "bright", "vivid", "saturated", "deep", "pale", "warm", "cool",
+]);
+
+/**
+ * Tokens that name quantifiers, category labels, or colloquial qualities
+ * rather than visible/renderable physical properties. The edit model cannot
+ * render any of these, so whichever descriptor slot they occupy becomes a
+ * dead clause. We strip them from analyzer output before assembly.
+ */
+const NON_PHYSICAL_DESCRIPTORS = new Set<string>([
+  "easy", "medium", "moderate", "nice", "great",
+  "beautiful", "basic", "standard", "regular", "normal",
+]);
+
+/**
+ * Scan a static template string for descriptor tokens it already contains.
+ * Used to pre-seed the "already used" set before sanitizing dynamic analyzer
+ * output, so analyzer words that collide with the template are stripped.
+ */
+function descriptorsInTemplate(text: string): Set<string> {
+  const used = new Set<string>();
+  const matches = text.toLowerCase().match(/\b[a-z][a-z-]*\b/g) || [];
+  for (const w of matches) {
+    if (DESCRIPTOR_TOKENS.has(w)) used.add(w);
+  }
+  return used;
+}
+
+/**
+ * Clean analyzer output according to the descriptor-discipline rules:
+ *
+ *   - Drop any NON_PHYSICAL_DESCRIPTORS token.
+ *   - Drop any DESCRIPTOR_TOKENS token whose lowercase form is already in
+ *     `alreadyUsed` (i.e. already present in the template or earlier analyzer
+ *     output that was sanitized before this call).
+ *   - Mutates `alreadyUsed` by adding descriptor tokens this call kept.
+ *
+ * Punctuation and spacing are cleaned up after token removal so the output
+ * reads naturally (no double commas, no stranded spaces).
+ */
+function sanitizeAnalyzerText(text: string, alreadyUsed: Set<string>): string {
+  if (!text) return text;
+  // Split so word tokens and non-word segments interleave; we rewrite word
+  // tokens in place and keep punctuation/whitespace intact.
+  const parts = text.split(/(\b[A-Za-z][A-Za-z-]*\b)/);
+  for (let i = 0; i < parts.length; i++) {
+    const part = parts[i];
+    if (!/^[A-Za-z]/.test(part)) continue;
+    const w = part.toLowerCase();
+    if (NON_PHYSICAL_DESCRIPTORS.has(w)) {
+      parts[i] = "";
+      continue;
+    }
+    if (DESCRIPTOR_TOKENS.has(w)) {
+      if (alreadyUsed.has(w)) {
+        parts[i] = "";
+      } else {
+        alreadyUsed.add(w);
+      }
+    }
+  }
+  return parts
+    .join("")
+    // collapse runs of whitespace introduced by dropped tokens
+    .replace(/[ \t]+/g, " ")
+    // clean up stranded punctuation left behind by dropped tokens
+    .replace(/\s+([,.;:!?)])/g, "$1")
+    .replace(/\(\s+/g, "(")
+    .replace(/,\s*,/g, ",")
+    .replace(/^\s*,\s*/, "")
+    .replace(/,\s*$/, "")
+    .trim();
+}
+
 /**
  * Analyzer system prompt. Output is parsed into GARMENT + FEATURES and folded
- * into a deterministic two-image prompt template. The template instructs the
- * image model to extract the garment from image 1 (user upload) and apply it
- * to the garment structure in image 2 (the style reference), preserving the
- * reference's lighting, camera, and composition.
+ * into the deterministic garment-swap prompt built by buildTwoImagePrompt,
+ * which instructs the image model to preserve the primary studio scene while
+ * rendering the user's garment (described here) fresh on top of it.
  */
 const ANALYSIS_SYSTEM_PROMPT = `You are a product catalog analyzer. You see a single garment photograph and must output exactly two lines, in this exact format, with no preamble, no markdown, and no extra lines:
 
@@ -142,6 +254,16 @@ ANTI-HALLUCINATION RULES — violating any of these produces bad outputs:
 - Describe only the garment itself. Ignore the photo's background, hanger, mannequin, lighting, and shadows.
 - Do NOT state a count unless you can count with certainty.
 - FEATURES must match the garment's true category. Do NOT list "sleeve straps", "neckline", or "cuffs at the wrist" for a BOTTOM. Do NOT list "waistband", "legs", or "ankle cuffs" for a TOP.
+- NEVER guess a hardware material. If a button, zipper pull, rivet, eyelet, or buckle's material cannot be identified with certainty from the photograph, describe ONLY its color and shape (e.g. "round cream buttons", "flat tan buttons", "small silver-colored zipper"). Do NOT write speculative material qualifiers like "pearl", "pearl-like", "horn", "horn-look", "bone", "faux-bone", "wooden", "wood-look", "metallic", "brass-looking", "leather-like", or "tortoiseshell". These get rendered literally by the image model and change the hardware's appearance.
+- NEVER use the word "trim" or "trimmed" unless the trim is clearly a DIFFERENT color from the rest of the garment body. A ruffle, frill, or ruffled edge in the SAME color as the body is self-fabric and must be described as "self-fabric ruffle", "ruffled edge in the same color as the body", or simply by the shape alone (e.g. "ruffled collar") — the catalog word "trim" implies contrast color to the image model and will introduce a contrasting band that isn't in the source.
+- NEVER use hedge qualifiers such as "-like", "-looking", "-style", "-ish", "sort of", "kind of", or "appears to be". If you cannot identify a detail with certainty, OMIT it entirely. Hedges get flattened into the assertive detail they were hedging.
+
+DESCRIPTOR DISCIPLINE — these rules come from controlled prompt tests and are not optional:
+
+- Use only words that name a visible, renderable physical property: color, shape, texture, material, fit, hardware, construction. The image model cannot render abstract or quantifier words.
+- NEVER use abstract or quantifier words such as: "easy", "medium", "moderate", "nice", "great", "beautiful", "basic", "standard", "regular", "normal". These weaken the descriptor slot they occupy.
+- NEVER repeat the same descriptor word across your GARMENT and FEATURES lines. Each descriptor token (e.g. "soft", "relaxed", "tailored") must appear at most ONCE across both lines. If a word is used in GARMENT, pick a different word in FEATURES.
+- Pick fabric-consistent adjectives. Do NOT describe a knit as "crisp", a denim as "drapey", a silk as "stiff" — cross-domain words contradict the material and degrade the output.
 
 OUTPUT FORMAT RULES:
 - Output exactly two lines: one starting with "GARMENT:", one starting with "FEATURES:".
@@ -162,38 +284,57 @@ export interface AnalyzedGarment {
 }
 
 /**
- * Assemble the final "extract from image 1, apply to image 2" prompt from the
- * parsed GARMENT + FEATURES extracted from the user's product photo.
+ * Assemble the final garment-swap prompt from the parsed GARMENT + FEATURES.
+ *
+ * IMPORTANT — no "image 1" / "image 2" numerical labels. Gemini-based edit
+ * models (Nano Banana) don't reliably map those labels back to image_urls[0]
+ * vs image_urls[1]; the labels can swap interpretations run-to-run. We use
+ * content-descriptive language instead ("the primary studio scene" / "the
+ * attached reference photograph"). The API array order still does the real
+ * semantic work: image_urls[0] is the canvas, later images are references.
  */
 export function buildTwoImagePrompt(garment: string, features: string): string {
-  // Image 1 = style reference (clean studio flat-lay) — the SCENE template.
-  // Image 2 = user's product photo — the GARMENT reference (color, pattern,
-  // details) to swap in.
-  //
-  // The prompt deliberately separates what's inherited from image 1 (scene:
-  // background, lighting, camera, framing) from what's freshly restyled (the
-  // garment itself — symmetrical, smooth, catalog-ready). Without that split,
-  // Nano Banana copies image 1's exact wrinkles and fold placement verbatim.
-  const featureClause = features
-    ? ` The restyled garment must have all the visible properties of the garment in image 2: ${features}.`
-    : "";
-  return (
-    `Edit image 1 by replacing the garment shown in it with the ${garment} from image 2. ` +
-    `Inherit ONLY the SCENE from image 1 — its clean solid studio background, soft diffused lighting, ` +
-    `shadow character, camera angle, framing, and centered composition must remain identical. ` +
-    `However, the garment itself is RE-STYLED FRESH for this shot: render the ${garment} perfectly ` +
-    `symmetrical along the vertical centerline, neatly laid flat with smooth, freshly-steamed fabric, ` +
-    `no wrinkles, no creases, no bunched or twisted sections, and in the canonical catalog pose for its ` +
-    `garment type (tops: sleeves angled slightly downward and symmetric; pants: legs straight, parallel, ` +
-    `and symmetric with the waistband centered at top; dresses and skirts: hem fanning gently and ` +
-    `symmetrically). Do NOT copy the specific wrinkles, folds, creases, twists, asymmetries, or garment ` +
-    `placement of the original garment in image 1; that was a different garment in a different take. ` +
-    `Match the color, pattern, fabric texture, hardware, and every visible detail of the garment from ` +
-    `image 2 exactly.${featureClause} The result should look like a brand-new, professionally styled ` +
-    `catalog photograph taken in the same studio session as image 1 — same lighting, same camera, ` +
-    `same background — but with a freshly arranged, crisp, symmetric garment. ` +
-    `Hyper-realistic 4K e-commerce product photography, Zara-style catalog quality.`
-  );
+  // Inner renderer — called once to introspect the static template, then
+  // again with sanitized analyzer output.
+  const render = (g: string, f: string): string => {
+    const featureClause = f
+      ? ` The replacement garment has these visible properties (match exactly): ${f}.`
+      : "";
+    return (
+      `Catalog garment-swap edit. Replace the garment currently shown in the primary studio ` +
+      `photograph with a different garment: a ${g}.${featureClause} ` +
+      `The exact appearance of the replacement garment — its color, pattern, fabric texture, ` +
+      `hardware, and every visible detail — is given by the attached reference photograph of that ` +
+      `garment; use the reference photograph strictly as the visual source of truth for how the ` +
+      `replacement garment should look. ` +
+      `PRESERVE from the primary studio photograph (do not alter any of these): the clean solid ` +
+      `studio background, soft diffused lighting, shadow character, camera angle, framing, and ` +
+      `centered composition. ` +
+      `RENDER THE REPLACEMENT GARMENT FRESH — do not copy the wrinkles, folds, creases, twists, ` +
+      `asymmetries, or specific placement of whatever garment was originally in the primary ` +
+      `photograph. The new ${g} must be perfectly symmetrical along the vertical centerline, ` +
+      `neatly laid flat with smooth, freshly-steamed fabric, no wrinkles, no creases, no bunched or ` +
+      `twisted sections, and in the canonical catalog pose for its garment type (tops: sleeves ` +
+      `angled slightly downward and symmetric; pants: legs straight, parallel, and symmetric with ` +
+      `the waistband centered at top; dresses and skirts: hem fanning gently and symmetrically). ` +
+      `The result must look like a brand-new, professionally styled catalog photograph taken in ` +
+      `the same studio session as the primary photograph — same lighting, same camera, same ` +
+      `background — but with a freshly arranged, crisp, symmetric ${g}. ` +
+      `REMOVE ALL NECK LABELS, BRAND TAGS, SIZE TAGS, CARE LABELS, AND SEWN-IN WOVEN TAGS from the ` +
+      `rendered garment — the inside of the neckline, collar band, and any other typical label ` +
+      `location must be clean and empty with no tag, label, patch, or printed text of any kind ` +
+      `showing. Hyper-realistic 4K e-commerce product photography, Zara-style catalog quality.`
+    );
+  };
+
+  // Descriptor-discipline pass: scan the template's own fixed text for
+  // descriptor tokens, then strip analyzer output that would duplicate them
+  // (or introduce forbidden non-physical words). Garment is sanitized first
+  // — it's more load-bearing than the features list.
+  const used = descriptorsInTemplate(render("", ""));
+  const cleanGarment = sanitizeAnalyzerText(garment, used);
+  const cleanFeatures = sanitizeAnalyzerText(features, used);
+  return render(cleanGarment, cleanFeatures);
 }
 
 export async function analyzeGarmentToPrompt(
@@ -243,6 +384,460 @@ export async function analyzeGarmentToPrompt(
   return finalPrompt;
 }
 
+/* ===========================================================================
+ * TWO-PIECE SETS
+ * ---------------------------------------------------------------------------
+ * When the user flags the reference photo as a coordinated two-piece set (e.g.
+ * a matching top + mini skirt, or a coord jacket + pants), we swap in a
+ * different analyzer + assembler pair. The analyzer output has four slots
+ * instead of two (TOP / TOP_FEATURES / BOTTOM / BOTTOM_FEATURES) and the
+ * assembler renders the prompt in the shape that tested best in controlled
+ * 6-prompt batches — explicitly naming both pieces as a coordinated set.
+ * ======================================================================== */
+
+/**
+ * Analyzer system prompt for a two-piece coordinated set. Outputs four lines
+ * so each piece can be described in its own descriptor slot without the
+ * details of one piece bleeding into the other.
+ */
+const TWO_PIECE_ANALYSIS_SYSTEM_PROMPT = `You are a product catalog analyzer for coordinated two-piece fashion sets. You see a single photograph that shows TWO matching garments — a top piece and a bottom piece — designed to be worn together as a coordinated set (e.g. a crop top + mini skirt, jacket + pants, shirt + shorts). Output exactly four lines in this exact format, with no preamble, no markdown, and no extra lines:
+
+TOP: <short noun phrase describing ONLY the top piece — include primary color, fabric/texture, and top type. Example: "bright aqua blue sleeveless zip-front athletic top", "cream ribbed knit cropped cardigan", "white cotton short-sleeve tee">
+TOP_FEATURES: <comma-separated noun phrases enumerating visible structural details of the TOP piece only. Example: "quarter-zip front closure, stand collar, two side zip chest pockets, sleeveless armholes, hip-length hem">
+BOTTOM: <short noun phrase describing ONLY the bottom piece — include primary color, fabric/texture, and bottom type. Example: "aqua blue athletic mini skirt", "cream ribbed knit pull-on shorts", "white cotton pleated skirt". Do NOT prefix with "matching" — the assembler adds coordination language itself.>
+BOTTOM_FEATURES: <comma-separated noun phrases enumerating visible structural details of the BOTTOM piece only. Example: "elastic drawcord waistband, neon yellow waistband contrast panel, two side zip pockets, A-line silhouette, above-knee hem">
+
+SHAPE DISAMBIGUATION:
+- TOP must be a torso garment with a neckline + sleeves or sleeveless armholes.
+- BOTTOM must cover the lower body — pants, shorts, skirt, leggings, joggers.
+- NEVER put bottom-only details (waistband, leg, hem, drawcord) in TOP_FEATURES.
+- NEVER put top-only details (neckline, sleeve, collar, armhole) in BOTTOM_FEATURES.
+
+ANTI-HALLUCINATION RULES — violating any of these produces bad outputs:
+
+- NEVER invent text, letters, numbers, logos, brand names, or made-up words. If a logo or text is not clearly, unambiguously legible, OMIT it.
+- NEVER describe individual motifs inside a print/pattern. Name only the PATTERN TYPE inline in TOP or BOTTOM (e.g. "leopard print", "plaid", "floral") and do NOT mention the print again in features.
+- Describe only the two garments themselves. Ignore the photo's background, hanger, mannequin, lighting, and shadows.
+- Do NOT state a count unless you can count with certainty.
+- NEVER guess a hardware material. If a button, zipper pull, rivet, eyelet, or buckle's material cannot be identified with certainty, describe ONLY its color and shape. Do NOT write speculative material qualifiers like "pearl", "pearl-like", "horn", "bone", "wooden", "metallic", "brass-looking", "leather-like", or "tortoiseshell".
+- NEVER use the word "trim" or "trimmed" unless the trim is clearly a DIFFERENT color from the garment body. A ruffle or ruffled edge in the same color as the body is self-fabric and must be described without "trim".
+- NEVER use hedge qualifiers such as "-like", "-looking", "-style", "-ish", "sort of", "kind of", or "appears to be". If you cannot identify a detail with certainty, OMIT it entirely.
+
+DESCRIPTOR DISCIPLINE — these rules come from controlled prompt tests and are not optional:
+
+- Use only words that name a visible, renderable physical property: color, shape, texture, material, fit, hardware, construction. The image model cannot render abstract or quantifier words.
+- NEVER use abstract or quantifier words such as: "easy", "medium", "moderate", "nice", "great", "beautiful", "basic", "standard", "regular", "normal".
+- NEVER repeat the same descriptor word across the four output lines. Each descriptor token (e.g. "soft", "relaxed", "tailored", "sporty") must appear at most ONCE across all four lines. If a word is used in TOP, pick a different one in BOTTOM.
+- Pick fabric-consistent adjectives. Do NOT describe a knit as "crisp", a denim as "drapey", a silk as "stiff" — cross-domain words contradict the material and degrade the output.
+
+OUTPUT FORMAT RULES:
+- Output exactly four lines: TOP, TOP_FEATURES, BOTTOM, BOTTOM_FEATURES.
+- No preamble, no markdown, no code fences, no extra commentary.`;
+
+/**
+ * Parsed four-field analyzer output for a two-piece coordinated set.
+ */
+export interface TwoPieceFields {
+  top: string;
+  topFeatures: string;
+  bottom: string;
+  bottomFeatures: string;
+}
+
+/**
+ * Extract the four TOP / TOP_FEATURES / BOTTOM / BOTTOM_FEATURES fields from
+ * a coordinated-set photograph. Used by Image Studio (which then assembles
+ * via buildTwoPiecePrompt) and Model Studio (which then assembles via
+ * buildModelSwapTwoPiecePrompt).
+ */
+export async function extractTwoPieceFields(imageUrl: string): Promise<TwoPieceFields> {
+  ensureConfigured();
+
+  const result: any = await fal.subscribe("fal-ai/any-llm/vision", {
+    input: {
+      model: "anthropic/claude-3.7-sonnet",
+      system_prompt: TWO_PIECE_ANALYSIS_SYSTEM_PROMPT,
+      prompt:
+        "Analyze the two-piece coordinated set in this photograph using the four-line TOP / TOP_FEATURES / BOTTOM / BOTTOM_FEATURES format defined in your system prompt. Output exactly those four lines, nothing else.",
+      image_url: imageUrl,
+    },
+    logs: false,
+  });
+  const data = result?.data ?? result;
+  const output: string = (data?.output ?? data?.response ?? data?.text ?? "").trim();
+  if (!output) {
+    console.error("[analyze-twopiece] full response:", JSON.stringify(data).slice(0, 1000));
+    throw new Error("Two-piece vision analysis returned no text output.");
+  }
+
+  const grab = (label: string): string => {
+    const re = new RegExp(`${label}:\\s*([\\s\\S]+?)\\s*(?:\\r?\\n(?=[A-Z_ ]+:)|$)`, "i");
+    const m = output.match(re);
+    return (m?.[1] || "").trim().replace(/\.$/, "");
+  };
+  const top = grab("TOP").replace(/^matching\s+/i, "");
+  const topFeatures = grab("TOP_FEATURES");
+  // Strip a leading "matching " the analyzer sometimes adds despite the rule
+  // in the system prompt — the assembler already says "worn together with a
+  // matching X", so keeping it here would render "a matching matching X".
+  const bottom = grab("BOTTOM").replace(/^matching\s+/i, "");
+  const bottomFeatures = grab("BOTTOM_FEATURES");
+
+  if (!top || !bottom) {
+    console.error("[analyze-twopiece] parse failed, raw output:", output.slice(0, 500));
+    throw new Error("Two-piece analyzer returned an unparseable response.");
+  }
+  console.log("[analyze-twopiece] top:", top);
+  console.log("[analyze-twopiece] top features:", topFeatures);
+  console.log("[analyze-twopiece] bottom:", bottom);
+  console.log("[analyze-twopiece] bottom features:", bottomFeatures);
+  return { top, topFeatures, bottom, bottomFeatures };
+}
+
+/**
+ * Assemble the Image Studio prompt for a coordinated two-piece set. The shape
+ * mirrors the winning prompt from David's 6-prompt controlled test (the one
+ * labelled #4): explicitly frame the replacement as a "coordinated set",
+ * name both pieces inline, list each piece's properties separately, then
+ * share the same preservation + FRESH-RENDER clauses as the single-garment
+ * template.
+ */
+export function buildTwoPiecePrompt(fields: TwoPieceFields): string {
+  const render = (t: string, tf: string, b: string, bf: string): string => {
+    const topClause = tf
+      ? ` The top has these visible properties (match exactly): ${tf}.`
+      : "";
+    const bottomClause = bf
+      ? ` The bottom has these visible properties (match exactly): ${bf}.`
+      : "";
+    return (
+      `Catalog garment-swap edit. Replace the garment currently shown in the primary studio ` +
+      `photograph with a coordinated two-piece set: a ${t} worn together with a matching ${b}.` +
+      `${topClause}${bottomClause} ` +
+      `Render both pieces as a single unified coordinated outfit — they share the same color ` +
+      `family, fabric family, and trim language; they must look like two pieces of the same ` +
+      `designed set, not two unrelated garments. ` +
+      `The exact appearance of both pieces — color, pattern, fabric texture, hardware, and every ` +
+      `visible detail — is given by the attached reference photograph of that set; use the ` +
+      `reference photograph strictly as the visual source of truth for how the set should look. ` +
+      `PRESERVE from the primary studio photograph (do not alter any of these): the clean solid ` +
+      `studio background, soft diffused lighting, shadow character, camera angle, framing, and ` +
+      `centered composition. ` +
+      `RENDER THE REPLACEMENT SET FRESH — do not copy the wrinkles, folds, creases, twists, ` +
+      `asymmetries, or specific placement of whatever garment was originally in the primary ` +
+      `photograph. Display both pieces in the canonical catalog layout for a coordinated set: the ` +
+      `${t} positioned above and slightly overlapping the ${b}, both centered on the vertical ` +
+      `axis, symmetric along the vertical centerline, neatly laid flat with smooth, ` +
+      `freshly-steamed fabric, no wrinkles, no creases, no bunched or twisted sections. Sleeves on ` +
+      `the top angle slightly downward and symmetric; the bottom's waistband is centered under the ` +
+      `top's hem with its hem fanning gently and symmetrically. ` +
+      `The result must look like a brand-new, professionally styled catalog photograph taken in ` +
+      `the same studio session as the primary photograph — same lighting, same camera, same ` +
+      `background — but with a freshly arranged, crisp, symmetric coordinated set. ` +
+      `REMOVE ALL NECK LABELS, BRAND TAGS, SIZE TAGS, CARE LABELS, AND SEWN-IN WOVEN TAGS from ` +
+      `both the top and the bottom — the inside of the neckline, collar band, waistband, and any ` +
+      `other typical label location must be clean and empty with no tag, label, patch, or printed ` +
+      `text of any kind showing. Hyper-realistic 4K e-commerce product photography, Zara-style ` +
+      `catalog quality.`
+    );
+  };
+
+  const used = descriptorsInTemplate(render("", "", "", ""));
+  const cleanTop = sanitizeAnalyzerText(fields.top, used);
+  const cleanTopFeatures = sanitizeAnalyzerText(fields.topFeatures, used);
+  const cleanBottom = sanitizeAnalyzerText(fields.bottom, used);
+  const cleanBottomFeatures = sanitizeAnalyzerText(fields.bottomFeatures, used);
+  return render(cleanTop, cleanTopFeatures, cleanBottom, cleanBottomFeatures);
+}
+
+/**
+ * Image Studio convenience: run the two-piece analyzer pass and return the
+ * fully assembled prompt in one call, matching analyzeGarmentToPrompt's shape.
+ */
+export async function analyzeTwoPieceSetToPrompt(imageUrl: string): Promise<string> {
+  const fields = await extractTwoPieceFields(imageUrl);
+  const finalPrompt = buildTwoPiecePrompt(fields);
+  console.log("[analyze-twopiece] final prompt preview:", finalPrompt.slice(0, 240));
+  return finalPrompt;
+}
+
+/* ===========================================================================
+ * MODEL STUDIO
+ * ---------------------------------------------------------------------------
+ * Second workflow: instead of swapping a garment onto a flat studio backdrop,
+ * the user drops a garment photo in and we dress a human model (photographed
+ * in a curated pose) in that garment. The model photo is the canvas; the
+ * garment photo is the reference. Content-descriptive language only — Gemini
+ * edit models don't reliably map "image 1"/"image 2" labels to array slots.
+ * ======================================================================== */
+
+/**
+ * System prompt for a second vision pass: the model pose. We ask Claude to
+ * describe only the STATIC elements of the photograph the image model must
+ * preserve (face, body, pose, hair, lighting, background) plus the garment
+ * currently on the model that must be REMOVED. The garment being applied is
+ * described separately from the user's uploaded photo.
+ */
+const MODEL_PHOTO_ANALYSIS_PROMPT = `You are a fashion photography analyst. You see a single photograph of a human model in a studio. Output exactly four lines in this exact format, with no preamble, no markdown, and no extra lines:
+
+CURRENT_GARMENT: <short noun phrase describing the clothing the model is currently wearing that must be REPLACED. Include primary color and garment type. Examples: "cream drawstring trousers", "striped blue tank top", "red and white horizontally-striped pants". If the model is wearing both a top and bottom and only one will be swapped, describe the one the user most likely wants to change. If both could be swapped, describe both.>
+MODEL_IDENTITY: <short noun phrase capturing the model's appearance that must be preserved exactly: hair (color, length, style), skin tone, facial features, body proportions. Example: "long dark brown wavy hair, warm medium-olive skin, slim athletic build, neutral expression">
+POSE: <short noun phrase describing the model's stance, arm position, leg position, and camera angle. Example: "standing three-quarter view facing camera, left hand on hip, right arm relaxed at side, weight on right leg">
+SCENE: <short noun phrase describing the background, lighting, and all non-swapped wardrobe items (shoes, accessories, other clothing). Example: "plain light-gray seamless studio backdrop, soft even frontal lighting, bare feet, no visible accessories">
+
+RULES:
+- Describe only what you can see with certainty. Do NOT invent details.
+- Do NOT invent text, logos, brand names, or numbers.
+- Use only real, common English words.
+- Keep each line concise — one noun phrase, no sentences, no commentary.
+- Output exactly the four lines above, nothing else.
+
+ANTI-HALLUCINATION RULES — violating any of these produces bad outputs:
+- NEVER guess a hardware material. If a button, zipper pull, rivet, or buckle's material cannot be identified with certainty, describe ONLY its color and shape. Do NOT write "pearl", "pearl-like", "horn", "bone", "faux-bone", "wooden", "metallic", "brass-looking", "leather-like", or "tortoiseshell".
+- NEVER use the word "trim" or "trimmed" unless it is clearly a DIFFERENT color from the garment body. A ruffle or frill in the same color as the body is self-fabric — describe the shape alone (e.g. "ruffled collar") or use "self-fabric ruffle". The word "trim" implies contrast to the image model.
+- NEVER use hedge qualifiers such as "-like", "-looking", "-style", "-ish", "sort of", "kind of", or "appears to be". If you cannot identify a detail with certainty, OMIT it entirely.
+
+DESCRIPTOR DISCIPLINE — from controlled prompt tests, not optional:
+- Use only words that name a visible, renderable physical property. The image model cannot render abstract or quantifier words.
+- NEVER use abstract or quantifier words such as: "easy", "medium", "moderate", "nice", "great", "beautiful", "basic", "standard", "regular", "normal".
+- NEVER repeat the same descriptor word across your four output lines. Each descriptor token (e.g. "soft", "relaxed", "tailored", "warm") must appear at most ONCE across all four lines.
+- Pick material-consistent adjectives. Do NOT describe a knit as "crisp", a denim as "drapey", a silk as "stiff".`;
+
+export interface AnalyzedModelPhoto {
+  /** The garment currently on the model that must be replaced. */
+  currentGarment: string;
+  /** Model features the image model must preserve exactly. */
+  modelIdentity: string;
+  /** The pose + camera angle to preserve. */
+  pose: string;
+  /** Background, lighting, and untouched wardrobe items to preserve. */
+  scene: string;
+}
+
+/**
+ * Run a vision pass over a model-pose photograph and extract the four
+ * preservation fields. Used by the Model Studio's analyze step.
+ */
+export async function analyzeModelPhoto(imageUrl: string): Promise<AnalyzedModelPhoto> {
+  ensureConfigured();
+
+  const result: any = await fal.subscribe("fal-ai/any-llm/vision", {
+    input: {
+      model: "anthropic/claude-3.7-sonnet",
+      system_prompt: MODEL_PHOTO_ANALYSIS_PROMPT,
+      prompt:
+        "Analyze the model photograph using the four-line CURRENT_GARMENT / MODEL_IDENTITY / POSE / SCENE format defined in your system prompt. Output exactly those four lines, nothing else.",
+      image_url: imageUrl,
+    },
+    logs: false,
+  });
+
+  const data = result?.data ?? result;
+  const output: string = (data?.output ?? data?.response ?? data?.text ?? "").trim();
+  if (!output) {
+    console.error("[analyze-model] full response:", JSON.stringify(data).slice(0, 1000));
+    throw new Error("Model photo analysis returned no text output.");
+  }
+
+  const grab = (label: string): string => {
+    const re = new RegExp(`${label}:\\s*([\\s\\S]+?)\\s*(?:\\r?\\n(?=[A-Z_ ]+:)|$)`, "i");
+    const m = output.match(re);
+    return (m?.[1] || "").trim().replace(/\.$/, "");
+  };
+
+  const currentGarment = grab("CURRENT_GARMENT");
+  const modelIdentity = grab("MODEL_IDENTITY");
+  const pose = grab("POSE");
+  const scene = grab("SCENE");
+
+  if (!currentGarment || !modelIdentity || !pose || !scene) {
+    console.error("[analyze-model] parse failed, raw output:", output.slice(0, 500));
+    throw new Error("Model photo analyzer returned an unparseable response.");
+  }
+
+  console.log("[analyze-model] current:", currentGarment);
+  console.log("[analyze-model] identity:", modelIdentity);
+  console.log("[analyze-model] pose:", pose);
+  console.log("[analyze-model] scene:", scene);
+
+  return { currentGarment, modelIdentity, pose, scene };
+}
+
+/**
+ * Build the model-swap prompt. The primary photograph (image_urls[0]) is the
+ * model pose we're editing; the attached reference (image_urls[1]) is the
+ * user's garment photo. Content-descriptive language only — no "image 1/2".
+ *
+ * @param newGarment  noun phrase for the replacement garment (from analyzing the user's upload)
+ * @param newGarmentFeatures  comma-separated visible details of the replacement garment
+ * @param analyzedModel  the four preservation fields from analyzeModelPhoto()
+ */
+export function buildModelSwapPrompt(
+  newGarment: string,
+  newGarmentFeatures: string,
+  analyzedModel: AnalyzedModelPhoto
+): string {
+  // Inner renderer — introspect the template text once, then render again
+  // with sanitized analyzer output.
+  const render = (
+    ng: string,
+    nf: string,
+    cg: string,
+    mi: string,
+    ps: string,
+    sc: string
+  ): string => {
+    // Feature clause, attached as a standalone sentence so the preservation
+    // list stays flat and comma-separated (winning-prompt pattern).
+    const featureClause = nf
+      ? ` Keep all garment details from the reference photograph identical, including: ${nf}.`
+      : "";
+    return (
+      // Opening — "extract X and apply onto Y" was the shared framing in the
+      // two winning prompts from David's six-prompt Model Studio test (#2 and
+      // #4). The losing prompts used "swap", "transfer", or "replace X in
+      // image 2 with Y", which read as weaker instructions to Nano Banana.
+      `Fashion catalog garment-swap edit on a human model. Extract the ${ng} from the attached ` +
+      `reference photograph and apply it onto the model in the primary studio photograph, ` +
+      `completely removing the ${cg} the model is currently wearing. ` +
+      // Preservation — flat comma-separated list. The winning prompts enumerated
+      // every preserved attribute (face / proportions / pose / hair / expression
+      // / lighting / shadows / camera angle / background / non-swapped garment)
+      // in one sentence rather than semicolon-grouping them.
+      `Preserve the model's exact face, facial features, expression, and physical attributes — ` +
+      `${mi} — along with the exact pose (${ps}), camera perspective, lighting direction, ` +
+      `shadows, and the rest of the scene (${sc}) unchanged.` +
+      `${featureClause} ` +
+      // Realistic-garment-behavior clause — both winners closed with a sentence
+      // describing natural draping / structure / contour, and both explicitly
+      // said "do not copy the flat-lay shape".
+      `Ensure realistic garment behavior on the body: natural drape, fit, volume, and contour ` +
+      `that respond to the model's pose and the scene's lighting. Do not copy the static flat-lay ` +
+      `shape of the garment from the reference — re-render it as a worn garment on this specific ` +
+      `model in this specific pose, while preserving every visible design detail (color, pattern, ` +
+      `neckline, hem, sleeve length, hardware, trim) exactly. ` +
+      // Neck-label removal (baked in as default per earlier request).
+      `REMOVE ALL NECK LABELS, BRAND TAGS, SIZE TAGS, CARE LABELS, AND SEWN-IN WOVEN TAGS from the ` +
+      `rendered garment — the inside of the neckline, collar band, and any other typical label ` +
+      `location must be clean and empty with no tag, label, patch, or printed text of any kind ` +
+      `showing. ` +
+      // Closing statement + explicit negative-prompt epilogue (shared by every
+      // test prompt; keeping it for parity).
+      `The result must look like a single authentic fashion catalog photograph of this model, ` +
+      `taken in this exact pose and scene, wearing the new ${ng}. Hyper-realistic 4K ` +
+      `e-commerce fashion photography, editorial catalog quality. ` +
+      `Negative prompt: no face alteration, no body reshaping, no recolor, no texture blending, ` +
+      `no distortion, no background change.`
+    );
+  };
+
+  // Descriptor-discipline pass: scan the template once, then sanitize every
+  // dynamic slot in priority order. newGarment + newGarmentFeatures describe
+  // the replacement garment (most load-bearing); the four analyzedModel fields
+  // describe static elements of the source photograph.
+  const used = descriptorsInTemplate(render("", "", "", "", "", ""));
+  const cleanNewGarment = sanitizeAnalyzerText(newGarment, used);
+  const cleanNewFeatures = sanitizeAnalyzerText(newGarmentFeatures, used);
+  const cleanCurrent = sanitizeAnalyzerText(analyzedModel.currentGarment, used);
+  const cleanIdentity = sanitizeAnalyzerText(analyzedModel.modelIdentity, used);
+  const cleanPose = sanitizeAnalyzerText(analyzedModel.pose, used);
+  const cleanScene = sanitizeAnalyzerText(analyzedModel.scene, used);
+  return render(
+    cleanNewGarment,
+    cleanNewFeatures,
+    cleanCurrent,
+    cleanIdentity,
+    cleanPose,
+    cleanScene
+  );
+}
+
+/**
+ * Two-piece variant of buildModelSwapPrompt: instead of a single replacement
+ * garment, the replacement is a coordinated top + bottom set (e.g. a matching
+ * crop-top + mini-skirt outfit). The model's entire outfit is replaced, not
+ * just one piece, so we explicitly scope the removal to all visible current
+ * clothing rather than only the analyzer's currentGarment noun phrase.
+ */
+export function buildModelSwapTwoPiecePrompt(
+  fields: TwoPieceFields,
+  analyzedModel: AnalyzedModelPhoto
+): string {
+  const render = (
+    t: string,
+    tf: string,
+    b: string,
+    bf: string,
+    cg: string,
+    mi: string,
+    ps: string,
+    sc: string
+  ): string => {
+    const topClause = tf
+      ? ` Keep all top details from the reference photograph identical, including: ${tf}.`
+      : "";
+    const bottomClause = bf
+      ? ` Keep all bottom details from the reference photograph identical, including: ${bf}.`
+      : "";
+    return (
+      // Same "extract and apply" framing as the single-garment winning pattern,
+      // adapted for a coordinated set (both pieces extracted together).
+      `Fashion catalog outfit-swap edit on a human model. Extract the coordinated two-piece set ` +
+      `from the attached reference photograph — a ${t} worn together with a matching ${b} — and ` +
+      `apply it onto the model in the primary studio photograph, completely removing the model's ` +
+      `entire currently-worn outfit (including the ${cg} and every other visible clothing item). ` +
+      // Flat comma-separated preservation list.
+      `Preserve the model's exact face, facial features, expression, and physical attributes — ` +
+      `${mi} — along with the exact pose (${ps}), camera perspective, lighting direction, ` +
+      `shadows, and the rest of the scene (${sc}) unchanged.` +
+      `${topClause}${bottomClause} ` +
+      // Coordination statement — two pieces must read as one designed set.
+      `Render both pieces as a single unified coordinated outfit — they share the same color ` +
+      `family, fabric family, and trim language; they must look like two pieces of the same ` +
+      `designed set, not two unrelated garments. ` +
+      // Realistic-garment-behavior clause.
+      `Ensure realistic garment behavior on the body: each piece drapes, fits, and contours ` +
+      `naturally to the model's pose and the scene's lighting. The top and bottom sit together ` +
+      `as a worn outfit — the top's hem layering correctly over or tucked into the bottom's ` +
+      `waistband in whatever arrangement is natural for this pairing. Do not copy the static ` +
+      `flat-lay shape of either piece from the reference — re-render them as worn garments on ` +
+      `this specific model in this specific pose, while preserving every visible design detail ` +
+      `(color, pattern, neckline, hem, sleeve length, hardware, trim) exactly. ` +
+      // Neck-label removal (baked in as default).
+      `REMOVE ALL NECK LABELS, BRAND TAGS, SIZE TAGS, CARE LABELS, AND SEWN-IN WOVEN TAGS from ` +
+      `both the top and the bottom — the inside of the neckline, collar band, waistband, and any ` +
+      `other typical label location must be clean and empty with no tag, label, patch, or printed ` +
+      `text of any kind showing. ` +
+      // Closing + explicit negative-prompt epilogue.
+      `The result must look like a single authentic fashion catalog photograph of this model, ` +
+      `taken in this exact pose and scene, wearing the new coordinated set. Hyper-realistic 4K ` +
+      `e-commerce fashion photography, editorial catalog quality. ` +
+      `Negative prompt: no face alteration, no body reshaping, no recolor, no texture blending, ` +
+      `no distortion, no background change.`
+    );
+  };
+
+  const used = descriptorsInTemplate(render("", "", "", "", "", "", "", ""));
+  const cleanTop = sanitizeAnalyzerText(fields.top, used);
+  const cleanTopFeatures = sanitizeAnalyzerText(fields.topFeatures, used);
+  const cleanBottom = sanitizeAnalyzerText(fields.bottom, used);
+  const cleanBottomFeatures = sanitizeAnalyzerText(fields.bottomFeatures, used);
+  const cleanCurrent = sanitizeAnalyzerText(analyzedModel.currentGarment, used);
+  const cleanIdentity = sanitizeAnalyzerText(analyzedModel.modelIdentity, used);
+  const cleanPose = sanitizeAnalyzerText(analyzedModel.pose, used);
+  const cleanScene = sanitizeAnalyzerText(analyzedModel.scene, used);
+  return render(
+    cleanTop,
+    cleanTopFeatures,
+    cleanBottom,
+    cleanBottomFeatures,
+    cleanCurrent,
+    cleanIdentity,
+    cleanPose,
+    cleanScene
+  );
+}
+
 export type OverlayMode = "none" | "name" | "number" | "both";
 export type OverlayPlacement =
   | "top-left"
@@ -266,11 +861,12 @@ export interface OverlayOptions {
 export interface GenerateParams {
   modelId: ModelId;
   prompt: string;
-  imageUrls: string[];      // user-uploaded product photos (image 1, N...)
+  imageUrls: string[];      // user-uploaded product photos (garment reference)
   /**
-   * Optional. URL of the style reference image (image 2 in the prompt).
-   * If omitted, the server auto-picks public/style-reference-2.png for pants
-   * and public/style-reference.png for everything else.
+   * Optional. URL of the style-reference image — this becomes image_urls[0],
+   * the canvas that Nano Banana edits. If omitted, the server auto-picks
+   * public/style-reference-2.png for pants and public/style-reference.png
+   * for everything else.
    */
   referenceImageUrl?: string | null;
   aspectRatio?: string;     // "auto" | "1:1" | etc.
@@ -335,6 +931,21 @@ export async function uploadToFal(file: File | Blob, filename = "upload.png"): P
   return url;
 }
 
+/*
+ * NOTE: No post-processing upscaler. Previously this file contained an
+ * `upscaleImage()` helper that piped Nano Banana output through
+ * `fal-ai/clarity-upscaler` (a latent-diffusion SDXL upscaler) to deliver
+ * 2K/4K results. That upscaler introduced a visible "filter": crushed
+ * blacks, crunchy fabric texture, shifted skin gamma, and a dated SD-era
+ * aesthetic. It has been removed entirely.
+ *
+ * The app now returns whatever Nano Banana (or Seedream / GPT Image)
+ * produces natively — nothing is re-diffused, re-sharpened, recolored,
+ * or otherwise retouched post-generation. If we ever re-introduce
+ * upscaling, use a deterministic non-diffusion upscaler (e.g. aura-sr,
+ * Real-ESRGAN) and wire it behind an explicit opt-in.
+ */
+
 export async function generate(params: GenerateParams): Promise<GenerationResult> {
   ensureConfigured();
   const model = MODELS[params.modelId];
@@ -354,15 +965,17 @@ export async function generate(params: GenerateParams): Promise<GenerationResult
     }
   }
 
-  // Order matters — and we intentionally put the style reference FIRST.
+  // Array order is the RELIABLE semantic signal to Nano Banana (Gemini edit):
+  // the first image is the canvas it modifies, subsequent images are treated
+  // as visual references. The prompt built by buildTwoImagePrompt describes
+  // the task in content terms ("primary studio scene" / "attached reference
+  // photograph") so it matches this ordering without relying on brittle
+  // "image 1" / "image 2" numerical labels.
   //
-  // Nano Banana (Gemini edit) treats the first image as the canvas to modify
-  // and heavily down-weights subsequent images. By putting the reference
-  // first, we turn the task into a "replace the garment on this studio photo"
-  // surgical edit (its training sweet spot) rather than a "composite two
-  // images" task (which it handles poorly). The prompt built by
-  // buildTwoImagePrompt matches this ordering: image 1 = reference canvas,
-  // image 2 = user's product photo (swap source).
+  // Style reference → canvas; user's product photo → garment reference.
+  // This reframes the task as a surgical "replace the garment on this studio
+  // photo" edit (Nano Banana's training sweet spot) rather than a "composite
+  // two images from scratch" task (which it handles poorly).
   const allImageUrls = referenceUrl
     ? [referenceUrl, ...params.imageUrls]
     : [...params.imageUrls];
@@ -387,15 +1000,34 @@ export async function generate(params: GenerateParams): Promise<GenerationResult
   const resolution = params.resolution || "1K";
   const resMultiplier = resolution === "4K" ? 2 : resolution === "2K" ? 1.5 : 1;
 
+  // kie.ai branch — short-circuit the fal.ai payload build and dispatcher.
+  // Nano Banana 2 is served via kie.ai's async task API rather than fal's
+  // synchronous `subscribe`. Return directly here to skip everything below.
+  if (model.inputShape === "kie") {
+    const { generateViaKie } = await import("./kie");
+    const kieResult = await generateViaKie({
+      prompt: finalPrompt,
+      imageUrls: allImageUrls,
+      numImages: params.numImages,
+      aspectRatio: params.aspectRatio,
+      format: params.format,
+      model: model.endpoint, // e.g. "nano-banana-2"
+    });
+    return {
+      images: kieResult.images,
+      requestId: kieResult.taskIds[0],
+      modelId: params.modelId,
+    };
+  }
+
   if (model.inputShape === "image_urls") {
     input.image_urls = allImageUrls;
     if (params.numImages) input.num_images = params.numImages;
     if (params.aspectRatio && params.aspectRatio !== "auto") input.aspect_ratio = params.aspectRatio;
     if (params.format) input.output_format = params.format;
-    // Nano Banana edit: pass resolution enum directly. If fal doesn't recognise
-    // the key it's harmlessly ignored, and we also repeat the intent in the
-    // prompt text ("Ultra-high-resolution 4K…") so the model biases that way.
-    input.resolution = resolution;
+    // NOTE: we used to set input.resolution = resolution here; the edit
+    // endpoint silently ignores it and always outputs ~1024px. We now
+    // deliver 2K/4K via a post-processing upscale pass (see below).
   } else if (model.inputShape === "image_urls_seedream") {
     input.image_urls = allImageUrls;
     if (params.numImages) input.num_images = params.numImages;
@@ -435,6 +1067,9 @@ export async function generate(params: GenerateParams): Promise<GenerationResult
     height: img.height,
     content_type: img.content_type,
   }));
+
+  // No post-processing. Native model output is returned as-is — see the
+  // long comment above the deleted upscaleImage() helper for background.
 
   return {
     images,
