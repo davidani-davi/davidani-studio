@@ -120,7 +120,7 @@ export default function OutputPanel({
   }
 
   return (
-    <aside className="flex w-96 shrink-0 flex-col border-l border-neutral-200 bg-white">
+    <aside className="flex w-full shrink-0 flex-col border-t border-neutral-200 bg-white lg:w-96 lg:border-l lg:border-t-0">
       <div className="flex items-center justify-between border-b border-neutral-200 px-5 py-4">
         <div>
           <h2 className="flex items-center gap-2 text-sm font-semibold">

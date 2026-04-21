@@ -22,7 +22,7 @@ export default function TopTabs({ active }: Props) {
   ];
 
   return (
-    <nav className="ml-6 flex items-center gap-1 text-sm">
+    <nav className="flex flex-wrap items-center gap-1 text-sm sm:ml-6">
       {tabs.map((t) => {
         const isActive = t.id === active;
         return (

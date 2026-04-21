@@ -149,7 +149,7 @@ export default function PromptPanel(p: Props) {
       }[status];
 
   return (
-    <section className="flex min-w-0 flex-1 flex-col border-r border-neutral-200 bg-white">
+    <section className="flex min-w-0 flex-1 flex-col border-b border-neutral-200 bg-white lg:border-b-0 lg:border-r">
       {/* ========== HEADER ========== */}
       <div className="flex items-center justify-between border-b border-neutral-200 px-6 py-4">
         <div>

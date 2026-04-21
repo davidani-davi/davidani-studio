@@ -275,17 +275,20 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
     selected.length > 0 && !!selectedHumanModelId && !!selectedPoseId;
 
   return (
-    <main className="flex h-screen flex-col bg-neutral-50">
+    <main className="flex min-h-screen flex-col bg-neutral-50 lg:h-screen">
       {/* Top bar */}
-      <header className="flex items-center justify-between border-b border-neutral-200 bg-white px-6 py-3">
-        <div className="flex items-center gap-2">
+      <header className="flex flex-col gap-3 border-b border-neutral-200 bg-white px-4 py-3 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-wrap items-center gap-2">
           <div className="flex h-7 w-7 items-center justify-center rounded-full bg-neutral-900 text-xs font-bold text-white">
             D
           </div>
           <span className="text-sm font-semibold">Davi &amp; Dani Photo Studio</span>
+          <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-neutral-600">
+            V1.0
+          </span>
           <TopTabs active="model" />
         </div>
-        <div className="flex items-center gap-3 text-xs text-neutral-500">
+        <div className="flex items-center gap-3 text-xs text-neutral-500 lg:justify-end">
           <span>Runs: {history.length}</span>
           <span>·</span>
           <span>Active: {loading ? 1 : 0}</span>
@@ -293,7 +296,7 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
       </header>
 
       {/* 3-column layout */}
-      <div className="flex min-h-0 flex-1">
+      <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
         <ModelSidebar
           modelId={modelId}
           onModelChange={setModelId}
