@@ -7,6 +7,7 @@ export interface ModelInfo {
   id: ModelId;
   label: string;
   badge: string;
+  accentTag?: string;
   /** Backend-specific identifier. For fal.ai this is a full slug like
    * "fal-ai/nano-banana/edit"; for kie.ai it's the model id like
    * "nano-banana-2". The generate() dispatcher uses `inputShape` to know
@@ -41,11 +42,12 @@ export const MODELS: Record<ModelId, ModelInfo> = {
   },
   "gpt-image": {
     id: "gpt-image",
-    label: "GPT Image",
-    badge: "V1.5",
-    endpoint: "fal-ai/gpt-image-1/edit-image/byok",
+    label: "ChatGPT Image Generator",
+    badge: "V2.0",
+    accentTag: "NEW",
+    endpoint: "openai/gpt-image-2/edit",
     inputShape: "gpt",
-    description: "OpenAI GPT Image edit (BYOK — bring your own OpenAI key).",
+    description: "OpenAI GPT Image 2 edit via fal.ai — latest higher-fidelity editing with stronger detail and text rendering.",
   },
 };
 

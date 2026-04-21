@@ -7,7 +7,7 @@ import type { UploadedImage } from "./types";
 // NOTE: `import type` is required — models-registry imports node:fs, which
 // must never end up in the client bundle. Type-only imports are erased at
 // compile time.
-import type { HumanModel, ModelPose } from "@/lib/models-registry";
+import type { HumanModel, ModelPose, PresetView } from "@/lib/models-registry";
 import ImageLightbox, { ZoomButton } from "./ImageLightbox";
 
 interface Props {
@@ -34,6 +34,8 @@ interface Props {
   onHumanModelChange: (id: string) => void;
   selectedPoseId: string | null;
   onPoseChange: (id: string) => void;
+  selectedView: PresetView;
+  onViewChange: (view: PresetView) => void;
   modelsLoading: boolean;
 
   /* Text overlay (same as Image Studio) */
@@ -71,6 +73,13 @@ const FONT_FAMILIES: string[] = [
   "Georgia",
   "Times New Roman",
   "Courier New",
+];
+
+const PRESET_VIEWS: { value: PresetView; label: string }[] = [
+  { value: "front", label: "Front" },
+  { value: "side", label: "Side" },
+  { value: "back", label: "Back" },
+  { value: "full", label: "Full" },
 ];
 
 /* ---------- Section header ---------- */
@@ -163,6 +172,7 @@ export default function ModelSidebar(p: Props) {
   const selectedModel: HumanModel | null =
     p.humanModels.find((m) => m.id === p.selectedHumanModelId) ?? null;
   const poses: ModelPose[] = selectedModel?.poses ?? [];
+  const activeLook = poses.find((pose) => pose.id === p.selectedPoseId) ?? null;
 
   return (
     <aside className="flex w-full shrink-0 flex-col overflow-y-auto border-b border-neutral-200 bg-white lg:w-72 lg:border-b-0 lg:border-r">
@@ -253,7 +263,7 @@ export default function ModelSidebar(p: Props) {
         <div className="mb-3 flex flex-wrap gap-2">
           {p.humanModels.length === 0 && !p.modelsLoading && (
             <p className="text-[11px] text-neutral-500">
-              No models found. Add a folder of pose photos under{" "}
+              No models found. Add look presets under{" "}
               <code className="rounded bg-neutral-100 px-1">public/models/</code>.
             </p>
           )}
@@ -275,15 +285,21 @@ export default function ModelSidebar(p: Props) {
           })}
         </div>
 
-        {/* Pose grid */}
+        {/* Look preset grid */}
         {selectedModel && poses.length > 0 && (
           <>
             <label className="mb-1 block text-[10px] font-medium text-neutral-500">
-              Pose
+              Look Preset
             </label>
             <div className="grid grid-cols-3 gap-2">
               {poses.map((pose) => {
                 const active = pose.id === p.selectedPoseId;
+                const thumb =
+                  pose.views[p.selectedView] ||
+                  pose.views.front ||
+                  pose.views.full ||
+                  pose.views.side ||
+                  pose.views.back;
                 return (
                   <div
                     key={pose.id}
@@ -300,7 +316,7 @@ export default function ModelSidebar(p: Props) {
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
-                        src={pose.publicPath}
+                        src={thumb?.publicPath || pose.publicPath}
                         alt={pose.label}
                         className="h-full w-full object-cover"
                       />
@@ -311,13 +327,46 @@ export default function ModelSidebar(p: Props) {
                       )}
                     </button>
                     <ZoomButton
-                      onClick={() => setPreviewSrc(pose.publicPath)}
+                      onClick={() => setPreviewSrc(thumb?.publicPath || pose.publicPath)}
                       title="Preview at full size"
                       className="absolute bottom-1 right-1 opacity-0 group-hover:opacity-100"
                     />
                   </div>
                 );
               })}
+            </div>
+
+            <div className="mt-3">
+              <label className="mb-1 block text-[10px] font-medium text-neutral-500">
+                View
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {PRESET_VIEWS.map((option) => {
+                  const available = !!activeLook?.views?.[option.value];
+                  const active = p.selectedView === option.value;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => p.onViewChange(option.value)}
+                      disabled={!available}
+                      className={`rounded-full border px-3 py-1 text-xs font-medium transition disabled:cursor-not-allowed ${
+                        active
+                          ? "border-brand-500 bg-brand-50 text-brand-700"
+                          : available
+                          ? "border-neutral-200 bg-white text-neutral-600 hover:border-neutral-400"
+                          : "border-neutral-200 bg-neutral-100 text-neutral-400"
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="mt-2 text-[11px] leading-relaxed text-neutral-500">
+                Front is the default. Side, back, and full use linked variant images only when
+                available for the selected look.
+              </p>
             </div>
           </>
         )}
@@ -450,7 +499,14 @@ export default function ModelSidebar(p: Props) {
                           : "border-neutral-200 bg-white hover:border-neutral-300"
                       }`}
                     >
-                      <span className="font-medium">{m.label}</span>
+                      <span className="flex items-center gap-2">
+                        <span className="font-medium">{m.label}</span>
+                        {m.accentTag && (
+                          <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.18em] text-amber-700">
+                            {m.accentTag}
+                          </span>
+                        )}
+                      </span>
                       <span className="rounded bg-neutral-100 px-1.5 py-0.5 font-mono text-[10px] text-neutral-600">
                         {m.badge}
                       </span>

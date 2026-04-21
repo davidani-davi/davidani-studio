@@ -33,6 +33,11 @@ async function fetchJson(label: string, input: string, init?: RequestInit): Prom
     data = raw ? JSON.parse(raw) : null;
   } catch {
     const preview = raw.replace(/\s+/g, " ").slice(0, 200);
+    if (/server action not found/i.test(raw)) {
+      throw new Error(
+        `${label}: your browser is talking to a stale Next.js dev build. Hard refresh the page and restart \`npm run dev\` if needed.`
+      );
+    }
     throw new Error(
       `${label}: server returned non-JSON (${res.status}). First 200 chars: "${preview}"`
     );

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { generate, type OverlayOptions } from "@/lib/fal";
 import { MODELS, type ModelId } from "@/lib/models";
-import { getPoseUrl } from "@/lib/models-registry";
+import { getPoseUrl, type PresetView } from "@/lib/models-registry";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -37,6 +37,7 @@ export async function POST(req: Request) {
       poseId,
       prompt,
       garmentImageUrls,
+      view,
       aspectRatio,
       resolution,
       format,
@@ -48,6 +49,7 @@ export async function POST(req: Request) {
       poseId: string;
       prompt: string;
       garmentImageUrls: string[];
+      view?: PresetView;
       aspectRatio?: string;
       resolution?: string;
       format?: "png" | "jpeg";
@@ -74,7 +76,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const poseUrl = await getPoseUrl(humanModelId, poseId);
+    const poseUrl = await getPoseUrl(humanModelId, poseId, view || "front");
 
     const result = await generate({
       modelId,

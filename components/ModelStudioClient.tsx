@@ -14,7 +14,7 @@ import type {
 } from "@/lib/fal";
 import { resizeIfNeeded } from "@/lib/image-resize";
 import type { ModelId } from "@/lib/models";
-import type { HumanModel } from "@/lib/models-registry";
+import type { HumanModel, PresetView } from "@/lib/models-registry";
 
 function deriveOverlayMode(showName: boolean, showNumber: boolean): OverlayMode {
   if (showName && showNumber) return "both";
@@ -35,6 +35,11 @@ async function fetchJson(label: string, input: string, init?: RequestInit): Prom
     data = raw ? JSON.parse(raw) : null;
   } catch {
     const preview = raw.replace(/\s+/g, " ").slice(0, 200);
+    if (/server action not found/i.test(raw)) {
+      throw new Error(
+        `${label}: your browser is talking to a stale Next.js dev build. Hard refresh the page and restart \`npm run dev\` if needed.`
+      );
+    }
     throw new Error(
       `${label}: server returned non-JSON (${res.status}). First 200 chars: "${preview}"`
     );
@@ -81,6 +86,7 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
   const [selectedPoseId, setSelectedPoseId] = useState<string | null>(
     initialHumanModels[0]?.poses[0]?.id ?? null
   );
+  const [selectedView, setSelectedView] = useState<PresetView>("front");
 
   /* ---------- Prompt & generation ---------- */
   const [prompt, setPrompt] = useState<string>("");
@@ -172,11 +178,13 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
     const m = humanModels.find((hm) => hm.id === id);
     // Reset pose to the first pose of the newly-selected model.
     setSelectedPoseId(m?.poses[0]?.id ?? null);
+    setSelectedView("front");
     // Invalidate any stale prompt — it was written for the previous model/pose.
     setPrompt("");
   }
   function handlePoseChange(id: string) {
     setSelectedPoseId(id);
+    setSelectedView("front");
     // Same rationale — prompts are pose-specific (they cite the exact pose).
     setPrompt("");
   }
@@ -196,6 +204,7 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
         body: JSON.stringify({
           modelId: selectedHumanModelId,
           poseId: selectedPoseId,
+          view: selectedView,
           garmentImageUrl: selected[0],
           twoPiece,
           adjustments: {
@@ -234,6 +243,7 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
           modelId,
           humanModelId: selectedHumanModelId,
           poseId: selectedPoseId,
+          view: selectedView,
           prompt: activePrompt,
           garmentImageUrls: selected,
           aspectRatio: aspect,
@@ -316,6 +326,8 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
           onHumanModelChange={handleHumanModelChange}
           selectedPoseId={selectedPoseId}
           onPoseChange={handlePoseChange}
+          selectedView={selectedView}
+          onViewChange={setSelectedView}
           modelsLoading={modelsLoading}
           colorName={colorName}
           onColorNameChange={setColorName}

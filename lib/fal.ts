@@ -657,6 +657,48 @@ export interface GarmentAdjustments {
   length?: GarmentLengthAdjustment;
 }
 
+type SwapScope = "upper-body" | "lower-body" | "full-look";
+
+function inferSwapScope(garment: string): SwapScope {
+  const text = garment.toLowerCase();
+
+  const fullLookWords = [
+    "dress",
+    "jumpsuit",
+    "romper",
+    "bodysuit",
+    "catsuit",
+    "onesie",
+    "set",
+    "outfit",
+    "matching set",
+    "two-piece",
+  ];
+  if (fullLookWords.some((w) => text.includes(w))) return "full-look";
+
+  const lowerBodyWords = [
+    "pants",
+    "trousers",
+    "jeans",
+    "shorts",
+    "skirt",
+    "mini skirt",
+    "midi skirt",
+    "maxi skirt",
+    "leggings",
+    "joggers",
+    "sweatpants",
+    "slacks",
+    "chinos",
+    "khakis",
+    "corduroys",
+    "bottoms",
+  ];
+  if (lowerBodyWords.some((w) => text.includes(w))) return "lower-body";
+
+  return "upper-body";
+}
+
 function buildGarmentAdjustmentClause(adjustments?: GarmentAdjustments): string {
   const fit = adjustments?.fit ?? "true-to-reference";
   const length = adjustments?.length ?? "true-to-reference";
@@ -753,6 +795,7 @@ export function buildModelSwapPrompt(
   analyzedModel: AnalyzedModelPhoto,
   adjustments?: GarmentAdjustments
 ): string {
+  const swapScope = inferSwapScope(newGarment);
   // Inner renderer — introspect the template text once, then render again
   // with sanitized analyzer output.
   const render = (
@@ -769,6 +812,12 @@ export function buildModelSwapPrompt(
       ? ` Keep all garment details from the reference photograph identical, including: ${nf}.`
       : "";
     const adjustmentClause = buildGarmentAdjustmentClause(adjustments);
+    const scopeClause =
+      swapScope === "upper-body"
+        ? ` Replace only the upper-body garment area with the new ${ng}. Preserve any visible skirt, pants, shorts, or other lower-body garment from the primary studio photograph exactly as-is — same color, shape, hem, waistband, drape, and coverage. Do not remove, crop out, fade out, or simplify the lower-body garment.`
+        : swapScope === "lower-body"
+        ? ` Replace only the lower-body garment area with the new ${ng}. Preserve any visible top, jacket, sweater, blouse, shirt, or other upper-body garment from the primary studio photograph exactly as-is — same color, neckline, sleeve shape, hem, drape, and coverage. Do not remove, crop out, fade out, or simplify the upper-body garment.`
+        : ` Replace the full visible outfit with the new ${ng}, since it is a full-look garment.`;
     return (
       // Opening — "extract X and apply onto Y" was the shared framing in the
       // two winning prompts from David's six-prompt Model Studio test (#2 and
@@ -776,7 +825,7 @@ export function buildModelSwapPrompt(
       // image 2 with Y", which read as weaker instructions to Nano Banana.
       `Fashion catalog garment-swap edit on a human model. Extract the ${ng} from the attached ` +
       `reference photograph and apply it onto the model in the primary studio photograph, ` +
-      `completely removing the ${cg} the model is currently wearing. ` +
+      `replacing only the garment area that conflicts with the new ${ng} while preserving the rest of the outfit unless explicitly instructed otherwise. Remove from the current look only the portion of ${cg} that must be replaced by the new ${ng}. ` +
       // Preservation — flat comma-separated list. The winning prompts enumerated
       // every preserved attribute (face / proportions / pose / hair / expression
       // / lighting / shadows / camera angle / background / non-swapped garment)
@@ -784,6 +833,7 @@ export function buildModelSwapPrompt(
       `Preserve the model's exact face, facial features, expression, and physical attributes — ` +
       `${mi} — along with the exact pose (${ps}), camera perspective, lighting direction, ` +
       `shadows, and the rest of the scene (${sc}) unchanged.` +
+      `${scopeClause}` +
       ` The primary studio photograph is the exposure and lighting authority: match the exact ` +
       `background color, background brightness, backdrop tonal value, facial exposure, facial ` +
       `brightness, and face lighting pattern from the primary studio photograph exactly. Do not ` +

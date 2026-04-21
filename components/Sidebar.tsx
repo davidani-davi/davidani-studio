@@ -534,7 +534,14 @@ export default function Sidebar(p: Props) {
                           : "border-neutral-200 bg-white hover:border-neutral-300"
                       }`}
                     >
-                      <span className="font-medium">{m.label}</span>
+                      <span className="flex items-center gap-2">
+                        <span className="font-medium">{m.label}</span>
+                        {m.accentTag && (
+                          <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.18em] text-amber-700">
+                            {m.accentTag}
+                          </span>
+                        )}
+                      </span>
                       <span className="rounded bg-neutral-100 px-1.5 py-0.5 font-mono text-[10px] text-neutral-600">
                         {m.badge}
                       </span>

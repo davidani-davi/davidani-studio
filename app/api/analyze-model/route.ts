@@ -7,7 +7,7 @@ import {
   extractTwoPieceFields,
   type GarmentAdjustments,
 } from "@/lib/fal";
-import { getPoseUrl } from "@/lib/models-registry";
+import { getPoseUrl, type PresetView } from "@/lib/models-registry";
 import { fal } from "@fal-ai/client";
 
 export const runtime = "nodejs";
@@ -77,12 +77,13 @@ RULES:
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { modelId, poseId, garmentImageUrl, twoPiece } = body as {
+    const { modelId, poseId, garmentImageUrl, twoPiece, view } = body as {
       modelId: string;
       poseId: string;
       garmentImageUrl: string;
       twoPiece?: boolean;
       adjustments?: GarmentAdjustments;
+      view?: PresetView;
     };
     const adjustments = body?.adjustments as GarmentAdjustments | undefined;
 
@@ -99,7 +100,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const poseUrl = await getPoseUrl(modelId, poseId);
+    const poseUrl = await getPoseUrl(modelId, poseId, view || "front");
 
     // Run both vision passes in parallel but use allSettled so we can report
     // which one failed. Previously a 400 from fal.ai would surface as a
