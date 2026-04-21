@@ -5,6 +5,7 @@ import {
   buildModelSwapPrompt,
   buildModelSwapTwoPiecePrompt,
   extractTwoPieceFields,
+  type GarmentAdjustments,
 } from "@/lib/fal";
 import { getPoseUrl } from "@/lib/models-registry";
 import { fal } from "@fal-ai/client";
@@ -81,7 +82,9 @@ export async function POST(req: Request) {
       poseId: string;
       garmentImageUrl: string;
       twoPiece?: boolean;
+      adjustments?: GarmentAdjustments;
     };
+    const adjustments = body?.adjustments as GarmentAdjustments | undefined;
 
     if (!modelId || typeof modelId !== "string") {
       return NextResponse.json({ ok: false, error: "modelId is required" }, { status: 400 });
@@ -130,7 +133,7 @@ export async function POST(req: Request) {
       const twoPieceFields = garmentResult.value as Awaited<
         ReturnType<typeof extractTwoPieceFields>
       >;
-      prompt = buildModelSwapTwoPiecePrompt(twoPieceFields, modelFields);
+      prompt = buildModelSwapTwoPiecePrompt(twoPieceFields, modelFields, adjustments);
       responseGarmentMeta = {
         twoPiece: true,
         top: twoPieceFields.top,
@@ -145,7 +148,8 @@ export async function POST(req: Request) {
       prompt = buildModelSwapPrompt(
         singleFields.garment,
         singleFields.features,
-        modelFields
+        modelFields,
+        adjustments
       );
       responseGarmentMeta = {
         twoPiece: false,

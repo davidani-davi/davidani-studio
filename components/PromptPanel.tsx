@@ -1,5 +1,10 @@
 "use client";
 
+import type {
+  GarmentFitAdjustment,
+  GarmentLengthAdjustment,
+} from "@/lib/fal";
+
 export interface BatchProgress {
   /** Total images in the batch (i.e. how many were selected at kick-off). */
   total: number;
@@ -16,35 +21,47 @@ interface Props {
   onPromptChange: (v: string) => void;
   numImages: number;
   onNumImagesChange: (n: number) => void;
+  /**
+   * Runs analyze → generate as a single atomic flow. The button always
+   * re-analyzes on every click so the prompt stays in sync with the current
+   * photo + two-piece-toggle state; users can tweak the Brief textarea for
+   * debugging but the next click will overwrite their edits.
+   */
   onGenerate: () => void;
-  onAnalyze: () => void;
   analyzing: boolean;
   loading: boolean;
-  canAnalyze: boolean;
   disabled: boolean;
   /** Optional batch wiring — only Image Studio passes these. */
   onBatchGenerate?: () => void;
   canBatch?: boolean;
   batchProgress?: BatchProgress | null;
-  /**
-   * True when the current product-photo selection has NOT been analyzed yet
-   * since its most recent upload. Gates the single-shot Generate button so
-   * the user is forced to run Analyze on fresh uploads before generating —
-   * which is what keeps quality consistent with what they expect. Batch mode
-   * does its own per-image analysis so this flag doesn't gate it.
-   */
-  needsAnalyze?: boolean;
 
   /**
-   * When true, Analyze runs the coordinated-set analyzer which outputs four
-   * fields (TOP / TOP_FEATURES / BOTTOM / BOTTOM_FEATURES) and assembles the
-   * two-piece swap prompt instead of the single-garment one. Ship this as a
-   * user-selectable toggle — the reference photo itself is ambiguous enough
-   * that auto-detection isn't reliable.
+   * When true, the unified Generate button routes through the coordinated-set
+   * analyzer (four fields: TOP / TOP_FEATURES / BOTTOM / BOTTOM_FEATURES) and
+   * assembles the two-piece swap prompt instead of the single-garment one.
+   * Ship this as a user toggle — the reference photo alone isn't reliably
+   * auto-classifiable.
    */
   twoPiece: boolean;
   onTwoPieceChange: (v: boolean) => void;
+  fitAdjustment?: GarmentFitAdjustment;
+  onFitAdjustmentChange?: (v: GarmentFitAdjustment) => void;
+  lengthAdjustment?: GarmentLengthAdjustment;
+  onLengthAdjustmentChange?: (v: GarmentLengthAdjustment) => void;
 }
+
+const FIT_OPTIONS: { value: GarmentFitAdjustment; label: string }[] = [
+  { value: "fitted", label: "Fitted" },
+  { value: "true-to-reference", label: "True" },
+  { value: "oversized", label: "Oversized" },
+];
+
+const LENGTH_OPTIONS: { value: GarmentLengthAdjustment; label: string }[] = [
+  { value: "shorter", label: "Shorter" },
+  { value: "true-to-reference", label: "True" },
+  { value: "longer", label: "Longer" },
+];
 
 /* ---------- Icons (inline SVG) ---------- */
 
@@ -138,7 +155,9 @@ export default function PromptPanel(p: Props) {
         <div>
           <h2 className="text-sm font-semibold text-neutral-900">Brief</h2>
           <p className="text-[11px] text-neutral-500">
-            Describe the shot — or let Claude analyze your photo and draft it.
+            Claude analyzes your photo and drafts the prompt automatically on
+            every Generate. Edits below are for debugging only — next run will
+            overwrite them.
           </p>
         </div>
         <span
@@ -149,56 +168,14 @@ export default function PromptPanel(p: Props) {
         </span>
       </div>
 
-      {/* ========== ANALYZE CARD ========== */}
-      <div className="border-b border-neutral-100 px-6 py-4">
-        <button
-          onClick={p.onAnalyze}
-          disabled={!p.canAnalyze || p.analyzing || p.loading}
-          className={`group flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition disabled:cursor-not-allowed ${
-            p.canAnalyze && !p.analyzing && !p.loading
-              ? "border-brand-200 bg-gradient-to-br from-brand-50 to-white hover:border-brand-400 hover:shadow-sm"
-              : "border-neutral-200 bg-neutral-50 opacity-70"
-          }`}
-        >
-          <span
-            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
-              p.analyzing
-                ? "bg-amber-100 text-amber-600"
-                : "bg-brand-100 text-brand-600 group-hover:bg-brand-600 group-hover:text-white"
-            } transition`}
-          >
-            {p.analyzing ? <Spinner /> : IconSparkle}
-          </span>
-          <span className="flex min-w-0 flex-1 flex-col">
-            <span className="text-sm font-semibold text-neutral-900">
-              {p.analyzing
-                ? "Analyzing photo…"
-                : hasPrompt
-                ? "Re-analyze photo"
-                : "Analyze photo with Claude"}
-            </span>
-            <span className="truncate text-[11px] text-neutral-500">
-              {p.canAnalyze
-                ? "Claude 3.7 describes your garment, then drafts the studio prompt."
-                : "Upload a product photo in the sidebar to enable."}
-            </span>
-          </span>
-          {p.canAnalyze && !p.analyzing && !p.loading && (
-            <svg
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              className="h-4 w-4 text-neutral-400 transition group-hover:translate-x-0.5 group-hover:text-brand-600"
-            >
-              <path d="M7.5 4.5a.75.75 0 011.06 0l4.5 4.5a.75.75 0 010 1.06l-4.5 4.5a.75.75 0 11-1.06-1.06L11.44 10 7.5 6.06a.75.75 0 010-1.06z" />
-            </svg>
-          )}
-        </button>
-
-        {/* Two-piece-set toggle: when the reference photo shows a coordinated
-            top + bottom outfit, check this so Analyze runs the coordinated-set
-            analyzer instead of the single-garment one. */}
+      {/* ========== TWO-PIECE TOGGLE STRIP ==========
+          Compact inline control — the Analyze card was removed when Analyze
+          was folded into Generate, but the two-piece-set routing decision
+          still has to live somewhere the user can reach it before clicking
+          Generate. Keep it slim so the textarea below stays the focal point. */}
+      <div className="border-b border-neutral-100 px-6 py-2.5">
         <label
-          className={`mt-2 flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-[11px] transition ${
+          className={`flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1 text-[11px] transition ${
             p.twoPiece
               ? "bg-brand-50 text-brand-700"
               : "text-neutral-600 hover:bg-neutral-50"
@@ -217,6 +194,65 @@ export default function PromptPanel(p: Props) {
             (matching top + bottom)
           </span>
         </label>
+        {(p.onFitAdjustmentChange || p.onLengthAdjustmentChange) && (
+          <div className="mt-2.5 flex flex-wrap gap-4 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2.5">
+            {p.onFitAdjustmentChange && (
+              <div className="min-w-[180px]">
+                <div className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
+                  Fit
+                </div>
+                <div className="flex overflow-hidden rounded-lg border border-neutral-200 bg-white">
+                  {FIT_OPTIONS.map((option) => {
+                    const active = (p.fitAdjustment ?? "true-to-reference") === option.value;
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => p.onFitAdjustmentChange?.(option.value)}
+                        disabled={p.analyzing || p.loading}
+                        className={`flex-1 border-r border-neutral-200 px-2.5 py-1.5 text-[11px] font-medium last:border-r-0 transition disabled:opacity-50 ${
+                          active
+                            ? "bg-neutral-900 text-white"
+                            : "text-neutral-600 hover:bg-neutral-50"
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            {p.onLengthAdjustmentChange && (
+              <div className="min-w-[180px]">
+                <div className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
+                  Length
+                </div>
+                <div className="flex overflow-hidden rounded-lg border border-neutral-200 bg-white">
+                  {LENGTH_OPTIONS.map((option) => {
+                    const active =
+                      (p.lengthAdjustment ?? "true-to-reference") === option.value;
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => p.onLengthAdjustmentChange?.(option.value)}
+                        disabled={p.analyzing || p.loading}
+                        className={`flex-1 border-r border-neutral-200 px-2.5 py-1.5 text-[11px] font-medium last:border-r-0 transition disabled:opacity-50 ${
+                          active
+                            ? "bg-neutral-900 text-white"
+                            : "text-neutral-600 hover:bg-neutral-50"
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* ========== PROMPT TEXTAREA ========== */}
@@ -260,15 +296,9 @@ export default function PromptPanel(p: Props) {
         </label>
 
         <div className="flex items-center gap-2">
-          {/* Inline hint when Generate is gated on a missing analyze step.
-              Helps the user understand why the button just went grey. */}
-          {p.needsAnalyze && !batchActive && !p.loading && !p.analyzing && (
-            <span className="hidden text-[11px] text-amber-700 sm:inline">
-              Click Analyze first
-            </span>
-          )}
-
-          {/* Batch — only rendered if the parent wired it up */}
+          {/* Batch — only rendered if the parent wired it up. Batch already
+              analyzes + generates each selected image in one pass, so it
+              doesn't need a separate Analyze step either. */}
           {p.onBatchGenerate && (
             <button
               onClick={p.onBatchGenerate}
@@ -308,39 +338,27 @@ export default function PromptPanel(p: Props) {
             </button>
           )}
 
+          {/* Unified Analyze + Generate — onGenerate runs both steps.
+              Enabled as soon as the user has a selection; the analyze step
+              runs automatically inside onGenerate, so no pre-analyze gate. */}
           <button
             onClick={p.onGenerate}
-            disabled={
-              p.disabled ||
-              p.loading ||
-              p.analyzing ||
-              batchActive ||
-              !!p.needsAnalyze
-            }
-            title={
-              p.needsAnalyze
-                ? "Click Analyze first — Analyze reads the selected product photo and drafts the studio prompt."
-                : undefined
-            }
+            disabled={p.disabled || p.loading || p.analyzing || batchActive}
             className={`group relative inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold shadow-sm transition disabled:cursor-not-allowed ${
-              p.disabled ||
-              p.loading ||
-              p.analyzing ||
-              batchActive ||
-              p.needsAnalyze
+              p.disabled || p.loading || p.analyzing || batchActive
                 ? "bg-neutral-300 text-neutral-500"
                 : "bg-gradient-to-b from-neutral-800 to-neutral-950 text-white hover:from-neutral-700 hover:to-neutral-900 hover:shadow-md active:scale-[0.98]"
             }`}
           >
-            {p.loading ? (
-              <>
-                <Spinner />
-                <span>Generating…</span>
-              </>
-            ) : p.analyzing ? (
+            {p.analyzing ? (
               <>
                 <Spinner />
                 <span>Analyzing…</span>
+              </>
+            ) : p.loading ? (
+              <>
+                <Spinner />
+                <span>Generating…</span>
               </>
             ) : (
               <>

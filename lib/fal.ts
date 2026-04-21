@@ -233,8 +233,8 @@ function sanitizeAnalyzerText(text: string, alreadyUsed: Set<string>): string {
  */
 const ANALYSIS_SYSTEM_PROMPT = `You are a product catalog analyzer. You see a single garment photograph and must output exactly two lines, in this exact format, with no preamble, no markdown, and no extra lines:
 
-GARMENT: <a short noun phrase describing the garment — include primary color, fabric/texture, and garment type. Examples: "soft fuzzy knit baby blue cardigan", "slim-fit dark indigo denim jeans", "cropped white ribbed cotton tank top", "oversized black cotton hoodie", "hot pink leopard print sweatpants">
-FEATURES: <comma-separated noun phrases enumerating clearly visible structural details. Each element is one short noun phrase. Examples: "a crew neckline, ribbed collar, cuffs, and hem, five small round white buttons aligned vertically down the center placket, long sleeves" or "a drawstring waistband, two side pockets, tapered legs, a back patch pocket">
+GARMENT: <a short noun phrase describing the garment — include primary color, fabric/texture, an EXPLICIT SILHOUETTE / CUT / FIT descriptor (e.g. barrel-fit, wide-leg, straight-leg, slim, skinny, tapered, flared, bootcut, boxy, oversized, cropped, fitted, relaxed, A-line, bodycon), and the garment type. Examples: "soft fuzzy knit baby blue oversized cardigan", "barrel-fit dark indigo denim jeans", "cropped white ribbed cotton tank top", "boxy black cotton hoodie", "wide-leg hot pink leopard print sweatpants">
+FEATURES: <comma-separated noun phrases enumerating clearly visible structural details. ALWAYS begin with a silhouette clause that restates the cut/fit/leg-shape/body-shape in concrete visual terms (e.g. "a rounded barrel-shaped leg that curves outward through the thigh and knee then tapers to a narrow ankle cuff", "a straight leg of even width from hip to ankle", "a boxy torso that hangs loose from shoulder to hip without tapering", "a fitted torso that follows the body closely through the waist"). Then enumerate the remaining details. Examples: "a rounded barrel-shaped leg that curves outward through the thigh and knee then tapers to a narrow ankle cuff, a drawstring waistband, two side pockets, a back patch pocket" or "a boxy torso that hangs loose from shoulder to hip, a crew neckline, ribbed collar, cuffs, and hem, five small round white buttons aligned vertically down the center placket, long sleeves">
 
 SHAPE DISAMBIGUATION — check the overall silhouette BEFORE writing anything:
 
@@ -304,22 +304,44 @@ export function buildTwoImagePrompt(garment: string, features: string): string {
       `Catalog garment-swap edit. Replace the garment currently shown in the primary studio ` +
       `photograph with a different garment: a ${g}.${featureClause} ` +
       `The exact appearance of the replacement garment — its color, pattern, fabric texture, ` +
-      `hardware, and every visible detail — is given by the attached reference photograph of that ` +
-      `garment; use the reference photograph strictly as the visual source of truth for how the ` +
-      `replacement garment should look. ` +
+      `hardware, SILHOUETTE, CUT, FIT, leg shape, body shape, volume, length, and every visible ` +
+      `detail — is given by the attached reference photograph of that garment; use the reference ` +
+      `photograph strictly as the visual source of truth for how the replacement garment should ` +
+      `look. ` +
+      // Silhouette-authority clause. Without this, Nano Banana tends to
+      // inherit the overall garment shape from image_urls[0] (the studio
+      // canvas), which defeats uploads where the user's garment has a
+      // distinctive cut — e.g. a barrel-fit jean rendered onto a straight-leg
+      // flat-lay canvas kept coming out straight. We explicitly split the two
+      // sources: canvas provides the scene, reference provides the shape.
+      `SILHOUETTE AUTHORITY: the overall silhouette, cut, fit, and shape of the replacement ${g} ` +
+      `(including leg width and curvature for bottoms, torso fit and length for tops, hem shape ` +
+      `for dresses/skirts) MUST be taken from the attached reference photograph of the garment, ` +
+      `NOT from the garment currently shown in the primary studio photograph. If the reference ` +
+      `garment is a barrel-fit, the rendered garment must be barrel-fit. If the reference is ` +
+      `wide-leg, render wide-leg. If the reference is oversized or boxy, render oversized or boxy. ` +
+      `Do not normalize, slim down, straighten, or otherwise alter the reference silhouette to ` +
+      `match whatever garment was originally on the canvas. ` +
       `PRESERVE from the primary studio photograph (do not alter any of these): the clean solid ` +
       `studio background, soft diffused lighting, shadow character, camera angle, framing, and ` +
-      `centered composition. ` +
+      `centered composition. Do NOT inherit garment-shape cues (silhouette, cut, fit, leg width, ` +
+      `torso fit, length) from the primary studio photograph — those come exclusively from the ` +
+      `reference photograph. ` +
       `RENDER THE REPLACEMENT GARMENT FRESH — do not copy the wrinkles, folds, creases, twists, ` +
       `asymmetries, or specific placement of whatever garment was originally in the primary ` +
       `photograph. The new ${g} must be perfectly symmetrical along the vertical centerline, ` +
-      `neatly laid flat with smooth, freshly-steamed fabric, no wrinkles, no creases, no bunched or ` +
-      `twisted sections, and in the canonical catalog pose for its garment type (tops: sleeves ` +
-      `angled slightly downward and symmetric; pants: legs straight, parallel, and symmetric with ` +
-      `the waistband centered at top; dresses and skirts: hem fanning gently and symmetrically). ` +
+      `neatly laid flat with smooth, freshly-steamed fabric, no wrinkles, no creases, no bunched ` +
+      `or twisted sections, and in the canonical catalog layout for its garment type (tops: ` +
+      `sleeves angled slightly downward and symmetric; pants: waistband centered at top with the ` +
+      `two legs laid parallel and symmetric about the vertical centerline WHILE RETAINING the ` +
+      `reference garment's true leg-shape and leg-width (a barrel leg stays barrel, a flare stays ` +
+      `flared, a wide leg stays wide); dresses and skirts: hem fanning gently and symmetrically ` +
+      `per the reference silhouette). Symmetry and flat-lay cleanliness must NOT override the ` +
+      `reference silhouette. ` +
       `The result must look like a brand-new, professionally styled catalog photograph taken in ` +
       `the same studio session as the primary photograph — same lighting, same camera, same ` +
-      `background — but with a freshly arranged, crisp, symmetric ${g}. ` +
+      `background — but with a freshly arranged, crisp, symmetric ${g} whose SILHOUETTE matches ` +
+      `the attached reference photograph. ` +
       `REMOVE ALL NECK LABELS, BRAND TAGS, SIZE TAGS, CARE LABELS, AND SEWN-IN WOVEN TAGS from the ` +
       `rendered garment — the inside of the neckline, collar band, and any other typical label ` +
       `location must be clean and empty with no tag, label, patch, or printed text of any kind ` +
@@ -402,10 +424,10 @@ export async function analyzeGarmentToPrompt(
  */
 const TWO_PIECE_ANALYSIS_SYSTEM_PROMPT = `You are a product catalog analyzer for coordinated two-piece fashion sets. You see a single photograph that shows TWO matching garments — a top piece and a bottom piece — designed to be worn together as a coordinated set (e.g. a crop top + mini skirt, jacket + pants, shirt + shorts). Output exactly four lines in this exact format, with no preamble, no markdown, and no extra lines:
 
-TOP: <short noun phrase describing ONLY the top piece — include primary color, fabric/texture, and top type. Example: "bright aqua blue sleeveless zip-front athletic top", "cream ribbed knit cropped cardigan", "white cotton short-sleeve tee">
-TOP_FEATURES: <comma-separated noun phrases enumerating visible structural details of the TOP piece only. Example: "quarter-zip front closure, stand collar, two side zip chest pockets, sleeveless armholes, hip-length hem">
-BOTTOM: <short noun phrase describing ONLY the bottom piece — include primary color, fabric/texture, and bottom type. Example: "aqua blue athletic mini skirt", "cream ribbed knit pull-on shorts", "white cotton pleated skirt". Do NOT prefix with "matching" — the assembler adds coordination language itself.>
-BOTTOM_FEATURES: <comma-separated noun phrases enumerating visible structural details of the BOTTOM piece only. Example: "elastic drawcord waistband, neon yellow waistband contrast panel, two side zip pockets, A-line silhouette, above-knee hem">
+TOP: <short noun phrase describing ONLY the top piece — include primary color, fabric/texture, an EXPLICIT SILHOUETTE / CUT / FIT descriptor (cropped, boxy, oversized, fitted, relaxed, bodycon, A-line, etc.), and the top type. Example: "bright aqua blue fitted sleeveless zip-front athletic top", "cream ribbed knit cropped boxy cardigan", "white cotton oversized short-sleeve tee">
+TOP_FEATURES: <comma-separated noun phrases enumerating visible structural details of the TOP piece only. ALWAYS begin with a silhouette clause that restates the top's cut/fit/length in concrete visual terms (e.g. "a cropped torso that ends above the natural waist", "a boxy torso that hangs loose from shoulder to hip without tapering", "a fitted torso that follows the body closely through the waist"). Example: "a fitted torso that follows the body closely, quarter-zip front closure, stand collar, two side zip chest pockets, sleeveless armholes, hip-length hem">
+BOTTOM: <short noun phrase describing ONLY the bottom piece — include primary color, fabric/texture, an EXPLICIT SILHOUETTE / CUT / FIT descriptor (barrel-fit, wide-leg, straight-leg, slim, skinny, tapered, flared, bootcut, A-line, mini, midi, maxi, etc.), and the bottom type. Example: "aqua blue A-line athletic mini skirt", "cream ribbed knit wide-leg pull-on shorts", "white cotton pleated midi skirt". Do NOT prefix with "matching" — the assembler adds coordination language itself.>
+BOTTOM_FEATURES: <comma-separated noun phrases enumerating visible structural details of the BOTTOM piece only. ALWAYS begin with a silhouette clause that restates the bottom's cut/leg-shape/length in concrete visual terms (e.g. "a rounded barrel-shaped leg that curves outward through the thigh and knee then tapers to the ankle", "a straight leg of even width from hip to ankle", "an A-line flare from waistband to above-knee hem"). Example: "an A-line flare from waistband to above-knee hem, elastic drawcord waistband, neon yellow waistband contrast panel, two side zip pockets">
 
 SHAPE DISAMBIGUATION:
 - TOP must be a torso garment with a neckline + sleeves or sleeveless armholes.
@@ -517,23 +539,35 @@ export function buildTwoPiecePrompt(fields: TwoPieceFields): string {
       `Render both pieces as a single unified coordinated outfit — they share the same color ` +
       `family, fabric family, and trim language; they must look like two pieces of the same ` +
       `designed set, not two unrelated garments. ` +
-      `The exact appearance of both pieces — color, pattern, fabric texture, hardware, and every ` +
-      `visible detail — is given by the attached reference photograph of that set; use the ` +
-      `reference photograph strictly as the visual source of truth for how the set should look. ` +
+      `The exact appearance of both pieces — color, pattern, fabric texture, hardware, SILHOUETTE, ` +
+      `CUT, FIT, leg shape, torso shape, length, volume, and every visible detail — is given by ` +
+      `the attached reference photograph of that set; use the reference photograph strictly as the ` +
+      `visual source of truth for how the set should look. ` +
+      // Silhouette-authority clause (same rationale as the single-garment template).
+      `SILHOUETTE AUTHORITY: the overall silhouette, cut, and fit of both the ${t} and the ${b} ` +
+      `(leg width/curvature on the bottom, torso fit/length on the top) MUST be taken from the ` +
+      `attached reference photograph, NOT from the garment currently shown in the primary studio ` +
+      `photograph. If the reference bottom is wide-leg or barrel-fit, render wide-leg or barrel. ` +
+      `If the reference top is oversized or cropped, render oversized or cropped. Do not normalize ` +
+      `the reference silhouette to match whatever garment was originally on the canvas. ` +
       `PRESERVE from the primary studio photograph (do not alter any of these): the clean solid ` +
       `studio background, soft diffused lighting, shadow character, camera angle, framing, and ` +
-      `centered composition. ` +
+      `centered composition. Do NOT inherit garment-shape cues (silhouette, cut, fit, length) from ` +
+      `the primary studio photograph. ` +
       `RENDER THE REPLACEMENT SET FRESH — do not copy the wrinkles, folds, creases, twists, ` +
       `asymmetries, or specific placement of whatever garment was originally in the primary ` +
       `photograph. Display both pieces in the canonical catalog layout for a coordinated set: the ` +
       `${t} positioned above and slightly overlapping the ${b}, both centered on the vertical ` +
       `axis, symmetric along the vertical centerline, neatly laid flat with smooth, ` +
-      `freshly-steamed fabric, no wrinkles, no creases, no bunched or twisted sections. Sleeves on ` +
-      `the top angle slightly downward and symmetric; the bottom's waistband is centered under the ` +
-      `top's hem with its hem fanning gently and symmetrically. ` +
+      `freshly-steamed fabric, no wrinkles, no creases, no bunched or twisted sections — WHILE ` +
+      `RETAINING each piece's true silhouette from the reference. Sleeves on the top angle ` +
+      `slightly downward and symmetric; the bottom's waistband is centered under the top's hem ` +
+      `with its hem fanning gently and symmetrically. Symmetry and flat-lay cleanliness must NOT ` +
+      `override the reference silhouette. ` +
       `The result must look like a brand-new, professionally styled catalog photograph taken in ` +
       `the same studio session as the primary photograph — same lighting, same camera, same ` +
-      `background — but with a freshly arranged, crisp, symmetric coordinated set. ` +
+      `background — but with a freshly arranged, crisp, symmetric coordinated set whose ` +
+      `SILHOUETTE matches the attached reference photograph. ` +
       `REMOVE ALL NECK LABELS, BRAND TAGS, SIZE TAGS, CARE LABELS, AND SEWN-IN WOVEN TAGS from ` +
       `both the top and the bottom — the inside of the neckline, collar band, waistband, and any ` +
       `other typical label location must be clean and empty with no tag, label, patch, or printed ` +
@@ -581,15 +615,16 @@ export async function analyzeTwoPieceSetToPrompt(imageUrl: string): Promise<stri
 const MODEL_PHOTO_ANALYSIS_PROMPT = `You are a fashion photography analyst. You see a single photograph of a human model in a studio. Output exactly four lines in this exact format, with no preamble, no markdown, and no extra lines:
 
 CURRENT_GARMENT: <short noun phrase describing the clothing the model is currently wearing that must be REPLACED. Include primary color and garment type. Examples: "cream drawstring trousers", "striped blue tank top", "red and white horizontally-striped pants". If the model is wearing both a top and bottom and only one will be swapped, describe the one the user most likely wants to change. If both could be swapped, describe both.>
-MODEL_IDENTITY: <short noun phrase capturing the model's appearance that must be preserved exactly: hair (color, length, style), skin tone, facial features, body proportions. Example: "long dark brown wavy hair, warm medium-olive skin, slim athletic build, neutral expression">
+MODEL_IDENTITY: <short noun phrase capturing the model's appearance that must be preserved exactly: hair (color, length, style), skin tone, facial features, body proportions, and FACE LIGHTING / EXPOSURE character when clearly visible. Example: "long dark brown wavy hair, warm medium-olive skin, slim athletic build, neutral expression, evenly lit face with soft bright frontal exposure">
 POSE: <short noun phrase describing the model's stance, arm position, leg position, and camera angle. Example: "standing three-quarter view facing camera, left hand on hip, right arm relaxed at side, weight on right leg">
-SCENE: <short noun phrase describing the background, lighting, and all non-swapped wardrobe items (shoes, accessories, other clothing). Example: "plain light-gray seamless studio backdrop, soft even frontal lighting, bare feet, no visible accessories">
+SCENE: <short noun phrase describing the background, lighting, exact background COLOR / BRIGHTNESS / TONAL VALUE, and all non-swapped wardrobe items (shoes, accessories, other clothing). Example: "plain light-gray seamless studio backdrop with bright even tone, soft even frontal lighting, bare feet, no visible accessories">
 
 RULES:
 - Describe only what you can see with certainty. Do NOT invent details.
 - Do NOT invent text, logos, brand names, or numbers.
 - Use only real, common English words.
 - Keep each line concise — one noun phrase, no sentences, no commentary.
+- When clearly visible, preserve literal photographic conditions rather than vague style words: include whether the face is bright, evenly exposed, softly shadowed, or low-contrast, and include whether the backdrop is bright white, light gray, warm cream, or another specific tone.
 - Output exactly the four lines above, nothing else.
 
 ANTI-HALLUCINATION RULES — violating any of these produces bad outputs:
@@ -612,6 +647,46 @@ export interface AnalyzedModelPhoto {
   pose: string;
   /** Background, lighting, and untouched wardrobe items to preserve. */
   scene: string;
+}
+
+export type GarmentFitAdjustment = "fitted" | "true-to-reference" | "oversized";
+export type GarmentLengthAdjustment = "shorter" | "true-to-reference" | "longer";
+
+export interface GarmentAdjustments {
+  fit?: GarmentFitAdjustment;
+  length?: GarmentLengthAdjustment;
+}
+
+function buildGarmentAdjustmentClause(adjustments?: GarmentAdjustments): string {
+  const fit = adjustments?.fit ?? "true-to-reference";
+  const length = adjustments?.length ?? "true-to-reference";
+  const clauses: string[] = [];
+
+  if (fit === "fitted") {
+    clauses.push(
+      "Render the garment slightly more fitted and reduced in overall volume on the body than the raw reference impression, while preserving all design details and keeping the result natural for the garment type."
+    );
+  } else if (fit === "oversized") {
+    clauses.push(
+      "Render the garment slightly more oversized and roomier on the body than the raw reference impression, while preserving all design details and keeping the result natural for the garment type."
+    );
+  }
+
+  if (length === "shorter") {
+    clauses.push(
+      "Render the garment slightly shorter on the body than the raw reference impression, with hems, sleeves, or leg length landing a bit higher while still looking natural and proportional."
+    );
+  } else if (length === "longer") {
+    clauses.push(
+      "Render the garment slightly longer on the body than the raw reference impression, with hems, sleeves, or leg length landing a bit lower while still looking natural and proportional."
+    );
+  }
+
+  if (clauses.length === 0) {
+    return " Match the garment's fit and length on-body as closely as possible to the uploaded reference impression, without drifting smaller, larger, shorter, or longer.";
+  }
+
+  return ` Fit adjustment: ${clauses.join(" ")}`;
 }
 
 /**
@@ -675,7 +750,8 @@ export async function analyzeModelPhoto(imageUrl: string): Promise<AnalyzedModel
 export function buildModelSwapPrompt(
   newGarment: string,
   newGarmentFeatures: string,
-  analyzedModel: AnalyzedModelPhoto
+  analyzedModel: AnalyzedModelPhoto,
+  adjustments?: GarmentAdjustments
 ): string {
   // Inner renderer — introspect the template text once, then render again
   // with sanitized analyzer output.
@@ -692,6 +768,7 @@ export function buildModelSwapPrompt(
     const featureClause = nf
       ? ` Keep all garment details from the reference photograph identical, including: ${nf}.`
       : "";
+    const adjustmentClause = buildGarmentAdjustmentClause(adjustments);
     return (
       // Opening — "extract X and apply onto Y" was the shared framing in the
       // two winning prompts from David's six-prompt Model Studio test (#2 and
@@ -707,6 +784,12 @@ export function buildModelSwapPrompt(
       `Preserve the model's exact face, facial features, expression, and physical attributes — ` +
       `${mi} — along with the exact pose (${ps}), camera perspective, lighting direction, ` +
       `shadows, and the rest of the scene (${sc}) unchanged.` +
+      ` The primary studio photograph is the exposure and lighting authority: match the exact ` +
+      `background color, background brightness, backdrop tonal value, facial exposure, facial ` +
+      `brightness, and face lighting pattern from the primary studio photograph exactly. Do not ` +
+      `darken, mute, gray down, warm up, cool down, or otherwise shift the backdrop or the model's ` +
+      `face relative to the primary studio photograph. Keep the face at the same exposure level and ` +
+      `keep the background at the same perceived brightness and color tone as the reference pose image.` +
       `${featureClause} ` +
       // Realistic-garment-behavior clause — both winners closed with a sentence
       // describing natural draping / structure / contour, and both explicitly
@@ -715,7 +798,8 @@ export function buildModelSwapPrompt(
       `that respond to the model's pose and the scene's lighting. Do not copy the static flat-lay ` +
       `shape of the garment from the reference — re-render it as a worn garment on this specific ` +
       `model in this specific pose, while preserving every visible design detail (color, pattern, ` +
-      `neckline, hem, sleeve length, hardware, trim) exactly. ` +
+      `neckline, hem, sleeve length, hardware, trim) exactly.` +
+      `${adjustmentClause} ` +
       // Neck-label removal (baked in as default per earlier request).
       `REMOVE ALL NECK LABELS, BRAND TAGS, SIZE TAGS, CARE LABELS, AND SEWN-IN WOVEN TAGS from the ` +
       `rendered garment — the inside of the neckline, collar band, and any other typical label ` +
@@ -727,7 +811,7 @@ export function buildModelSwapPrompt(
       `taken in this exact pose and scene, wearing the new ${ng}. Hyper-realistic 4K ` +
       `e-commerce fashion photography, editorial catalog quality. ` +
       `Negative prompt: no face alteration, no body reshaping, no recolor, no texture blending, ` +
-      `no distortion, no background change.`
+      `no distortion, no background change, no darker face, no dimmer background, no exposure shift.`
     );
   };
 
@@ -761,7 +845,8 @@ export function buildModelSwapPrompt(
  */
 export function buildModelSwapTwoPiecePrompt(
   fields: TwoPieceFields,
-  analyzedModel: AnalyzedModelPhoto
+  analyzedModel: AnalyzedModelPhoto,
+  adjustments?: GarmentAdjustments
 ): string {
   const render = (
     t: string,
@@ -779,6 +864,7 @@ export function buildModelSwapTwoPiecePrompt(
     const bottomClause = bf
       ? ` Keep all bottom details from the reference photograph identical, including: ${bf}.`
       : "";
+    const adjustmentClause = buildGarmentAdjustmentClause(adjustments);
     return (
       // Same "extract and apply" framing as the single-garment winning pattern,
       // adapted for a coordinated set (both pieces extracted together).
@@ -790,6 +876,12 @@ export function buildModelSwapTwoPiecePrompt(
       `Preserve the model's exact face, facial features, expression, and physical attributes — ` +
       `${mi} — along with the exact pose (${ps}), camera perspective, lighting direction, ` +
       `shadows, and the rest of the scene (${sc}) unchanged.` +
+      ` The primary studio photograph is the exposure and lighting authority: match the exact ` +
+      `background color, background brightness, backdrop tonal value, facial exposure, facial ` +
+      `brightness, and face lighting pattern from the primary studio photograph exactly. Do not ` +
+      `darken, mute, gray down, warm up, cool down, or otherwise shift the backdrop or the model's ` +
+      `face relative to the primary studio photograph. Keep the face at the same exposure level and ` +
+      `keep the background at the same perceived brightness and color tone as the reference pose image.` +
       `${topClause}${bottomClause} ` +
       // Coordination statement — two pieces must read as one designed set.
       `Render both pieces as a single unified coordinated outfit — they share the same color ` +
@@ -802,7 +894,8 @@ export function buildModelSwapTwoPiecePrompt(
       `waistband in whatever arrangement is natural for this pairing. Do not copy the static ` +
       `flat-lay shape of either piece from the reference — re-render them as worn garments on ` +
       `this specific model in this specific pose, while preserving every visible design detail ` +
-      `(color, pattern, neckline, hem, sleeve length, hardware, trim) exactly. ` +
+      `(color, pattern, neckline, hem, sleeve length, hardware, trim) exactly.` +
+      `${adjustmentClause} ` +
       // Neck-label removal (baked in as default).
       `REMOVE ALL NECK LABELS, BRAND TAGS, SIZE TAGS, CARE LABELS, AND SEWN-IN WOVEN TAGS from ` +
       `both the top and the bottom — the inside of the neckline, collar band, waistband, and any ` +
@@ -813,7 +906,7 @@ export function buildModelSwapTwoPiecePrompt(
       `taken in this exact pose and scene, wearing the new coordinated set. Hyper-realistic 4K ` +
       `e-commerce fashion photography, editorial catalog quality. ` +
       `Negative prompt: no face alteration, no body reshaping, no recolor, no texture blending, ` +
-      `no distortion, no background change.`
+      `no distortion, no background change, no darker face, no dimmer background, no exposure shift.`
     );
   };
 
@@ -927,8 +1020,29 @@ export interface GenerationResult {
 export async function uploadToFal(file: File | Blob, filename = "upload.png"): Promise<string> {
   ensureConfigured();
   const fileWithName = file instanceof File ? file : new File([file], filename);
-  const url = await fal.storage.upload(fileWithName);
-  return url;
+  try {
+    const url = await fal.storage.upload(fileWithName);
+    return url;
+  } catch (err: any) {
+    const detail =
+      err?.body?.detail ||
+      err?.body?.error ||
+      err?.message ||
+      "Upload failed";
+    const message = String(detail);
+
+    if (/exhausted balance|top up your balance|user is locked/i.test(message)) {
+      throw new Error(
+        "fal.ai upload failed because the account is locked for exhausted balance. Top up billing at fal.ai/dashboard/billing or replace FAL_KEY."
+      );
+    }
+
+    if (/forbidden/i.test(message)) {
+      throw new Error("fal.ai upload was forbidden. Check that FAL_KEY is valid and allowed to use storage uploads.");
+    }
+
+    throw new Error(`fal.ai upload failed: ${message}`);
+  }
 }
 
 /*
