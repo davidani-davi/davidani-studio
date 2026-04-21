@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { ASPECT_RATIOS, FORMATS, MODELS, RESOLUTIONS, type ModelId } from "@/lib/models";
 import type { OverlayPlacement } from "@/lib/fal";
 import type { UploadedImage } from "./types";
+import ImageLightbox, { ZoomButton } from "./ImageLightbox";
 
 interface Props {
   modelId: ModelId;
@@ -173,6 +174,8 @@ export default function Sidebar(p: Props) {
   const colorInputRef = useRef<HTMLInputElement>(null);
   const referenceInputRef = useRef<HTMLInputElement>(null);
   const [outputOpen, setOutputOpen] = useState(false);
+  // Shared preview state — null = closed, URL = showing that image fullscreen.
+  const [previewSrc, setPreviewSrc] = useState<string | null>(null);
 
   const selectedCount = p.selectedUrls.length;
   const uploadCount = p.uploads.length;
@@ -243,6 +246,11 @@ export default function Sidebar(p: Props) {
                 >
                   ×
                 </button>
+                <ZoomButton
+                  onClick={() => setPreviewSrc(u.url)}
+                  title="Preview at full size"
+                  className="absolute bottom-1 right-1 opacity-0 group-hover:opacity-100"
+                />
               </div>
             );
           })}
@@ -265,7 +273,12 @@ export default function Sidebar(p: Props) {
         />
 
         <div className="flex gap-3">
-          <div className="relative aspect-square w-20 shrink-0 overflow-hidden rounded-lg border border-neutral-200 bg-neutral-50">
+          <button
+            type="button"
+            onClick={() => setPreviewSrc(referencePreviewSrc)}
+            title="Preview at full size"
+            className="group relative aspect-square w-20 shrink-0 overflow-hidden rounded-lg border border-neutral-200 bg-neutral-50 transition hover:border-neutral-400"
+          >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={referencePreviewSrc}
@@ -277,7 +290,12 @@ export default function Sidebar(p: Props) {
                 Custom
               </span>
             )}
-          </div>
+            <span className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition group-hover:bg-black/30 group-hover:opacity-100">
+              <svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5 text-white">
+                <path d="M9 3a6 6 0 014.472 10.03l3.249 3.248a1 1 0 01-1.414 1.415l-3.249-3.249A6 6 0 119 3zm0 2a4 4 0 100 8 4 4 0 000-8zm-.5 1.75a.75.75 0 01.75.75V8.5h1a.75.75 0 010 1.5h-1v1a.75.75 0 01-1.5 0v-1h-1a.75.75 0 010-1.5h1V7.5a.75.75 0 01.75-.75z" />
+              </svg>
+            </span>
+          </button>
 
           <div className="flex min-w-0 flex-1 flex-col justify-between">
             <p className="text-[11px] leading-snug text-neutral-500">
@@ -604,6 +622,8 @@ export default function Sidebar(p: Props) {
           Sign out
         </button>
       </div>
+
+      <ImageLightbox src={previewSrc} onClose={() => setPreviewSrc(null)} />
     </aside>
   );
 }

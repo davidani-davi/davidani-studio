@@ -1,5 +1,16 @@
 "use client";
 
+export interface BatchProgress {
+  /** Total images in the batch (i.e. how many were selected at kick-off). */
+  total: number;
+  /** How many we've finished — includes both successes and failures. */
+  done: number;
+  /** How many failed. */
+  failed: number;
+  /** Current stage for the in-flight image, so the chip can show "analyzing" vs "generating". */
+  stage: "analyzing" | "generating" | "idle";
+}
+
 interface Props {
   prompt: string;
   onPromptChange: (v: string) => void;
@@ -11,6 +22,28 @@ interface Props {
   loading: boolean;
   canAnalyze: boolean;
   disabled: boolean;
+  /** Optional batch wiring — only Image Studio passes these. */
+  onBatchGenerate?: () => void;
+  canBatch?: boolean;
+  batchProgress?: BatchProgress | null;
+  /**
+   * True when the current product-photo selection has NOT been analyzed yet
+   * since its most recent upload. Gates the single-shot Generate button so
+   * the user is forced to run Analyze on fresh uploads before generating —
+   * which is what keeps quality consistent with what they expect. Batch mode
+   * does its own per-image analysis so this flag doesn't gate it.
+   */
+  needsAnalyze?: boolean;
+
+  /**
+   * When true, Analyze runs the coordinated-set analyzer which outputs four
+   * fields (TOP / TOP_FEATURES / BOTTOM / BOTTOM_FEATURES) and assembles the
+   * two-piece swap prompt instead of the single-garment one. Ship this as a
+   * user-selectable toggle — the reference photo itself is ambiguous enough
+   * that auto-detection isn't reliable.
+   */
+  twoPiece: boolean;
+  onTwoPieceChange: (v: boolean) => void;
 }
 
 /* ---------- Icons (inline SVG) ---------- */
@@ -55,7 +88,10 @@ export default function PromptPanel(p: Props) {
   const chars = p.prompt.length;
   const words = p.prompt.trim() ? p.prompt.trim().split(/\s+/).length : 0;
 
+  const batchActive = !!p.batchProgress;
+
   // Tri-state for the little status chip at the top-right of the header.
+  // When a batch is running we override the chip with batch progress.
   const status: "idle" | "analyzing" | "ready" | "generating" = p.analyzing
     ? "analyzing"
     : p.loading
@@ -64,28 +100,36 @@ export default function PromptPanel(p: Props) {
     ? "ready"
     : "idle";
 
-  const statusChip = {
-    idle: {
-      text: "Waiting for photo",
-      dot: "bg-neutral-300",
-      className: "bg-neutral-100 text-neutral-500",
-    },
-    analyzing: {
-      text: "Analyzing",
-      dot: "bg-amber-400 animate-pulse",
-      className: "bg-amber-50 text-amber-700",
-    },
-    ready: {
-      text: "Prompt ready",
-      dot: "bg-emerald-500",
-      className: "bg-emerald-50 text-emerald-700",
-    },
-    generating: {
-      text: "Generating",
-      dot: "bg-brand-500 animate-pulse",
-      className: "bg-brand-50 text-brand-700",
-    },
-  }[status];
+  const statusChip = batchActive
+    ? {
+        text: `Batch ${p.batchProgress!.done} / ${p.batchProgress!.total}${
+          p.batchProgress!.failed > 0 ? ` · ${p.batchProgress!.failed} failed` : ""
+        }`,
+        dot: "bg-brand-500 animate-pulse",
+        className: "bg-brand-50 text-brand-700",
+      }
+    : {
+        idle: {
+          text: "Waiting for photo",
+          dot: "bg-neutral-300",
+          className: "bg-neutral-100 text-neutral-500",
+        },
+        analyzing: {
+          text: "Analyzing",
+          dot: "bg-amber-400 animate-pulse",
+          className: "bg-amber-50 text-amber-700",
+        },
+        ready: {
+          text: "Prompt ready",
+          dot: "bg-emerald-500",
+          className: "bg-emerald-50 text-emerald-700",
+        },
+        generating: {
+          text: "Generating",
+          dot: "bg-brand-500 animate-pulse",
+          className: "bg-brand-50 text-brand-700",
+        },
+      }[status];
 
   return (
     <section className="flex min-w-0 flex-1 flex-col border-r border-neutral-200 bg-white">
@@ -149,6 +193,30 @@ export default function PromptPanel(p: Props) {
             </svg>
           )}
         </button>
+
+        {/* Two-piece-set toggle: when the reference photo shows a coordinated
+            top + bottom outfit, check this so Analyze runs the coordinated-set
+            analyzer instead of the single-garment one. */}
+        <label
+          className={`mt-2 flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-[11px] transition ${
+            p.twoPiece
+              ? "bg-brand-50 text-brand-700"
+              : "text-neutral-600 hover:bg-neutral-50"
+          }`}
+          title="Check this when the reference photo shows a matching top + bottom coordinated outfit."
+        >
+          <input
+            type="checkbox"
+            checked={p.twoPiece}
+            onChange={(e) => p.onTwoPieceChange(e.target.checked)}
+            disabled={p.analyzing || p.loading}
+            className="h-3.5 w-3.5 shrink-0 rounded border-neutral-300 text-brand-600 focus:ring-brand-400 disabled:opacity-50"
+          />
+          <span className="font-medium">Reference is a 2-piece set</span>
+          <span className="text-[10px] text-neutral-500">
+            (matching top + bottom)
+          </span>
+        </label>
       </div>
 
       {/* ========== PROMPT TEXTAREA ========== */}
@@ -167,7 +235,7 @@ export default function PromptPanel(p: Props) {
       </div>
 
       {/* ========== ACTION BAR ========== */}
-      <div className="flex items-center justify-between gap-4 border-t border-neutral-200 bg-neutral-50 px-6 py-4">
+      <div className="flex items-center justify-between gap-3 border-t border-neutral-200 bg-neutral-50 px-6 py-4">
         <label className="flex items-center gap-2 text-xs text-neutral-600">
           <span className="font-medium">Variants</span>
           <div className="flex overflow-hidden rounded-lg border border-neutral-200 bg-white">
@@ -177,7 +245,8 @@ export default function PromptPanel(p: Props) {
                 <button
                   key={n}
                   onClick={() => p.onNumImagesChange(n)}
-                  className={`border-r border-neutral-200 px-2.5 py-1 text-xs font-medium last:border-r-0 transition ${
+                  disabled={batchActive}
+                  className={`border-r border-neutral-200 px-2.5 py-1 text-xs font-medium last:border-r-0 transition disabled:opacity-40 ${
                     active
                       ? "bg-neutral-900 text-white"
                       : "text-neutral-600 hover:bg-neutral-50"
@@ -190,36 +259,131 @@ export default function PromptPanel(p: Props) {
           </div>
         </label>
 
-        <button
-          onClick={p.onGenerate}
-          disabled={p.disabled || p.loading || p.analyzing}
-          className={`group relative inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold shadow-sm transition disabled:cursor-not-allowed ${
-            p.disabled || p.loading || p.analyzing
-              ? "bg-neutral-300 text-neutral-500"
-              : "bg-gradient-to-b from-neutral-800 to-neutral-950 text-white hover:from-neutral-700 hover:to-neutral-900 hover:shadow-md active:scale-[0.98]"
-          }`}
-        >
-          {p.loading ? (
-            <>
-              <Spinner />
-              <span>Generating…</span>
-            </>
-          ) : p.analyzing ? (
-            <>
-              <Spinner />
-              <span>Analyzing…</span>
-            </>
-          ) : (
-            <>
-              {IconWand}
-              <span>Generate</span>
-              <span className="ml-1 rounded bg-white/10 px-1.5 py-0.5 text-[10px] font-mono text-white/70">
-                ⌘↵
-              </span>
-            </>
+        <div className="flex items-center gap-2">
+          {/* Inline hint when Generate is gated on a missing analyze step.
+              Helps the user understand why the button just went grey. */}
+          {p.needsAnalyze && !batchActive && !p.loading && !p.analyzing && (
+            <span className="hidden text-[11px] text-amber-700 sm:inline">
+              Click Analyze first
+            </span>
           )}
-        </button>
+
+          {/* Batch — only rendered if the parent wired it up */}
+          {p.onBatchGenerate && (
+            <button
+              onClick={p.onBatchGenerate}
+              disabled={
+                !p.canBatch || p.loading || p.analyzing || batchActive
+              }
+              title={
+                p.canBatch
+                  ? "Analyze + generate one output per selected image"
+                  : "Select 2 or more images to enable"
+              }
+              className={`group relative inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed ${
+                !p.canBatch || p.loading || p.analyzing || batchActive
+                  ? "border-neutral-200 bg-neutral-100 text-neutral-400"
+                  : "border-brand-300 bg-white text-brand-700 hover:bg-brand-50 hover:shadow-sm active:scale-[0.98]"
+              }`}
+            >
+              {batchActive ? (
+                <>
+                  <Spinner />
+                  <span>
+                    Batch {p.batchProgress!.done}/{p.batchProgress!.total}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <svg
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                    className="h-4 w-4"
+                  >
+                    <path d="M3 3h4v4H3V3zm5 0h4v4H8V3zm5 0h4v4h-4V3zM3 8h4v4H3V8zm5 0h4v4H8V8zm5 0h4v4h-4V8zM3 13h4v4H3v-4zm5 0h4v4H8v-4zm5 0h4v4h-4v-4z" />
+                  </svg>
+                  <span>Batch</span>
+                </>
+              )}
+            </button>
+          )}
+
+          <button
+            onClick={p.onGenerate}
+            disabled={
+              p.disabled ||
+              p.loading ||
+              p.analyzing ||
+              batchActive ||
+              !!p.needsAnalyze
+            }
+            title={
+              p.needsAnalyze
+                ? "Click Analyze first — Analyze reads the selected product photo and drafts the studio prompt."
+                : undefined
+            }
+            className={`group relative inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold shadow-sm transition disabled:cursor-not-allowed ${
+              p.disabled ||
+              p.loading ||
+              p.analyzing ||
+              batchActive ||
+              p.needsAnalyze
+                ? "bg-neutral-300 text-neutral-500"
+                : "bg-gradient-to-b from-neutral-800 to-neutral-950 text-white hover:from-neutral-700 hover:to-neutral-900 hover:shadow-md active:scale-[0.98]"
+            }`}
+          >
+            {p.loading ? (
+              <>
+                <Spinner />
+                <span>Generating…</span>
+              </>
+            ) : p.analyzing ? (
+              <>
+                <Spinner />
+                <span>Analyzing…</span>
+              </>
+            ) : (
+              <>
+                {IconWand}
+                <span>Generate</span>
+                <span className="ml-1 rounded bg-white/10 px-1.5 py-0.5 text-[10px] font-mono text-white/70">
+                  ⌘↵
+                </span>
+              </>
+            )}
+          </button>
+        </div>
       </div>
+
+      {/* ========== BATCH PROGRESS BAR ========== */}
+      {batchActive && (
+        <div className="border-t border-brand-200 bg-brand-50 px-6 py-2.5">
+          <div className="flex items-center justify-between text-[11px] text-brand-800">
+            <span className="font-medium">
+              {p.batchProgress!.stage === "analyzing"
+                ? "Analyzing"
+                : p.batchProgress!.stage === "generating"
+                ? "Generating"
+                : "Running"}{" "}
+              image {Math.min(p.batchProgress!.done + 1, p.batchProgress!.total)} of{" "}
+              {p.batchProgress!.total}
+            </span>
+            {p.batchProgress!.failed > 0 && (
+              <span className="font-medium text-red-700">
+                {p.batchProgress!.failed} failed
+              </span>
+            )}
+          </div>
+          <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-brand-100">
+            <div
+              className="h-full bg-brand-600 transition-all"
+              style={{
+                width: `${(p.batchProgress!.done / p.batchProgress!.total) * 100}%`,
+              }}
+            />
+          </div>
+        </div>
+      )}
     </section>
   );
 }

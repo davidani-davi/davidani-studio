@@ -2,11 +2,13 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Sidebar from "@/components/Sidebar";
-import PromptPanel from "@/components/PromptPanel";
+import PromptPanel, { type BatchProgress } from "@/components/PromptPanel";
 import OutputPanel from "@/components/OutputPanel";
+import TopTabs from "@/components/TopTabs";
 import type { HistoryItem, UploadedImage } from "@/components/types";
 import type { ModelId } from "@/lib/models";
 import type { OverlayMode, OverlayPlacement } from "@/lib/fal";
+import { resizeIfNeeded } from "@/lib/image-resize";
 
 function deriveOverlayMode(showName: boolean, showNumber: boolean): OverlayMode {
   if (showName && showNumber) return "both";
@@ -78,9 +80,34 @@ export default function StudioPage() {
   const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // "Dirty" flag: true when the user has uploaded new product photos that
+  // have NOT yet been analyzed. While true, the single-shot Generate button
+  // is disabled so the user is nudged to run Analyze first — this is what
+  // produces consistent quality. Batch mode analyzes each image on its own,
+  // so the flag does NOT gate the Batch button.
+  //
+  // Flow:
+  //   - addFiles() success       → setNeedsAnalyze(true)
+  //   - analyzeProduct() success → setNeedsAnalyze(false)
+  //
+  // Selection toggles don't touch this — if the user already analyzed a
+  // photo and then toggles which ones are selected, we don't force another
+  // analyze. Only brand-new uploads re-arm the gate.
+  const [needsAnalyze, setNeedsAnalyze] = useState<boolean>(false);
+
+  // Reference-is-a-two-piece-set toggle. User must set this themselves (the
+  // reference photo alone isn't reliably auto-classifiable), and when true we
+  // route Analyze through the four-field coordinated-set analyzer in lib/fal.
+  const [twoPiece, setTwoPiece] = useState<boolean>(false);
+
   // History (client-only, localStorage)
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [currentId, setCurrentId] = useState<string | null>(null);
+
+  // Batch state — non-null while a batch is in flight so the UI can show a
+  // progress bar and disable the single-image actions. Goes back to null
+  // once all images have been processed.
+  const [batchProgress, setBatchProgress] = useState<BatchProgress | null>(null);
 
   // Load history on mount
   useEffect(() => {
@@ -110,6 +137,16 @@ export default function StudioPage() {
     [history, currentId]
   );
 
+  // URL → original upload filename, so OutputPanel can name downloads
+  // after the source product photo (e.g. "blue-pants.jpg" → "blue-pants.png")
+  // instead of "davidani-<timestamp>.png". Rebuilt cheaply whenever the
+  // uploads list changes.
+  const uploadNames = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const u of uploads) map[u.url] = u.name;
+    return map;
+  }, [uploads]);
+
   function toggleSelect(url: string) {
     setSelected((s) => (s.includes(url) ? s.filter((u) => u !== url) : [...s, url]));
   }
@@ -123,8 +160,11 @@ export default function StudioPage() {
     setReferenceUploading(true);
     setError(null);
     try {
+      // Shrink oversized phone photos client-side — Vercel's serverless
+      // functions reject bodies larger than 4.5 MB.
+      const resized = await resizeIfNeeded(file);
       const form = new FormData();
-      form.append("files", file);
+      form.append("files", resized);
       const data = await fetchJson("Upload reference", "/api/upload", {
         method: "POST",
         body: form,
@@ -147,14 +187,26 @@ export default function StudioPage() {
     setUploading(true);
     setError(null);
     try {
+      // Shrink oversized photos before sending to our upload endpoint.
+      // See lib/image-resize.ts for rationale (Vercel body-size limit).
+      const resized = await Promise.all(
+        Array.from(files).map((f) => resizeIfNeeded(f))
+      );
       const form = new FormData();
-      Array.from(files).forEach((f) => form.append("files", f));
+      resized.forEach((f) => form.append("files", f));
 
       const data = await fetchJson("Upload", "/api/upload", { method: "POST", body: form });
       const added: UploadedImage[] = data.uploads;
-      setUploads((list) => [...list, ...added]);
-      // auto-select newly uploaded
-      setSelected((s) => [...s, ...added.map((a) => a.url)]);
+      if (added.length > 0) {
+        setUploads((list) => [...list, ...added]);
+        // auto-select newly uploaded
+        setSelected((s) => [...s, ...added.map((a) => a.url)]);
+        // Re-arm the analyze gate — the freshly uploaded photos have NOT
+        // been analyzed yet, so single-shot Generate should be disabled
+        // until the user clicks Analyze (or runs Batch, which analyzes
+        // each image itself).
+        setNeedsAnalyze(true);
+      }
     } catch (err: any) {
       setError(err.message || "Upload failed");
     } finally {
@@ -171,9 +223,12 @@ export default function StudioPage() {
       const data = await fetchJson("Analyze", "/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageUrl: selected[0], backgroundColor }),
+        body: JSON.stringify({ imageUrl: selected[0], backgroundColor, twoPiece }),
       });
       setPrompt(data.prompt);
+      // The selected product has now been analyzed — clear the dirty flag
+      // so single-shot Generate becomes enabled.
+      setNeedsAnalyze(false);
       return data.prompt as string;
     } catch (err: any) {
       setError(err.message || "Analysis failed");
@@ -245,6 +300,158 @@ export default function StudioPage() {
     }
   }
 
+  /**
+   * Batch mode — run the full analyze → generate pipeline once per selected
+   * image, sequentially. Each successful generation becomes its own history
+   * item so the user can tell which input produced which output. Failures
+   * don't halt the batch; they're collected and summarised at the end.
+   *
+   * Sequential (not parallel) for three reasons:
+   *   1. fal.ai rate-limits can trip when many edit jobs fire at once
+   *   2. Vercel serverless instances could exhaust memory on 6 concurrent
+   *      Nano Banana subscribes
+   *   3. The progress UI reads much more naturally one-at-a-time than
+   *      "everything's pending → everything's done"
+   */
+  async function runBatchGeneration() {
+    if (selected.length < 2) return;
+
+    const queue = [...selected];
+    const failures: { url: string; error: string }[] = [];
+    setError(null);
+
+    setBatchProgress({
+      total: queue.length,
+      done: 0,
+      failed: 0,
+      stage: "analyzing",
+    });
+
+    // Create a SINGLE history item upfront. As each generation finishes we
+    // append its output URL (and source/prompt) to this one item, so the
+    // OutputPanel's multi-variant thumbnail strip naturally shows all results
+    // together. Without this grouping, each iteration would create its own
+    // history entry and only the last one would appear in the main preview.
+    const batchId = (crypto.randomUUID?.() || String(Date.now())).replace(/-/g, "");
+    const batchItem: HistoryItem = {
+      id: batchId,
+      timestamp: Date.now(),
+      modelId,
+      prompt: "", // will be set to the first successful prompt below
+      imageUrls: [],
+      referenceUrls: [],
+      aspect,
+      resolution,
+      prompts: [],
+      batch: true,
+    };
+    setHistory((h) => [batchItem, ...h]);
+    setCurrentId(batchId);
+
+    for (let i = 0; i < queue.length; i++) {
+      const sourceUrl = queue[i];
+
+      // --- Analyze this specific image ---
+      setBatchProgress((p) => (p ? { ...p, stage: "analyzing" } : p));
+      let imagePrompt: string;
+      try {
+        const analyzeData = await fetchJson("Analyze", "/api/analyze", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ imageUrl: sourceUrl, backgroundColor, twoPiece }),
+        });
+        imagePrompt = (analyzeData.prompt as string).trim();
+        if (!imagePrompt) throw new Error("Analyzer returned empty prompt");
+      } catch (err: any) {
+        failures.push({ url: sourceUrl, error: err?.message || "Analyze failed" });
+        setBatchProgress((p) =>
+          p ? { ...p, done: p.done + 1, failed: p.failed + 1, stage: "idle" } : p
+        );
+        continue;
+      }
+
+      // --- Generate from that prompt, using only this one image ---
+      setBatchProgress((p) => (p ? { ...p, stage: "generating" } : p));
+      try {
+        const data = await fetchJson("Generate", "/api/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            modelId,
+            prompt: imagePrompt,
+            // Batch mode: each input is its own generation — use only this URL.
+            imageUrls: [sourceUrl],
+            referenceImageUrl,
+            aspectRatio: aspect,
+            resolution,
+            format,
+            // Always 1 variant per input in batch mode (see design decisions).
+            numImages: 1,
+            overlay: {
+              mode: deriveOverlayMode(showName, showNumber),
+              placement: overlayPlacement,
+              colorName,
+              styleNumber,
+              fontFamily,
+              fontSize,
+            },
+          }),
+        });
+
+        const outputUrls: string[] = data.images.map((x: any) => x.url);
+        // Append the new output(s) to the shared batch run. Using the
+        // functional setHistory form ensures we don't clobber earlier
+        // appends from this same loop.
+        setHistory((h) =>
+          h.map((item) =>
+            item.id === batchId
+              ? {
+                  ...item,
+                  prompt: item.prompt || imagePrompt,
+                  imageUrls: [...item.imageUrls, ...outputUrls],
+                  referenceUrls: [...item.referenceUrls, sourceUrl],
+                  prompts: [...(item.prompts ?? []), imagePrompt],
+                }
+              : item
+          )
+        );
+      } catch (err: any) {
+        failures.push({ url: sourceUrl, error: err?.message || "Generate failed" });
+        setBatchProgress((p) =>
+          p ? { ...p, failed: p.failed + 1 } : p
+        );
+      } finally {
+        setBatchProgress((p) =>
+          p ? { ...p, done: p.done + 1, stage: "idle" } : p
+        );
+      }
+    }
+
+    // If every single image failed, the shared batch run will be empty — drop
+    // it so we don't leave a zero-image placeholder in history.
+    setHistory((h) => {
+      const run = h.find((item) => item.id === batchId);
+      if (run && run.imageUrls.length === 0) {
+        return h.filter((item) => item.id !== batchId);
+      }
+      return h;
+    });
+
+    // Clear the progress strip but surface a summary toast if anything failed.
+    setBatchProgress(null);
+    if (failures.length > 0) {
+      const list = failures
+        .slice(0, 3)
+        .map((f, idx) => `• image ${idx + 1}: ${f.error}`)
+        .join("\n");
+      const more =
+        failures.length > 3 ? `\n• …and ${failures.length - 3} more` : "";
+      setError(
+        `Batch finished — ${queue.length - failures.length} of ${queue.length} succeeded. ${failures.length} failed:\n${list}${more}`
+      );
+    }
+  }
+
   return (
     <main className="flex h-screen flex-col bg-neutral-50">
       {/* Top bar */}
@@ -254,9 +461,7 @@ export default function StudioPage() {
             D
           </div>
           <span className="text-sm font-semibold">Davi &amp; Dani Photo Studio</span>
-          <nav className="ml-6 flex items-center gap-4 text-sm text-neutral-500">
-            <span className="rounded-md bg-neutral-100 px-2 py-1 text-neutral-900">Image Studio</span>
-          </nav>
+          <TopTabs active="image" />
         </div>
         <div className="flex items-center gap-3 text-xs text-neutral-500">
           <span>Runs: {history.length}</span>
@@ -315,25 +520,65 @@ export default function StudioPage() {
           loading={loading || uploading}
           canAnalyze={selected.length > 0}
           disabled={selected.length === 0}
+          onBatchGenerate={runBatchGeneration}
+          canBatch={selected.length >= 2}
+          batchProgress={batchProgress}
+          needsAnalyze={needsAnalyze}
+          twoPiece={twoPiece}
+          onTwoPieceChange={(v) => {
+            setTwoPiece(v);
+            // The prompt currently in the textarea was built for the other
+            // mode, so re-arm the analyze gate — the user needs to re-run
+            // Analyze before Generate trusts the prompt.
+            setNeedsAnalyze(true);
+          }}
         />
 
         <OutputPanel
           current={currentRun}
           history={history}
           onSelectHistory={setCurrentId}
+          uploadNames={uploadNames}
           onClearHistory={() => {
             setHistory([]);
             setCurrentId(null);
           }}
+          // "Regenerate this" from a batch thumbnail: drop the prompt into
+          // the PromptPanel, put the batch-slot's source image back into the
+          // selection, and scroll the user back to the prompt so they can
+          // edit before re-running. We deliberately DON'T auto-generate —
+          // the whole point is letting the user tweak a weak prompt.
+          onRegenerate={({ prompt: p, sourceUrl }) => {
+            if (p) setPrompt(p);
+            if (sourceUrl) {
+              // Make sure the source is uploaded + selected so Generate has
+              // something to work with. If the URL isn't in `uploads` yet
+              // (e.g. the user cleared them), we add a synthetic entry so
+              // the thumbnail lights up in the sidebar.
+              setUploads((list) =>
+                list.some((u) => u.url === sourceUrl)
+                  ? list
+                  : [...list, { url: sourceUrl, name: "batch-source" }]
+              );
+              setSelected([sourceUrl]);
+            }
+            // Clear the analyze-gate — the prompt in hand has already been
+            // generated by Analyze, so forcing another Analyze would just
+            // overwrite the one the user is trying to tweak + rerun.
+            setNeedsAnalyze(false);
+          }}
         />
       </div>
 
-      {/* Error toast */}
+      {/* Error / batch-summary toast — whitespace-pre-line so multi-line
+          batch summaries render correctly. */}
       {error && (
-        <div className="fixed bottom-6 right-6 max-w-sm rounded-lg bg-red-600 px-4 py-3 text-sm text-white shadow-lg">
+        <div className="fixed bottom-6 right-6 max-w-md rounded-lg bg-red-600 px-4 py-3 text-sm text-white shadow-lg">
           <div className="flex items-start gap-2">
-            <span className="font-semibold">Error:</span>
-            <span className="flex-1">{error}</span>
+            <span className="font-semibold">
+              {error.startsWith("Batch finished") ? "Summary:" : "Error:"}
+            </span>
+            <span className="flex-1 whitespace-pre-line">{error}</span>
             <button onClick={() => setError(null)} className="opacity-70 hover:opacity-100">
               ×
             </button>
