@@ -178,13 +178,11 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
     const m = humanModels.find((hm) => hm.id === id);
     // Reset pose to the first pose of the newly-selected model.
     setSelectedPoseId(m?.poses[0]?.id ?? null);
-    setSelectedView("front");
     // Invalidate any stale prompt — it was written for the previous model/pose.
     setPrompt("");
   }
   function handlePoseChange(id: string) {
     setSelectedPoseId(id);
-    setSelectedView("front");
     // Same rationale — prompts are pose-specific (they cite the exact pose).
     setPrompt("");
   }
@@ -294,7 +292,7 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
           </div>
           <span className="text-sm font-semibold">Davi &amp; Dani Photo Studio</span>
           <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-neutral-600">
-            V1.0
+            V1.1
           </span>
           <TopTabs active="model" />
         </div>
