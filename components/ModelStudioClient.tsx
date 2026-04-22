@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import ModelSidebar from "@/components/ModelSidebar";
-import PromptPanel from "@/components/PromptPanel";
+import PromptPanel, { type BatchProgress } from "@/components/PromptPanel";
 import OutputPanel from "@/components/OutputPanel";
 import TopTabs from "@/components/TopTabs";
 import type { HistoryItem, UploadedImage } from "@/components/types";
@@ -26,6 +26,23 @@ function deriveOverlayMode(showName: boolean, showNumber: boolean): OverlayMode 
 // Separate history key so Model Studio runs don't commingle with Image Studio
 // runs in localStorage. Each workspace has its own run list.
 const HISTORY_KEY = "davidani_model_history_v1";
+
+const POSE_VARIATION_NOTES = [
+  "Keep the selected preset as the clear pose anchor, but introduce a subtle variation: a tiny head-angle shift and a slightly softer shoulder line.",
+  "Keep the same overall stance and framing, but vary the pose slightly with a small torso turn and a gentler hand position.",
+  "Preserve the selected preset's pose family, but add a subtle asymmetry: a slight weight shift and a slightly different arm relaxation.",
+  "Keep the chosen preset recognizable, but introduce a minor pose variation through a softer elbow bend and a small chin-angle change.",
+  "Match the same overall preset pose, but vary it subtly with a light shoulder rotation and a slightly different hip balance.",
+  "Keep the preset's view, framing, and identity intact, but make the final pose feel like a neighboring shot from the same set with a small stance adjustment.",
+] as const;
+
+function buildPoseVariationSuffix(index: number, total: number): string {
+  const note = POSE_VARIATION_NOTES[index % POSE_VARIATION_NOTES.length];
+  return (
+    ` Pose variation directive for batch image ${index + 1} of ${total}: ${note} ` +
+    `Do not change the selected view, do not change the model identity, and do not drift into a dramatically different pose.`
+  );
+}
 
 async function fetchJson(label: string, input: string, init?: RequestInit): Promise<any> {
   const res = await fetch(input, init);
@@ -107,6 +124,7 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
   /* ---------- History ---------- */
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [currentId, setCurrentId] = useState<string | null>(null);
+  const [batchProgress, setBatchProgress] = useState<BatchProgress | null>(null);
 
   /* ---------- Persist / load history ---------- */
   useEffect(() => {
@@ -279,6 +297,141 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
     }
   }
 
+  async function runBatchGeneration() {
+    if (selected.length < 2 || !selectedHumanModelId || !selectedPoseId) return;
+
+    const queue = [...selected];
+    const failures: { url: string; error: string }[] = [];
+    setError(null);
+
+    setBatchProgress({
+      total: queue.length,
+      done: 0,
+      failed: 0,
+      stage: "analyzing",
+    });
+
+    const batchId = (crypto.randomUUID?.() || String(Date.now())).replace(/-/g, "");
+    const batchItem: HistoryItem = {
+      id: batchId,
+      timestamp: Date.now(),
+      modelId,
+      prompt: "",
+      imageUrls: [],
+      referenceUrls: [],
+      aspect,
+      resolution,
+      prompts: [],
+      batch: true,
+    };
+    setHistory((h) => [batchItem, ...h]);
+    setCurrentId(batchId);
+
+    for (let i = 0; i < queue.length; i++) {
+      const sourceUrl = queue[i];
+
+      setBatchProgress((p) => (p ? { ...p, stage: "analyzing" } : p));
+      let imagePrompt: string;
+      try {
+        const analyzeData = await fetchJson("Analyze for model", "/api/analyze-model", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            modelId: selectedHumanModelId,
+            poseId: selectedPoseId,
+            view: selectedView,
+            garmentImageUrl: sourceUrl,
+            twoPiece,
+            adjustments: {
+              fit: fitAdjustment,
+              length: lengthAdjustment,
+            },
+          }),
+        });
+        const basePrompt = (analyzeData.prompt as string).trim();
+        if (!basePrompt) throw new Error("Analyzer returned empty prompt");
+        imagePrompt = `${basePrompt}${buildPoseVariationSuffix(i, queue.length)}`;
+      } catch (err: any) {
+        failures.push({ url: sourceUrl, error: err?.message || "Analyze failed" });
+        setBatchProgress((p) =>
+          p ? { ...p, done: p.done + 1, failed: p.failed + 1, stage: "idle" } : p
+        );
+        continue;
+      }
+
+      setBatchProgress((p) => (p ? { ...p, stage: "generating" } : p));
+      try {
+        const data = await fetchJson("Generate", "/api/generate-model", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            modelId,
+            humanModelId: selectedHumanModelId,
+            poseId: selectedPoseId,
+            view: selectedView,
+            prompt: imagePrompt,
+            garmentImageUrls: [sourceUrl],
+            aspectRatio: aspect,
+            resolution,
+            format,
+            numImages: 1,
+            overlay: {
+              mode: deriveOverlayMode(showName, showNumber),
+              placement: overlayPlacement,
+              colorName,
+              styleNumber,
+              fontFamily,
+              fontSize,
+            },
+          }),
+        });
+
+        const outputUrls: string[] = data.images.map((x: any) => x.url);
+        setHistory((h) =>
+          h.map((item) =>
+            item.id === batchId
+              ? {
+                  ...item,
+                  prompt: item.prompt || imagePrompt,
+                  imageUrls: [...item.imageUrls, ...outputUrls],
+                  referenceUrls: [...item.referenceUrls, sourceUrl],
+                  prompts: [...(item.prompts ?? []), imagePrompt],
+                }
+              : item
+          )
+        );
+      } catch (err: any) {
+        failures.push({ url: sourceUrl, error: err?.message || "Generate failed" });
+        setBatchProgress((p) => (p ? { ...p, failed: p.failed + 1 } : p));
+      } finally {
+        setBatchProgress((p) =>
+          p ? { ...p, done: p.done + 1, stage: "idle" } : p
+        );
+      }
+    }
+
+    setHistory((h) => {
+      const run = h.find((item) => item.id === batchId);
+      if (run && run.imageUrls.length === 0) {
+        return h.filter((item) => item.id !== batchId);
+      }
+      return h;
+    });
+
+    setBatchProgress(null);
+    if (failures.length > 0) {
+      const list = failures
+        .slice(0, 3)
+        .map((f, idx) => `• image ${idx + 1}: ${f.error}`)
+        .join("\n");
+      const more =
+        failures.length > 3 ? `\n• …and ${failures.length - 3} more` : "";
+      setError(
+        `Batch finished — ${queue.length - failures.length} of ${queue.length} succeeded. ${failures.length} failed:\n${list}${more}`
+      );
+    }
+  }
+
   const canAnalyze =
     selected.length > 0 && !!selectedHumanModelId && !!selectedPoseId;
 
@@ -299,7 +452,7 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
         <div className="flex items-center gap-3 text-xs text-neutral-500 lg:justify-end">
           <span>Runs: {history.length}</span>
           <span>·</span>
-          <span>Active: {loading ? 1 : 0}</span>
+          <span>Active: {loading || batchProgress ? 1 : 0}</span>
         </div>
       </header>
 
@@ -352,6 +505,9 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
           analyzing={analyzing}
           loading={loading || uploading}
           disabled={!canAnalyze}
+          onBatchGenerate={runBatchGeneration}
+          canBatch={canAnalyze && selected.length >= 2}
+          batchProgress={batchProgress}
           twoPiece={twoPiece}
           onTwoPieceChange={setTwoPiece}
           fitAdjustment={fitAdjustment}
@@ -374,7 +530,7 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
 
       {/* Error toast */}
       {error && (
-        <div className="fixed bottom-6 right-6 max-w-sm rounded-lg bg-red-600 px-4 py-3 text-sm text-white shadow-lg">
+        <div className="fixed bottom-6 right-6 max-w-sm whitespace-pre-line rounded-lg bg-red-600 px-4 py-3 text-sm text-white shadow-lg">
           <div className="flex items-start gap-2">
             <span className="font-semibold">Error:</span>
             <span className="flex-1">{error}</span>
