@@ -12,6 +12,61 @@ function ensureConfigured() {
   configured = true;
 }
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isRetryableVisionError(err: unknown): boolean {
+  const message = String(
+    (err as any)?.message ||
+      (err as any)?.body?.detail ||
+      (err as any)?.body?.error ||
+      err ||
+      ""
+  ).toLowerCase();
+  return (
+    /bad gateway|gateway|502|upstream|overloaded|temporarily unavailable|service unavailable/.test(
+      message
+    )
+  );
+}
+
+async function subscribeVisionWithRetry(
+  input: Record<string, unknown>,
+  label: string
+): Promise<any> {
+  ensureConfigured();
+
+  let lastErr: unknown;
+  const delays = [0, 700, 1600];
+
+  for (let attempt = 0; attempt < delays.length; attempt++) {
+    if (delays[attempt] > 0) {
+      await sleep(delays[attempt]);
+    }
+    try {
+      return await fal.subscribe("fal-ai/any-llm/vision", {
+        input,
+        logs: false,
+      });
+    } catch (err) {
+      lastErr = err;
+      if (!isRetryableVisionError(err) || attempt === delays.length - 1) {
+        break;
+      }
+      console.warn(`[${label}] transient vision error on attempt ${attempt + 1}, retrying:`, err);
+    }
+  }
+
+  const finalMessage =
+    (lastErr as any)?.message ||
+    (lastErr as any)?.body?.detail ||
+    (lastErr as any)?.body?.error ||
+    String(lastErr) ||
+    "unknown error";
+  throw new Error(`${label} failed: ${finalMessage}`);
+}
+
 /**
  * Reads a style-reference image from public/ and uploads it to fal.ai once,
  * caching the resulting URL in memory per "kind". Returns null if no file exists.
@@ -363,18 +418,16 @@ export async function analyzeGarmentToPrompt(
   imageUrl: string,
   _opts: AnalyzeOptions = {}
 ): Promise<string> {
-  ensureConfigured();
-
-  const result: any = await fal.subscribe("fal-ai/any-llm/vision", {
-    input: {
+  const result: any = await subscribeVisionWithRetry(
+    {
       model: "anthropic/claude-3.7-sonnet",
       system_prompt: ANALYSIS_SYSTEM_PROMPT,
       prompt:
         "Analyze the garment in this photograph using the two-line GARMENT / FEATURES format defined in your system prompt. Output exactly those two lines, nothing else.",
       image_url: imageUrl,
     },
-    logs: false,
-  });
+    "garment analysis"
+  );
 
   const data = result?.data ?? result;
   console.log("[analyze] raw response keys:", Object.keys(data || {}));
@@ -473,18 +526,16 @@ export interface TwoPieceFields {
  * buildModelSwapTwoPiecePrompt).
  */
 export async function extractTwoPieceFields(imageUrl: string): Promise<TwoPieceFields> {
-  ensureConfigured();
-
-  const result: any = await fal.subscribe("fal-ai/any-llm/vision", {
-    input: {
+  const result: any = await subscribeVisionWithRetry(
+    {
       model: "anthropic/claude-3.7-sonnet",
       system_prompt: TWO_PIECE_ANALYSIS_SYSTEM_PROMPT,
       prompt:
         "Analyze the two-piece coordinated set in this photograph using the four-line TOP / TOP_FEATURES / BOTTOM / BOTTOM_FEATURES format defined in your system prompt. Output exactly those four lines, nothing else.",
       image_url: imageUrl,
     },
-    logs: false,
-  });
+    "two-piece analysis"
+  );
   const data = result?.data ?? result;
   const output: string = (data?.output ?? data?.response ?? data?.text ?? "").trim();
   if (!output) {
@@ -736,18 +787,16 @@ function buildGarmentAdjustmentClause(adjustments?: GarmentAdjustments): string 
  * preservation fields. Used by the Model Studio's analyze step.
  */
 export async function analyzeModelPhoto(imageUrl: string): Promise<AnalyzedModelPhoto> {
-  ensureConfigured();
-
-  const result: any = await fal.subscribe("fal-ai/any-llm/vision", {
-    input: {
+  const result: any = await subscribeVisionWithRetry(
+    {
       model: "anthropic/claude-3.7-sonnet",
       system_prompt: MODEL_PHOTO_ANALYSIS_PROMPT,
       prompt:
         "Analyze the model photograph using the four-line CURRENT_GARMENT / MODEL_IDENTITY / POSE / SCENE format defined in your system prompt. Output exactly those four lines, nothing else.",
       image_url: imageUrl,
     },
-    logs: false,
-  });
+    "pose photo analysis"
+  );
 
   const data = result?.data ?? result;
   const output: string = (data?.output ?? data?.response ?? data?.text ?? "").trim();

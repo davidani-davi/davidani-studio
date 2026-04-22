@@ -285,6 +285,13 @@ export default function ModelSidebar(p: Props) {
           })}
         </div>
 
+        {selectedModel?.id === "pants" && (
+          <p className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] leading-relaxed text-amber-800">
+            Lower-body preset library for pants fit, silhouette, and view reference. Use this when
+            you want the generation anchored to a pants-focused body crop instead of a full model.
+          </p>
+        )}
+
         {/* Look preset grid */}
         {selectedModel && poses.length > 0 && (
           <>

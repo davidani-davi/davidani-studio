@@ -13,6 +13,59 @@ import { fal } from "@fal-ai/client";
 export const runtime = "nodejs";
 export const maxDuration = 180;
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isRetryableVisionError(err: unknown): boolean {
+  const message = String(
+    (err as any)?.message ||
+      (err as any)?.body?.detail ||
+      (err as any)?.body?.error ||
+      err ||
+      ""
+  ).toLowerCase();
+  return (
+    /bad gateway|gateway|502|upstream|overloaded|temporarily unavailable|service unavailable/.test(
+      message
+    )
+  );
+}
+
+async function subscribeVisionWithRetry(
+  input: Record<string, unknown>,
+  label: string
+): Promise<any> {
+  let lastErr: unknown;
+  const delays = [0, 700, 1600];
+
+  for (let attempt = 0; attempt < delays.length; attempt++) {
+    if (delays[attempt] > 0) {
+      await sleep(delays[attempt]);
+    }
+    try {
+      return await fal.subscribe("fal-ai/any-llm/vision", {
+        input,
+        logs: false,
+      });
+    } catch (err) {
+      lastErr = err;
+      if (!isRetryableVisionError(err) || attempt === delays.length - 1) {
+        break;
+      }
+      console.warn(`[${label}] transient vision error on attempt ${attempt + 1}, retrying:`, err);
+    }
+  }
+
+  const finalMessage =
+    (lastErr as any)?.message ||
+    (lastErr as any)?.body?.detail ||
+    (lastErr as any)?.body?.error ||
+    String(lastErr) ||
+    "unknown error";
+  throw new Error(`${label} failed: ${finalMessage}`);
+}
+
 /**
  * POST /api/analyze-model
  *
@@ -47,16 +100,16 @@ RULES:
 - Describe only the garment itself. Ignore background, hanger, or mannequin.
 - Output exactly two lines: GARMENT: and FEATURES:, nothing else.`;
 
-  const result: any = await fal.subscribe("fal-ai/any-llm/vision", {
-    input: {
+  const result: any = await subscribeVisionWithRetry(
+    {
       model: "anthropic/claude-3.7-sonnet",
       system_prompt: SYSTEM,
       prompt:
         "Analyze the garment in this photograph using the two-line GARMENT / FEATURES format. Output exactly those two lines, nothing else.",
       image_url: imageUrl,
     },
-    logs: false,
-  });
+    "garment field extraction"
+  );
   const data = result?.data ?? result;
   const output: string = (data?.output ?? data?.response ?? data?.text ?? "").trim();
   const garment = (output.match(/GARMENT:\s*(.+?)\s*(?:\r?\n|$)/i)?.[1] || "")

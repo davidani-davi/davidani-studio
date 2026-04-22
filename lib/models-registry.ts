@@ -39,7 +39,7 @@ export type PresetView = "front" | "side" | "back" | "full";
 export interface HumanModel {
   /** Model ID — the folder name, lowercased (e.g. "bianca"). */
   id: string;
-  /** Display name (first letter uppercased, e.g. "Bianca"). */
+  /** Display name shown in the UI. */
   name: string;
   poses: ModelPose[];
 }
@@ -63,6 +63,14 @@ function stripModelPrefix(stem: string, modelFolderName: string): string {
     return stem.slice(modelFolderName.length + 1);
   }
   return stem;
+}
+
+function stripLibraryPrefix(stem: string, modelFolderName: string): string {
+  const cleaned = stripModelPrefix(stem, modelFolderName);
+  if (modelFolderName.toLowerCase() === "pants") {
+    return cleaned.replace(/^pants[-_\s]+/i, "");
+  }
+  return cleaned;
 }
 
 function inferPresetView(stem: string): PresetView {
@@ -113,7 +121,7 @@ function collectPresetImages(modelFolderName: string): ModelPose[] {
 
       const front = views.front || views.full || views.side || views.back;
       if (!front) continue;
-      const displayStem = stripModelPrefix(
+      const displayStem = stripLibraryPrefix(
         stripViewToken(lookDir.name) || lookDir.name,
         modelFolderName
       );
@@ -136,7 +144,7 @@ function collectPresetImages(modelFolderName: string): ModelPose[] {
     if (!IMAGE_EXTS.has(ext)) continue;
 
     const stem = entry.name.replace(/\.[^.]+$/, "");
-    const displayStem = stripModelPrefix(stripViewToken(stem) || stem, modelFolderName);
+    const displayStem = stripLibraryPrefix(stripViewToken(stem) || stem, modelFolderName);
     looks.push({
       id: stem.toLowerCase(),
       label: prettifyPresetLabel(displayStem),
@@ -162,7 +170,13 @@ function collectPresetImages(modelFolderName: string): ModelPose[] {
 const MODEL_ORDER_PRIORITY: Record<string, number> = {
   sydney: 0,
   bianca: 1,
+  pants: 2,
 };
+
+function displayModelName(modelId: string, folderName: string): string {
+  if (modelId === "pants") return "Pants Library";
+  return folderName.charAt(0).toUpperCase() + folderName.slice(1).toLowerCase();
+}
 
 /**
  * Scan public/models/ and return the full catalog. Cheap — just filesystem
@@ -185,7 +199,7 @@ export function listHumanModels(): HumanModel[] {
 
     models.push({
       id: modelId,
-      name: entry.name.charAt(0).toUpperCase() + entry.name.slice(1).toLowerCase(),
+      name: displayModelName(modelId, entry.name),
       poses,
     });
   }
