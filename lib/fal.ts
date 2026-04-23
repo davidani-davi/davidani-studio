@@ -2,6 +2,7 @@ import { fal } from "@fal-ai/client";
 import fs from "node:fs";
 import path from "node:path";
 import { MODELS, type ModelId } from "./models";
+import { optimizePromptForModel } from "./prompt-strategy";
 
 let configured = false;
 function ensureConfigured() {
@@ -1203,7 +1204,8 @@ export async function generate(params: GenerateParams): Promise<GenerationResult
   // new two-image template (built by buildTwoImagePrompt) is self-sufficient
   // and Gemini-based edit models respond badly to stacked preservation-speak.
   const overlayInstruction = buildOverlayInstruction(params.overlay);
-  const finalPrompt = params.prompt + overlayInstruction;
+  const modelOptimizedPrompt = optimizePromptForModel(params.modelId, params.prompt);
+  const finalPrompt = modelOptimizedPrompt + overlayInstruction;
   let input: Record<string, unknown> = { prompt: finalPrompt };
 
   // Resolution multiplier: how much to scale base dimensions by.

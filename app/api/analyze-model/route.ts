@@ -127,18 +127,117 @@ RULES:
   return { garment, features };
 }
 
+type GarmentPart = "top" | "bottom" | "full-look" | "unknown";
+
+function classifyGarmentPart(garment: string): GarmentPart {
+  const text = garment.toLowerCase();
+
+  const fullLookWords = [
+    "dress",
+    "jumpsuit",
+    "romper",
+    "bodysuit",
+    "catsuit",
+    "onesie",
+    "set",
+    "outfit",
+    "matching set",
+    "two-piece",
+  ];
+  if (fullLookWords.some((w) => text.includes(w))) return "full-look";
+
+  const bottomWords = [
+    "pants",
+    "trousers",
+    "jeans",
+    "shorts",
+    "skirt",
+    "mini skirt",
+    "midi skirt",
+    "maxi skirt",
+    "leggings",
+    "joggers",
+    "sweatpants",
+    "slacks",
+    "chinos",
+    "khakis",
+    "corduroys",
+    "bottoms",
+  ];
+  if (bottomWords.some((w) => text.includes(w))) return "bottom";
+
+  const topWords = [
+    "top",
+    "shirt",
+    "t-shirt",
+    "tee",
+    "tank",
+    "blouse",
+    "hoodie",
+    "sweater",
+    "cardigan",
+    "jacket",
+    "coat",
+    "vest",
+    "blazer",
+    "pullover",
+    "sweatshirt",
+    "camisole",
+  ];
+  if (topWords.some((w) => text.includes(w))) return "top";
+
+  return "unknown";
+}
+
+async function extractTwoPieceFieldsFromSeparateImages(
+  imageUrls: string[]
+): Promise<Awaited<ReturnType<typeof extractTwoPieceFields>>> {
+  if (imageUrls.length < 2) {
+    throw new Error("Two-piece mode with separate uploads requires one top image and one bottom image.");
+  }
+
+  const analyzed = await Promise.all(imageUrls.slice(0, 2).map((url) => extractGarmentFields(url)));
+  const classified = analyzed.map((fields) => ({
+    ...fields,
+    part: classifyGarmentPart(fields.garment),
+  }));
+
+  const top = classified.find((item) => item.part === "top");
+  const bottom = classified.find((item) => item.part === "bottom");
+
+  if (!top || !bottom) {
+    const summary = classified.map((item) => `"${item.garment}" → ${item.part}`).join(", ");
+    throw new Error(
+      `Two-piece mode expected one top and one bottom upload, but detected: ${summary}. Upload one top image and one bottom image.`
+    );
+  }
+
+  return {
+    top: top.garment,
+    topFeatures: top.features,
+    bottom: bottom.garment,
+    bottomFeatures: bottom.features,
+  };
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { modelId, poseId, garmentImageUrl, twoPiece, view } = body as {
+    const { modelId, poseId, garmentImageUrl, garmentImageUrls, twoPiece, view } = body as {
       modelId: string;
       poseId: string;
       garmentImageUrl: string;
+      garmentImageUrls?: string[];
       twoPiece?: boolean;
       adjustments?: GarmentAdjustments;
       view?: PresetView;
     };
     const adjustments = body?.adjustments as GarmentAdjustments | undefined;
+    const garmentUrls = Array.isArray(garmentImageUrls)
+      ? garmentImageUrls.filter((url): url is string => typeof url === "string" && url.trim().length > 0)
+      : garmentImageUrl && typeof garmentImageUrl === "string"
+      ? [garmentImageUrl]
+      : [];
 
     if (!modelId || typeof modelId !== "string") {
       return NextResponse.json({ ok: false, error: "modelId is required" }, { status: 400 });
@@ -146,9 +245,9 @@ export async function POST(req: Request) {
     if (!poseId || typeof poseId !== "string") {
       return NextResponse.json({ ok: false, error: "poseId is required" }, { status: 400 });
     }
-    if (!garmentImageUrl || typeof garmentImageUrl !== "string") {
+    if (garmentUrls.length === 0) {
       return NextResponse.json(
-        { ok: false, error: "garmentImageUrl is required" },
+        { ok: false, error: "At least one garment image is required" },
         { status: 400 }
       );
     }
@@ -164,7 +263,11 @@ export async function POST(req: Request) {
     // (TOP / TOP_FEATURES / BOTTOM / BOTTOM_FEATURES) instead of two, and the
     // assembler swaps to the coordinated-set template.
     const [garmentResult, modelResult] = await Promise.allSettled([
-      twoPiece ? extractTwoPieceFields(garmentImageUrl) : extractGarmentFields(garmentImageUrl),
+      twoPiece
+        ? garmentUrls.length >= 2
+          ? extractTwoPieceFieldsFromSeparateImages(garmentUrls)
+          : extractTwoPieceFields(garmentUrls[0])
+        : extractGarmentFields(garmentUrls[0]),
       analyzeModelPhoto(poseUrl),
     ]);
     if (garmentResult.status === "rejected") {

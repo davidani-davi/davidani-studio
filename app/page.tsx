@@ -9,6 +9,7 @@ import type { HistoryItem, UploadedImage } from "@/components/types";
 import type { ModelId } from "@/lib/models";
 import type { OverlayMode, OverlayPlacement } from "@/lib/fal";
 import { resizeIfNeeded } from "@/lib/image-resize";
+import { optimizePromptForModel } from "@/lib/prompt-strategy";
 
 function deriveOverlayMode(showName: boolean, showNumber: boolean): OverlayMode {
   if (showName && showNumber) return "both";
@@ -50,7 +51,7 @@ async function fetchJson(label: string, input: string, init?: RequestInit): Prom
 
 export default function StudioPage() {
   // Controls
-  const [modelId, setModelId] = useState<ModelId>("nano-banana");
+  const [modelId, setModelId] = useState<ModelId>("gpt-image");
   const [aspect, setAspect] = useState<string>("2:3");
   const [resolution, setResolution] = useState<string>("2K");
   const [format, setFormat] = useState<"png" | "jpeg">("png");
@@ -234,6 +235,7 @@ export default function StudioPage() {
     const analyzed = await analyzeProduct();
     if (!analyzed) return;
     const activePrompt = analyzed.trim();
+    const promptUsed = optimizePromptForModel(modelId, activePrompt);
 
     setLoading(true);
     setError(null);
@@ -266,7 +268,7 @@ export default function StudioPage() {
         id,
         timestamp: Date.now(),
         modelId,
-        prompt: activePrompt,
+        prompt: promptUsed,
         imageUrls: data.images.map((i: any) => i.url),
         referenceUrls: [...selected],
         aspect,
@@ -343,6 +345,7 @@ export default function StudioPage() {
         });
         imagePrompt = (analyzeData.prompt as string).trim();
         if (!imagePrompt) throw new Error("Analyzer returned empty prompt");
+        imagePrompt = optimizePromptForModel(modelId, imagePrompt);
       } catch (err: any) {
         failures.push({ url: sourceUrl, error: err?.message || "Analyze failed" });
         setBatchProgress((p) =>
@@ -443,7 +446,7 @@ export default function StudioPage() {
           </div>
           <span className="text-sm font-semibold">Davi &amp; Dani Photo Studio</span>
           <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-neutral-600">
-            V1.1
+            V1.3
           </span>
           <TopTabs active="image" />
         </div>
