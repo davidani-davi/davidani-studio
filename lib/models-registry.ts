@@ -46,6 +46,12 @@ export interface HumanModel {
 
 const IMAGE_EXTS = new Set(["png", "jpg", "jpeg", "webp"]);
 
+function titleCaseWords(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/\b\w/g, (m) => m.toUpperCase());
+}
+
 function prettifyPresetLabel(stem: string): string {
   return stem
     .replace(/[-_]+/g, " ")
@@ -67,7 +73,7 @@ function stripModelPrefix(stem: string, modelFolderName: string): string {
 
 function stripLibraryPrefix(stem: string, modelFolderName: string): string {
   const cleaned = stripModelPrefix(stem, modelFolderName);
-  if (modelFolderName.toLowerCase() === "pants") {
+  if (modelFolderName.toLowerCase().startsWith("pants")) {
     return cleaned.replace(/^pants[-_\s]+/i, "");
   }
   return cleaned;
@@ -138,25 +144,57 @@ function collectPresetImages(modelFolderName: string): ModelPose[] {
   }
 
   const legacyEntries = fs.readdirSync(modelDir, { withFileTypes: true });
+  const legacyGroups = new Map<
+    string,
+    {
+      displayStem: string;
+      filename: string;
+      publicPath: string;
+      views: ModelPose["views"];
+    }
+  >();
+
   for (const entry of legacyEntries) {
     if (!entry.isFile()) continue;
     const ext = entry.name.toLowerCase().split(".").pop() || "";
     if (!IMAGE_EXTS.has(ext)) continue;
 
     const stem = entry.name.replace(/\.[^.]+$/, "");
-    const displayStem = stripLibraryPrefix(stripViewToken(stem) || stem, modelFolderName);
-    looks.push({
-      id: stem.toLowerCase(),
-      label: prettifyPresetLabel(displayStem),
-      publicPath: `/models/${modelFolderName}/${entry.name}`,
+    const baseStem = stripViewToken(stem) || modelFolderName;
+    const displayStem = stripLibraryPrefix(baseStem, modelFolderName);
+    const groupId = baseStem.toLowerCase();
+    const view = inferPresetView(stem);
+    const publicPath = `/models/${modelFolderName}/${entry.name}`;
+    const existing = legacyGroups.get(groupId) ?? {
+      displayStem,
       filename: entry.name,
+      publicPath,
+      views: {},
+    };
+
+    if (!existing.views[view]) {
+      existing.views[view] = {
+        filename: entry.name,
+        publicPath,
+      };
+    }
+    if (view === "front" || !existing.views.front) {
+      existing.filename = entry.name;
+      existing.publicPath = publicPath;
+    }
+    legacyGroups.set(groupId, existing);
+  }
+
+  for (const [groupId, group] of legacyGroups) {
+    const front = group.views.front || group.views.full || group.views.side || group.views.back;
+    if (!front) continue;
+    looks.push({
+      id: groupId,
+      label: prettifyPresetLabel(group.displayStem),
+      publicPath: front.publicPath,
+      filename: front.filename,
       subdir: "",
-      views: {
-        front: {
-          filename: entry.name,
-          publicPath: `/models/${modelFolderName}/${entry.name}`,
-        },
-      },
+      views: group.views,
     });
   }
 
@@ -168,14 +206,17 @@ function collectPresetImages(modelFolderName: string): ModelPose[] {
 }
 
 const MODEL_ORDER_PRIORITY: Record<string, number> = {
-  sydney: 0,
-  bianca: 1,
-  pants: 2,
+  "celine 1": 0,
+  "brie 1": 1,
+  "brie 2": 2,
+  "brie 3": 3,
+  "brie 4": 4,
+  "pants 1": 5,
+  sydney: 6,
 };
 
 function displayModelName(modelId: string, folderName: string): string {
-  if (modelId === "pants") return "Pants Library";
-  return folderName.charAt(0).toUpperCase() + folderName.slice(1).toLowerCase();
+  return titleCaseWords(folderName);
 }
 
 /**
