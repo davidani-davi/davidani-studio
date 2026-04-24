@@ -74,6 +74,7 @@ export default function PromptStudioClient() {
   const [error, setError] = useState<string | null>(null);
   const [previewSrc, setPreviewSrc] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [draggingUpload, setDraggingUpload] = useState(false);
 
   const selectedUpload = useMemo(
     () => uploads.find((u) => u.url === selectedUrl) ?? null,
@@ -99,6 +100,16 @@ export default function PromptStudioClient() {
     } finally {
       setUploading(false);
     }
+  }
+
+  function hasImageFiles(e: React.DragEvent): boolean {
+    return Array.from(e.dataTransfer.items).some((item) => item.type.startsWith("image/"));
+  }
+
+  function handleUploadDrop(e: React.DragEvent) {
+    e.preventDefault();
+    setDraggingUpload(false);
+    if (e.dataTransfer.files.length) addFiles(e.dataTransfer.files);
   }
 
   function removeUpload(url: string) {
@@ -158,7 +169,26 @@ export default function PromptStudioClient() {
 
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
         <aside className="flex w-full shrink-0 flex-col overflow-y-auto border-b border-neutral-200 bg-white lg:w-80 lg:border-b-0 lg:border-r">
-          <section className="border-b border-neutral-100 p-5">
+          <section
+            className={`border-b border-neutral-100 p-5 transition ${
+              draggingUpload ? "bg-brand-50/70" : ""
+            }`}
+            onDragEnter={(e) => {
+              if (!hasImageFiles(e)) return;
+              e.preventDefault();
+              setDraggingUpload(true);
+            }}
+            onDragOver={(e) => {
+              if (!hasImageFiles(e)) return;
+              e.preventDefault();
+            }}
+            onDragLeave={(e) => {
+              if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
+                setDraggingUpload(false);
+              }
+            }}
+            onDrop={handleUploadDrop}
+          >
             <div className="mb-3 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="text-neutral-400">{IconUpload}</span>
@@ -175,7 +205,11 @@ export default function PromptStudioClient() {
               type="button"
               onClick={() => inputRef.current?.click()}
               disabled={uploading || generating}
-              className="flex aspect-[4/3] w-full items-center justify-center rounded-lg border border-dashed border-neutral-300 bg-neutral-50 text-sm font-medium text-neutral-500 transition hover:border-brand-400 hover:bg-brand-50 hover:text-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
+              className={`flex aspect-[4/3] w-full items-center justify-center rounded-lg border border-dashed text-sm font-medium transition hover:border-brand-400 hover:bg-brand-50 hover:text-brand-700 disabled:cursor-not-allowed disabled:opacity-60 ${
+                draggingUpload
+                  ? "border-brand-500 bg-brand-50 text-brand-700"
+                  : "border-neutral-300 bg-neutral-50 text-neutral-500"
+              }`}
             >
               {uploading ? (
                 <span className="inline-flex items-center gap-2">

@@ -163,6 +163,7 @@ const IconSliders = (
 export default function ModelSidebar(p: Props) {
   const [outputOpen, setOutputOpen] = useState(false);
   const [previewSrc, setPreviewSrc] = useState<string | null>(null);
+  const [draggingUploads, setDraggingUploads] = useState(false);
 
   const selectedCount = p.selectedUrls.length;
   const uploadCount = p.uploads.length;
@@ -174,14 +175,49 @@ export default function ModelSidebar(p: Props) {
   const poses: ModelPose[] = selectedModel?.poses ?? [];
   const activeLook = poses.find((pose) => pose.id === p.selectedPoseId) ?? null;
 
+  function hasImageFiles(e: React.DragEvent): boolean {
+    return Array.from(e.dataTransfer.items).some((item) => item.type.startsWith("image/"));
+  }
+
+  function handleUploadDrop(e: React.DragEvent) {
+    e.preventDefault();
+    setDraggingUploads(false);
+    if (e.dataTransfer.files.length) p.onAddFiles(e.dataTransfer.files);
+  }
+
   return (
     <aside className="flex w-full shrink-0 flex-col overflow-y-auto border-b border-neutral-200 bg-white lg:w-72 lg:border-b-0 lg:border-r">
       {/* ========== GARMENT PHOTO (user uploads) ========== */}
-      <section className="border-b border-neutral-100 p-5">
+      <section
+        className={`border-b border-neutral-100 p-5 transition ${
+          draggingUploads ? "bg-brand-50/70" : ""
+        }`}
+        onDragEnter={(e) => {
+          if (!hasImageFiles(e)) return;
+          e.preventDefault();
+          setDraggingUploads(true);
+        }}
+        onDragOver={(e) => {
+          if (!hasImageFiles(e)) return;
+          e.preventDefault();
+        }}
+        onDragLeave={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
+            setDraggingUploads(false);
+          }
+        }}
+        onDrop={handleUploadDrop}
+      >
         <SectionHeader icon={IconCamera} title="Garment photo" hint={refHint} />
 
         <div className="grid grid-cols-4 gap-2">
-          <label className="flex aspect-square cursor-pointer items-center justify-center rounded-lg border border-dashed border-neutral-300 bg-neutral-50 text-lg text-neutral-400 transition hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600">
+          <label
+            className={`flex aspect-square cursor-pointer items-center justify-center rounded-lg border border-dashed text-lg transition hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600 ${
+              draggingUploads
+                ? "border-brand-500 bg-brand-50 text-brand-700"
+                : "border-neutral-300 bg-neutral-50 text-neutral-400"
+            }`}
+          >
             <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
               <path d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" />
             </svg>

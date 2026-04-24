@@ -40,7 +40,7 @@ export default function ImageLightbox({ src, onClose, alt = "Preview" }: Props) 
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-6 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-black/85 p-6 backdrop-blur-sm"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
@@ -54,17 +54,16 @@ export default function ImageLightbox({ src, onClose, alt = "Preview" }: Props) 
         ×
       </button>
 
-      <span className="absolute bottom-5 left-1/2 -translate-x-1/2 rounded-full bg-white/10 px-3 py-1 text-[11px] font-medium uppercase tracking-wider text-white/80">
-        Press Esc or click outside to close
-      </span>
-
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={src}
         alt={alt}
         onClick={(e) => e.stopPropagation()}
-        className="max-h-full max-w-full cursor-default rounded-lg object-contain shadow-2xl"
+        className="max-h-[calc(100vh-7rem)] max-w-full cursor-default rounded-lg object-contain shadow-2xl"
       />
+      <span className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-medium uppercase tracking-wider text-white/80">
+        Press Esc or click outside to close
+      </span>
     </div>
   );
 }
