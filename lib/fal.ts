@@ -460,6 +460,72 @@ export async function analyzeGarmentToPrompt(
   return finalPrompt;
 }
 
+const RECOLORING_PROMPT_SYSTEM_PROMPT = `You are a senior fashion image-prompt writer for ChatGPT Image 2.0. You inspect one uploaded fashion image and write recoloring prompts for that exact garment only.
+
+First analyze the image internally for: garment type, silhouette, fabric texture, construction details, trims, stitching, hardware, folds, lighting, background, camera angle, setup, environment, and whether a model is present.
+
+Then output exactly 10 separate prompts, each on its own line.
+
+Each prompt must:
+- Preserve the garment silhouette, seams, stitching, fabric texture, folds, construction details, trims, buttons, drawstrings, hardware, and material behavior.
+- Preserve any model, pose, body proportions, face, hair, background, lighting direction, shadows, camera angle, hanger setup, flat-lay setup, and environment.
+- Only change the garment colorway.
+- Use trend-forward, Gen Z-appealing, soft pastel, boutique-friendly color palettes inspired by Aritzia, Free People, Urban Outfitters, and young contemporary fashion.
+- Maintain photorealistic fashion photography quality.
+- Be tailored to the analyzed garment style. Knits should use soft marled gradients and cozy pastel tones. Denim should use washed indigo, grey, cream, cocoa, or muted color washes. Dresses should use feminine wearable solids or prints. Jackets should use elevated boutique-friendly color blocking. Use the best applicable logic for other garment types.
+
+Output rules:
+- Plain text only.
+- Exactly 10 lines.
+- No numbering, bullets, labels, markdown, quotes, intro, outro, or extra explanation.
+- Each line must be a complete prompt for ChatGPT Image 2.0.
+- Do not mention that you analyzed the image.`;
+
+function normalizeRecoloringPrompts(raw: string): string {
+  const lines = raw
+    .split(/\r?\n/)
+    .map((line) =>
+      line
+        .trim()
+        .replace(/^["'`]+|["'`]+$/g, "")
+        .replace(/^\s*(?:[-*•]|\d+[\.)]|Prompt\s*\d+\s*[:.)-])\s*/i, "")
+        .trim()
+    )
+    .filter(Boolean);
+
+  return lines.slice(0, 10).join("\n");
+}
+
+export async function generateRecoloringPrompts(imageUrl: string): Promise<string> {
+  const result: any = await subscribeVisionWithRetry(
+    {
+      model: "anthropic/claude-3.7-sonnet",
+      system_prompt: RECOLORING_PROMPT_SYSTEM_PROMPT,
+      prompt:
+        "Create exactly 10 plain-text recoloring prompts for ChatGPT Image 2.0 from this garment image. Follow the system output rules exactly.",
+      image_url: imageUrl,
+    },
+    "recoloring prompt generation"
+  );
+
+  const data = result?.data ?? result;
+  const output: string = (data?.output ?? data?.response ?? data?.text ?? "").trim();
+  if (!output) {
+    console.error("[prompt-studio/recoloring] full response:", JSON.stringify(data).slice(0, 1000));
+    throw new Error("Recoloring prompt generator returned no text output.");
+  }
+
+  const prompts = normalizeRecoloringPrompts(output);
+  const count = prompts ? prompts.split(/\r?\n/).filter(Boolean).length : 0;
+  if (count !== 10) {
+    console.error("[prompt-studio/recoloring] expected 10 prompts, got:", count);
+    console.error("[prompt-studio/recoloring] raw output:", output.slice(0, 1000));
+    throw new Error("Recoloring prompt generator did not return exactly 10 prompts.");
+  }
+
+  return prompts;
+}
+
 /* ===========================================================================
  * TWO-PIECE SETS
  * ---------------------------------------------------------------------------
