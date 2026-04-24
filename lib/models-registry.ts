@@ -207,12 +207,14 @@ function collectPresetImages(modelFolderName: string): ModelPose[] {
 
 const MODEL_ORDER_PRIORITY: Record<string, number> = {
   "celine 1": 0,
-  "brie 1": 1,
-  "brie 2": 2,
-  "brie 3": 3,
-  "brie 4": 4,
-  "pants 1": 5,
-  sydney: 6,
+  "celine 2": 1,
+  "celine 3": 2,
+  "brie 1": 3,
+  "brie 2": 4,
+  "brie 3": 5,
+  "brie 4": 6,
+  "pants 1": 7,
+  sydney: 8,
 };
 
 function displayModelName(modelId: string, folderName: string): string {
