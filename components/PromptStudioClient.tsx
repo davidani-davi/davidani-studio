@@ -75,6 +75,7 @@ export default function PromptStudioClient() {
   const [previewSrc, setPreviewSrc] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [draggingUpload, setDraggingUpload] = useState(false);
+  const [requestedColors, setRequestedColors] = useState("");
 
   const selectedUpload = useMemo(
     () => uploads.find((u) => u.url === selectedUrl) ?? null,
@@ -130,7 +131,7 @@ export default function PromptStudioClient() {
       const data = await fetchJson("Generate recoloring prompts", "/api/prompt-studio/recoloring", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageUrl: selectedUrl }),
+        body: JSON.stringify({ imageUrl: selectedUrl, colors: requestedColors }),
       });
       setPrompts(data.prompts || "");
     } catch (err: any) {
@@ -294,6 +295,21 @@ export default function PromptStudioClient() {
                 Recoloring
               </button>
             </div>
+
+            <label className="mt-5 block text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
+              Requested colors
+            </label>
+            <textarea
+              value={requestedColors}
+              onChange={(e) => setRequestedColors(e.target.value)}
+              disabled={generating}
+              rows={3}
+              placeholder="maroon, black, yellow"
+              className="mt-2 w-full resize-none rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm outline-none transition placeholder:text-neutral-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 disabled:cursor-not-allowed disabled:bg-neutral-50 disabled:text-neutral-400"
+            />
+            <p className="mt-2 text-[11px] leading-relaxed text-neutral-500">
+              When colors are listed here, 3 of the 10 prompts will use them.
+            </p>
           </section>
         </aside>
 

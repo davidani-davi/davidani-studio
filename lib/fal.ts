@@ -496,13 +496,41 @@ function normalizeRecoloringPrompts(raw: string): string {
   return lines.slice(0, 10).join("\n");
 }
 
-export async function generateRecoloringPrompts(imageUrl: string): Promise<string> {
+function parseRequestedColors(input: unknown): string[] {
+  const raw = Array.isArray(input) ? input.join(", ") : typeof input === "string" ? input : "";
+  return raw
+    .split(/[\n,;]+|\band\b/i)
+    .map((color) => color.trim().replace(/^["'`]+|["'`]+$/g, ""))
+    .filter(Boolean)
+    .slice(0, 12);
+}
+
+function buildRequestedColorInstruction(colors: string[]): string {
+  if (colors.length === 0) {
+    return "No user-requested colors were provided. Create all 10 colorways automatically based on the garment style.";
+  }
+
+  return (
+    `User-requested colors: ${colors.join(", ")}.\n` +
+    `Exactly 3 of the 10 output lines must be recoloring prompts that use the user-requested color list. ` +
+    `Use those requested colors as the main garment colorway direction for those 3 lines, adapting them into tasteful boutique-friendly palettes when needed. ` +
+    `If several colors were provided, distribute them naturally across those 3 requested-color prompts; if one color was provided, create 3 distinct variations around that color. ` +
+    `The remaining 7 lines must use automatically chosen trend-forward colorways that do not simply repeat the requested-color directions.`
+  );
+}
+
+export async function generateRecoloringPrompts(
+  imageUrl: string,
+  requestedColorInput?: unknown
+): Promise<string> {
+  const requestedColors = parseRequestedColors(requestedColorInput);
   const result: any = await subscribeVisionWithRetry(
     {
       model: "anthropic/claude-3.7-sonnet",
       system_prompt: RECOLORING_PROMPT_SYSTEM_PROMPT,
       prompt:
-        "Create exactly 10 plain-text recoloring prompts for ChatGPT Image 2.0 from this garment image. Follow the system output rules exactly.",
+        "Create exactly 10 plain-text recoloring prompts for ChatGPT Image 2.0 from this garment image. Follow the system output rules exactly.\n\n" +
+        buildRequestedColorInstruction(requestedColors),
       image_url: imageUrl,
     },
     "recoloring prompt generation"

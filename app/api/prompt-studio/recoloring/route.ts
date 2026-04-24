@@ -7,7 +7,7 @@ export const maxDuration = 120;
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { imageUrl } = body as { imageUrl?: string };
+    const { imageUrl, colors } = body as { imageUrl?: string; colors?: unknown };
 
     if (!imageUrl || typeof imageUrl !== "string") {
       return NextResponse.json(
@@ -16,7 +16,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const prompts = await generateRecoloringPrompts(imageUrl);
+    const prompts = await generateRecoloringPrompts(imageUrl, colors);
     return NextResponse.json({ ok: true, prompts });
   } catch (err: any) {
     console.error("[prompt-studio/recoloring] error:", err);
