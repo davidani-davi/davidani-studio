@@ -502,7 +502,7 @@ function parseRequestedColors(input: unknown): string[] {
     .split(/[\n,;]+|\band\b/i)
     .map((color) => color.trim().replace(/^["'`]+|["'`]+$/g, ""))
     .filter(Boolean)
-    .slice(0, 12);
+    .slice(0, 10);
 }
 
 function buildRequestedColorInstruction(colors: string[]): string {
@@ -510,12 +510,15 @@ function buildRequestedColorInstruction(colors: string[]): string {
     return "No user-requested colors were provided. Create all 10 colorways automatically based on the garment style.";
   }
 
+  const aiChosenCount = 10 - colors.length;
   return (
     `User-requested colors: ${colors.join(", ")}.\n` +
-    `Exactly 3 of the 10 output lines must be recoloring prompts that use the user-requested color list. ` +
-    `Use those requested colors as the main garment colorway direction for those 3 lines, adapting them into tasteful boutique-friendly palettes when needed. ` +
-    `If several colors were provided, distribute them naturally across those 3 requested-color prompts; if one color was provided, create 3 distinct variations around that color. ` +
-    `The remaining 7 lines must use automatically chosen trend-forward colorways that do not simply repeat the requested-color directions.`
+    `There are ${colors.length} user-requested color${colors.length === 1 ? "" : "s"}. ` +
+    `Exactly ${colors.length} of the 10 output lines must use the user-requested colors, with one prompt dedicated to each requested color. ` +
+    `Use each requested color as the main garment colorway direction for its line, adapting it into a tasteful boutique-friendly palette when needed. ` +
+    (aiChosenCount > 0
+      ? `The remaining ${aiChosenCount} line${aiChosenCount === 1 ? "" : "s"} must use automatically chosen trend-forward colorways that do not simply repeat the requested-color directions.`
+      : `All 10 lines must use the requested colors; do not add extra automatically chosen colorways.`)
   );
 }
 

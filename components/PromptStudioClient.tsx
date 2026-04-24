@@ -308,7 +308,7 @@ export default function PromptStudioClient() {
               className="mt-2 w-full resize-none rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm outline-none transition placeholder:text-neutral-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 disabled:cursor-not-allowed disabled:bg-neutral-50 disabled:text-neutral-400"
             />
             <p className="mt-2 text-[11px] leading-relaxed text-neutral-500">
-              When colors are listed here, 3 of the 10 prompts will use them.
+              Each listed color gets one prompt. Any remaining prompts are chosen by AI.
             </p>
           </section>
         </aside>
