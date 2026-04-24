@@ -153,6 +153,7 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
     () => history.find((h) => h.id === currentId) ?? null,
     [history, currentId]
   );
+  const selectedModelIsPants = selectedHumanModelId?.startsWith("pants") ?? false;
 
   // URL → original garment upload filename, so OutputPanel names model-swap
   // downloads after the garment the user dropped in.
@@ -226,8 +227,8 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
           garmentImageUrls: selected,
           twoPiece,
           adjustments: {
-            fit: fitAdjustment,
-            length: lengthAdjustment,
+            fit: selectedModelIsPants ? fitAdjustment : "true-to-reference",
+            length: selectedModelIsPants ? lengthAdjustment : "true-to-reference",
           },
         }),
       });
@@ -347,8 +348,8 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
             garmentImageUrls: twoPiece ? selected.slice(0, 2) : [sourceUrl],
             twoPiece,
             adjustments: {
-              fit: fitAdjustment,
-              length: lengthAdjustment,
+              fit: selectedModelIsPants ? fitAdjustment : "true-to-reference",
+              length: selectedModelIsPants ? lengthAdjustment : "true-to-reference",
             },
           }),
         });
@@ -521,6 +522,7 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
           onFitAdjustmentChange={setFitAdjustment}
           lengthAdjustment={lengthAdjustment}
           onLengthAdjustmentChange={setLengthAdjustment}
+          pantsAdjustments={selectedModelIsPants}
         />
 
         <OutputPanel

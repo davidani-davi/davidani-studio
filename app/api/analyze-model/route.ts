@@ -90,14 +90,17 @@ async function subscribeVisionWithRetry(
 async function extractGarmentFields(imageUrl: string): Promise<{ garment: string; features: string }> {
   const SYSTEM = `You are a product catalog analyzer. You see a single garment photograph and must output exactly two lines, in this exact format, with no preamble, no markdown, and no extra lines:
 
-GARMENT: <a short noun phrase describing the garment — include primary color, fabric/texture, and garment type.>
-FEATURES: <comma-separated noun phrases enumerating clearly visible structural details.>
+GARMENT: <a short noun phrase describing the garment — include primary color, fabric/texture, an explicit silhouette / cut / fit descriptor, and garment type. For pants and jeans, choose the most accurate mainstream leg-shape word: barrel-fit, wide-leg, straight-leg, flare, bootcut, skinny, slim, relaxed, baggy, tapered, cargo, jogger, trouser, palazzo, cropped, or bermuda. Example: "barrel-fit dark indigo denim jeans", "wide-leg cream linen trousers", "straight-leg black cargo pants".>
+FEATURES: <comma-separated noun phrases enumerating clearly visible structural details. ALWAYS begin with a silhouette clause that restates the garment's cut/fit/leg-shape in concrete visual terms. For barrel pants, use language like "a rounded barrel-shaped leg that curves outward through the thigh and knee then tapers toward the ankle"; for wide-leg, "a wide leg of generous width from hip to hem"; for straight-leg, "an even-width leg from thigh to hem"; for flare, "a leg that widens from knee to hem".>
 
 RULES:
 - NEVER invent text, letters, numbers, logos, brand names, or made-up words.
 - NEVER describe individual motifs inside a print/pattern. Name the pattern TYPE only.
 - Use only real, common English words.
 - Describe only the garment itself. Ignore background, hanger, or mannequin.
+- PANTS SHAPE AUDIT: If the garment has two leg openings, a waistband, and no neckline, it is a bottom. Never call pants a top. Pay special attention to the outer leg line: rounded outward curve + tapered ankle = barrel; consistent width = wide-leg or straight-leg; widening below knee = flare or bootcut; close fit through ankle = skinny or slim; roomy thigh narrowing to ankle = tapered or jogger.
+- If the uploaded garment is barrel pants, both GARMENT and FEATURES must explicitly say barrel/barrel-shaped. Do not soften barrel pants into straight-leg, relaxed, or wide-leg.
+- If the exact pants cut is uncertain, choose the closest visible mainstream leg-shape descriptor and describe the evidence in FEATURES.
 - Output exactly two lines: GARMENT: and FEATURES:, nothing else.`;
 
   const result: any = await subscribeVisionWithRetry(

@@ -49,18 +49,32 @@ interface Props {
   onFitAdjustmentChange?: (v: GarmentFitAdjustment) => void;
   lengthAdjustment?: GarmentLengthAdjustment;
   onLengthAdjustmentChange?: (v: GarmentLengthAdjustment) => void;
+  pantsAdjustments?: boolean;
 }
 
 const FIT_OPTIONS: { value: GarmentFitAdjustment; label: string }[] = [
-  { value: "fitted", label: "Fitted" },
   { value: "true-to-reference", label: "True" },
-  { value: "oversized", label: "Oversized" },
+  { value: "barrel", label: "Barrel" },
+  { value: "wide-leg", label: "Wide" },
+  { value: "straight-leg", label: "Straight" },
+  { value: "flare", label: "Flared" },
+  { value: "bootcut", label: "Bootcut" },
+  { value: "skinny", label: "Skinny" },
+  { value: "slim", label: "Slim" },
+  { value: "relaxed", label: "Relaxed" },
+  { value: "baggy", label: "Baggy" },
+  { value: "tapered", label: "Tapered" },
+  { value: "cargo", label: "Cargo" },
 ];
 
 const LENGTH_OPTIONS: { value: GarmentLengthAdjustment; label: string }[] = [
-  { value: "shorter", label: "Shorter" },
   { value: "true-to-reference", label: "True" },
-  { value: "longer", label: "Longer" },
+  { value: "cropped", label: "Cropped" },
+  { value: "ankle", label: "Ankle" },
+  { value: "full-length", label: "Full" },
+  { value: "floor-grazing", label: "Long" },
+  { value: "cuffed", label: "Cuffed" },
+  { value: "bermuda", label: "Bermuda" },
 ];
 
 /* ---------- Icons (inline SVG) ---------- */
@@ -194,63 +208,51 @@ export default function PromptPanel(p: Props) {
             (matching top + bottom)
           </span>
         </label>
-        {(p.onFitAdjustmentChange || p.onLengthAdjustmentChange) && (
+        {p.pantsAdjustments && (p.onFitAdjustmentChange || p.onLengthAdjustmentChange) && (
           <div className="mt-2.5 flex flex-wrap gap-4 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2.5">
             {p.onFitAdjustmentChange && (
               <div className="min-w-[180px]">
                 <div className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
-                  Fit
+                  Pants fit
                 </div>
-                <div className="flex overflow-hidden rounded-lg border border-neutral-200 bg-white">
-                  {FIT_OPTIONS.map((option) => {
-                    const active = (p.fitAdjustment ?? "true-to-reference") === option.value;
-                    return (
-                      <button
-                        key={option.value}
-                        type="button"
-                        onClick={() => p.onFitAdjustmentChange?.(option.value)}
-                        disabled={p.analyzing || p.loading}
-                        className={`flex-1 border-r border-neutral-200 px-2.5 py-1.5 text-[11px] font-medium last:border-r-0 transition disabled:opacity-50 ${
-                          active
-                            ? "bg-neutral-900 text-white"
-                            : "text-neutral-600 hover:bg-neutral-50"
-                        }`}
-                      >
-                        {option.label}
-                      </button>
-                    );
-                  })}
-                </div>
+                <select
+                  value={p.fitAdjustment ?? "true-to-reference"}
+                  onChange={(e) => p.onFitAdjustmentChange?.(e.target.value as GarmentFitAdjustment)}
+                  disabled={p.analyzing || p.loading}
+                  className="w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs font-medium text-neutral-700 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {FIT_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
               </div>
             )}
             {p.onLengthAdjustmentChange && (
               <div className="min-w-[180px]">
                 <div className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
-                  Length
+                  Pants length
                 </div>
-                <div className="flex overflow-hidden rounded-lg border border-neutral-200 bg-white">
-                  {LENGTH_OPTIONS.map((option) => {
-                    const active =
-                      (p.lengthAdjustment ?? "true-to-reference") === option.value;
-                    return (
-                      <button
-                        key={option.value}
-                        type="button"
-                        onClick={() => p.onLengthAdjustmentChange?.(option.value)}
-                        disabled={p.analyzing || p.loading}
-                        className={`flex-1 border-r border-neutral-200 px-2.5 py-1.5 text-[11px] font-medium last:border-r-0 transition disabled:opacity-50 ${
-                          active
-                            ? "bg-neutral-900 text-white"
-                            : "text-neutral-600 hover:bg-neutral-50"
-                        }`}
-                      >
-                        {option.label}
-                      </button>
-                    );
-                  })}
-                </div>
+                <select
+                  value={p.lengthAdjustment ?? "true-to-reference"}
+                  onChange={(e) =>
+                    p.onLengthAdjustmentChange?.(e.target.value as GarmentLengthAdjustment)
+                  }
+                  disabled={p.analyzing || p.loading}
+                  className="w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs font-medium text-neutral-700 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {LENGTH_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
               </div>
             )}
+            <p className="basis-full text-[10px] leading-relaxed text-neutral-500">
+              Pants controls override the leg shape and hem length while preserving the uploaded garment's fabric, construction, pockets, stitching, and hardware.
+            </p>
           </div>
         )}
       </div>

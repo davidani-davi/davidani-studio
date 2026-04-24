@@ -798,8 +798,31 @@ export interface AnalyzedModelPhoto {
   scene: string;
 }
 
-export type GarmentFitAdjustment = "fitted" | "true-to-reference" | "oversized";
-export type GarmentLengthAdjustment = "shorter" | "true-to-reference" | "longer";
+export type GarmentFitAdjustment =
+  | "fitted"
+  | "true-to-reference"
+  | "oversized"
+  | "barrel"
+  | "wide-leg"
+  | "straight-leg"
+  | "flare"
+  | "bootcut"
+  | "skinny"
+  | "slim"
+  | "relaxed"
+  | "baggy"
+  | "tapered"
+  | "cargo";
+export type GarmentLengthAdjustment =
+  | "shorter"
+  | "true-to-reference"
+  | "longer"
+  | "cropped"
+  | "ankle"
+  | "full-length"
+  | "floor-grazing"
+  | "cuffed"
+  | "bermuda";
 
 export interface GarmentAdjustments {
   fit?: GarmentFitAdjustment;
@@ -853,24 +876,60 @@ function buildGarmentAdjustmentClause(adjustments?: GarmentAdjustments): string 
   const length = adjustments?.length ?? "true-to-reference";
   const clauses: string[] = [];
 
-  if (fit === "fitted") {
-    clauses.push(
-      "Render the garment slightly more fitted and reduced in overall volume on the body than the raw reference impression, while preserving all design details and keeping the result natural for the garment type."
-    );
+  const pantsFitClauses: Partial<Record<GarmentFitAdjustment, string>> = {
+    barrel:
+      "Render the pants as a true barrel-leg silhouette: rounded volume through the thigh and knee, curved outer leg line, then a clear taper toward a narrower ankle opening. Do not let the pants become straight-leg or wide-leg.",
+    "wide-leg":
+      "Render the pants as wide-leg: roomy from hip through hem with a broad, consistent leg opening and no taper at the ankle.",
+    "straight-leg":
+      "Render the pants as straight-leg: even leg width from thigh to hem with a clean vertical side line, neither flared nor tapered.",
+    flare:
+      "Render the pants as flared: fitted or controlled through the thigh and knee, then widening visibly from knee to hem.",
+    bootcut:
+      "Render the pants as bootcut: slim through the thigh with a subtle outward opening below the knee, less dramatic than a flare.",
+    skinny:
+      "Render the pants as skinny: close-fitting from hip through ankle, following the leg shape with a narrow ankle opening.",
+    slim:
+      "Render the pants as slim: tailored close to the body without being skin-tight, with a narrow clean leg line.",
+    relaxed:
+      "Render the pants as relaxed: easy room through hip and thigh with a natural loose leg, not oversized or baggy.",
+    baggy:
+      "Render the pants as baggy: oversized volume through hip, thigh, and leg with a loose streetwear drape while preserving the reference details.",
+    tapered:
+      "Render the pants as tapered: room through the thigh that narrows progressively toward the ankle.",
+    cargo:
+      "Render the pants as cargo-fit: utilitarian relaxed leg volume with cargo-pocket structure preserved when visible, not skinny or dress-trouser slim.",
+  };
+
+  if (pantsFitClauses[fit]) {
+    clauses.push(pantsFitClauses[fit]!);
+  } else if (fit === "fitted") {
+    clauses.push("Render the garment slightly more fitted and reduced in overall volume on the body than the raw reference impression, while preserving all design details and keeping the result natural for the garment type.");
   } else if (fit === "oversized") {
-    clauses.push(
-      "Render the garment slightly more oversized and roomier on the body than the raw reference impression, while preserving all design details and keeping the result natural for the garment type."
-    );
+    clauses.push("Render the garment slightly more oversized and roomier on the body than the raw reference impression, while preserving all design details and keeping the result natural for the garment type.");
   }
 
-  if (length === "shorter") {
-    clauses.push(
-      "Render the garment slightly shorter on the body than the raw reference impression, with hems, sleeves, or leg length landing a bit higher while still looking natural and proportional."
-    );
+  const pantsLengthClauses: Partial<Record<GarmentLengthAdjustment, string>> = {
+    cropped:
+      "Render the pants as cropped length, with the hem ending above the ankle while keeping the leg shape and proportions intentional.",
+    ankle:
+      "Render the pants at ankle length, with the hem landing at the ankle bone and no pooling at the floor.",
+    "full-length":
+      "Render the pants full length, with the hem reaching the top of the shoe or foot line in a clean catalog proportion.",
+    "floor-grazing":
+      "Render the pants extra long and floor-grazing, with a subtle break or soft pooling at the hem while keeping the fabric behavior realistic.",
+    cuffed:
+      "Render the pants with a visible cuffed hem, preserving the selected leg shape above the cuff.",
+    bermuda:
+      "Render the bottoms as bermuda length if the uploaded reference is shorts, with the hem near the knee; do not apply bermuda length to full-length pants unless the user intentionally selected it.",
+  };
+
+  if (pantsLengthClauses[length]) {
+    clauses.push(pantsLengthClauses[length]!);
+  } else if (length === "shorter") {
+    clauses.push("Render the garment slightly shorter on the body than the raw reference impression, with hems, sleeves, or leg length landing a bit higher while still looking natural and proportional.");
   } else if (length === "longer") {
-    clauses.push(
-      "Render the garment slightly longer on the body than the raw reference impression, with hems, sleeves, or leg length landing a bit lower while still looking natural and proportional."
-    );
+    clauses.push("Render the garment slightly longer on the body than the raw reference impression, with hems, sleeves, or leg length landing a bit lower while still looking natural and proportional.");
   }
 
   if (clauses.length === 0) {
@@ -963,7 +1022,7 @@ export function buildModelSwapPrompt(
       swapScope === "upper-body"
         ? ` Replace only the upper-body garment area with the new ${ng}. Preserve any visible skirt, pants, shorts, or other lower-body garment from the primary studio photograph exactly as-is — same color, shape, hem, waistband, drape, and coverage. Do not remove, crop out, fade out, or simplify the lower-body garment.`
         : swapScope === "lower-body"
-        ? ` Replace only the lower-body garment area with the new ${ng}. Preserve any visible top, jacket, sweater, blouse, shirt, or other upper-body garment from the primary studio photograph exactly as-is — same color, neckline, sleeve shape, hem, drape, and coverage. Do not remove, crop out, fade out, or simplify the upper-body garment.`
+        ? ` Replace only the lower-body garment area with the new ${ng}. Preserve any visible top, jacket, sweater, blouse, shirt, or other upper-body garment from the primary studio photograph exactly as-is — same color, neckline, sleeve shape, hem, drape, and coverage. Do not remove, crop out, fade out, or simplify the upper-body garment. Pants shape is critical: preserve or obey the specified leg silhouette exactly, including barrel curvature, wide-leg width, straight-leg vertical line, flare opening, taper, cuff, hem length, waistband rise, pocket placement, and fabric break.`
         : ` Replace the full visible outfit with the new ${ng}, since it is a full-look garment.`;
     return (
       // Opening — "extract X and apply onto Y" was the shared framing in the
@@ -1008,7 +1067,7 @@ export function buildModelSwapPrompt(
       `taken in this exact pose and scene, wearing the new ${ng}. Hyper-realistic 4K ` +
       `e-commerce fashion photography, editorial catalog quality. ` +
       `Negative prompt: no face alteration, no body reshaping, no recolor, no texture blending, ` +
-      `no distortion, no background change, no darker face, no dimmer background, no exposure shift.`
+      `no distortion, no pants-shape drift, no straightening barrel pants, no widening skinny pants, no flattening flare hems, no background change, no darker face, no dimmer background, no exposure shift.`
     );
   };
 

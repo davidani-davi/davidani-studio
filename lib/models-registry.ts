@@ -214,7 +214,9 @@ const MODEL_ORDER_PRIORITY: Record<string, number> = {
   "brie 3": 5,
   "brie 4": 6,
   "pants 1": 7,
-  sydney: 8,
+  "pants 2": 8,
+  "pants 3": 9,
+  sydney: 10,
 };
 
 function displayModelName(modelId: string, folderName: string): string {
