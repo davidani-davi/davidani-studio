@@ -51,10 +51,9 @@ function buildPoseVariationSuffix(index: number, total: number): string {
 type FitRepairMode =
   | "all"
   | "silhouette"
-  | "length-match"
+  | "upload-reference"
   | "length-shorter"
-  | "length-longer"
-  | "details";
+  | "length-longer";
 type QualityControlAction = "restore-face" | "retry-closer" | "different-pose";
 
 function buildQualityControlSuffix(action: QualityControlAction, fitMode?: FitRepairMode): string {
@@ -71,28 +70,22 @@ function buildQualityControlSuffix(action: QualityControlAction, fitMode?: FitRe
         "Do not make the garment tighter, looser, straighter, puffier, cropped, or longer unless that exact shape is visible in the reference."
       );
     }
-    if (fitMode === "length-match") {
+    if (fitMode === "upload-reference") {
       return (
-        " Quality control directive: repair the garment length using the uploaded garment reference as the source of truth. Match the hem placement, crop point, sleeve length, inseam, rise, cuff position, waistband placement, and visible proportions exactly. " +
-        "Do not shorten, lengthen, tuck, crop, cuff, or extend the garment beyond the reference."
+        " Quality control directive: use the additional uploaded fit reference image only as a fit and proportion guide. Copy its garment fit, body distance, length, volume, drape, and silhouette behavior onto the original garment from the product reference. " +
+        "Do not copy the fit reference's color, print, fabric, trims, styling, model, face, pose, background, or unrelated garment details. Preserve the original garment identity while borrowing only the fit."
       );
     }
     if (fitMode === "length-shorter") {
       return (
-        " Quality control directive: the previous result made the garment too long. Regenerate the garment with a shorter length while still matching the uploaded garment reference as closely as possible. " +
-        "Move hems, cuffs, crop points, inseams, rises, and sleeve endings shorter only where needed; preserve silhouette, seams, stitching, fabric behavior, trims, hardware, model identity, pose, lighting, and background."
+        " Quality control directive: the previous result made the garment too long. Regenerate the garment slightly shorter while still matching the uploaded garment reference as closely as possible. " +
+        "Make only a subtle length correction; move hems, cuffs, crop points, inseams, rises, and sleeve endings shorter only where needed. Preserve silhouette, seams, stitching, fabric behavior, trims, hardware, model identity, pose, lighting, and background."
       );
     }
     if (fitMode === "length-longer") {
       return (
-        " Quality control directive: the previous result made the garment too short or too cropped. Regenerate the garment with a longer length while still matching the uploaded garment reference as closely as possible. " +
-        "Extend hems, cuffs, crop points, inseams, rises, and sleeve endings longer only where needed; preserve silhouette, seams, stitching, fabric behavior, trims, hardware, model identity, pose, lighting, and background."
-      );
-    }
-    if (fitMode === "details") {
-      return (
-        " Quality control directive: repair garment construction details using the uploaded garment reference as the source of truth. Restore seam placement, stitching, panels, pockets, buttons, zippers, drawstrings, ribbing, hems, trims, hardware, fabric texture, folds, and material behavior. " +
-        "Do not simplify, omit, invent, or move construction details."
+        " Quality control directive: the previous result made the garment too short or too cropped. Regenerate the garment slightly longer while still matching the uploaded garment reference as closely as possible. " +
+        "Make only a subtle length correction; extend hems, cuffs, crop points, inseams, rises, and sleeve endings longer only where needed. Preserve silhouette, seams, stitching, fabric behavior, trims, hardware, model identity, pose, lighting, and background."
       );
     }
     return (
@@ -562,6 +555,7 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
   async function runQualityControl(params: {
     action: QualityControlAction;
     fitMode?: FitRepairMode;
+    fitReferenceUrl?: string;
     prompt: string;
     sourceUrl: string | null;
   }) {
@@ -573,6 +567,9 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
       modelId,
       `${params.prompt.trim()}${buildQualityControlSuffix(params.action, params.fitMode)}`
     );
+    const garmentImageUrls = params.fitReferenceUrl
+      ? [sourceUrl, params.fitReferenceUrl]
+      : [sourceUrl];
 
     setLoading(true);
     setError(null);
@@ -586,7 +583,7 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
           poseId: selectedPoseId,
           view: selectedView,
           prompt: imagePrompt,
-          garmentImageUrls: [sourceUrl],
+          garmentImageUrls,
           aspectRatio: aspect,
           resolution,
           format,
@@ -609,7 +606,7 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
         modelId,
         prompt: imagePrompt,
         imageUrls: data.images.map((i: any) => i.url),
-        referenceUrls: [sourceUrl, data.poseUrl].filter(Boolean),
+        referenceUrls: [sourceUrl, params.fitReferenceUrl, data.poseUrl].filter(Boolean),
         aspect,
         resolution,
       };

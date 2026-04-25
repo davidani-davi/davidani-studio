@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { HistoryItem } from "./types";
 import ImageLightbox, { ZoomButton } from "./ImageLightbox";
 
@@ -21,10 +21,10 @@ interface Props {
     fitMode?:
       | "all"
       | "silhouette"
-      | "length-match"
+      | "upload-reference"
       | "length-shorter"
-      | "length-longer"
-      | "details";
+      | "length-longer";
+    fitReferenceUrl?: string;
     prompt: string;
     sourceUrl: string | null;
   }) => void;
@@ -51,6 +51,8 @@ export default function OutputPanel({
   const [previewSrc, setPreviewSrc] = useState<string | null>(null);
   const [promptOpen, setPromptOpen] = useState(false);
   const [fitToolsOpen, setFitToolsOpen] = useState(false);
+  const [fitReferenceUploading, setFitReferenceUploading] = useState(false);
+  const fitReferenceInputRef = useRef<HTMLInputElement | null>(null);
 
   // Whenever the current run changes (e.g. new generation, clicked a different
   // history item), reset the gallery to image 0 so we never show a stale
@@ -75,6 +77,32 @@ export default function OutputPanel({
     current?.batch
       ? current?.referenceUrls?.[safeIndex] ?? null
       : current?.referenceUrls?.[0] ?? null;
+
+  async function uploadFitReference(file: File) {
+    if (!onQualityControl || !activePrompt) return;
+    setFitReferenceUploading(true);
+    try {
+      const form = new FormData();
+      form.append("files", file);
+      const res = await fetch("/api/upload", { method: "POST", body: form });
+      const data = await res.json();
+      if (!res.ok || !data?.ok || !data.uploads?.[0]?.url) {
+        throw new Error(data?.error || "Fit reference upload failed");
+      }
+      onQualityControl({
+        action: "retry-closer",
+        fitMode: "upload-reference",
+        fitReferenceUrl: data.uploads[0].url,
+        prompt: activePrompt,
+        sourceUrl: activeSource,
+      });
+    } catch (err: any) {
+      alert(err?.message || "Fit reference upload failed");
+    } finally {
+      setFitReferenceUploading(false);
+      if (fitReferenceInputRef.current) fitReferenceInputRef.current.value = "";
+    }
+  }
 
   /**
    * Derive a filename for the result at `resultIndex`. Prefers the original
@@ -291,16 +319,32 @@ export default function OutputPanel({
                     <span className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
                       Fit Repair
                     </span>
-                    <span className="text-[10px] text-neutral-400">choose the drift</span>
+                    <span className="text-[10px] text-neutral-400">pick a fix</span>
                   </div>
-                  <div className="grid grid-cols-3 gap-1.5">
+                  <input
+                    ref={fitReferenceInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      if (file) void uploadFitReference(file);
+                    }}
+                  />
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <button
+                      type="button"
+                      disabled={fitReferenceUploading}
+                      onClick={() => fitReferenceInputRef.current?.click()}
+                      className="col-span-2 rounded-lg border border-neutral-200 bg-neutral-50 px-2 py-2 text-[11px] font-semibold text-neutral-700 transition hover:border-neutral-300 hover:bg-neutral-100 disabled:opacity-60"
+                    >
+                      {fitReferenceUploading ? "Uploading fit ref..." : "Upload ref fit"}
+                    </button>
                     {[
-                      ["all", "Match ref"],
-                      ["length-shorter", "Shorter"],
-                      ["length-longer", "Longer"],
+                      ["length-shorter", "Slightly shorter"],
+                      ["length-longer", "Slightly longer"],
                       ["silhouette", "Silhouette"],
-                      ["length-match", "Length ref"],
-                      ["details", "Details"],
+                      ["all", "Match original"],
                     ].map(([fitMode, label]) => (
                       <button
                         key={fitMode}
@@ -311,10 +355,9 @@ export default function OutputPanel({
                             fitMode: fitMode as
                               | "all"
                               | "silhouette"
-                              | "length-match"
+                              | "upload-reference"
                               | "length-shorter"
-                              | "length-longer"
-                              | "details",
+                              | "length-longer",
                             prompt: activePrompt,
                             sourceUrl: activeSource,
                           })
