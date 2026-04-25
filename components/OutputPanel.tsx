@@ -53,6 +53,8 @@ export default function OutputPanel({
   const [promptOpen, setPromptOpen] = useState(false);
   const [fitToolsOpen, setFitToolsOpen] = useState(false);
   const [proportionToolsOpen, setProportionToolsOpen] = useState(false);
+  const [galleryColumns, setGalleryColumns] = useState(4);
+  const [galleryRows, setGalleryRows] = useState(1);
   const [fitReferenceUploading, setFitReferenceUploading] = useState(false);
   const fitReferenceInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -196,45 +198,83 @@ export default function OutputPanel({
           non-batch multi-variant runs too. Each thumbnail has its own
           ZoomButton (preview) and DownloadButton (save just that one). */}
       {current && (current.batch || current.imageUrls.length > 1) && current.imageUrls.length > 0 && (
-        <div className="flex shrink-0 items-center gap-2 overflow-x-auto border-b border-neutral-100 px-5 py-3">
-          {current.imageUrls.map((u, i) => (
-            <div
-              key={u}
-              className={`group relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border ${
-                i === safeIndex ? "border-brand-500 ring-2 ring-brand-200" : "border-neutral-200"
-              }`}
-            >
-              <button
-                onClick={() => setIndex(i)}
-                className="absolute inset-0 block"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={u} alt="" className="h-full w-full object-cover" />
-                <span className="absolute bottom-0.5 right-0.5 rounded bg-black/60 px-1 text-[9px] text-white">
-                  {i + 1}
-                </span>
-              </button>
-              <ZoomButton
-                onClick={() => setPreviewSrc(u)}
-                title="Preview at full size"
-                className="absolute left-1 top-1 opacity-0 group-hover:opacity-100"
+        <div className="shrink-0 border-b border-neutral-100 px-5 py-3">
+          <div className="mb-3 grid grid-cols-2 gap-3">
+            <label className="space-y-1">
+              <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
+                <span>Columns</span>
+                <span>{galleryColumns}</span>
+              </div>
+              <input
+                type="range"
+                min={2}
+                max={6}
+                value={galleryColumns}
+                onChange={(event) => setGalleryColumns(Number(event.target.value))}
+                className="w-full accent-neutral-900"
               />
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  e.preventDefault();
-                  download(u, i);
-                }}
-                title="Download this image"
-                className="absolute right-1 top-1 grid h-5 w-5 place-items-center rounded bg-black/60 text-white opacity-0 transition hover:bg-black/80 group-hover:opacity-100"
+            </label>
+            <label className="space-y-1">
+              <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
+                <span>Rows</span>
+                <span>{galleryRows}</span>
+              </div>
+              <input
+                type="range"
+                min={1}
+                max={4}
+                value={galleryRows}
+                onChange={(event) => setGalleryRows(Number(event.target.value))}
+                className="w-full accent-neutral-900"
+              />
+            </label>
+          </div>
+          <div
+            className="grid gap-2 overflow-y-auto pr-1"
+            style={{
+              gridTemplateColumns: `repeat(${galleryColumns}, minmax(0, 1fr))`,
+              maxHeight: `${galleryRows * 72 + Math.max(0, galleryRows - 1) * 8}px`,
+            }}
+          >
+            {current.imageUrls.map((u, i) => (
+              <div
+                key={u}
+                className={`group relative aspect-square overflow-hidden rounded-lg border ${
+                  i === safeIndex ? "border-brand-500 ring-2 ring-brand-200" : "border-neutral-200"
+                }`}
               >
-                <svg viewBox="0 0 20 20" fill="currentColor" className="h-3 w-3">
-                  <path d="M10 3a1 1 0 011 1v7.586l2.293-2.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 11.586V4a1 1 0 011-1zm-6 12a1 1 0 011 1v1h10v-1a1 1 0 112 0v2a1 1 0 01-1 1H4a1 1 0 01-1-1v-2a1 1 0 011-1z" />
-                </svg>
-              </button>
-            </div>
-          ))}
+                <button
+                  onClick={() => setIndex(i)}
+                  className="absolute inset-0 block"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={u} alt="" className="h-full w-full object-cover" />
+                  <span className="absolute bottom-0.5 right-0.5 rounded bg-black/60 px-1 text-[9px] text-white">
+                    {i + 1}
+                  </span>
+                </button>
+                <ZoomButton
+                  onClick={() => setPreviewSrc(u)}
+                  title="Preview at full size"
+                  className="absolute left-1 top-1 opacity-0 group-hover:opacity-100"
+                />
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    download(u, i);
+                  }}
+                  title="Download this image"
+                  className="absolute right-1 top-1 grid h-5 w-5 place-items-center rounded bg-black/60 text-white opacity-0 transition hover:bg-black/80 group-hover:opacity-100"
+                >
+                  <svg viewBox="0 0 20 20" fill="currentColor" className="h-3 w-3">
+                    <path d="M10 3a1 1 0 011 1v7.586l2.293-2.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 11.586V4a1 1 0 011-1zm-6 12a1 1 0 011 1v1h10v-1a1 1 0 112 0v2a1 1 0 01-1 1H4a1 1 0 01-1-1v-2a1 1 0 011-1z" />
+                  </svg>
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
