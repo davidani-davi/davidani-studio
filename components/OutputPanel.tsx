@@ -18,6 +18,7 @@ interface Props {
   onRegenerate?: (params: { prompt: string; sourceUrl: string | null }) => void;
   onQualityControl?: (params: {
     action: "restore-face" | "retry-closer" | "different-pose";
+    fitMode?: "all" | "silhouette" | "length" | "details";
     prompt: string;
     sourceUrl: string | null;
   }) => void;
@@ -43,12 +44,14 @@ export default function OutputPanel({
   const [index, setIndex] = useState(0);
   const [previewSrc, setPreviewSrc] = useState<string | null>(null);
   const [promptOpen, setPromptOpen] = useState(false);
+  const [fitToolsOpen, setFitToolsOpen] = useState(false);
 
   // Whenever the current run changes (e.g. new generation, clicked a different
   // history item), reset the gallery to image 0 so we never show a stale
   // out-of-range index left over from a previous multi-variant run.
   useEffect(() => {
     setIndex(0);
+    setFitToolsOpen(false);
   }, [current?.id]);
 
   // Defensive clamp — if index somehow exceeds the current run's image count,
@@ -257,13 +260,7 @@ export default function OutputPanel({
                 </button>
                 <button
                   type="button"
-                  onClick={() =>
-                    onQualityControl({
-                      action: "retry-closer",
-                      prompt: activePrompt,
-                      sourceUrl: activeSource,
-                    })
-                  }
+                  onClick={() => setFitToolsOpen((open) => !open)}
                   className="rounded-xl border border-neutral-200 bg-white px-2 py-2 text-[11px] font-semibold text-neutral-700 shadow-sm transition hover:-translate-y-0.5 hover:border-neutral-300 hover:shadow"
                 >
                   Restore fit
@@ -282,6 +279,40 @@ export default function OutputPanel({
                   New pose
                 </button>
               </div>
+              {fitToolsOpen && (
+                <div className="mt-2 rounded-xl border border-neutral-200 bg-white p-2">
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <span className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
+                      Fit Repair
+                    </span>
+                    <span className="text-[10px] text-neutral-400">choose the drift</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {[
+                      ["all", "All fit"],
+                      ["silhouette", "Silhouette"],
+                      ["length", "Length"],
+                      ["details", "Details"],
+                    ].map(([fitMode, label]) => (
+                      <button
+                        key={fitMode}
+                        type="button"
+                        onClick={() =>
+                          onQualityControl({
+                            action: "retry-closer",
+                            fitMode: fitMode as "all" | "silhouette" | "length" | "details",
+                            prompt: activePrompt,
+                            sourceUrl: activeSource,
+                          })
+                        }
+                        className="rounded-lg border border-neutral-200 bg-neutral-50 px-2 py-2 text-[11px] font-semibold text-neutral-700 transition hover:border-neutral-300 hover:bg-neutral-100"
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

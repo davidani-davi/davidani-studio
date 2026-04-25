@@ -1,10 +1,17 @@
 import { NextResponse } from "next/server";
 import { generate, type OverlayOptions } from "@/lib/fal";
 import { MODELS, type ModelId } from "@/lib/models";
-import { getPoseUrl, type PresetView } from "@/lib/models-registry";
+import { getPosePublicPath, type PresetView } from "@/lib/models-registry";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
+
+function absoluteUrl(req: Request, publicPath: string): string {
+  const proto = req.headers.get("x-forwarded-proto") || "https";
+  const host = req.headers.get("x-forwarded-host") || req.headers.get("host");
+  if (!host) throw new Error("Unable to resolve public asset host");
+  return new URL(encodeURI(publicPath), `${proto}://${host}`).toString();
+}
 
 /**
  * POST /api/generate-model
@@ -76,7 +83,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const poseUrl = await getPoseUrl(humanModelId, poseId, view || "front");
+    const poseUrl = absoluteUrl(req, getPosePublicPath(humanModelId, poseId, view || "front"));
 
     const result = await generate({
       modelId,

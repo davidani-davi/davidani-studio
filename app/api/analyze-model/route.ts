@@ -7,11 +7,18 @@ import {
   extractTwoPieceFields,
   type GarmentAdjustments,
 } from "@/lib/fal";
-import { getPoseUrl, type PresetView } from "@/lib/models-registry";
+import { getPosePublicPath, type PresetView } from "@/lib/models-registry";
 import { fal } from "@fal-ai/client";
 
 export const runtime = "nodejs";
 export const maxDuration = 180;
+
+function absoluteUrl(req: Request, publicPath: string): string {
+  const proto = req.headers.get("x-forwarded-proto") || "https";
+  const host = req.headers.get("x-forwarded-host") || req.headers.get("host");
+  if (!host) throw new Error("Unable to resolve public asset host");
+  return new URL(encodeURI(publicPath), `${proto}://${host}`).toString();
+}
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -271,7 +278,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const poseUrl = await getPoseUrl(modelId, poseId, view || "front");
+    const poseUrl = absoluteUrl(req, getPosePublicPath(modelId, poseId, view || "front"));
 
     // Run both vision passes in parallel but use allSettled so we can report
     // which one failed. Previously a 400 from fal.ai would surface as a

@@ -10,10 +10,9 @@
 // back / full. The UI shows one default front image per look, then swaps to
 // the requested linked variant when the user changes the View control.
 //
-// When the user triggers a generation with a given model + pose, we lazily
-// upload that pose file to fal.ai storage and cache the resulting URL in
-// memory for the lifetime of the serverless instance. Subsequent generations
-// using the same pose reuse the cached URL — no re-upload cost.
+// Model pose assets live under public/models/. Generation and analysis routes
+// can hand those stable public URLs directly to the image backend, which avoids
+// a fragile storage upload during every cold serverless instance.
 
 import fs from "node:fs";
 import path from "node:path";
@@ -265,6 +264,22 @@ export function listHumanModels(): HumanModel[] {
  */
 const poseUrlCache = new Map<string, string>();
 const poseUploadsInFlight = new Map<string, Promise<string>>();
+
+export function getPosePublicPath(
+  modelId: string,
+  poseId: string,
+  view: PresetView = "front"
+): string {
+  const models = listHumanModels();
+  const model = models.find((m) => m.id === modelId);
+  if (!model) throw new Error(`Unknown model: ${modelId}`);
+  const pose = model.poses.find((p) => p.id === poseId);
+  if (!pose) throw new Error(`Unknown pose: ${modelId}/${poseId}`);
+  const chosenView =
+    pose.views[view] || pose.views.front || pose.views.full || pose.views.side || pose.views.back;
+  if (!chosenView) throw new Error(`No preset image available for ${modelId}/${poseId}`);
+  return chosenView.publicPath;
+}
 
 export async function getPoseUrl(
   modelId: string,

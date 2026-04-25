@@ -48,9 +48,10 @@ function buildPoseVariationSuffix(index: number, total: number): string {
   );
 }
 
+type FitRepairMode = "all" | "silhouette" | "length" | "details";
 type QualityControlAction = "restore-face" | "retry-closer" | "different-pose";
 
-function buildQualityControlSuffix(action: QualityControlAction): string {
+function buildQualityControlSuffix(action: QualityControlAction, fitMode?: FitRepairMode): string {
   if (action === "restore-face") {
     return (
       " Quality control directive: restore and preserve the model's original face, facial features, skin tone, expression, hair, head angle, body proportions, and identity from the selected model pose image exactly. " +
@@ -58,9 +59,27 @@ function buildQualityControlSuffix(action: QualityControlAction): string {
     );
   }
   if (action === "retry-closer") {
+    if (fitMode === "silhouette") {
+      return (
+        " Quality control directive: repair the garment silhouette and fit using the uploaded garment reference as the source of truth. Match the original width, volume, body distance, shoulder/waist/hip proportions, leg or sleeve shape, drape, and overall outline. " +
+        "Do not make the garment tighter, looser, straighter, puffier, cropped, or longer unless that exact shape is visible in the reference."
+      );
+    }
+    if (fitMode === "length") {
+      return (
+        " Quality control directive: repair the garment length using the uploaded garment reference as the source of truth. Match the hem placement, crop point, sleeve length, inseam, rise, cuff position, waistband placement, and visible proportions exactly. " +
+        "Do not shorten, lengthen, tuck, crop, cuff, or extend the garment beyond the reference."
+      );
+    }
+    if (fitMode === "details") {
+      return (
+        " Quality control directive: repair garment construction details using the uploaded garment reference as the source of truth. Restore seam placement, stitching, panels, pockets, buttons, zippers, drawstrings, ribbing, hems, trims, hardware, fabric texture, folds, and material behavior. " +
+        "Do not simplify, omit, invent, or move construction details."
+      );
+    }
     return (
       " Quality control directive: retry closer to the uploaded garment reference. Preserve the garment's exact silhouette, fit, length, seam placement, stitching, fabric texture, trims, hardware, pockets, cuffs, waistband, and material behavior. " +
-      "Do not simplify the construction, do not change the garment category, and do not drift away from the original product shape."
+      "Use the uploaded garment as the source of truth because the previous result drifted away from the product shape. Do not simplify the construction, do not change the garment category, and do not drift away from the original product."
     );
   }
   return (
@@ -524,6 +543,7 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
 
   async function runQualityControl(params: {
     action: QualityControlAction;
+    fitMode?: FitRepairMode;
     prompt: string;
     sourceUrl: string | null;
   }) {
@@ -533,7 +553,7 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
 
     const imagePrompt = optimizePromptForModel(
       modelId,
-      `${params.prompt.trim()}${buildQualityControlSuffix(params.action)}`
+      `${params.prompt.trim()}${buildQualityControlSuffix(params.action, params.fitMode)}`
     );
 
     setLoading(true);
