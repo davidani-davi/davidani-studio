@@ -7,6 +7,7 @@ import PromptPanel, {
   type BatchProgress,
 } from "@/components/PromptPanel";
 import OutputPanel from "@/components/OutputPanel";
+import ResizableStudioLayout from "@/components/ResizableStudioLayout";
 import TopTabs from "@/components/TopTabs";
 import type { HistoryItem, UploadedImage } from "@/components/types";
 import type {
@@ -675,82 +676,85 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
         </div>
       </header>
 
-      {/* 3-column layout */}
-      <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-        <ModelSidebar
-          modelId={modelId}
-          onModelChange={setModelId}
-          aspect={aspect}
-          onAspectChange={setAspect}
-          resolution={resolution}
-          onResolutionChange={setResolution}
-          format={format}
-          onFormatChange={setFormat}
-          uploads={uploads}
-          selectedUrls={selected}
-          onToggleSelect={toggleSelect}
-          onAddFiles={addFiles}
-          onRemoveUpload={removeUpload}
-          humanModels={humanModels}
-          selectedHumanModelId={selectedHumanModelId}
-          onHumanModelChange={handleHumanModelChange}
-          selectedPoseId={selectedPoseId}
-          onPoseChange={handlePoseChange}
-          selectedView={selectedView}
-          onViewChange={handleViewChange}
-          modelsLoading={modelsLoading}
-          colorName={colorName}
-          onColorNameChange={setColorName}
-          styleNumber={styleNumber}
-          onStyleNumberChange={setStyleNumber}
-          showName={showName}
-          onShowNameChange={setShowName}
-          showNumber={showNumber}
-          onShowNumberChange={setShowNumber}
-          overlayPlacement={overlayPlacement}
-          onOverlayPlacementChange={setOverlayPlacement}
-          fontFamily={fontFamily}
-          onFontFamilyChange={setFontFamily}
-          fontSize={fontSize}
-          onFontSizeChange={setFontSize}
-        />
-
-        <PromptPanel
-          prompt={prompt}
-          onPromptChange={setPrompt}
-          numImages={numImages}
-          onNumImagesChange={setNumImages}
-          onGenerate={runGeneration}
-          onAnalyze={() => analyzeForModel({ useReviewOverride: false })}
-          analyzing={analyzing}
-          loading={loading || uploading}
-          disabled={!canAnalyze}
-          onBatchGenerate={runBatchGeneration}
-          canBatch={canAnalyze && selected.length >= 2}
-          batchProgress={batchProgress}
-          twoPiece={twoPiece}
-          onTwoPieceChange={handleTwoPieceChange}
-          fitAdjustment={fitAdjustment}
-          onFitAdjustmentChange={handleFitAdjustmentChange}
-          lengthAdjustment={lengthAdjustment}
-          onLengthAdjustmentChange={handleLengthAdjustmentChange}
-          pantsAdjustments={selectedModelIsPants}
-          analysisReview={twoPiece ? null : analysisReview}
-          onAnalysisReviewChange={twoPiece ? undefined : handleAnalysisReviewChange}
-        />
-
-        <OutputPanel
-          current={currentRun}
-          history={history}
-          onSelectHistory={setCurrentId}
-          onQualityControl={runQualityControl}
-          uploadNames={uploadNames}
-          onClearHistory={() => {
-            setHistory([]);
-            setCurrentId(null);
-          }}
-        />
-      </div>
+      <ResizableStudioLayout
+        left={
+          <ModelSidebar
+            modelId={modelId}
+            onModelChange={setModelId}
+            aspect={aspect}
+            onAspectChange={setAspect}
+            resolution={resolution}
+            onResolutionChange={setResolution}
+            format={format}
+            onFormatChange={setFormat}
+            uploads={uploads}
+            selectedUrls={selected}
+            onToggleSelect={toggleSelect}
+            onAddFiles={addFiles}
+            onRemoveUpload={removeUpload}
+            humanModels={humanModels}
+            selectedHumanModelId={selectedHumanModelId}
+            onHumanModelChange={handleHumanModelChange}
+            selectedPoseId={selectedPoseId}
+            onPoseChange={handlePoseChange}
+            selectedView={selectedView}
+            onViewChange={handleViewChange}
+            modelsLoading={modelsLoading}
+            colorName={colorName}
+            onColorNameChange={setColorName}
+            styleNumber={styleNumber}
+            onStyleNumberChange={setStyleNumber}
+            showName={showName}
+            onShowNameChange={setShowName}
+            showNumber={showNumber}
+            onShowNumberChange={setShowNumber}
+            overlayPlacement={overlayPlacement}
+            onOverlayPlacementChange={setOverlayPlacement}
+            fontFamily={fontFamily}
+            onFontFamilyChange={setFontFamily}
+            fontSize={fontSize}
+            onFontSizeChange={setFontSize}
+          />
+        }
+        center={
+          <PromptPanel
+            prompt={prompt}
+            onPromptChange={setPrompt}
+            numImages={numImages}
+            onNumImagesChange={setNumImages}
+            onGenerate={runGeneration}
+            onAnalyze={() => analyzeForModel({ useReviewOverride: false })}
+            analyzing={analyzing}
+            loading={loading || uploading}
+            disabled={!canAnalyze}
+            onBatchGenerate={runBatchGeneration}
+            canBatch={canAnalyze && selected.length >= 2}
+            batchProgress={batchProgress}
+            twoPiece={twoPiece}
+            onTwoPieceChange={handleTwoPieceChange}
+            fitAdjustment={fitAdjustment}
+            onFitAdjustmentChange={handleFitAdjustmentChange}
+            lengthAdjustment={lengthAdjustment}
+            onLengthAdjustmentChange={handleLengthAdjustmentChange}
+            pantsAdjustments={selectedModelIsPants}
+            analysisReview={twoPiece ? null : analysisReview}
+            onAnalysisReviewChange={twoPiece ? undefined : handleAnalysisReviewChange}
+          />
+        }
+        right={
+          <OutputPanel
+            current={currentRun}
+            history={history}
+            onSelectHistory={setCurrentId}
+            onQualityControl={runQualityControl}
+            uploadNames={uploadNames}
+            onClearHistory={() => {
+              setHistory([]);
+              setCurrentId(null);
+            }}
+          />
+        }
+      />
 
       {/* Error toast */}
       {error && (

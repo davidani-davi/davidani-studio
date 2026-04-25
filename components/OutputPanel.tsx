@@ -53,8 +53,6 @@ export default function OutputPanel({
   const [promptOpen, setPromptOpen] = useState(false);
   const [fitToolsOpen, setFitToolsOpen] = useState(false);
   const [proportionToolsOpen, setProportionToolsOpen] = useState(false);
-  const [galleryColumns, setGalleryColumns] = useState(4);
-  const [galleryRows, setGalleryRows] = useState(1);
   const [fitReferenceUploading, setFitReferenceUploading] = useState(false);
   const fitReferenceInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -168,7 +166,7 @@ export default function OutputPanel({
   }
 
   return (
-    <aside className="flex w-full shrink-0 flex-col border-t border-neutral-200 bg-white lg:w-96 lg:border-l lg:border-t-0">
+    <aside className="flex w-full shrink-0 flex-col border-t border-neutral-200 bg-white lg:h-full lg:border-l lg:border-t-0">
       <div className="flex items-center justify-between border-b border-neutral-200 px-5 py-4">
         <div>
           <h2 className="flex items-center gap-2 text-sm font-semibold">
@@ -199,47 +197,11 @@ export default function OutputPanel({
           ZoomButton (preview) and DownloadButton (save just that one). */}
       {current && (current.batch || current.imageUrls.length > 1) && current.imageUrls.length > 0 && (
         <div className="shrink-0 border-b border-neutral-100 px-5 py-3">
-          <div className="mb-3 grid grid-cols-2 gap-3">
-            <label className="space-y-1">
-              <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
-                <span>Columns</span>
-                <span>{galleryColumns}</span>
-              </div>
-              <input
-                type="range"
-                min={2}
-                max={6}
-                value={galleryColumns}
-                onChange={(event) => setGalleryColumns(Number(event.target.value))}
-                className="w-full accent-neutral-900"
-              />
-            </label>
-            <label className="space-y-1">
-              <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
-                <span>Rows</span>
-                <span>{galleryRows}</span>
-              </div>
-              <input
-                type="range"
-                min={1}
-                max={4}
-                value={galleryRows}
-                onChange={(event) => setGalleryRows(Number(event.target.value))}
-                className="w-full accent-neutral-900"
-              />
-            </label>
-          </div>
-          <div
-            className="grid gap-2 overflow-y-auto pr-1"
-            style={{
-              gridTemplateColumns: `repeat(${galleryColumns}, minmax(0, 1fr))`,
-              maxHeight: `${galleryRows * 72 + Math.max(0, galleryRows - 1) * 8}px`,
-            }}
-          >
+          <div className="flex items-center gap-2 overflow-x-auto">
             {current.imageUrls.map((u, i) => (
               <div
                 key={u}
-                className={`group relative aspect-square overflow-hidden rounded-lg border ${
+                className={`group relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border ${
                   i === safeIndex ? "border-brand-500 ring-2 ring-brand-200" : "border-neutral-200"
                 }`}
               >

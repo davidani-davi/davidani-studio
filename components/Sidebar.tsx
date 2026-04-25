@@ -207,7 +207,7 @@ export default function Sidebar(p: Props) {
   }
 
   return (
-    <aside className="flex w-full shrink-0 flex-col overflow-y-auto border-b border-neutral-200 bg-white lg:w-72 lg:border-b-0 lg:border-r">
+    <aside className="flex w-full shrink-0 flex-col overflow-y-auto border-b border-neutral-200 bg-white lg:h-full lg:border-b-0 lg:border-r">
       {/* ========== PRODUCT PHOTOS (image 1) ========== */}
       <section
         className={`border-b border-neutral-100 p-5 transition ${

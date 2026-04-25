@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import PromptPanel, { type BatchProgress } from "@/components/PromptPanel";
 import OutputPanel from "@/components/OutputPanel";
+import ResizableStudioLayout from "@/components/ResizableStudioLayout";
 import TopTabs from "@/components/TopTabs";
 import type { HistoryItem, UploadedImage } from "@/components/types";
 import type { ModelId } from "@/lib/models";
@@ -457,97 +458,100 @@ export default function StudioPage() {
         </div>
       </header>
 
-      {/* 3-column layout */}
-      <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-        <Sidebar
-          modelId={modelId}
-          onModelChange={setModelId}
-          aspect={aspect}
-          onAspectChange={setAspect}
-          resolution={resolution}
-          onResolutionChange={setResolution}
-          format={format}
-          onFormatChange={setFormat}
-          uploads={uploads}
-          selectedUrls={selected}
-          onToggleSelect={toggleSelect}
-          onAddFiles={addFiles}
-          onRemoveUpload={removeUpload}
-          backgroundColor={backgroundColor}
-          onBackgroundColorChange={setBackgroundColor}
-          colorName={colorName}
-          onColorNameChange={setColorName}
-          styleNumber={styleNumber}
-          onStyleNumberChange={setStyleNumber}
-          showName={showName}
-          onShowNameChange={setShowName}
-          showNumber={showNumber}
-          onShowNumberChange={setShowNumber}
-          overlayPlacement={overlayPlacement}
-          onOverlayPlacementChange={setOverlayPlacement}
-          fontFamily={fontFamily}
-          onFontFamilyChange={setFontFamily}
-          fontSize={fontSize}
-          onFontSizeChange={setFontSize}
-          referenceImageUrl={referenceImageUrl}
-          defaultReferencePreview="/style-reference.png"
-          onReferenceReplace={replaceReferenceImage}
-          onReferenceReset={resetReferenceImage}
-          referenceUploading={referenceUploading}
-        />
-
-        <PromptPanel
-          prompt={prompt}
-          onPromptChange={setPrompt}
-          numImages={numImages}
-          onNumImagesChange={setNumImages}
-          onGenerate={runGeneration}
-          analyzing={analyzing}
-          loading={loading || uploading}
-          disabled={selected.length === 0}
-          onBatchGenerate={runBatchGeneration}
-          canBatch={selected.length >= 2}
-          batchProgress={batchProgress}
-          twoPiece={twoPiece}
-          onTwoPieceChange={setTwoPiece}
-        />
-
-        <OutputPanel
-          current={currentRun}
-          history={history}
-          onSelectHistory={setCurrentId}
-          uploadNames={uploadNames}
-          onClearHistory={() => {
-            setHistory([]);
-            setCurrentId(null);
-          }}
-          // "Regenerate this" from a batch thumbnail: drop the prompt into
-          // the PromptPanel, put the batch-slot's source image back into the
-          // selection, and scroll the user back to the prompt so they can
-          // edit before re-running. We deliberately DON'T auto-generate —
-          // the whole point is letting the user tweak a weak prompt.
-          onRegenerate={({ prompt: p, sourceUrl }) => {
-            if (p) setPrompt(p);
-            if (sourceUrl) {
-              // Make sure the source is uploaded + selected so Generate has
-              // something to work with. If the URL isn't in `uploads` yet
-              // (e.g. the user cleared them), we add a synthetic entry so
-              // the thumbnail lights up in the sidebar.
-              setUploads((list) =>
-                list.some((u) => u.url === sourceUrl)
-                  ? list
-                  : [...list, { url: sourceUrl, name: "batch-source" }]
-              );
-              setSelected([sourceUrl]);
-            }
-            // No analyze-gate to clear anymore — unified Generate always
-            // re-runs the analyzer itself. If the user clicks Generate after
-            // Regenerate, the prompt they just dropped in will be overwritten.
-            // That's intentional: the user's tweak survives as long as they
-            // don't click Generate, which matches the rest of the flow.
-          }}
-        />
-      </div>
+      <ResizableStudioLayout
+        left={
+          <Sidebar
+            modelId={modelId}
+            onModelChange={setModelId}
+            aspect={aspect}
+            onAspectChange={setAspect}
+            resolution={resolution}
+            onResolutionChange={setResolution}
+            format={format}
+            onFormatChange={setFormat}
+            uploads={uploads}
+            selectedUrls={selected}
+            onToggleSelect={toggleSelect}
+            onAddFiles={addFiles}
+            onRemoveUpload={removeUpload}
+            backgroundColor={backgroundColor}
+            onBackgroundColorChange={setBackgroundColor}
+            colorName={colorName}
+            onColorNameChange={setColorName}
+            styleNumber={styleNumber}
+            onStyleNumberChange={setStyleNumber}
+            showName={showName}
+            onShowNameChange={setShowName}
+            showNumber={showNumber}
+            onShowNumberChange={setShowNumber}
+            overlayPlacement={overlayPlacement}
+            onOverlayPlacementChange={setOverlayPlacement}
+            fontFamily={fontFamily}
+            onFontFamilyChange={setFontFamily}
+            fontSize={fontSize}
+            onFontSizeChange={setFontSize}
+            referenceImageUrl={referenceImageUrl}
+            defaultReferencePreview="/style-reference.png"
+            onReferenceReplace={replaceReferenceImage}
+            onReferenceReset={resetReferenceImage}
+            referenceUploading={referenceUploading}
+          />
+        }
+        center={
+          <PromptPanel
+            prompt={prompt}
+            onPromptChange={setPrompt}
+            numImages={numImages}
+            onNumImagesChange={setNumImages}
+            onGenerate={runGeneration}
+            analyzing={analyzing}
+            loading={loading || uploading}
+            disabled={selected.length === 0}
+            onBatchGenerate={runBatchGeneration}
+            canBatch={selected.length >= 2}
+            batchProgress={batchProgress}
+            twoPiece={twoPiece}
+            onTwoPieceChange={setTwoPiece}
+          />
+        }
+        right={
+          <OutputPanel
+            current={currentRun}
+            history={history}
+            onSelectHistory={setCurrentId}
+            uploadNames={uploadNames}
+            onClearHistory={() => {
+              setHistory([]);
+              setCurrentId(null);
+            }}
+            // "Regenerate this" from a batch thumbnail: drop the prompt into
+            // the PromptPanel, put the batch-slot's source image back into the
+            // selection, and scroll the user back to the prompt so they can
+            // edit before re-running. We deliberately DON'T auto-generate —
+            // the whole point is letting the user tweak a weak prompt.
+            onRegenerate={({ prompt: p, sourceUrl }) => {
+              if (p) setPrompt(p);
+              if (sourceUrl) {
+                // Make sure the source is uploaded + selected so Generate has
+                // something to work with. If the URL isn't in `uploads` yet
+                // (e.g. the user cleared them), we add a synthetic entry so
+                // the thumbnail lights up in the sidebar.
+                setUploads((list) =>
+                  list.some((u) => u.url === sourceUrl)
+                    ? list
+                    : [...list, { url: sourceUrl, name: "batch-source" }]
+                );
+                setSelected([sourceUrl]);
+              }
+              // No analyze-gate to clear anymore — unified Generate always
+              // re-runs the analyzer itself. If the user clicks Generate after
+              // Regenerate, the prompt they just dropped in will be overwritten.
+              // That's intentional: the user's tweak survives as long as they
+              // don't click Generate, which matches the rest of the flow.
+            }}
+          />
+        }
+      />
 
       {/* Error / batch-summary toast — whitespace-pre-line so multi-line
           batch summaries render correctly. */}
