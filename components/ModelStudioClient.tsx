@@ -48,7 +48,13 @@ function buildPoseVariationSuffix(index: number, total: number): string {
   );
 }
 
-type FitRepairMode = "all" | "silhouette" | "length" | "details";
+type FitRepairMode =
+  | "all"
+  | "silhouette"
+  | "length-match"
+  | "length-shorter"
+  | "length-longer"
+  | "details";
 type QualityControlAction = "restore-face" | "retry-closer" | "different-pose";
 
 function buildQualityControlSuffix(action: QualityControlAction, fitMode?: FitRepairMode): string {
@@ -65,10 +71,22 @@ function buildQualityControlSuffix(action: QualityControlAction, fitMode?: FitRe
         "Do not make the garment tighter, looser, straighter, puffier, cropped, or longer unless that exact shape is visible in the reference."
       );
     }
-    if (fitMode === "length") {
+    if (fitMode === "length-match") {
       return (
         " Quality control directive: repair the garment length using the uploaded garment reference as the source of truth. Match the hem placement, crop point, sleeve length, inseam, rise, cuff position, waistband placement, and visible proportions exactly. " +
         "Do not shorten, lengthen, tuck, crop, cuff, or extend the garment beyond the reference."
+      );
+    }
+    if (fitMode === "length-shorter") {
+      return (
+        " Quality control directive: the previous result made the garment too long. Regenerate the garment with a shorter length while still matching the uploaded garment reference as closely as possible. " +
+        "Move hems, cuffs, crop points, inseams, rises, and sleeve endings shorter only where needed; preserve silhouette, seams, stitching, fabric behavior, trims, hardware, model identity, pose, lighting, and background."
+      );
+    }
+    if (fitMode === "length-longer") {
+      return (
+        " Quality control directive: the previous result made the garment too short or too cropped. Regenerate the garment with a longer length while still matching the uploaded garment reference as closely as possible. " +
+        "Extend hems, cuffs, crop points, inseams, rises, and sleeve endings longer only where needed; preserve silhouette, seams, stitching, fabric behavior, trims, hardware, model identity, pose, lighting, and background."
       );
     }
     if (fitMode === "details") {

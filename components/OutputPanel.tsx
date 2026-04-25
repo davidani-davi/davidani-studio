@@ -18,7 +18,13 @@ interface Props {
   onRegenerate?: (params: { prompt: string; sourceUrl: string | null }) => void;
   onQualityControl?: (params: {
     action: "restore-face" | "retry-closer" | "different-pose";
-    fitMode?: "all" | "silhouette" | "length" | "details";
+    fitMode?:
+      | "all"
+      | "silhouette"
+      | "length-match"
+      | "length-shorter"
+      | "length-longer"
+      | "details";
     prompt: string;
     sourceUrl: string | null;
   }) => void;
@@ -287,11 +293,13 @@ export default function OutputPanel({
                     </span>
                     <span className="text-[10px] text-neutral-400">choose the drift</span>
                   </div>
-                  <div className="grid grid-cols-2 gap-1.5">
+                  <div className="grid grid-cols-3 gap-1.5">
                     {[
-                      ["all", "All fit"],
+                      ["all", "Match ref"],
+                      ["length-shorter", "Shorter"],
+                      ["length-longer", "Longer"],
                       ["silhouette", "Silhouette"],
-                      ["length", "Length"],
+                      ["length-match", "Length ref"],
                       ["details", "Details"],
                     ].map(([fitMode, label]) => (
                       <button
@@ -300,7 +308,13 @@ export default function OutputPanel({
                         onClick={() =>
                           onQualityControl({
                             action: "retry-closer",
-                            fitMode: fitMode as "all" | "silhouette" | "length" | "details",
+                            fitMode: fitMode as
+                              | "all"
+                              | "silhouette"
+                              | "length-match"
+                              | "length-shorter"
+                              | "length-longer"
+                              | "details",
                             prompt: activePrompt,
                             sourceUrl: activeSource,
                           })
