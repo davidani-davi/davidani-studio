@@ -16,6 +16,11 @@ interface Props {
    * a weak batch result without re-running the whole batch.
    */
   onRegenerate?: (params: { prompt: string; sourceUrl: string | null }) => void;
+  onQualityControl?: (params: {
+    action: "restore-face" | "retry-closer" | "different-pose";
+    prompt: string;
+    sourceUrl: string | null;
+  }) => void;
   /**
    * Optional map of source-image URL → original upload filename.
    * When provided, downloaded result files are named after the source
@@ -32,6 +37,7 @@ export default function OutputPanel({
   onSelectHistory,
   onClearHistory,
   onRegenerate,
+  onQualityControl,
   uploadNames,
 }: Props) {
   const [index, setIndex] = useState(0);
@@ -224,20 +230,76 @@ export default function OutputPanel({
       </div>
 
       {current && (
-        <div className="flex items-center gap-2 border-t border-neutral-200 px-5 py-3">
-          <button
-            onClick={() => active && download(active, safeIndex)}
-            disabled={!active}
-            className="flex-1 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs font-medium hover:bg-neutral-50 disabled:opacity-50"
-          >
-            Download
-          </button>
-          <button
-            onClick={downloadAll}
-            className="flex-1 rounded-lg bg-neutral-900 px-3 py-2 text-xs font-medium text-white hover:bg-neutral-800"
-          >
-            Download all
-          </button>
+        <div className="border-t border-neutral-200 px-5 py-3">
+          {onQualityControl && activePrompt && (
+            <div className="mb-3 rounded-2xl border border-neutral-200 bg-neutral-50 p-2.5">
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
+                  Quality Control
+                </span>
+                <span className="rounded-full bg-white px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-neutral-400">
+                  Refine
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-1.5">
+                <button
+                  type="button"
+                  onClick={() =>
+                    onQualityControl({
+                      action: "restore-face",
+                      prompt: activePrompt,
+                      sourceUrl: activeSource,
+                    })
+                  }
+                  className="rounded-xl border border-neutral-200 bg-white px-2 py-2 text-[11px] font-semibold text-neutral-700 shadow-sm transition hover:-translate-y-0.5 hover:border-neutral-300 hover:shadow"
+                >
+                  Restore face
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    onQualityControl({
+                      action: "retry-closer",
+                      prompt: activePrompt,
+                      sourceUrl: activeSource,
+                    })
+                  }
+                  className="rounded-xl border border-neutral-200 bg-white px-2 py-2 text-[11px] font-semibold text-neutral-700 shadow-sm transition hover:-translate-y-0.5 hover:border-neutral-300 hover:shadow"
+                >
+                  Restore fit
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    onQualityControl({
+                      action: "different-pose",
+                      prompt: activePrompt,
+                      sourceUrl: activeSource,
+                    })
+                  }
+                  className="rounded-xl border border-neutral-200 bg-white px-2 py-2 text-[11px] font-semibold text-neutral-700 shadow-sm transition hover:-translate-y-0.5 hover:border-neutral-300 hover:shadow"
+                >
+                  New pose
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => active && download(active, safeIndex)}
+              disabled={!active}
+              className="flex-1 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs font-medium hover:bg-neutral-50 disabled:opacity-50"
+            >
+              Download
+            </button>
+            <button
+              onClick={downloadAll}
+              className="flex-1 rounded-lg bg-neutral-900 px-3 py-2 text-xs font-medium text-white hover:bg-neutral-800"
+            >
+              Download all
+            </button>
+          </div>
         </div>
       )}
 

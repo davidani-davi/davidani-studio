@@ -48,6 +48,27 @@ function buildPoseVariationSuffix(index: number, total: number): string {
   );
 }
 
+type QualityControlAction = "restore-face" | "retry-closer" | "different-pose";
+
+function buildQualityControlSuffix(action: QualityControlAction): string {
+  if (action === "restore-face") {
+    return (
+      " Quality control directive: restore and preserve the model's original face, facial features, skin tone, expression, hair, head angle, body proportions, and identity from the selected model pose image exactly. " +
+      "Do not beautify, age-shift, reshape, repaint, or replace the face. Keep the background, lighting, camera angle, and garment edit otherwise unchanged."
+    );
+  }
+  if (action === "retry-closer") {
+    return (
+      " Quality control directive: retry closer to the uploaded garment reference. Preserve the garment's exact silhouette, fit, length, seam placement, stitching, fabric texture, trims, hardware, pockets, cuffs, waistband, and material behavior. " +
+      "Do not simplify the construction, do not change the garment category, and do not drift away from the original product shape."
+    );
+  }
+  return (
+    " Quality control directive: create a neighboring pose variation while preserving the same model identity, face, body proportions, garment, background, lighting, and camera style. " +
+    "Use a subtle different pose: a small head angle change, slight shoulder rotation, gentle hand/arm variation, or natural weight shift. Do not change the view into a dramatically different shot."
+  );
+}
+
 async function fetchJson(label: string, input: string, init?: RequestInit): Promise<any> {
   const res = await fetch(input, init);
   const raw = await res.text();
@@ -501,6 +522,68 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
     }
   }
 
+  async function runQualityControl(params: {
+    action: QualityControlAction;
+    prompt: string;
+    sourceUrl: string | null;
+  }) {
+    if (!selectedHumanModelId || !selectedPoseId) return;
+    const sourceUrl = params.sourceUrl || selected[0];
+    if (!sourceUrl) return;
+
+    const imagePrompt = optimizePromptForModel(
+      modelId,
+      `${params.prompt.trim()}${buildQualityControlSuffix(params.action)}`
+    );
+
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await fetchJson("Quality control", "/api/generate-model", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          modelId,
+          humanModelId: selectedHumanModelId,
+          poseId: selectedPoseId,
+          view: selectedView,
+          prompt: imagePrompt,
+          garmentImageUrls: [sourceUrl],
+          aspectRatio: aspect,
+          resolution,
+          format,
+          numImages: 1,
+          overlay: {
+            mode: deriveOverlayMode(showName, showNumber),
+            placement: overlayPlacement,
+            colorName,
+            styleNumber,
+            fontFamily,
+            fontSize,
+          },
+        }),
+      });
+
+      const id = (crypto.randomUUID?.() || String(Date.now())).replace(/-/g, "");
+      const item: HistoryItem = {
+        id,
+        timestamp: Date.now(),
+        modelId,
+        prompt: imagePrompt,
+        imageUrls: data.images.map((i: any) => i.url),
+        referenceUrls: [sourceUrl, data.poseUrl].filter(Boolean),
+        aspect,
+        resolution,
+      };
+      setHistory((h) => [item, ...h]);
+      setCurrentId(id);
+    } catch (err: any) {
+      setError(err.message || "Quality control failed");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   const canAnalyze =
     selected.length > 0 && !!selectedHumanModelId && !!selectedPoseId;
 
@@ -593,6 +676,7 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
           current={currentRun}
           history={history}
           onSelectHistory={setCurrentId}
+          onQualityControl={runQualityControl}
           uploadNames={uploadNames}
           onClearHistory={() => {
             setHistory([]);
