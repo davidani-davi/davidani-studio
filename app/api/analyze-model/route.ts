@@ -226,7 +226,8 @@ async function extractTwoPieceFieldsFromSeparateImages(
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { modelId, poseId, garmentImageUrl, garmentImageUrls, twoPiece, view } = body as {
+    const { modelId, poseId, garmentImageUrl, garmentImageUrls, twoPiece, view, garmentOverride } =
+      body as {
       modelId: string;
       poseId: string;
       garmentImageUrl: string;
@@ -234,8 +235,23 @@ export async function POST(req: Request) {
       twoPiece?: boolean;
       adjustments?: GarmentAdjustments;
       view?: PresetView;
+      garmentOverride?: unknown;
     };
     const adjustments = body?.adjustments as GarmentAdjustments | undefined;
+    const singleGarmentOverride =
+      !twoPiece &&
+      garmentOverride &&
+      typeof garmentOverride === "object" &&
+      typeof (garmentOverride as any).garment === "string" &&
+      (garmentOverride as any).garment.trim()
+        ? {
+            garment: (garmentOverride as any).garment.trim(),
+            features:
+              typeof (garmentOverride as any).features === "string"
+                ? (garmentOverride as any).features.trim()
+                : "",
+          }
+        : null;
     const garmentUrls = Array.isArray(garmentImageUrls)
       ? garmentImageUrls.filter((url): url is string => typeof url === "string" && url.trim().length > 0)
       : garmentImageUrl && typeof garmentImageUrl === "string"
@@ -270,6 +286,8 @@ export async function POST(req: Request) {
         ? garmentUrls.length >= 2
           ? extractTwoPieceFieldsFromSeparateImages(garmentUrls)
           : extractTwoPieceFields(garmentUrls[0])
+        : singleGarmentOverride
+        ? Promise.resolve(singleGarmentOverride)
         : extractGarmentFields(garmentUrls[0]),
       analyzeModelPhoto(poseUrl),
     ]);

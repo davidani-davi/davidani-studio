@@ -16,11 +16,18 @@ export interface BatchProgress {
   stage: "analyzing" | "generating" | "idle";
 }
 
+export interface AnalysisReview {
+  garment: string;
+  features: string;
+  updatedAt: number;
+}
+
 interface Props {
   prompt: string;
   onPromptChange: (v: string) => void;
   numImages: number;
   onNumImagesChange: (n: number) => void;
+  onAnalyze?: () => void;
   /**
    * Runs analyze → generate as a single atomic flow. The button always
    * re-analyzes on every click so the prompt stays in sync with the current
@@ -50,6 +57,8 @@ interface Props {
   lengthAdjustment?: GarmentLengthAdjustment;
   onLengthAdjustmentChange?: (v: GarmentLengthAdjustment) => void;
   pantsAdjustments?: boolean;
+  analysisReview?: AnalysisReview | null;
+  onAnalysisReviewChange?: (review: AnalysisReview) => void;
 }
 
 const FIT_OPTIONS: { value: GarmentFitAdjustment; label: string }[] = [
@@ -169,9 +178,8 @@ export default function PromptPanel(p: Props) {
         <div>
           <h2 className="text-sm font-semibold text-neutral-900">Brief</h2>
           <p className="text-[11px] text-neutral-500">
-            Claude analyzes your photo and drafts the prompt automatically on
-            every Generate. Edits below are for debugging only — next run will
-            overwrite them.
+            Claude analyzes your photo, shows an editable review, then drafts
+            the generation prompt from that review.
           </p>
         </div>
         <span
@@ -253,6 +261,77 @@ export default function PromptPanel(p: Props) {
             <p className="basis-full text-[10px] leading-relaxed text-neutral-500">
               Pants controls override the leg shape and hem length while preserving the uploaded garment's fabric, construction, pockets, stitching, and hardware.
             </p>
+          </div>
+        )}
+      </div>
+
+      {/* ========== ANALYSIS REVIEW ========== */}
+      <div className="border-b border-neutral-100 px-6 py-3">
+        <div className="mb-2 flex items-center justify-between gap-3">
+          <div>
+            <div className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
+              Analysis Review
+            </div>
+            <div className="text-[11px] text-neutral-500">
+              Edit what the AI detected before Generate.
+            </div>
+          </div>
+          {p.onAnalyze && (
+            <button
+              type="button"
+              onClick={p.onAnalyze}
+              disabled={p.disabled || p.loading || p.analyzing || batchActive}
+              className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold transition disabled:cursor-not-allowed ${
+                p.disabled || p.loading || p.analyzing || batchActive
+                  ? "border-neutral-200 bg-neutral-100 text-neutral-400"
+                  : "border-neutral-300 bg-white text-neutral-700 shadow-sm hover:bg-neutral-50"
+              }`}
+            >
+              {p.analyzing ? <Spinner className="h-3.5 w-3.5" /> : IconSparkle}
+              <span>{p.analysisReview ? "Re-analyze" : "Analyze"}</span>
+            </button>
+          )}
+        </div>
+
+        {p.analysisReview && p.onAnalysisReviewChange ? (
+          <div className="grid gap-2 rounded-xl border border-neutral-200 bg-neutral-50 p-3">
+            <label className="block">
+              <span className="mb-1 block text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
+                Detected garment
+              </span>
+              <input
+                value={p.analysisReview.garment}
+                onChange={(e) =>
+                  p.onAnalysisReviewChange?.({
+                    ...p.analysisReview!,
+                    garment: e.target.value,
+                  })
+                }
+                disabled={p.loading || p.analyzing}
+                className="w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs font-medium text-neutral-800 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100 disabled:bg-neutral-100 disabled:text-neutral-400"
+              />
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
+                Visible details
+              </span>
+              <textarea
+                value={p.analysisReview.features}
+                onChange={(e) =>
+                  p.onAnalysisReviewChange?.({
+                    ...p.analysisReview!,
+                    features: e.target.value,
+                  })
+                }
+                disabled={p.loading || p.analyzing}
+                rows={3}
+                className="w-full resize-none rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs leading-relaxed text-neutral-800 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100 disabled:bg-neutral-100 disabled:text-neutral-400"
+              />
+            </label>
+          </div>
+        ) : (
+          <div className="rounded-xl border border-dashed border-neutral-200 bg-neutral-50 px-3 py-2.5 text-[11px] text-neutral-500">
+            Run Analyze to preview the garment read. Generate can still analyze automatically.
           </div>
         )}
       </div>

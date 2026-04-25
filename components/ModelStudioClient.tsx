@@ -2,7 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import ModelSidebar from "@/components/ModelSidebar";
-import PromptPanel, { type BatchProgress } from "@/components/PromptPanel";
+import PromptPanel, {
+  type AnalysisReview,
+  type BatchProgress,
+} from "@/components/PromptPanel";
 import OutputPanel from "@/components/OutputPanel";
 import TopTabs from "@/components/TopTabs";
 import type { HistoryItem, UploadedImage } from "@/components/types";
@@ -115,6 +118,7 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
     useState<GarmentFitAdjustment>("true-to-reference");
   const [lengthAdjustment, setLengthAdjustment] =
     useState<GarmentLengthAdjustment>("true-to-reference");
+  const [analysisReview, setAnalysisReview] = useState<AnalysisReview | null>(null);
 
   /* ---------- Coordinated two-piece-set toggle ----------
      When checked, the analyze-model API routes through extractTwoPieceFields
@@ -166,9 +170,13 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
   /* ---------- Handlers ---------- */
 
   function toggleSelect(url: string) {
+    setPrompt("");
+    setAnalysisReview(null);
     setSelected((s) => (s.includes(url) ? s.filter((u) => u !== url) : [...s, url]));
   }
   function removeUpload(url: string) {
+    setPrompt("");
+    setAnalysisReview(null);
     setUploads((list) => list.filter((u) => u.url !== url));
     setSelected((s) => s.filter((u) => u !== url));
   }
@@ -186,6 +194,8 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
       const added: UploadedImage[] = data.uploads;
       setUploads((list) => [...list, ...added]);
       setSelected((s) => [...s, ...added.map((a) => a.url)]);
+      setPrompt("");
+      setAnalysisReview(null);
     } catch (err: any) {
       setError(err.message || "Upload failed");
     } finally {
@@ -200,10 +210,39 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
     setSelectedPoseId(m?.poses[0]?.id ?? null);
     // Invalidate any stale prompt — it was written for the previous model/pose.
     setPrompt("");
+    setAnalysisReview(null);
   }
   function handlePoseChange(id: string) {
     setSelectedPoseId(id);
     // Same rationale — prompts are pose-specific (they cite the exact pose).
+    setPrompt("");
+    setAnalysisReview(null);
+  }
+
+  function handleViewChange(view: PresetView) {
+    setSelectedView(view);
+    setPrompt("");
+    setAnalysisReview(null);
+  }
+
+  function handleTwoPieceChange(value: boolean) {
+    setTwoPiece(value);
+    setPrompt("");
+    setAnalysisReview(null);
+  }
+
+  function handleFitAdjustmentChange(value: GarmentFitAdjustment) {
+    setFitAdjustment(value);
+    setPrompt("");
+  }
+
+  function handleLengthAdjustmentChange(value: GarmentLengthAdjustment) {
+    setLengthAdjustment(value);
+    setPrompt("");
+  }
+
+  function handleAnalysisReviewChange(next: AnalysisReview) {
+    setAnalysisReview(next);
     setPrompt("");
   }
 
@@ -211,11 +250,20 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
    * Analyze = run both vision passes (user garment + selected pose) and
    * assemble the deterministic model-swap prompt.
    */
-  async function analyzeForModel(): Promise<string | null> {
+  async function analyzeForModel({
+    useReviewOverride = true,
+  }: { useReviewOverride?: boolean } = {}): Promise<string | null> {
     if (selected.length === 0 || !selectedHumanModelId || !selectedPoseId) return null;
     setAnalyzing(true);
     setError(null);
     try {
+      const garmentOverride =
+        useReviewOverride && !twoPiece && analysisReview?.garment.trim()
+          ? {
+              garment: analysisReview.garment.trim(),
+              features: analysisReview.features.trim(),
+            }
+          : undefined;
       const data = await fetchJson("Analyze for model", "/api/analyze-model", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -226,6 +274,7 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
           garmentImageUrl: selected[0],
           garmentImageUrls: selected,
           twoPiece,
+          garmentOverride,
           adjustments: {
             fit: selectedModelIsPants ? fitAdjustment : "true-to-reference",
             length: selectedModelIsPants ? lengthAdjustment : "true-to-reference",
@@ -233,6 +282,15 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
         }),
       });
       setPrompt(data.prompt);
+      if (!data.twoPiece && typeof data.garment === "string") {
+        setAnalysisReview({
+          garment: data.garment,
+          features: typeof data.features === "string" ? data.features : "",
+          updatedAt: Date.now(),
+        });
+      } else {
+        setAnalysisReview(null);
+      }
       return data.prompt as string;
     } catch (err: any) {
       setError(err.message || "Analysis failed");
@@ -248,7 +306,7 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
     // Unified flow: always re-analyze on every click, then generate. The
     // textarea still shows the current prompt for debugging but its content
     // is overwritten on each run — see the PromptPanel header copy.
-    const analyzed = await analyzeForModel();
+    const analyzed = await analyzeForModel({ useReviewOverride: true });
     if (!analyzed) return;
     const activePrompt = analyzed.trim();
     const promptUsed = optimizePromptForModel(modelId, activePrompt);
@@ -486,7 +544,7 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
           selectedPoseId={selectedPoseId}
           onPoseChange={handlePoseChange}
           selectedView={selectedView}
-          onViewChange={setSelectedView}
+          onViewChange={handleViewChange}
           modelsLoading={modelsLoading}
           colorName={colorName}
           onColorNameChange={setColorName}
@@ -510,6 +568,7 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
           numImages={numImages}
           onNumImagesChange={setNumImages}
           onGenerate={runGeneration}
+          onAnalyze={() => analyzeForModel({ useReviewOverride: false })}
           analyzing={analyzing}
           loading={loading || uploading}
           disabled={!canAnalyze}
@@ -517,12 +576,14 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
           canBatch={canAnalyze && selected.length >= 2}
           batchProgress={batchProgress}
           twoPiece={twoPiece}
-          onTwoPieceChange={setTwoPiece}
+          onTwoPieceChange={handleTwoPieceChange}
           fitAdjustment={fitAdjustment}
-          onFitAdjustmentChange={setFitAdjustment}
+          onFitAdjustmentChange={handleFitAdjustmentChange}
           lengthAdjustment={lengthAdjustment}
-          onLengthAdjustmentChange={setLengthAdjustment}
+          onLengthAdjustmentChange={handleLengthAdjustmentChange}
           pantsAdjustments={selectedModelIsPants}
+          analysisReview={twoPiece ? null : analysisReview}
+          onAnalysisReviewChange={twoPiece ? undefined : handleAnalysisReviewChange}
         />
 
         <OutputPanel
