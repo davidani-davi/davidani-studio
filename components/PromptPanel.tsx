@@ -20,6 +20,7 @@ export interface AnalysisReview {
   garment: string;
   features: string;
   updatedAt: number;
+  edited?: boolean;
 }
 
 interface Props {

@@ -65,30 +65,70 @@ function ensureConfigured(): string {
   return key;
 }
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isRetryableCreateTaskError(status: number, message: string): boolean {
+  return (
+    status === 422 ||
+    /unprocessable|validation|invalid image|image.*url|url.*image|fetch.*image|download.*image/i.test(
+      message
+    )
+  );
+}
+
 async function createTask(
   key: string,
   model: string,
   input: Record<string, unknown>
 ): Promise<string> {
-  const res = await fetch(`${KIE_BASE}/createTask`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${key}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ model, input }),
-  });
-  let body: any;
-  try {
-    body = await res.json();
-  } catch {
-    throw new Error(`kie.ai createTask returned non-JSON (HTTP ${res.status})`);
+  const delays = [0, 2500, 6000];
+  let lastMessage = "";
+  let lastStatus = 0;
+
+  for (let attempt = 0; attempt < delays.length; attempt++) {
+    if (delays[attempt] > 0) await sleep(delays[attempt]);
+
+    const res = await fetch(`${KIE_BASE}/createTask`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${key}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ model, input }),
+    });
+    let body: any;
+    try {
+      body = await res.json();
+    } catch {
+      throw new Error(`kie.ai createTask returned non-JSON (HTTP ${res.status})`);
+    }
+    if (body?.code === 200 && body?.data?.taskId) {
+      return body.data.taskId as string;
+    }
+
+    lastStatus = res.status;
+    lastMessage = body?.message || body?.msg || JSON.stringify(body);
+    if (
+      attempt < delays.length - 1 &&
+      isRetryableCreateTaskError(res.status, lastMessage)
+    ) {
+      console.warn(
+        `[kie] createTask rejected on attempt ${attempt + 1}; retrying after storage propagation delay: ${lastMessage}`
+      );
+      continue;
+    }
+    break;
   }
-  if (body?.code !== 200 || !body?.data?.taskId) {
-    const msg = body?.message || body?.msg || JSON.stringify(body);
-    throw new Error(`kie.ai createTask failed (HTTP ${res.status}): ${msg}`);
+
+  if (isRetryableCreateTaskError(lastStatus, lastMessage)) {
+    throw new Error(
+      "The image model could not process one of the freshly uploaded images yet. Please click Generate again in a few seconds."
+    );
   }
-  return body.data.taskId as string;
+
+  throw new Error(`kie.ai createTask failed (HTTP ${lastStatus}): ${lastMessage}`);
 }
 
 interface KieRecordInfo {

@@ -242,7 +242,7 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
   }
 
   function handleAnalysisReviewChange(next: AnalysisReview) {
-    setAnalysisReview(next);
+    setAnalysisReview({ ...next, edited: true });
     setPrompt("");
   }
 
@@ -287,6 +287,7 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
           garment: data.garment,
           features: typeof data.features === "string" ? data.features : "",
           updatedAt: Date.now(),
+          edited: false,
         });
       } else {
         setAnalysisReview(null);
@@ -306,7 +307,9 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
     // Unified flow: always re-analyze on every click, then generate. The
     // textarea still shows the current prompt for debugging but its content
     // is overwritten on each run — see the PromptPanel header copy.
-    const analyzed = await analyzeForModel({ useReviewOverride: true });
+    const analyzed = await analyzeForModel({
+      useReviewOverride: analysisReview?.edited === true,
+    });
     if (!analyzed) return;
     const activePrompt = analyzed.trim();
     const promptUsed = optimizePromptForModel(modelId, activePrompt);
