@@ -54,13 +54,40 @@ type FitRepairMode =
   | "upload-reference"
   | "length-shorter"
   | "length-longer";
-type QualityControlAction = "restore-face" | "retry-closer" | "different-pose";
+type ProportionRepairMode = "head-smaller" | "head-larger" | "natural-proportion";
+type QualityControlAction =
+  | "restore-face"
+  | "retry-closer"
+  | "different-pose"
+  | "restore-proportion";
 
-function buildQualityControlSuffix(action: QualityControlAction, fitMode?: FitRepairMode): string {
+function buildQualityControlSuffix(
+  action: QualityControlAction,
+  fitMode?: FitRepairMode,
+  proportionMode?: ProportionRepairMode
+): string {
   if (action === "restore-face") {
     return (
       " Quality control directive: restore and preserve the model's original face, facial features, skin tone, expression, hair, head angle, body proportions, and identity from the selected model pose image exactly. " +
       "Do not beautify, age-shift, reshape, repaint, or replace the face. Keep the background, lighting, camera angle, and garment edit otherwise unchanged."
+    );
+  }
+  if (action === "restore-proportion") {
+    if (proportionMode === "head-smaller") {
+      return (
+        " Quality control directive: the previous result made the model's head or face look too large for the body. Regenerate with the head and face scaled slightly smaller to restore natural fashion-model proportions. " +
+        "Make only a subtle proportional correction; preserve the exact face identity, facial features, hair, expression, pose, body shape, garment fit, garment details, lighting, background, and camera angle."
+      );
+    }
+    if (proportionMode === "head-larger") {
+      return (
+        " Quality control directive: the previous result made the model's head or face look too small for the body. Regenerate with the head and face scaled slightly larger to restore natural fashion-model proportions. " +
+        "Make only a subtle proportional correction; preserve the exact face identity, facial features, hair, expression, pose, body shape, garment fit, garment details, lighting, background, and camera angle."
+      );
+    }
+    return (
+      " Quality control directive: restore accurate, realistic model proportions. Match the selected model pose image's natural head-to-body scale, face size, neck length, shoulder width, torso length, limb proportions, and overall fashion photography anatomy. " +
+      "Do not alter identity, pose, garment, lighting, background, or camera angle except for subtle proportional correction."
     );
   }
   if (action === "retry-closer") {
@@ -555,6 +582,7 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
   async function runQualityControl(params: {
     action: QualityControlAction;
     fitMode?: FitRepairMode;
+    proportionMode?: ProportionRepairMode;
     fitReferenceUrl?: string;
     prompt: string;
     sourceUrl: string | null;
@@ -565,7 +593,11 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
 
     const imagePrompt = optimizePromptForModel(
       modelId,
-      `${params.prompt.trim()}${buildQualityControlSuffix(params.action, params.fitMode)}`
+      `${params.prompt.trim()}${buildQualityControlSuffix(
+        params.action,
+        params.fitMode,
+        params.proportionMode
+      )}`
     );
     const garmentImageUrls = params.fitReferenceUrl
       ? [sourceUrl, params.fitReferenceUrl]

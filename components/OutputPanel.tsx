@@ -17,13 +17,14 @@ interface Props {
    */
   onRegenerate?: (params: { prompt: string; sourceUrl: string | null }) => void;
   onQualityControl?: (params: {
-    action: "restore-face" | "retry-closer" | "different-pose";
+    action: "restore-face" | "retry-closer" | "different-pose" | "restore-proportion";
     fitMode?:
       | "all"
       | "silhouette"
       | "upload-reference"
       | "length-shorter"
       | "length-longer";
+    proportionMode?: "head-smaller" | "head-larger" | "natural-proportion";
     fitReferenceUrl?: string;
     prompt: string;
     sourceUrl: string | null;
@@ -51,6 +52,7 @@ export default function OutputPanel({
   const [previewSrc, setPreviewSrc] = useState<string | null>(null);
   const [promptOpen, setPromptOpen] = useState(false);
   const [fitToolsOpen, setFitToolsOpen] = useState(false);
+  const [proportionToolsOpen, setProportionToolsOpen] = useState(false);
   const [fitReferenceUploading, setFitReferenceUploading] = useState(false);
   const fitReferenceInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -60,6 +62,7 @@ export default function OutputPanel({
   useEffect(() => {
     setIndex(0);
     setFitToolsOpen(false);
+    setProportionToolsOpen(false);
   }, [current?.id]);
 
   // Defensive clamp — if index somehow exceeds the current run's image count,
@@ -278,7 +281,7 @@ export default function OutputPanel({
                   Refine
                 </span>
               </div>
-              <div className="grid grid-cols-3 gap-1.5">
+              <div className="grid grid-cols-2 gap-1.5">
                 <button
                   type="button"
                   onClick={() =>
@@ -291,6 +294,13 @@ export default function OutputPanel({
                   className="rounded-xl border border-neutral-200 bg-white px-2 py-2 text-[11px] font-semibold text-neutral-700 shadow-sm transition hover:-translate-y-0.5 hover:border-neutral-300 hover:shadow"
                 >
                   Restore face
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setProportionToolsOpen((open) => !open)}
+                  className="rounded-xl border border-neutral-200 bg-white px-2 py-2 text-[11px] font-semibold text-neutral-700 shadow-sm transition hover:-translate-y-0.5 hover:border-neutral-300 hover:shadow"
+                >
+                  Proportion
                 </button>
                 <button
                   type="button"
@@ -313,6 +323,42 @@ export default function OutputPanel({
                   New pose
                 </button>
               </div>
+              {proportionToolsOpen && (
+                <div className="mt-2 rounded-xl border border-neutral-200 bg-white p-2">
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <span className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
+                      Proportion
+                    </span>
+                    <span className="text-[10px] text-neutral-400">subtle scale</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {[
+                      ["head-smaller", "Head smaller"],
+                      ["head-larger", "Head larger"],
+                      ["natural-proportion", "Natural"],
+                    ].map(([proportionMode, label]) => (
+                      <button
+                        key={proportionMode}
+                        type="button"
+                        onClick={() =>
+                          onQualityControl({
+                            action: "restore-proportion",
+                            proportionMode: proportionMode as
+                              | "head-smaller"
+                              | "head-larger"
+                              | "natural-proportion",
+                            prompt: activePrompt,
+                            sourceUrl: activeSource,
+                          })
+                        }
+                        className="rounded-lg border border-neutral-200 bg-neutral-50 px-2 py-2 text-[11px] font-semibold text-neutral-700 transition hover:border-neutral-300 hover:bg-neutral-100"
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               {fitToolsOpen && (
                 <div className="mt-2 rounded-xl border border-neutral-200 bg-white p-2">
                   <div className="mb-2 flex items-center justify-between gap-2">
