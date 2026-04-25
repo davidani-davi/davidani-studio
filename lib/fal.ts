@@ -817,6 +817,10 @@ export type GarmentLengthAdjustment =
   | "shorter"
   | "true-to-reference"
   | "longer"
+  | "waist-length"
+  | "below-waist"
+  | "hip-length"
+  | "tunic-length"
   | "cropped"
   | "ankle"
   | "full-length"
@@ -930,6 +934,14 @@ function buildGarmentAdjustmentClause(adjustments?: GarmentAdjustments): string 
     clauses.push("Render the garment slightly shorter on the body than the raw reference impression, with hems, sleeves, or leg length landing a bit higher while still looking natural and proportional.");
   } else if (length === "longer") {
     clauses.push("Render the garment slightly longer on the body than the raw reference impression, with hems, sleeves, or leg length landing a bit lower while still looking natural and proportional.");
+  } else if (length === "waist-length") {
+    clauses.push("Render the garment at waist length, with the hem landing around the natural waist while preserving the original construction and proportions.");
+  } else if (length === "below-waist") {
+    clauses.push("Render the garment just below the waist, with the hem landing slightly under the natural waist and above the hip line.");
+  } else if (length === "hip-length") {
+    clauses.push("Render the garment at hip length, with the hem landing around the high-to-mid hip in a natural catalog proportion.");
+  } else if (length === "tunic-length") {
+    clauses.push("Render the garment longer through the torso, with a tunic-like hem landing below the hip while keeping the silhouette believable.");
   }
 
   if (clauses.length === 0) {

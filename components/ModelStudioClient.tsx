@@ -276,8 +276,8 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
           twoPiece,
           garmentOverride,
           adjustments: {
-            fit: selectedModelIsPants ? fitAdjustment : "true-to-reference",
-            length: selectedModelIsPants ? lengthAdjustment : "true-to-reference",
+            fit: fitAdjustment,
+            length: lengthAdjustment,
           },
         }),
       });
@@ -409,8 +409,8 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
             garmentImageUrls: twoPiece ? selected.slice(0, 2) : [sourceUrl],
             twoPiece,
             adjustments: {
-              fit: selectedModelIsPants ? fitAdjustment : "true-to-reference",
-              length: selectedModelIsPants ? lengthAdjustment : "true-to-reference",
+              fit: fitAdjustment,
+              length: lengthAdjustment,
             },
           }),
         });

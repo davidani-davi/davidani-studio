@@ -62,7 +62,13 @@ interface Props {
   onAnalysisReviewChange?: (review: AnalysisReview) => void;
 }
 
-const FIT_OPTIONS: { value: GarmentFitAdjustment; label: string }[] = [
+const GENERAL_FIT_OPTIONS: { value: GarmentFitAdjustment; label: string }[] = [
+  { value: "fitted", label: "Fitted" },
+  { value: "true-to-reference", label: "True" },
+  { value: "oversized", label: "Oversized" },
+];
+
+const PANTS_FIT_OPTIONS: { value: GarmentFitAdjustment; label: string }[] = [
   { value: "true-to-reference", label: "True" },
   { value: "barrel", label: "Barrel" },
   { value: "wide-leg", label: "Wide" },
@@ -77,7 +83,17 @@ const FIT_OPTIONS: { value: GarmentFitAdjustment; label: string }[] = [
   { value: "cargo", label: "Cargo" },
 ];
 
-const LENGTH_OPTIONS: { value: GarmentLengthAdjustment; label: string }[] = [
+const GENERAL_LENGTH_OPTIONS: { value: GarmentLengthAdjustment; label: string }[] = [
+  { value: "shorter", label: "Short" },
+  { value: "waist-length", label: "Waist" },
+  { value: "below-waist", label: "Below waist" },
+  { value: "true-to-reference", label: "True" },
+  { value: "hip-length", label: "Hip" },
+  { value: "longer", label: "Long" },
+  { value: "tunic-length", label: "Tunic" },
+];
+
+const PANTS_LENGTH_OPTIONS: { value: GarmentLengthAdjustment; label: string }[] = [
   { value: "true-to-reference", label: "True" },
   { value: "cropped", label: "Cropped" },
   { value: "ankle", label: "Ankle" },
@@ -171,6 +187,8 @@ export default function PromptPanel(p: Props) {
           className: "bg-brand-50 text-brand-700",
         },
       }[status];
+  const fitOptions = p.pantsAdjustments ? PANTS_FIT_OPTIONS : GENERAL_FIT_OPTIONS;
+  const lengthOptions = p.pantsAdjustments ? PANTS_LENGTH_OPTIONS : GENERAL_LENGTH_OPTIONS;
 
   return (
     <section className="flex min-w-0 flex-1 flex-col border-b border-neutral-200 bg-white lg:border-b-0 lg:border-r">
@@ -217,50 +235,67 @@ export default function PromptPanel(p: Props) {
             (matching top + bottom)
           </span>
         </label>
-        {p.pantsAdjustments && (p.onFitAdjustmentChange || p.onLengthAdjustmentChange) && (
+        {(p.onFitAdjustmentChange || p.onLengthAdjustmentChange) && (
           <div className="mt-2.5 flex flex-wrap gap-4 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2.5">
             {p.onFitAdjustmentChange && (
-              <div className="min-w-[180px]">
+              <div className="min-w-[220px] flex-1">
                 <div className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
-                  Pants fit
+                  {p.pantsAdjustments ? "Pants fit" : "Fit"}
                 </div>
-                <select
-                  value={p.fitAdjustment ?? "true-to-reference"}
-                  onChange={(e) => p.onFitAdjustmentChange?.(e.target.value as GarmentFitAdjustment)}
-                  disabled={p.analyzing || p.loading}
-                  className="w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs font-medium text-neutral-700 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {FIT_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
+                <div className="flex flex-wrap gap-1.5">
+                  {fitOptions.map((option) => {
+                    const active = (p.fitAdjustment ?? "true-to-reference") === option.value;
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => p.onFitAdjustmentChange?.(option.value)}
+                        disabled={p.analyzing || p.loading}
+                        className={`rounded-full border px-3 py-1.5 text-[11px] font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                          active
+                            ? "border-neutral-900 bg-neutral-900 text-white"
+                            : "border-neutral-200 bg-white text-neutral-600 hover:border-neutral-400 hover:bg-neutral-50"
+                        }`}
+                      >
                       {option.label}
-                    </option>
-                  ))}
-                </select>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             )}
             {p.onLengthAdjustmentChange && (
-              <div className="min-w-[180px]">
+              <div className="min-w-[260px] flex-1">
                 <div className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
-                  Pants length
+                  {p.pantsAdjustments ? "Pants length" : "Length"}
                 </div>
-                <select
-                  value={p.lengthAdjustment ?? "true-to-reference"}
-                  onChange={(e) =>
-                    p.onLengthAdjustmentChange?.(e.target.value as GarmentLengthAdjustment)
-                  }
-                  disabled={p.analyzing || p.loading}
-                  className="w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs font-medium text-neutral-700 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {LENGTH_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
+                <div className="flex flex-wrap gap-1.5">
+                  {lengthOptions.map((option) => {
+                    const active =
+                      (p.lengthAdjustment ?? "true-to-reference") === option.value;
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => p.onLengthAdjustmentChange?.(option.value)}
+                        disabled={p.analyzing || p.loading}
+                        className={`rounded-full border px-3 py-1.5 text-[11px] font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                          active
+                            ? "border-neutral-900 bg-neutral-900 text-white"
+                            : "border-neutral-200 bg-white text-neutral-600 hover:border-neutral-400 hover:bg-neutral-50"
+                        }`}
+                      >
                       {option.label}
-                    </option>
-                  ))}
-                </select>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             )}
             <p className="basis-full text-[10px] leading-relaxed text-neutral-500">
-              Pants controls override the leg shape and hem length while preserving the uploaded garment's fabric, construction, pockets, stitching, and hardware.
+              {p.pantsAdjustments
+                ? "Pants controls override the leg shape and hem length while preserving the uploaded garment's fabric, construction, pockets, stitching, and hardware."
+                : "Fit and length guide how the garment sits on the model while preserving the uploaded garment's fabric, construction, trims, stitching, and hardware."}
             </p>
           </div>
         )}
