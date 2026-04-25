@@ -84,13 +84,9 @@ const PANTS_FIT_OPTIONS: { value: GarmentFitAdjustment; label: string }[] = [
 ];
 
 const GENERAL_LENGTH_OPTIONS: { value: GarmentLengthAdjustment; label: string }[] = [
-  { value: "shorter", label: "Short" },
-  { value: "waist-length", label: "Waist" },
-  { value: "below-waist", label: "Below waist" },
+  { value: "shorter", label: "Shorter" },
   { value: "true-to-reference", label: "True" },
-  { value: "hip-length", label: "Hip" },
-  { value: "longer", label: "Long" },
-  { value: "tunic-length", label: "Tunic" },
+  { value: "longer", label: "Longer" },
 ];
 
 const PANTS_LENGTH_OPTIONS: { value: GarmentLengthAdjustment; label: string }[] = [
