@@ -55,6 +55,12 @@ export default function OutputPanel({
   const [proportionToolsOpen, setProportionToolsOpen] = useState(false);
   const [previewHeight, setPreviewHeight] = useState(300);
   const [fitReferenceUploading, setFitReferenceUploading] = useState(false);
+  const [libraryOpen, setLibraryOpen] = useState(false);
+  const [libraryStyleNumber, setLibraryStyleNumber] = useState("");
+  const [libraryStyleName, setLibraryStyleName] = useState("");
+  const [libraryViewLabel, setLibraryViewLabel] = useState("front");
+  const [libraryStatus, setLibraryStatus] = useState<string | null>(null);
+  const [libraryUploading, setLibraryUploading] = useState(false);
   const fitReferenceInputRef = useRef<HTMLInputElement | null>(null);
   const previewResizeRef = useRef<{ startY: number; height: number } | null>(null);
 
@@ -65,6 +71,9 @@ export default function OutputPanel({
     setIndex(0);
     setFitToolsOpen(false);
     setProportionToolsOpen(false);
+    setLibraryOpen(false);
+    setLibraryStatus(null);
+    setLibraryStyleNumber(current?.styleNumber || "");
   }, [current?.id]);
 
   useEffect(() => {
@@ -138,6 +147,32 @@ export default function OutputPanel({
     } finally {
       setFitReferenceUploading(false);
       if (fitReferenceInputRef.current) fitReferenceInputRef.current.value = "";
+    }
+  }
+
+  async function uploadActiveToLibrary() {
+    if (!active) return;
+    setLibraryUploading(true);
+    setLibraryStatus("Uploading to team library...");
+    try {
+      const res = await fetch("/api/library", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          styleNumber: libraryStyleNumber,
+          userStyleName: libraryStyleName,
+          viewLabel: libraryViewLabel,
+          imageUrl: active,
+          prompt: activePrompt,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data?.ok) throw new Error(data?.error || "Library upload failed");
+      setLibraryStatus(`Saved ${data.style.styleNumber} to the team library.`);
+    } catch (err: any) {
+      setLibraryStatus(err?.message || "Library upload failed");
+    } finally {
+      setLibraryUploading(false);
     }
   }
 
@@ -478,6 +513,60 @@ export default function OutputPanel({
               Download all
             </button>
           </div>
+          <button
+            type="button"
+            onClick={() => setLibraryOpen((open) => !open)}
+            disabled={!active}
+            className="mt-2 w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs font-semibold text-neutral-700 transition hover:bg-neutral-50 disabled:opacity-50"
+          >
+            Upload to team library
+          </button>
+          {libraryOpen && (
+            <div className="mt-2 rounded-xl border border-neutral-200 bg-neutral-50 p-3">
+              <div className="grid gap-2">
+                <input
+                  value={libraryStyleNumber}
+                  onChange={(event) => setLibraryStyleNumber(event.target.value)}
+                  placeholder="Style number, e.g. DJ52056"
+                  className="rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs outline-none focus:border-neutral-900"
+                />
+                <input
+                  value={libraryStyleName}
+                  onChange={(event) => setLibraryStyleName(event.target.value)}
+                  placeholder="Style name users can recognize"
+                  className="rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs outline-none focus:border-neutral-900"
+                />
+                <select
+                  value={libraryViewLabel}
+                  onChange={(event) => setLibraryViewLabel(event.target.value)}
+                  className="rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs outline-none focus:border-neutral-900"
+                >
+                  <option value="front">Front</option>
+                  <option value="side">Side</option>
+                  <option value="back">Back</option>
+                  <option value="full">Full</option>
+                  <option value="detail">Detail</option>
+                  <option value="alternate">Alternate</option>
+                </select>
+                <button
+                  type="button"
+                  onClick={uploadActiveToLibrary}
+                  disabled={
+                    libraryUploading ||
+                    !libraryStyleNumber.trim() ||
+                    !libraryStyleName.trim() ||
+                    !active
+                  }
+                  className="rounded-lg bg-neutral-900 px-3 py-2 text-xs font-semibold text-white transition hover:bg-neutral-800 disabled:bg-neutral-300"
+                >
+                  {libraryUploading ? "Saving..." : "Save active image"}
+                </button>
+              </div>
+              {libraryStatus && (
+                <p className="mt-2 text-xs leading-relaxed text-neutral-600">{libraryStatus}</p>
+              )}
+            </div>
+          )}
         </div>
       )}
 

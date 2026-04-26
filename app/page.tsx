@@ -274,6 +274,7 @@ export default function StudioPage() {
         referenceUrls: [...selected],
         aspect,
         resolution,
+        styleNumber: styleNumber.trim() || undefined,
       };
       setHistory((h) => [item, ...h]);
       setCurrentId(id);
@@ -326,6 +327,7 @@ export default function StudioPage() {
       referenceUrls: [],
       aspect,
       resolution,
+      styleNumber: styleNumber.trim() || undefined,
       prompts: [],
       batch: true,
     };

@@ -431,6 +431,7 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
         referenceUrls: [...selected, data.poseUrl].filter(Boolean),
         aspect,
         resolution,
+        styleNumber: styleNumber.trim() || undefined,
       };
       setHistory((h) => [item, ...h]);
       setCurrentId(id);
@@ -465,6 +466,7 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
       referenceUrls: [],
       aspect,
       resolution,
+      styleNumber: styleNumber.trim() || undefined,
       prompts: [],
       batch: true,
     };
@@ -642,6 +644,7 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
         referenceUrls: [sourceUrl, params.fitReferenceUrl, data.poseUrl].filter(Boolean),
         aspect,
         resolution,
+        styleNumber: styleNumber.trim() || undefined,
       };
       setHistory((h) => [item, ...h]);
       setCurrentId(id);
