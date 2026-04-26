@@ -53,7 +53,7 @@ export default function OutputPanel({
   const [promptOpen, setPromptOpen] = useState(false);
   const [fitToolsOpen, setFitToolsOpen] = useState(false);
   const [proportionToolsOpen, setProportionToolsOpen] = useState(false);
-  const [previewHeight, setPreviewHeight] = useState(300);
+  const [previewHeight, setPreviewHeight] = useState(560);
   const [fitReferenceUploading, setFitReferenceUploading] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [libraryStyleNumber, setLibraryStyleNumber] = useState("");
