@@ -31,7 +31,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const style = await upsertLibraryStyle({
       styleNumber: String(body?.styleNumber || ""),
-      userStyleName: String(body?.userStyleName || ""),
+      color: String(body?.color || body?.userStyleName || ""),
       viewLabel: String(body?.viewLabel || ""),
       imageUrl: String(body?.imageUrl || ""),
       prompt: typeof body?.prompt === "string" ? body.prompt : undefined,

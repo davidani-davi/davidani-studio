@@ -15,6 +15,7 @@ export interface LibraryStyle {
   id: string;
   styleNumber: string;
   userStyleName: string;
+  color: string;
   seoName: string;
   seoDescription: string;
   createdAt: string;
@@ -31,6 +32,10 @@ const LOCAL_STORE = path.join(process.cwd(), ".data", "style-library.json");
 
 function normalizedStyleNumber(value: string): string {
   return value.trim().toUpperCase().replace(/\s+/g, "");
+}
+
+function normalizedColor(value: string): string {
+  return value.trim().replace(/\s+/g, " ");
 }
 
 function slug(value: string): string {
@@ -104,23 +109,23 @@ export async function writeLibraryIndex(index: LibraryIndex): Promise<void> {
   }
 }
 
-function fallbackSeo(styleNumber: string, userStyleName: string): {
+function fallbackSeo(styleNumber: string, color: string): {
   seoName: string;
   seoDescription: string;
 } {
-  const name = userStyleName.trim() || `Style ${styleNumber}`;
+  const name = `${styleNumber} ${color}`.trim();
   return {
     seoName: `${name} - ${styleNumber}`,
-    seoDescription: `${name} in style ${styleNumber}, photographed for fashion ecommerce with clear product views for web merchandising, catalog copy, and team reference.`,
+    seoDescription: `${name}, photographed for fashion ecommerce with clear product views for web merchandising, catalog copy, and team reference.`,
   };
 }
 
 export async function generateStyleSeo(input: {
   styleNumber: string;
-  userStyleName: string;
+  color: string;
   imageUrl: string;
 }): Promise<{ seoName: string; seoDescription: string }> {
-  const fallback = fallbackSeo(input.styleNumber, input.userStyleName);
+  const fallback = fallbackSeo(input.styleNumber, input.color);
   const key = process.env.FAL_KEY;
   if (!key) return fallback;
 
@@ -132,9 +137,9 @@ export async function generateStyleSeo(input: {
         image_url: input.imageUrl,
         prompt:
           `You are writing ecommerce SEO copy for a fashion wholesale/product team. ` +
-          `Style number: ${input.styleNumber}. User style name: ${input.userStyleName}. ` +
+          `Style number: ${input.styleNumber}. Color: ${input.color}. ` +
           `Return strict JSON only with keys seoName and seoDescription. ` +
-          `seoName should be concise, search-friendly, boutique/ecommerce-ready, and include the style number naturally. ` +
+          `seoName should be concise, search-friendly, boutique/ecommerce-ready, and include the style number and color naturally. ` +
           `seoDescription should be 1-2 polished sentences describing visible garment type, silhouette, fabric/texture, details, and styling value. ` +
           `Do not invent details that are not visible.`,
       },
@@ -156,20 +161,25 @@ export async function generateStyleSeo(input: {
 
 export async function upsertLibraryStyle(input: {
   styleNumber: string;
-  userStyleName: string;
+  color: string;
   viewLabel: string;
   imageUrl: string;
   prompt?: string;
 }): Promise<LibraryStyle> {
   const styleNumber = normalizedStyleNumber(input.styleNumber);
-  const userStyleName = input.userStyleName.trim();
+  const color = normalizedColor(input.color);
+  const userStyleName = `${styleNumber} ${color}`.trim();
   const viewLabel = input.viewLabel.trim() || "view";
   if (!styleNumber) throw new Error("Style number is required.");
-  if (!userStyleName) throw new Error("Style name is required.");
+  if (!color) throw new Error("Color is required.");
   if (!input.imageUrl?.trim()) throw new Error("Image URL is required.");
 
   const index = await readLibraryIndex();
-  const existing = index.styles.find((style) => style.styleNumber === styleNumber);
+  const existing = index.styles.find(
+    (style) =>
+      style.styleNumber === styleNumber &&
+      normalizedColor(style.color || "").toLowerCase() === color.toLowerCase()
+  );
   const createdAt = nowIso();
 
   if (existing) {
@@ -184,10 +194,11 @@ export async function upsertLibraryStyle(input: {
       });
     }
     existing.userStyleName = userStyleName;
+    existing.color = color;
     existing.updatedAt = nowIso();
     const seo = await generateStyleSeo({
       styleNumber,
-      userStyleName,
+      color,
       imageUrl: existing.views[0]?.imageUrl || input.imageUrl,
     });
     existing.seoName = seo.seoName;
@@ -196,11 +207,12 @@ export async function upsertLibraryStyle(input: {
     return existing;
   }
 
-  const seo = await generateStyleSeo({ styleNumber, userStyleName, imageUrl: input.imageUrl });
+  const seo = await generateStyleSeo({ styleNumber, color, imageUrl: input.imageUrl });
   const style: LibraryStyle = {
-    id: `${styleNumber}-${Date.now()}`,
+    id: `${styleNumber}-${slug(color)}-${Date.now()}`,
     styleNumber,
     userStyleName,
+    color,
     seoName: seo.seoName,
     seoDescription: seo.seoDescription,
     createdAt,
@@ -235,6 +247,7 @@ export function filterLibraryStyles(
       const haystack = [
         style.styleNumber,
         style.userStyleName,
+        style.color,
         style.seoName,
         style.seoDescription,
         ...style.views.map((view) => view.label),

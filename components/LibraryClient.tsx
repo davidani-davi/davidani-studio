@@ -112,15 +112,19 @@ export default function LibraryClient() {
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
                       <h2 className="text-base font-semibold text-neutral-900">
-                        {style.userStyleName}
-                      </h2>
-                      <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-neutral-600">
                         {style.styleNumber}
+                      </h2>
+                      {style.color && (
+                        <span className="rounded-full bg-neutral-900 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-white">
+                          {style.color}
+                        </span>
+                      )}
+                      <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-neutral-600">
+                        {style.views.length} view{style.views.length === 1 ? "" : "s"}
                       </span>
                     </div>
                     <p className="mt-1 text-xs text-neutral-500">
-                      Updated {new Date(style.updatedAt).toLocaleString()} · {style.views.length} view
-                      {style.views.length === 1 ? "" : "s"}
+                      Updated {new Date(style.updatedAt).toLocaleString()}
                     </p>
                   </div>
                   <button

@@ -57,7 +57,7 @@ export default function OutputPanel({
   const [fitReferenceUploading, setFitReferenceUploading] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [libraryStyleNumber, setLibraryStyleNumber] = useState("");
-  const [libraryStyleName, setLibraryStyleName] = useState("");
+  const [libraryColor, setLibraryColor] = useState("");
   const [libraryViewLabel, setLibraryViewLabel] = useState("front");
   const [libraryStatus, setLibraryStatus] = useState<string | null>(null);
   const [libraryUploading, setLibraryUploading] = useState(false);
@@ -160,7 +160,7 @@ export default function OutputPanel({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           styleNumber: libraryStyleNumber,
-          userStyleName: libraryStyleName,
+          color: libraryColor,
           viewLabel: libraryViewLabel,
           imageUrl: active,
           prompt: activePrompt,
@@ -531,9 +531,9 @@ export default function OutputPanel({
                   className="rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs outline-none focus:border-neutral-900"
                 />
                 <input
-                  value={libraryStyleName}
-                  onChange={(event) => setLibraryStyleName(event.target.value)}
-                  placeholder="Style name users can recognize"
+                  value={libraryColor}
+                  onChange={(event) => setLibraryColor(event.target.value)}
+                  placeholder="Color, e.g. Black"
                   className="rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs outline-none focus:border-neutral-900"
                 />
                 <select
@@ -554,7 +554,7 @@ export default function OutputPanel({
                   disabled={
                     libraryUploading ||
                     !libraryStyleNumber.trim() ||
-                    !libraryStyleName.trim() ||
+                    !libraryColor.trim() ||
                     !active
                   }
                   className="rounded-lg bg-neutral-900 px-3 py-2 text-xs font-semibold text-white transition hover:bg-neutral-800 disabled:bg-neutral-300"
