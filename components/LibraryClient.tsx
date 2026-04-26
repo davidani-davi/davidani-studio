@@ -20,6 +20,8 @@ export default function LibraryClient() {
   const [styleNumber, setStyleNumber] = useState("");
   const [loading, setLoading] = useState(true);
   const [regeneratingId, setRegeneratingId] = useState<string | null>(null);
+  const [bulkRegenerating, setBulkRegenerating] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function load(nextQ = q, nextStyleNumber = styleNumber) {
@@ -57,6 +59,29 @@ export default function LibraryClient() {
       setError(err?.message || "SEO regeneration failed");
     } finally {
       setRegeneratingId(null);
+    }
+  }
+
+  async function redoVisibleSeo() {
+    if (styles.length === 0) return;
+    const ok = window.confirm(
+      `Redo Faire SEO for ${styles.length} visible published item${
+        styles.length === 1 ? "" : "s"
+      }? This will replace the current title and description.`
+    );
+    if (!ok) return;
+
+    setBulkRegenerating(true);
+    setError(null);
+    try {
+      for (let i = 0; i < styles.length; i++) {
+        const style = styles[i];
+        setBulkProgress(`${i + 1} of ${styles.length}: ${style.styleNumber} ${style.color}`);
+        await regenerateSeo(style.id);
+      }
+      setBulkProgress(`Finished ${styles.length} item${styles.length === 1 ? "" : "s"}.`);
+    } finally {
+      setBulkRegenerating(false);
     }
   }
 
@@ -109,12 +134,25 @@ export default function LibraryClient() {
           >
             Search
           </button>
+          <button
+            type="button"
+            onClick={() => void redoVisibleSeo()}
+            disabled={bulkRegenerating || loading || styles.length === 0}
+            className="rounded-lg border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
+          >
+            {bulkRegenerating ? "Redoing..." : "Redo visible SEO"}
+          </button>
         </div>
       </section>
 
       <section className="mx-auto max-w-6xl px-5 py-6">
         {error && (
           <div className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
+        )}
+        {bulkProgress && (
+          <div className="mb-4 rounded-lg bg-neutral-900 px-4 py-3 text-sm font-medium text-white">
+            {bulkProgress}
+          </div>
         )}
         {loading ? (
           <p className="text-sm text-neutral-500">Loading library...</p>
@@ -156,7 +194,7 @@ export default function LibraryClient() {
                       disabled={regeneratingId === style.id}
                       className="rounded-lg border border-neutral-200 px-3 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50 disabled:opacity-60"
                     >
-                      {regeneratingId === style.id ? "Analyzing..." : "Regenerate SEO"}
+                      {regeneratingId === style.id ? "Analyzing..." : "Redo SEO"}
                     </button>
                     <button
                       type="button"
