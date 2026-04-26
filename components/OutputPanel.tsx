@@ -53,8 +53,10 @@ export default function OutputPanel({
   const [promptOpen, setPromptOpen] = useState(false);
   const [fitToolsOpen, setFitToolsOpen] = useState(false);
   const [proportionToolsOpen, setProportionToolsOpen] = useState(false);
+  const [previewHeight, setPreviewHeight] = useState(300);
   const [fitReferenceUploading, setFitReferenceUploading] = useState(false);
   const fitReferenceInputRef = useRef<HTMLInputElement | null>(null);
+  const previewResizeRef = useRef<{ startY: number; height: number } | null>(null);
 
   // Whenever the current run changes (e.g. new generation, clicked a different
   // history item), reset the gallery to image 0 so we never show a stale
@@ -64,6 +66,38 @@ export default function OutputPanel({
     setFitToolsOpen(false);
     setProportionToolsOpen(false);
   }, [current?.id]);
+
+  useEffect(() => {
+    function handleMove(event: PointerEvent) {
+      const drag = previewResizeRef.current;
+      if (!drag) return;
+      const nextHeight = drag.height + event.clientY - drag.startY;
+      setPreviewHeight(Math.min(720, Math.max(180, nextHeight)));
+    }
+
+    function handleUp() {
+      previewResizeRef.current = null;
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    }
+
+    window.addEventListener("pointermove", handleMove);
+    window.addEventListener("pointerup", handleUp);
+    return () => {
+      window.removeEventListener("pointermove", handleMove);
+      window.removeEventListener("pointerup", handleUp);
+    };
+  }, []);
+
+  function beginPreviewResize(event: React.PointerEvent<HTMLButtonElement>) {
+    previewResizeRef.current = {
+      startY: event.clientY,
+      height: previewHeight,
+    };
+    document.body.style.cursor = "row-resize";
+    document.body.style.userSelect = "none";
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
 
   // Defensive clamp — if index somehow exceeds the current run's image count,
   // fall back to 0 rather than showing undefined.
@@ -166,7 +200,7 @@ export default function OutputPanel({
   }
 
   return (
-    <aside className="flex w-full shrink-0 flex-col border-t border-neutral-200 bg-white lg:h-full lg:border-l lg:border-t-0">
+    <aside className="flex w-full shrink-0 flex-col overflow-y-auto border-t border-neutral-200 bg-white lg:h-full lg:border-l lg:border-t-0">
       <div className="flex items-center justify-between border-b border-neutral-200 px-5 py-4">
         <div>
           <h2 className="flex items-center gap-2 text-sm font-semibold">
@@ -240,10 +274,10 @@ export default function OutputPanel({
         </div>
       )}
 
-      {/* main preview — min-h-0 + overflow-hidden keeps tall portrait outputs
-          from blowing past the flex track and covering the thumbnail strip
-          above. */}
-      <div className="flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-neutral-50 p-5">
+      <div
+        className="flex shrink-0 items-center justify-center overflow-hidden bg-neutral-50 p-5"
+        style={{ height: `${previewHeight}px` }}
+      >
         {active ? (
           <button
             type="button"
@@ -270,6 +304,14 @@ export default function OutputPanel({
           </p>
         )}
       </div>
+      <button
+        type="button"
+        aria-label="Resize result preview"
+        onPointerDown={beginPreviewResize}
+        className="group flex h-3 shrink-0 cursor-row-resize items-center justify-center border-y border-neutral-200 bg-white transition hover:bg-neutral-50"
+      >
+        <span className="h-0.5 w-10 rounded-full bg-neutral-300 transition group-hover:bg-neutral-500" />
+      </button>
 
       {current && (
         <div className="border-t border-neutral-200 px-5 py-3">
