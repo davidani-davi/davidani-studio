@@ -19,6 +19,7 @@ export default function LibraryClient() {
   const [q, setQ] = useState("");
   const [styleNumber, setStyleNumber] = useState("");
   const [loading, setLoading] = useState(true);
+  const [regeneratingId, setRegeneratingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function load(nextQ = q, nextStyleNumber = styleNumber) {
@@ -37,6 +38,27 @@ export default function LibraryClient() {
     void load("", "");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  async function regenerateSeo(styleId: string) {
+    setRegeneratingId(styleId);
+    setError(null);
+    try {
+      const res = await fetch("/api/library", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ styleId }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data?.ok) throw new Error(data?.error || "SEO regeneration failed");
+      setStyles((items) =>
+        items.map((item) => (item.id === styleId ? data.style : item))
+      );
+    } catch (err: any) {
+      setError(err?.message || "SEO regeneration failed");
+    } finally {
+      setRegeneratingId(null);
+    }
+  }
 
   return (
     <main className="min-h-screen bg-neutral-50">
@@ -127,17 +149,27 @@ export default function LibraryClient() {
                       Updated {new Date(style.updatedAt).toLocaleString()}
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      navigator.clipboard.writeText(
-                        `${style.seoName}\n\n${style.seoDescription}`
-                      )
-                    }
-                    className="rounded-lg border border-neutral-200 px-3 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
-                  >
-                    Copy SEO
-                  </button>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => void regenerateSeo(style.id)}
+                      disabled={regeneratingId === style.id}
+                      className="rounded-lg border border-neutral-200 px-3 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50 disabled:opacity-60"
+                    >
+                      {regeneratingId === style.id ? "Analyzing..." : "Regenerate SEO"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        navigator.clipboard.writeText(
+                          `${style.seoName}\n\n${style.seoDescription}`
+                        )
+                      }
+                      className="rounded-lg border border-neutral-200 px-3 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
+                    >
+                      Copy SEO
+                    </button>
+                  </div>
                 </div>
 
                 <div className="grid gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_340px]">

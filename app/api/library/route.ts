@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import {
   filterLibraryStyles,
   readLibraryIndex,
+  regenerateLibraryStyleSeo,
   upsertLibraryStyle,
 } from "@/lib/style-library";
 
@@ -40,6 +41,19 @@ export async function POST(req: Request) {
   } catch (err: any) {
     return NextResponse.json(
       { ok: false, error: err?.message || "Library upload failed" },
+      { status: 400 }
+    );
+  }
+}
+
+export async function PATCH(req: Request) {
+  try {
+    const body = await req.json();
+    const style = await regenerateLibraryStyleSeo(String(body?.styleId || ""));
+    return NextResponse.json({ ok: true, style });
+  } catch (err: any) {
+    return NextResponse.json(
+      { ok: false, error: err?.message || "SEO regeneration failed" },
       { status: 400 }
     );
   }

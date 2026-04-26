@@ -115,9 +115,43 @@ function fallbackSeo(styleNumber: string, color: string): {
 } {
   const name = `${styleNumber} ${color}`.trim();
   return {
-    seoName: `${name} - ${styleNumber}`,
-    seoDescription: `${name}, photographed for fashion ecommerce with clear product views for web merchandising, catalog copy, and team reference.`,
+    seoName: `${color} Fashion Style - ${styleNumber}`,
+    seoDescription: `${color} fashion style ${styleNumber}. Regenerate SEO after upload to create a garment-specific Faire title and description from the product image.`,
   };
+}
+
+function extractTextFromVisionResponse(value: unknown): string {
+  if (!value) return "";
+  if (typeof value === "string") return value;
+  if (Array.isArray(value)) {
+    return value.map(extractTextFromVisionResponse).filter(Boolean).join("\n");
+  }
+  if (typeof value === "object") {
+    const obj = value as Record<string, unknown>;
+    for (const key of ["output", "response", "text", "content", "message"]) {
+      const text = extractTextFromVisionResponse(obj[key]);
+      if (text) return text;
+    }
+  }
+  return "";
+}
+
+function parseSeoJson(text: string): { seoName: string; seoDescription: string } | null {
+  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i)?.[1];
+  const candidate = fenced || text.match(/\{[\s\S]*\}/)?.[0] || text;
+  try {
+    const parsed = JSON.parse(candidate) as Partial<{
+      seoName: string;
+      seoDescription: string;
+    }>;
+    if (!parsed.seoName?.trim() || !parsed.seoDescription?.trim()) return null;
+    return {
+      seoName: parsed.seoName.trim(),
+      seoDescription: parsed.seoDescription.trim(),
+    };
+  } catch {
+    return null;
+  }
 }
 
 export async function generateStyleSeo(input: {
@@ -133,26 +167,24 @@ export async function generateStyleSeo(input: {
     fal.config({ credentials: key });
     const result: any = await fal.subscribe("fal-ai/any-llm/vision", {
       input: {
-        model: "openai/gpt-4o-mini",
+        model: "anthropic/claude-3.7-sonnet",
+        system_prompt:
+          "You are a senior ecommerce fashion copywriter for Faire wholesale listings. You must analyze the garment visible in the image and write accurate, sellable product copy. Never describe the model, pose, background, photography, or team workflow. Never use generic filler.",
         image_url: input.imageUrl,
         prompt:
-          `You are writing ecommerce SEO copy for a fashion wholesale/product team. ` +
-          `Style number: ${input.styleNumber}. Color: ${input.color}. ` +
-          `Return strict JSON only with keys seoName and seoDescription. ` +
-          `seoName should be concise, search-friendly, boutique/ecommerce-ready, and include the style number and color naturally. ` +
-          `seoDescription should be 1-2 polished sentences describing visible garment type, silhouette, fabric/texture, details, and styling value. ` +
-          `Do not invent details that are not visible.`,
+          `Analyze only the garment being sold in this image. Style number: ${input.styleNumber}. Color: ${input.color}. ` +
+          `Return strict JSON only with keys "seoName" and "seoDescription". ` +
+          `seoName: Faire-ready SEO title, 55-90 characters, include color, garment type, key detail, and style number. ` +
+          `seoDescription: 2-4 polished sentences ready to paste into Faire. Describe the visible garment type, silhouette, closure, fabric/texture, trim, embroidery/patches/graphics, pockets, cuffs, hem, and styling value when visible. ` +
+          `Do not mention the model, face, body, photo, image, background, catalog, ecommerce, web team, or "photographed". ` +
+          `Do not invent brand names, fiber content, exact measurements, season, or hidden back details. If uncertain, use visible-safe wording like "appears" sparingly.`,
       },
       logs: false,
     });
-    const text = String(result?.data?.output ?? result?.output ?? result?.data ?? "");
-    const match = text.match(/\{[\s\S]*\}/);
-    if (!match) return fallback;
-    const parsed = JSON.parse(match[0]) as Partial<typeof fallback>;
-    return {
-      seoName: parsed.seoName?.trim() || fallback.seoName,
-      seoDescription: parsed.seoDescription?.trim() || fallback.seoDescription,
-    };
+    const data = result?.data ?? result;
+    const text = extractTextFromVisionResponse(data);
+    const parsed = parseSeoJson(text);
+    return parsed || fallback;
   } catch (err) {
     console.warn("[style-library] SEO generation failed:", err);
     return fallback;
@@ -229,6 +261,25 @@ export async function upsertLibraryStyle(input: {
   };
 
   index.styles.push(style);
+  await writeLibraryIndex(index);
+  return style;
+}
+
+export async function regenerateLibraryStyleSeo(styleId: string): Promise<LibraryStyle> {
+  const index = await readLibraryIndex();
+  const style = index.styles.find((item) => item.id === styleId);
+  if (!style) throw new Error("Library style not found.");
+  const imageUrl = style.views[0]?.imageUrl;
+  if (!imageUrl) throw new Error("Library style has no image to analyze.");
+
+  const seo = await generateStyleSeo({
+    styleNumber: style.styleNumber,
+    color: style.color || "",
+    imageUrl,
+  });
+  style.seoName = seo.seoName;
+  style.seoDescription = seo.seoDescription;
+  style.updatedAt = nowIso();
   await writeLibraryIndex(index);
   return style;
 }
