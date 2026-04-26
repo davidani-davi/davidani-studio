@@ -57,6 +57,14 @@ export async function PATCH(req: Request) {
         color: String(body?.color || ""),
         seoName: String(body?.seoName || ""),
         seoDescription: String(body?.seoDescription || ""),
+        garmentType: typeof body?.garmentType === "string" ? body.garmentType : undefined,
+        silhouette: typeof body?.silhouette === "string" ? body.silhouette : undefined,
+        fabric: typeof body?.fabric === "string" ? body.fabric : undefined,
+        season: typeof body?.season === "string" ? body.season : undefined,
+        vibeTags: Array.isArray(body?.vibeTags) ? body.vibeTags : undefined,
+        seoTags: Array.isArray(body?.seoTags) ? body.seoTags : undefined,
+        faireBullets: Array.isArray(body?.faireBullets) ? body.faireBullets : undefined,
+        libraryTags: Array.isArray(body?.libraryTags) ? body.libraryTags : undefined,
         views: Array.isArray(body?.views) ? body.views : [],
       });
       return NextResponse.json({ ok: true, style });

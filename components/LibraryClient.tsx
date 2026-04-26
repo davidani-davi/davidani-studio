@@ -9,6 +9,14 @@ interface LibraryDraft {
   color: string;
   seoName: string;
   seoDescription: string;
+  garmentType: string;
+  silhouette: string;
+  fabric: string;
+  season: string;
+  vibeTags: string[];
+  seoTags: string[];
+  faireBullets: string[];
+  libraryTags: string[];
   views: Array<{ id: string; label: string }>;
 }
 
@@ -28,6 +36,8 @@ async function fetchLibrary(q = "", styleNumber = ""): Promise<LibraryStyle[]> {
   return data.styles;
 }
 
+const MODEL_STUDIO_IMPORT_KEY = "davidani:model-studio:library-import";
+
 function formatViewLabel(label: string): string {
   const clean = (label || "View").replace(/[-_]+/g, " ").trim();
   return clean
@@ -42,6 +52,14 @@ function makeDraft(style: LibraryStyle): LibraryDraft {
     color: style.color,
     seoName: style.seoName,
     seoDescription: style.seoDescription,
+    garmentType: style.garmentType || "",
+    silhouette: style.silhouette || "",
+    fabric: style.fabric || "",
+    season: style.season || "",
+    vibeTags: style.vibeTags || [],
+    seoTags: style.seoTags || [],
+    faireBullets: style.faireBullets || [],
+    libraryTags: style.libraryTags || [],
     views: style.views.map((view) => ({ id: view.id, label: formatViewLabel(view.label) })),
   };
 }
@@ -64,6 +82,64 @@ function filenameFor(style: LibraryStyle, view: LibraryView) {
   return `${parts.replace(/[^a-z0-9]+/gi, "-").replace(/^-+|-+$/g, "") || "library-image"}.png`;
 }
 
+function splitListInput(value: string): string[] {
+  return value
+    .split(/[,\n]/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function allStyleTags(style: LibraryStyle): string[] {
+  return Array.from(new Set([
+    style.color,
+    style.garmentType,
+    style.silhouette,
+    style.fabric,
+    style.season,
+    ...(style.vibeTags || []),
+    ...(style.libraryTags || []),
+  ]
+    .map((tag) => String(tag || "").trim())
+    .filter(Boolean)));
+}
+
+function uniqueTags(styles: LibraryStyle[]): string[] {
+  const counts = new Map<string, { label: string; count: number }>();
+  for (const style of styles) {
+    for (const tag of allStyleTags(style)) {
+      const key = tag.toLowerCase();
+      const current = counts.get(key);
+      counts.set(key, { label: current?.label || tag, count: (current?.count || 0) + 1 });
+    }
+  }
+  return [...counts.values()]
+    .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label))
+    .slice(0, 24)
+    .map((item) => item.label);
+}
+
+function similarStyles(target: LibraryStyle, styles: LibraryStyle[]): LibraryStyle[] {
+  const targetTags = new Set(allStyleTags(target).map((tag) => tag.toLowerCase()));
+  return styles
+    .filter((style) => style.id !== target.id)
+    .map((style) => {
+      const score = allStyleTags(style).filter((tag) => targetTags.has(tag.toLowerCase())).length;
+      return { style, score };
+    })
+    .filter((item) => item.score > 0)
+    .sort((a, b) => b.score - a.score || b.style.updatedAt.localeCompare(a.style.updatedAt))
+    .slice(0, 3)
+    .map((item) => item.style);
+}
+
+function fairePack(style: LibraryStyle): string {
+  const bullets = style.faireBullets?.length
+    ? `\n\nBullets:\n${style.faireBullets.map((bullet) => `- ${bullet}`).join("\n")}`
+    : "";
+  const tags = style.seoTags?.length ? `\n\nTags:\n${style.seoTags.join(", ")}` : "";
+  return `Title:\n${style.seoName}\n\nDescription:\n${style.seoDescription}${bullets}${tags}`;
+}
+
 export default function LibraryClient() {
   const [styles, setStyles] = useState<LibraryStyle[]>([]);
   const [q, setQ] = useState("");
@@ -76,11 +152,22 @@ export default function LibraryClient() {
   const [drafts, setDrafts] = useState<Record<string, LibraryDraft>>({});
   const [savingId, setSavingId] = useState<string | null>(null);
   const [preview, setPreview] = useState<PreviewImage | null>(null);
+  const [activeTag, setActiveTag] = useState("");
   const [error, setError] = useState<string | null>(null);
 
+  const tagOptions = useMemo(() => uniqueTags(styles), [styles]);
+  const filteredStyles = useMemo(() => {
+    if (!activeTag) return styles;
+    const tagKey = activeTag.toLowerCase();
+    return styles.filter((style) =>
+      allStyleTags(style).some((tag) => tag.toLowerCase() === tagKey)
+    );
+  }, [activeTag, styles]);
+
   const visibleCountLabel = useMemo(
-    () => `${styles.length} published item${styles.length === 1 ? "" : "s"}`,
-    [styles.length]
+    () =>
+      `${filteredStyles.length} published item${filteredStyles.length === 1 ? "" : "s"}`,
+    [filteredStyles.length]
   );
 
   async function load(nextQ = q, nextStyleNumber = styleNumber) {
@@ -88,6 +175,7 @@ export default function LibraryClient() {
     setError(null);
     try {
       setStyles(await fetchLibrary(nextQ, nextStyleNumber));
+      setActiveTag("");
     } catch (err: any) {
       setError(err?.message || "Library search failed");
     } finally {
@@ -174,10 +262,10 @@ export default function LibraryClient() {
   }
 
   async function redoVisibleSeo() {
-    if (styles.length === 0) return;
+    if (filteredStyles.length === 0) return;
     const ok = window.confirm(
-      `Redo Faire SEO for ${styles.length} visible published item${
-        styles.length === 1 ? "" : "s"
+      `Redo Faire SEO for ${filteredStyles.length} visible published item${
+        filteredStyles.length === 1 ? "" : "s"
       }? This will replace the current title and description.`
     );
     if (!ok) return;
@@ -185,14 +273,36 @@ export default function LibraryClient() {
     setBulkRegenerating(true);
     setError(null);
     try {
-      for (let i = 0; i < styles.length; i++) {
-        const style = styles[i];
-        setBulkProgress(`${i + 1} of ${styles.length}: ${style.styleNumber} ${style.color}`);
+      for (let i = 0; i < filteredStyles.length; i++) {
+        const style = filteredStyles[i];
+        setBulkProgress(
+          `${i + 1} of ${filteredStyles.length}: ${style.styleNumber} ${style.color}`
+        );
         await regenerateSeo(style.id);
       }
-      setBulkProgress(`Finished ${styles.length} item${styles.length === 1 ? "" : "s"}.`);
+      setBulkProgress(
+        `Finished ${filteredStyles.length} item${filteredStyles.length === 1 ? "" : "s"}.`
+      );
     } finally {
       setBulkRegenerating(false);
+    }
+  }
+
+  function sendToModelStudio(style: LibraryStyle, view: LibraryView) {
+    try {
+      localStorage.setItem(
+        MODEL_STUDIO_IMPORT_KEY,
+        JSON.stringify({
+          name: `${style.styleNumber} ${style.color} ${formatViewLabel(view.label)}`.trim(),
+          url: view.imageUrl,
+          styleNumber: style.styleNumber,
+          color: style.color,
+          importedAt: new Date().toISOString(),
+        })
+      );
+      window.location.href = "/model-studio";
+    } catch {
+      setError("Could not send this image to Model Studio.");
     }
   }
 
@@ -248,7 +358,7 @@ export default function LibraryClient() {
           <button
             type="button"
             onClick={() => void redoVisibleSeo()}
-            disabled={bulkRegenerating || loading || styles.length === 0}
+            disabled={bulkRegenerating || loading || filteredStyles.length === 0}
             className="rounded-lg border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
           >
             {bulkRegenerating ? "Redoing..." : "Redo visible SEO"}
@@ -257,7 +367,39 @@ export default function LibraryClient() {
       </section>
 
       <section className="mx-auto max-w-6xl px-5 py-6">
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-4 flex flex-col gap-3">
+          {tagOptions.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setActiveTag("")}
+                className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
+                  activeTag
+                    ? "border border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50"
+                    : "bg-neutral-900 text-white"
+                }`}
+              >
+                All
+              </button>
+              {tagOptions.map((tag) => {
+                const active = activeTag.toLowerCase() === tag.toLowerCase();
+                return (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => setActiveTag(active ? "" : tag)}
+                    className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
+                      active
+                        ? "bg-neutral-900 text-white"
+                        : "border border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50"
+                    }`}
+                  >
+                    {tag}
+                  </button>
+                );
+              })}
+            </div>
+          )}
           <p className="text-xs font-semibold uppercase tracking-widest text-neutral-400">
             {loading ? "Loading" : visibleCountLabel}
           </p>
@@ -277,11 +419,16 @@ export default function LibraryClient() {
             No styles yet. Upload a result from Image Studio or Model Studio to start the team
             library.
           </div>
+        ) : filteredStyles.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-neutral-300 bg-white px-5 py-10 text-center text-sm text-neutral-500">
+            No styles match this filter.
+          </div>
         ) : (
           <div className="grid gap-4">
-            {styles.map((style) => {
+            {filteredStyles.map((style) => {
               const isEditing = editingId === style.id;
               const draft = drafts[style.id] || makeDraft(style);
+              const related = similarStyles(style, styles);
 
               return (
                 <article
@@ -375,6 +522,13 @@ export default function LibraryClient() {
                       >
                         Copy SEO
                       </button>
+                      <button
+                        type="button"
+                        onClick={() => navigator.clipboard.writeText(fairePack(style))}
+                        className="rounded-lg border border-neutral-200 px-3 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
+                      >
+                        Copy Faire Pack
+                      </button>
                     </div>
                   </div>
 
@@ -433,6 +587,13 @@ export default function LibraryClient() {
                               >
                                 Download
                               </button>
+                              <button
+                                type="button"
+                                onClick={() => sendToModelStudio(style, view)}
+                                className="rounded-lg bg-neutral-900 px-3 py-2 text-xs font-semibold text-white hover:bg-neutral-800"
+                              >
+                                Use in Model
+                              </button>
                             </div>
                           </figure>
                         );
@@ -472,6 +633,146 @@ export default function LibraryClient() {
                           {style.seoDescription}
                         </p>
                       )}
+                      <div className="mt-4 grid gap-3">
+                        <div className="grid grid-cols-2 gap-2">
+                          {[
+                            ["Type", style.garmentType],
+                            ["Shape", style.silhouette],
+                            ["Fabric", style.fabric],
+                            ["Season", style.season],
+                          ].map(([label, value]) => (
+                            <div key={label} className="rounded-lg bg-white px-3 py-2">
+                              <p className="text-[9px] font-bold uppercase tracking-widest text-neutral-400">
+                                {label}
+                              </p>
+                              <p className="mt-1 text-xs font-semibold text-neutral-700">
+                                {value || "Analyze SEO"}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                        {(style.vibeTags?.length || style.libraryTags?.length) ? (
+                          <div className="flex flex-wrap gap-1.5">
+                            {Array.from(
+                              new Set([...(style.vibeTags || []), ...(style.libraryTags || [])])
+                            )
+                              .slice(0, 12)
+                              .map((tag) => (
+                                <button
+                                  key={tag}
+                                  type="button"
+                                  onClick={() => setActiveTag(tag)}
+                                  className="rounded-full bg-white px-2 py-1 text-[10px] font-semibold text-neutral-600 hover:bg-neutral-100"
+                                >
+                                  {tag}
+                                </button>
+                              ))}
+                          </div>
+                        ) : null}
+                        {style.faireBullets?.length ? (
+                          <div>
+                            <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
+                              Faire Bullets
+                            </p>
+                            <ul className="mt-2 space-y-1 text-xs leading-relaxed text-neutral-700">
+                              {style.faireBullets.map((bullet) => (
+                                <li key={bullet}>- {bullet}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        ) : null}
+                        {isEditing && (
+                          <div className="grid gap-3 border-t border-neutral-200 pt-3">
+                            <div className="grid gap-2 sm:grid-cols-2">
+                              {[
+                                ["Garment type", "garmentType"],
+                                ["Silhouette", "silhouette"],
+                                ["Fabric", "fabric"],
+                                ["Season", "season"],
+                              ].map(([label, key]) => (
+                                <input
+                                  key={key}
+                                  value={String(draft[key as keyof LibraryDraft] || "")}
+                                  onChange={(event) =>
+                                    updateDraft(style.id, {
+                                      [key]: event.target.value,
+                                    } as Partial<LibraryDraft>)
+                                  }
+                                  placeholder={label}
+                                  className="rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs outline-none focus:border-neutral-900"
+                                />
+                              ))}
+                            </div>
+                            <textarea
+                              value={draft.libraryTags.join(", ")}
+                              onChange={(event) =>
+                                updateDraft(style.id, {
+                                  libraryTags: splitListInput(event.target.value),
+                                })
+                              }
+                              rows={2}
+                              placeholder="Library tags, comma separated"
+                              className="w-full resize-y rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs outline-none focus:border-neutral-900"
+                            />
+                            <textarea
+                              value={draft.seoTags.join(", ")}
+                              onChange={(event) =>
+                                updateDraft(style.id, {
+                                  seoTags: splitListInput(event.target.value),
+                                })
+                              }
+                              rows={2}
+                              placeholder="Faire/search tags, comma separated"
+                              className="w-full resize-y rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs outline-none focus:border-neutral-900"
+                            />
+                            <textarea
+                              value={draft.faireBullets.join("\n")}
+                              onChange={(event) =>
+                                updateDraft(style.id, {
+                                  faireBullets: splitListInput(event.target.value),
+                                })
+                              }
+                              rows={4}
+                              placeholder="Faire bullets, one per line"
+                              className="w-full resize-y rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs outline-none focus:border-neutral-900"
+                            />
+                          </div>
+                        )}
+                        {related.length > 0 && (
+                          <div className="border-t border-neutral-200 pt-3">
+                            <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
+                              Similar Styles
+                            </p>
+                            <div className="mt-2 grid grid-cols-3 gap-2">
+                              {related.map((item) => (
+                                <button
+                                  key={item.id}
+                                  type="button"
+                                  onClick={() => {
+                                    setStyleNumber(item.styleNumber);
+                                    setActiveTag("");
+                                    void load("", item.styleNumber);
+                                    window.scrollTo({ top: 0, behavior: "smooth" });
+                                  }}
+                                  className="text-left"
+                                >
+                                  <div className="aspect-[4/5] overflow-hidden rounded-lg bg-white">
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img
+                                      src={item.views[0]?.imageUrl}
+                                      alt={item.styleNumber}
+                                      className="h-full w-full object-cover"
+                                    />
+                                  </div>
+                                  <p className="mt-1 truncate text-[10px] font-semibold text-neutral-700">
+                                    {item.styleNumber}
+                                  </p>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </article>

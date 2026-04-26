@@ -18,6 +18,14 @@ export interface LibraryStyle {
   color: string;
   seoName: string;
   seoDescription: string;
+  garmentType?: string;
+  silhouette?: string;
+  fabric?: string;
+  season?: string;
+  vibeTags?: string[];
+  seoTags?: string[];
+  faireBullets?: string[];
+  libraryTags?: string[];
   createdAt: string;
   updatedAt: string;
   views: LibraryView[];
@@ -109,14 +117,39 @@ export async function writeLibraryIndex(index: LibraryIndex): Promise<void> {
   }
 }
 
-function fallbackSeo(styleNumber: string, color: string): {
+type StyleIntelligence = {
   seoName: string;
   seoDescription: string;
-} {
-  const name = `${styleNumber} ${color}`.trim();
+  garmentType: string;
+  silhouette: string;
+  fabric: string;
+  season: string;
+  vibeTags: string[];
+  seoTags: string[];
+  faireBullets: string[];
+  libraryTags: string[];
+};
+
+function cleanList(value: unknown, limit = 12): string[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => String(item || "").trim())
+    .filter(Boolean)
+    .slice(0, limit);
+}
+
+function fallbackSeo(styleNumber: string, color: string): StyleIntelligence {
   return {
     seoName: `${color} Fashion Style - ${styleNumber}`,
     seoDescription: `${color} fashion style ${styleNumber}. Regenerate SEO after upload to create a garment-specific Faire title and description from the product image.`,
+    garmentType: "Fashion style",
+    silhouette: "Visible garment silhouette",
+    fabric: "Visible fabric",
+    season: "Seasonless",
+    vibeTags: [],
+    seoTags: [styleNumber, color].filter(Boolean),
+    faireBullets: [],
+    libraryTags: [styleNumber, color].filter(Boolean),
   };
 }
 
@@ -136,29 +169,58 @@ function extractTextFromVisionResponse(value: unknown): string {
   return "";
 }
 
-function parseSeoJson(text: string): { seoName: string; seoDescription: string } | null {
+function parseSeoJson(text: string, fallback: StyleIntelligence): StyleIntelligence | null {
   const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i)?.[1];
   const candidate = fenced || text.match(/\{[\s\S]*\}/)?.[0] || text;
   try {
     const parsed = JSON.parse(candidate) as Partial<{
       seoName: string;
       seoDescription: string;
+      garmentType: string;
+      silhouette: string;
+      fabric: string;
+      season: string;
+      vibeTags: string[];
+      seoTags: string[];
+      faireBullets: string[];
+      libraryTags: string[];
     }>;
     if (!parsed.seoName?.trim() || !parsed.seoDescription?.trim()) return null;
     return {
       seoName: parsed.seoName.trim(),
       seoDescription: parsed.seoDescription.trim(),
+      garmentType: parsed.garmentType?.trim() || fallback.garmentType,
+      silhouette: parsed.silhouette?.trim() || fallback.silhouette,
+      fabric: parsed.fabric?.trim() || fallback.fabric,
+      season: parsed.season?.trim() || fallback.season,
+      vibeTags: cleanList(parsed.vibeTags, 8),
+      seoTags: cleanList(parsed.seoTags, 12),
+      faireBullets: cleanList(parsed.faireBullets, 5),
+      libraryTags: cleanList(parsed.libraryTags, 16),
     };
   } catch {
     return null;
   }
 }
 
+function applyStyleIntelligence(style: LibraryStyle, intelligence: StyleIntelligence) {
+  style.seoName = intelligence.seoName;
+  style.seoDescription = intelligence.seoDescription;
+  style.garmentType = intelligence.garmentType;
+  style.silhouette = intelligence.silhouette;
+  style.fabric = intelligence.fabric;
+  style.season = intelligence.season;
+  style.vibeTags = intelligence.vibeTags;
+  style.seoTags = intelligence.seoTags;
+  style.faireBullets = intelligence.faireBullets;
+  style.libraryTags = intelligence.libraryTags;
+}
+
 export async function generateStyleSeo(input: {
   styleNumber: string;
   color: string;
   imageUrl: string;
-}): Promise<{ seoName: string; seoDescription: string }> {
+}): Promise<StyleIntelligence> {
   const fallback = fallbackSeo(input.styleNumber, input.color);
   const key = process.env.FAL_KEY;
   if (!key) return fallback;
@@ -173,9 +235,14 @@ export async function generateStyleSeo(input: {
         image_url: input.imageUrl,
         prompt:
           `Analyze only the garment being sold in this image. Style number: ${input.styleNumber}. Color: ${input.color}. ` +
-          `Return strict JSON only with keys "seoName" and "seoDescription". ` +
+          `Return strict JSON only with keys "seoName", "seoDescription", "garmentType", "silhouette", "fabric", "season", "vibeTags", "seoTags", "faireBullets", and "libraryTags". ` +
           `seoName: Faire-ready SEO title, 55-90 characters, include color, garment type, key detail, and style number. ` +
           `seoDescription: 2-4 polished sentences ready to paste into Faire. Describe the visible garment type, silhouette, closure, fabric/texture, trim, embroidery/patches/graphics, pockets, cuffs, hem, and styling value when visible. ` +
+          `garmentType, silhouette, fabric, and season: short accurate phrases for filtering. ` +
+          `vibeTags: 4-8 boutique trend/search phrases such as western, coquette, oversized, denim, crochet, resort, minimalist, festival, preppy, boho, romantic, streetwear. ` +
+          `seoTags: 8-12 Faire/search tags a wholesale ecommerce team can paste or use for merchandising. ` +
+          `faireBullets: 3-5 short product selling bullets, each under 90 characters, based only on visible garment details. ` +
+          `libraryTags: 8-16 short internal filter tags including garment category, color, fabric, silhouette, season, and vibe. ` +
           `Do not mention the model, face, body, photo, image, background, catalog, ecommerce, web team, or "photographed". ` +
           `Do not invent brand names, fiber content, exact measurements, season, or hidden back details. If uncertain, use visible-safe wording like "appears" sparingly.`,
       },
@@ -183,7 +250,7 @@ export async function generateStyleSeo(input: {
     });
     const data = result?.data ?? result;
     const text = extractTextFromVisionResponse(data);
-    const parsed = parseSeoJson(text);
+    const parsed = parseSeoJson(text, fallback);
     return parsed || fallback;
   } catch (err) {
     console.warn("[style-library] SEO generation failed:", err);
@@ -233,8 +300,7 @@ export async function upsertLibraryStyle(input: {
       color,
       imageUrl: existing.views[0]?.imageUrl || input.imageUrl,
     });
-    existing.seoName = seo.seoName;
-    existing.seoDescription = seo.seoDescription;
+    applyStyleIntelligence(existing, seo);
     await writeLibraryIndex(index);
     return existing;
   }
@@ -247,6 +313,14 @@ export async function upsertLibraryStyle(input: {
     color,
     seoName: seo.seoName,
     seoDescription: seo.seoDescription,
+    garmentType: seo.garmentType,
+    silhouette: seo.silhouette,
+    fabric: seo.fabric,
+    season: seo.season,
+    vibeTags: seo.vibeTags,
+    seoTags: seo.seoTags,
+    faireBullets: seo.faireBullets,
+    libraryTags: seo.libraryTags,
     createdAt,
     updatedAt: createdAt,
     views: [
@@ -277,8 +351,7 @@ export async function regenerateLibraryStyleSeo(styleId: string): Promise<Librar
     color: style.color || "",
     imageUrl,
   });
-  style.seoName = seo.seoName;
-  style.seoDescription = seo.seoDescription;
+  applyStyleIntelligence(style, seo);
   style.updatedAt = nowIso();
   await writeLibraryIndex(index);
   return style;
@@ -290,6 +363,14 @@ export async function updateLibraryStyle(input: {
   color: string;
   seoName: string;
   seoDescription: string;
+  garmentType?: string;
+  silhouette?: string;
+  fabric?: string;
+  season?: string;
+  vibeTags?: string[];
+  seoTags?: string[];
+  faireBullets?: string[];
+  libraryTags?: string[];
   views: Array<{ id: string; label: string }>;
 }): Promise<LibraryStyle> {
   const index = await readLibraryIndex();
@@ -317,6 +398,14 @@ export async function updateLibraryStyle(input: {
   style.userStyleName = `${styleNumber} ${color}`.trim();
   style.seoName = seoName;
   style.seoDescription = seoDescription;
+  style.garmentType = input.garmentType?.trim() || style.garmentType;
+  style.silhouette = input.silhouette?.trim() || style.silhouette;
+  style.fabric = input.fabric?.trim() || style.fabric;
+  style.season = input.season?.trim() || style.season;
+  style.vibeTags = cleanList(input.vibeTags, 8);
+  style.seoTags = cleanList(input.seoTags, 12);
+  style.faireBullets = cleanList(input.faireBullets, 5);
+  style.libraryTags = cleanList(input.libraryTags, 16);
   style.views = style.views.map((view) => ({
     ...view,
     label: viewLabels.get(view.id) || view.label,
@@ -344,6 +433,14 @@ export function filterLibraryStyles(
         style.color,
         style.seoName,
         style.seoDescription,
+        style.garmentType,
+        style.silhouette,
+        style.fabric,
+        style.season,
+        ...(style.vibeTags || []),
+        ...(style.seoTags || []),
+        ...(style.faireBullets || []),
+        ...(style.libraryTags || []),
         ...style.views.map((view) => view.label),
       ]
         .join(" ")

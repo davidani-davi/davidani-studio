@@ -31,6 +31,7 @@ function deriveOverlayMode(showName: boolean, showNumber: boolean): OverlayMode 
 // Separate history key so Model Studio runs don't commingle with Image Studio
 // runs in localStorage. Each workspace has its own run list.
 const HISTORY_KEY = "davidani_model_history_v1";
+const MODEL_STUDIO_IMPORT_KEY = "davidani:model-studio:library-import";
 
 const POSE_VARIATION_NOTES = [
   "Keep the selected preset as the clear pose anchor, but introduce a subtle variation: a tiny head-angle shift and a slightly softer shoulder line.",
@@ -231,6 +232,37 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
       /* ignore */
     }
   }, [history]);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(MODEL_STUDIO_IMPORT_KEY);
+      if (!raw) return;
+      localStorage.removeItem(MODEL_STUDIO_IMPORT_KEY);
+      const imported = JSON.parse(raw) as Partial<{
+        name: string;
+        url: string;
+        styleNumber: string;
+        color: string;
+      }>;
+      if (!imported.url) return;
+      const nextUpload: UploadedImage = {
+        name: imported.name || imported.styleNumber || "Library image",
+        url: imported.url,
+      };
+      setUploads((list) =>
+        list.some((item) => item.url === nextUpload.url) ? list : [...list, nextUpload]
+      );
+      setSelected((items) =>
+        items.includes(nextUpload.url) ? items : [...items, nextUpload.url]
+      );
+      if (imported.styleNumber) setStyleNumber(imported.styleNumber);
+      if (imported.color) setColorName(imported.color);
+      setPrompt("");
+      setAnalysisReview(null);
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   const currentRun = useMemo(
     () => history.find((h) => h.id === currentId) ?? null,
