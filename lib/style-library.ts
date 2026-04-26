@@ -284,6 +284,49 @@ export async function regenerateLibraryStyleSeo(styleId: string): Promise<Librar
   return style;
 }
 
+export async function updateLibraryStyle(input: {
+  styleId: string;
+  styleNumber: string;
+  color: string;
+  seoName: string;
+  seoDescription: string;
+  views: Array<{ id: string; label: string }>;
+}): Promise<LibraryStyle> {
+  const index = await readLibraryIndex();
+  const style = index.styles.find((item) => item.id === input.styleId);
+  if (!style) throw new Error("Library style not found.");
+
+  const styleNumber = normalizedStyleNumber(input.styleNumber);
+  const color = normalizedColor(input.color);
+  const seoName = input.seoName.trim();
+  const seoDescription = input.seoDescription.trim();
+
+  if (!styleNumber) throw new Error("Style number is required.");
+  if (!color) throw new Error("Color is required.");
+  if (!seoName) throw new Error("SEO title is required.");
+  if (!seoDescription) throw new Error("SEO description is required.");
+
+  const viewLabels = new Map(
+    input.views
+      .filter((view) => view.id)
+      .map((view) => [view.id, view.label.trim() || "view"] as const)
+  );
+
+  style.styleNumber = styleNumber;
+  style.color = color;
+  style.userStyleName = `${styleNumber} ${color}`.trim();
+  style.seoName = seoName;
+  style.seoDescription = seoDescription;
+  style.views = style.views.map((view) => ({
+    ...view,
+    label: viewLabels.get(view.id) || view.label,
+  }));
+  style.updatedAt = nowIso();
+
+  await writeLibraryIndex(index);
+  return style;
+}
+
 export function filterLibraryStyles(
   index: LibraryIndex,
   query: string | null,

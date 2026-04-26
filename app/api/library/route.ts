@@ -3,6 +3,7 @@ import {
   filterLibraryStyles,
   readLibraryIndex,
   regenerateLibraryStyleSeo,
+  updateLibraryStyle,
   upsertLibraryStyle,
 } from "@/lib/style-library";
 
@@ -49,6 +50,18 @@ export async function POST(req: Request) {
 export async function PATCH(req: Request) {
   try {
     const body = await req.json();
+    if (body?.action === "update") {
+      const style = await updateLibraryStyle({
+        styleId: String(body?.styleId || ""),
+        styleNumber: String(body?.styleNumber || ""),
+        color: String(body?.color || ""),
+        seoName: String(body?.seoName || ""),
+        seoDescription: String(body?.seoDescription || ""),
+        views: Array.isArray(body?.views) ? body.views : [],
+      });
+      return NextResponse.json({ ok: true, style });
+    }
+
     const style = await regenerateLibraryStyleSeo(String(body?.styleId || ""));
     return NextResponse.json({ ok: true, style });
   } catch (err: any) {
