@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import ImageLightbox, { ZoomButton } from "@/components/ImageLightbox";
 import TopTabs from "@/components/TopTabs";
 import type { UploadedImage } from "@/components/types";
 import { resizeIfNeeded } from "@/lib/image-resize";
 import type { ProductDesignConcept, ProductDesignResult } from "@/lib/fal";
+import type { InspirationSource } from "@/lib/inspiration-library";
 
 async function fetchJson(label: string, input: string, init?: RequestInit): Promise<any> {
   const res = await fetch(input, init);
@@ -109,11 +110,33 @@ export default function DesignStudioClient() {
   const [techpackFor, setTechpackFor] = useState<string | null>(null);
   const [techpack, setTechpack] = useState("");
   const [renderingIndex, setRenderingIndex] = useState<number | null>(null);
+  const [inspirations, setInspirations] = useState<InspirationSource[]>([]);
+  const [inspirationOpen, setInspirationOpen] = useState(false);
+  const [savingInspiration, setSavingInspiration] = useState(false);
+  const [newInspiration, setNewInspiration] = useState({
+    title: "",
+    url: "",
+    category: "",
+    note: "",
+  });
 
   const selectedUpload = useMemo(
     () => uploads.find((u) => u.url === selectedUrl) ?? null,
     [uploads, selectedUrl]
   );
+
+  async function loadInspirations() {
+    try {
+      const data = await fetchJson("Load inspirations", "/api/design-studio/inspirations");
+      setInspirations(data.sources || []);
+    } catch (err: any) {
+      setError(err?.message || "Failed to load inspirations");
+    }
+  }
+
+  useEffect(() => {
+    void loadInspirations();
+  }, []);
 
   async function addFiles(files: FileList) {
     setUploading(true);
@@ -235,6 +258,41 @@ export default function DesignStudioClient() {
       setError(err?.message || "Visual render failed");
     } finally {
       setRenderingIndex(null);
+    }
+  }
+
+  async function saveInspiration() {
+    setSavingInspiration(true);
+    setError(null);
+    try {
+      const data = await fetchJson("Save inspiration", "/api/design-studio/inspirations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newInspiration),
+      });
+      setInspirations((items) => [
+        data.source,
+        ...items.filter((item) => item.id !== data.source.id),
+      ]);
+      setNewInspiration({ title: "", url: "", category: "", note: "" });
+    } catch (err: any) {
+      setError(err?.message || "Failed to save inspiration");
+    } finally {
+      setSavingInspiration(false);
+    }
+  }
+
+  async function deleteInspiration(id: string) {
+    setError(null);
+    try {
+      await fetchJson(
+        "Delete inspiration",
+        `/api/design-studio/inspirations?id=${encodeURIComponent(id)}`,
+        { method: "DELETE" }
+      );
+      setInspirations((items) => items.filter((item) => item.id !== id));
+    } catch (err: any) {
+      setError(err?.message || "Failed to delete inspiration");
     }
   }
 
@@ -405,6 +463,105 @@ export default function DesignStudioClient() {
                 </button>
               ))}
             </div>
+          </section>
+
+          <section className="border-t border-neutral-100 p-5">
+            <button
+              type="button"
+              onClick={() => setInspirationOpen((open) => !open)}
+              className="flex w-full items-center justify-between rounded-lg border border-neutral-200 bg-white px-3 py-2 text-left text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
+            >
+              <span>Inspiration Library</span>
+              <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] text-neutral-500">
+                {inspirations.length}
+              </span>
+            </button>
+
+            {inspirationOpen && (
+              <div className="mt-3 grid gap-3">
+                <input
+                  value={newInspiration.url}
+                  onChange={(event) =>
+                    setNewInspiration((item) => ({ ...item, url: event.target.value }))
+                  }
+                  placeholder="https://brand.com/product"
+                  className="rounded-lg border border-neutral-200 px-3 py-2 text-xs outline-none focus:border-neutral-900"
+                />
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    value={newInspiration.title}
+                    onChange={(event) =>
+                      setNewInspiration((item) => ({ ...item, title: event.target.value }))
+                    }
+                    placeholder="Title"
+                    className="rounded-lg border border-neutral-200 px-3 py-2 text-xs outline-none focus:border-neutral-900"
+                  />
+                  <input
+                    value={newInspiration.category}
+                    onChange={(event) =>
+                      setNewInspiration((item) => ({ ...item, category: event.target.value }))
+                    }
+                    placeholder="Denim, cardigans..."
+                    className="rounded-lg border border-neutral-200 px-3 py-2 text-xs outline-none focus:border-neutral-900"
+                  />
+                </div>
+                <textarea
+                  value={newInspiration.note}
+                  onChange={(event) =>
+                    setNewInspiration((item) => ({ ...item, note: event.target.value }))
+                  }
+                  rows={2}
+                  placeholder="Why save this? Bestseller, avoid, FW26, fit idea..."
+                  className="resize-none rounded-lg border border-neutral-200 px-3 py-2 text-xs outline-none focus:border-neutral-900"
+                />
+                <button
+                  type="button"
+                  onClick={() => void saveInspiration()}
+                  disabled={savingInspiration || !newInspiration.url.trim()}
+                  className="rounded-lg bg-neutral-900 px-3 py-2 text-xs font-semibold text-white hover:bg-neutral-800 disabled:opacity-50"
+                >
+                  {savingInspiration ? "Saving..." : "Save Source"}
+                </button>
+
+                <div className="max-h-56 overflow-y-auto rounded-lg border border-neutral-100">
+                  {inspirations.length === 0 ? (
+                    <div className="p-3 text-xs text-neutral-500">
+                      Add approved brand pages, best sellers, trend pages, or avoid examples.
+                    </div>
+                  ) : (
+                    inspirations.slice(0, 12).map((source) => (
+                      <div
+                        key={source.id}
+                        className="border-b border-neutral-100 bg-white p-3 last:border-b-0"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="truncate text-xs font-semibold text-neutral-800">
+                              {source.title}
+                            </p>
+                            <p className="truncate text-[10px] text-neutral-400">
+                              {source.category}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => void deleteInspiration(source.id)}
+                            className="text-[10px] font-semibold text-neutral-400 hover:text-red-600"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                        {source.note && (
+                          <p className="mt-1 line-clamp-2 text-[10px] leading-relaxed text-neutral-500">
+                            {source.note}
+                          </p>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
           </section>
         </aside>
 

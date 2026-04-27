@@ -3,6 +3,11 @@ import {
   generateProductDesignConcepts,
 } from "@/lib/fal";
 import { renderDesignVisual } from "@/lib/design-studio-render";
+import {
+  filterInspirationSources,
+  readInspirationIndex,
+  type InspirationSource,
+} from "@/lib/inspiration-library";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -29,6 +34,13 @@ const RESEARCH_SOURCES = [
     url: "https://www.aritzia.com/us/en/clothing/coats-jackets/modal",
   },
 ];
+
+type ResearchSource = {
+  title: string;
+  url: string;
+  note?: string;
+  approved?: boolean;
+};
 
 function compactPageText(html: string): string {
   return html
@@ -63,13 +75,24 @@ function extractSignals(text: string): string[] {
   return [...found].slice(0, 16);
 }
 
-async function fetchTrendResearch(): Promise<{
+async function fetchTrendResearch(categoryHint = ""): Promise<{
   text: string;
   signals: string[];
   sources: { title: string; url: string }[];
 }> {
+  const inspirationIndex = await readInspirationIndex();
+  const approvedSources = filterInspirationSources(inspirationIndex.sources, categoryHint).map(
+    (source: InspirationSource): ResearchSource => ({
+      title: `Approved: ${source.title}`,
+      url: source.url,
+      note: [source.category, source.note].filter(Boolean).join(" - "),
+      approved: true,
+    })
+  );
+  const researchSources: ResearchSource[] = [...approvedSources, ...RESEARCH_SOURCES];
+
   const pages = await Promise.allSettled(
-    RESEARCH_SOURCES.map(async (source) => {
+    researchSources.map(async (source) => {
       const res = await fetch(source.url, {
         cache: "no-store",
         headers: {
@@ -84,15 +107,28 @@ async function fetchTrendResearch(): Promise<{
   );
 
   const ok = pages
-    .filter((page): page is PromiseFulfilledResult<{ title: string; url: string; text: string }> =>
-      page.status === "fulfilled"
+    .filter(
+      (
+        page
+      ): page is PromiseFulfilledResult<{
+        title: string;
+        url: string;
+        note?: string;
+        approved?: boolean;
+        text: string;
+      }> => page.status === "fulfilled"
     )
     .map((page) => page.value);
   const signals = ok.flatMap((page) => extractSignals(page.text)).slice(0, 24);
   const text = ok
-    .map((page) => `${page.title} (${page.url}): ${page.text}`)
+    .map(
+      (page) =>
+        `${page.title} (${page.url})${page.note ? `\nSaved note: ${page.note}` : ""}\n${
+          page.text
+        }`
+    )
     .join("\n\n")
-    .slice(0, 6500);
+    .slice(0, 9000);
 
   return {
     text,
@@ -114,7 +150,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const research = await fetchTrendResearch();
+    const research = await fetchTrendResearch(typeof refinement === "string" ? refinement : "");
     const result = await generateProductDesignConcepts(
       imageUrl,
       typeof refinement === "string" ? refinement : undefined,
