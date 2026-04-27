@@ -104,6 +104,21 @@ function tagText(source: InspirationSource): string {
   return source.tags?.length ? source.tags.join(", ") : source.category;
 }
 
+function uniqueMoodboardTags(sources: InspirationSource[]): string[] {
+  const counts = new Map<string, number>();
+  for (const source of sources) {
+    const tags = source.tags?.length ? source.tags : [source.category].filter(Boolean);
+    for (const tag of tags) {
+      const clean = tag.trim().toLowerCase();
+      if (clean) counts.set(clean, (counts.get(clean) || 0) + 1);
+    }
+  }
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .slice(0, 18)
+    .map(([tag]) => tag);
+}
+
 export default function DesignStudioClient() {
   const inputRef = useRef<HTMLInputElement>(null);
   const inspirationInputRef = useRef<HTMLInputElement>(null);
@@ -127,6 +142,9 @@ export default function DesignStudioClient() {
   const [analyzingInspiration, setAnalyzingInspiration] = useState(false);
   const [draggingInspiration, setDraggingInspiration] = useState(false);
   const [moodboardOpen, setMoodboardOpen] = useState(false);
+  const [moodboardQuery, setMoodboardQuery] = useState("");
+  const [moodboardTag, setMoodboardTag] = useState("All");
+  const [moodboardDensity, setMoodboardDensity] = useState<"large" | "dense">("large");
   const [newInspiration, setNewInspiration] = useState({
     title: "",
     url: "",
@@ -140,6 +158,23 @@ export default function DesignStudioClient() {
     () => uploads.find((u) => u.url === selectedUrl) ?? null,
     [uploads, selectedUrl]
   );
+  const moodboardTags = useMemo(() => uniqueMoodboardTags(inspirations), [inspirations]);
+  const filteredInspirations = useMemo(() => {
+    const query = moodboardQuery.trim().toLowerCase();
+    const activeTag = moodboardTag.toLowerCase();
+    return inspirations.filter((source) => {
+      const tags = source.tags || [];
+      const haystack = `${source.title} ${source.category} ${source.note} ${tags.join(
+        " "
+      )} ${source.url}`.toLowerCase();
+      const matchesQuery = !query || haystack.includes(query);
+      const matchesTag =
+        moodboardTag === "All" ||
+        tags.some((tag) => tag.toLowerCase() === activeTag) ||
+        source.category.toLowerCase() === activeTag;
+      return matchesQuery && matchesTag;
+    });
+  }, [inspirations, moodboardQuery, moodboardTag]);
 
   async function loadInspirations() {
     try {
@@ -835,25 +870,108 @@ export default function DesignStudioClient() {
 
           <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
             {moodboardOpen && (
-              <section className="mb-5 rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
-                <div className="mb-3 flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-semibold text-neutral-900">Inspiration Moodboard</p>
-                    <p className="text-xs text-neutral-500">
-                      Your full saved collection. Click to enlarge, drag image cards where you need them.
+              <section className="mb-5 overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm">
+                <div className="border-b border-neutral-100 bg-gradient-to-b from-white to-neutral-50 px-4 py-4">
+                  <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-base font-semibold text-neutral-950">
+                          Inspiration Moodboard
+                        </p>
+                        <span className="rounded-full bg-neutral-900 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-white">
+                          {inspirations.length} saved
+                        </span>
+                        {filteredInspirations.length !== inspirations.length ? (
+                          <span className="rounded-full bg-neutral-100 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-neutral-500">
+                            {filteredInspirations.length} showing
+                          </span>
+                        ) : null}
+                      </div>
+                      <p className="mt-1 max-w-2xl text-xs leading-relaxed text-neutral-500">
+                        Search the full collection, filter by AI tags, enlarge anything, or drag
+                        an image card into another workspace.
+                      </p>
+                    </div>
+
+                    <div className="flex shrink-0 items-center gap-2">
+                      <div className="rounded-full bg-neutral-100 p-1">
+                        {(["large", "dense"] as const).map((density) => (
+                          <button
+                            key={density}
+                            type="button"
+                            onClick={() => setMoodboardDensity(density)}
+                            className={`rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-wider transition ${
+                              moodboardDensity === density
+                                ? "bg-white text-neutral-950 shadow-sm"
+                                : "text-neutral-500 hover:text-neutral-800"
+                            }`}
+                          >
+                            {density}
+                          </button>
+                        ))}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setMoodboardOpen(false)}
+                        className="rounded-full border border-neutral-200 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-neutral-600 hover:bg-white"
+                      >
+                        Close
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(220px,360px)_1fr]">
+                    <input
+                      value={moodboardQuery}
+                      onChange={(event) => setMoodboardQuery(event.target.value)}
+                      placeholder="Search western, barrel jeans, 4th of july..."
+                      className="h-10 rounded-xl border border-neutral-200 bg-white px-3 text-sm outline-none transition placeholder:text-neutral-400 focus:border-neutral-900 focus:ring-2 focus:ring-neutral-100"
+                    />
+                    <div className="flex gap-2 overflow-x-auto pb-1">
+                      {["All", ...moodboardTags].map((tag) => (
+                        <button
+                          key={tag}
+                          type="button"
+                          onClick={() => setMoodboardTag(tag)}
+                          className={`shrink-0 rounded-full border px-3 py-2 text-[10px] font-semibold uppercase tracking-wider transition ${
+                            moodboardTag === tag
+                              ? "border-neutral-900 bg-neutral-900 text-white"
+                              : "border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300"
+                          }`}
+                        >
+                          {tag}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {inspirations.length === 0 ? (
+                  <div className="m-4 rounded-xl border border-dashed border-neutral-200 bg-neutral-50 p-10 text-center">
+                    <p className="text-sm font-semibold text-neutral-800">
+                      Your first moodboard image will appear here.
+                    </p>
+                    <p className="mt-2 text-sm text-neutral-500">
+                      Save generated designs, upload images, or paste product URLs from the
+                      Inspiration Library panel.
                     </p>
                   </div>
-                  <span className="rounded-full bg-neutral-100 px-2.5 py-1 text-[10px] font-semibold text-neutral-500">
-                    {inspirations.length} saved
-                  </span>
-                </div>
-                {inspirations.length === 0 ? (
-                  <div className="rounded-lg border border-dashed border-neutral-200 bg-neutral-50 p-6 text-center text-sm text-neutral-500">
-                    Save inspiration images or generated designs and they will appear here.
+                ) : filteredInspirations.length === 0 ? (
+                  <div className="m-4 rounded-xl border border-dashed border-neutral-200 bg-neutral-50 p-10 text-center">
+                    <p className="text-sm font-semibold text-neutral-800">No matches yet.</p>
+                    <p className="mt-2 text-sm text-neutral-500">
+                      Try a broader search or switch the tag filter back to All.
+                    </p>
                   </div>
                 ) : (
-                  <div className="grid max-h-[65vh] grid-cols-2 gap-3 overflow-y-auto pr-1 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-                    {inspirations.map((source) => {
+                  <div
+                    className={`grid max-h-[68vh] overflow-y-auto p-4 ${
+                      moodboardDensity === "large"
+                        ? "grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4"
+                        : "grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5 2xl:grid-cols-6"
+                    }`}
+                  >
+                    {filteredInspirations.map((source) => {
                       const image = sourceImage(source);
                       return (
                         <article
@@ -864,49 +982,69 @@ export default function DesignStudioClient() {
                             event.dataTransfer.setData("text/uri-list", image);
                             event.dataTransfer.setData("text/plain", image);
                           }}
-                          className="group overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm"
+                          className="group overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
                         >
-                          <button
-                            type="button"
-                            onClick={() => image && setPreviewSrc(image)}
-                            className="block aspect-[4/5] w-full bg-neutral-100"
-                          >
+                          <div className="relative">
+                            <button
+                              type="button"
+                              onClick={() => image && setPreviewSrc(image)}
+                              className={`block w-full bg-neutral-100 ${
+                                moodboardDensity === "large" ? "aspect-[4/5]" : "aspect-square"
+                              }`}
+                            >
+                              {image ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  src={image}
+                                  alt={source.title}
+                                  className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
+                                />
+                              ) : (
+                                <div className="flex h-full items-center justify-center p-4 text-center text-xs text-neutral-400">
+                                  Link saved without image preview
+                                </div>
+                              )}
+                            </button>
                             {image ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img
-                                src={image}
-                                alt={source.title}
-                                className="h-full w-full object-cover transition group-hover:scale-[1.02]"
-                              />
-                            ) : (
-                              <div className="flex h-full items-center justify-center p-4 text-center text-xs text-neutral-400">
-                                Link saved without image preview
+                              <div className="absolute inset-x-2 bottom-2 flex justify-end gap-1 opacity-0 transition group-hover:opacity-100">
+                                <button
+                                  type="button"
+                                  onClick={() => setPreviewSrc(image)}
+                                  className="rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-semibold text-neutral-800 shadow-sm backdrop-blur hover:bg-white"
+                                >
+                                  View
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => downloadImage(image, safeFileName(source.title))}
+                                  className="rounded-full bg-neutral-950/90 px-2.5 py-1 text-[10px] font-semibold text-white shadow-sm backdrop-blur hover:bg-neutral-950"
+                                >
+                                  Download
+                                </button>
                               </div>
-                            )}
-                          </button>
-                          <div className="p-3">
+                            ) : null}
+                          </div>
+                          <div className={moodboardDensity === "large" ? "p-3" : "p-2.5"}>
                             <div className="flex items-start justify-between gap-2">
                               <div className="min-w-0">
-                                <p className="truncate text-xs font-semibold text-neutral-900">
+                                <p className="truncate text-xs font-semibold text-neutral-950">
                                   {source.title}
                                 </p>
                                 <p className="mt-0.5 truncate text-[10px] text-neutral-500">
                                   {source.category}
                                 </p>
                               </div>
-                              {image ? (
-                                <button
-                                  type="button"
-                                  onClick={() => downloadImage(image, safeFileName(source.title))}
-                                  className="rounded-md border border-neutral-200 px-2 py-1 text-[10px] font-semibold text-neutral-600 hover:bg-neutral-50"
-                                >
-                                  Download
-                                </button>
-                              ) : null}
+                              <button
+                                type="button"
+                                onClick={() => void deleteInspiration(source.id)}
+                                className="rounded-full px-2 py-1 text-[10px] font-semibold text-neutral-400 hover:bg-red-50 hover:text-red-600"
+                              >
+                                Remove
+                              </button>
                             </div>
                             {source.tags?.length ? (
                               <div className="mt-2 flex flex-wrap gap-1">
-                                {source.tags.slice(0, 6).map((tag) => (
+                                {source.tags.slice(0, moodboardDensity === "large" ? 8 : 4).map((tag) => (
                                   <span
                                     key={tag}
                                     className="rounded-full bg-neutral-100 px-2 py-0.5 text-[9px] font-semibold text-neutral-600"
@@ -915,6 +1053,11 @@ export default function DesignStudioClient() {
                                   </span>
                                 ))}
                               </div>
+                            ) : null}
+                            {moodboardDensity === "large" && source.note ? (
+                              <p className="mt-2 line-clamp-2 text-[11px] leading-relaxed text-neutral-500">
+                                {source.note}
+                              </p>
                             ) : null}
                           </div>
                         </article>
