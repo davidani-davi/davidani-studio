@@ -32,10 +32,10 @@ export default function TopTabs({ active }: Props) {
           <Link
             key={t.id}
             href={t.href}
-            className={`rounded-md px-2 py-1 transition ${
+            className={`relative px-2 py-1.5 text-[12px] font-medium transition ${
               isActive
-                ? "bg-neutral-100 text-neutral-900"
-                : "text-neutral-500 hover:bg-neutral-50 hover:text-neutral-800"
+                ? "text-neutral-950 after:absolute after:inset-x-2 after:-bottom-[15px] after:h-0.5 after:bg-brand-500"
+                : "text-neutral-500 hover:text-neutral-900"
             }`}
           >
             {t.label}
