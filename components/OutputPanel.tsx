@@ -4,6 +4,17 @@ import { useEffect, useRef, useState } from "react";
 import type { HistoryItem } from "./types";
 import ImageLightbox, { ZoomButton } from "./ImageLightbox";
 
+type FitRepairMode =
+  | "all"
+  | "silhouette"
+  | "upload-reference"
+  | "length-shorter"
+  | "length-longer"
+  | "length-much-shorter"
+  | "length-much-longer"
+  | "more-oversized"
+  | "more-fitted";
+
 interface Props {
   current: HistoryItem | null;
   history: HistoryItem[];
@@ -18,16 +29,7 @@ interface Props {
   onRegenerate?: (params: { prompt: string; sourceUrl: string | null }) => void;
   onQualityControl?: (params: {
     action: "restore-face" | "retry-closer" | "different-pose" | "restore-proportion";
-    fitMode?:
-      | "all"
-      | "silhouette"
-      | "upload-reference"
-      | "length-shorter"
-      | "length-longer"
-      | "length-much-shorter"
-      | "length-much-longer"
-      | "more-oversized"
-      | "more-fitted";
+    fitMode?: FitRepairMode;
     proportionMode?: "head-smaller" | "head-larger" | "natural-proportion";
     fitReferenceUrl?: string;
     repairNote?: string;
@@ -67,6 +69,8 @@ export default function OutputPanel({
   const [libraryStatus, setLibraryStatus] = useState<string | null>(null);
   const [libraryUploading, setLibraryUploading] = useState(false);
   const [repairNote, setRepairNote] = useState("");
+  const [selectedFitModes, setSelectedFitModes] = useState<FitRepairMode[]>([]);
+  const [strongerRepair, setStrongerRepair] = useState(false);
   const fitReferenceInputRef = useRef<HTMLInputElement | null>(null);
   const previewResizeRef = useRef<{ startY: number; height: number } | null>(null);
 
@@ -80,6 +84,8 @@ export default function OutputPanel({
     setLibraryOpen(false);
     setLibraryStatus(null);
     setRepairNote("");
+    setSelectedFitModes([]);
+    setStrongerRepair(false);
     setLibraryStyleNumber(current?.styleNumber || "");
   }, [current?.id]);
 
@@ -131,6 +137,58 @@ export default function OutputPanel({
       ? current?.referenceUrls?.[safeIndex] ?? null
       : current?.referenceUrls?.[0] ?? null;
 
+  function toggleFitMode(mode: FitRepairMode) {
+    setSelectedFitModes((current) => {
+      if (current.includes(mode)) return current.filter((item) => item !== mode);
+      if (mode === "all") return ["all"];
+      const conflicts: Partial<Record<FitRepairMode, FitRepairMode[]>> = {
+        "more-oversized": ["more-fitted", "all"],
+        "more-fitted": ["more-oversized", "all"],
+        "length-shorter": ["length-longer", "all"],
+        "length-longer": ["length-shorter", "all"],
+      };
+      return [...current.filter((item) => !(conflicts[mode] || ["all"]).includes(item)), mode];
+    });
+  }
+
+  function buildRepairNote() {
+    const labels: Record<FitRepairMode, string> = {
+      all: "match the original garment reference more closely overall",
+      silhouette: "repair the garment silhouette",
+      "upload-reference": "use the uploaded fit reference",
+      "length-shorter": "make the garment shorter",
+      "length-longer": "make the garment longer",
+      "length-much-shorter": "make the garment much shorter",
+      "length-much-longer": "make the garment much longer",
+      "more-oversized": "make the garment more oversized",
+      "more-fitted": "make the garment more fitted",
+    };
+    return [
+      selectedFitModes.length
+        ? `Selected repair directions: ${selectedFitModes.map((mode) => labels[mode]).join(", ")}.`
+        : "",
+      strongerRepair
+        ? "Make the selected fit and length corrections visibly stronger, not subtle."
+        : "",
+      repairNote.trim(),
+    ]
+      .filter(Boolean)
+      .join(" ");
+  }
+
+  function applySelectedFitRepair() {
+    if (!onQualityControl || !activePrompt) return;
+    const primaryMode =
+      selectedFitModes.length === 1 ? selectedFitModes[0] : selectedFitModes.includes("all") ? "all" : "all";
+    onQualityControl({
+      action: "retry-closer",
+      fitMode: primaryMode,
+      repairNote: buildRepairNote(),
+      prompt: activePrompt,
+      sourceUrl: activeSource,
+    });
+  }
+
   async function uploadFitReference(file: File) {
     if (!onQualityControl || !activePrompt) return;
     setFitReferenceUploading(true);
@@ -146,7 +204,7 @@ export default function OutputPanel({
         action: "retry-closer",
         fitMode: "upload-reference",
         fitReferenceUrl: data.uploads[0].url,
-        repairNote: repairNote.trim(),
+        repairNote: buildRepairNote(),
         prompt: activePrompt,
         sourceUrl: activeSource,
       });
@@ -486,39 +544,46 @@ export default function OutputPanel({
                     {[
                       ["more-oversized", "More oversized"],
                       ["more-fitted", "More fitted"],
-                      ["length-shorter", "Slightly shorter"],
-                      ["length-longer", "Slightly longer"],
-                      ["length-much-shorter", "Much shorter"],
-                      ["length-much-longer", "Much longer"],
-                      ["silhouette", "Silhouette"],
+                      ["length-shorter", "Shorter"],
+                      ["length-longer", "Longer"],
                       ["all", "Match original"],
-                    ].map(([fitMode, label]) => (
+                    ].map(([fitMode, label]) => {
+                      const mode = fitMode as FitRepairMode;
+                      const selected = selectedFitModes.includes(mode);
+                      return (
                       <button
                         key={fitMode}
                         type="button"
-                        onClick={() =>
-                          onQualityControl({
-                            action: "retry-closer",
-                            fitMode: fitMode as
-                              | "all"
-                              | "silhouette"
-                              | "upload-reference"
-                              | "length-shorter"
-                              | "length-longer"
-                              | "length-much-shorter"
-                              | "length-much-longer"
-                              | "more-oversized"
-                              | "more-fitted",
-                            repairNote: repairNote.trim(),
-                            prompt: activePrompt,
-                            sourceUrl: activeSource,
-                          })
-                        }
-                        className="rounded-lg border border-neutral-200 bg-neutral-50 px-2 py-2 text-[11px] font-semibold text-neutral-700 transition hover:border-neutral-300 hover:bg-neutral-100"
+                        onClick={() => toggleFitMode(mode)}
+                        className={`rounded-lg border px-2 py-2 text-[11px] font-semibold transition ${
+                          selected
+                            ? "border-neutral-900 bg-neutral-900 text-white"
+                            : "border-neutral-200 bg-neutral-50 text-neutral-700 hover:border-neutral-300 hover:bg-neutral-100"
+                        }`}
                       >
                         {label}
                       </button>
-                    ))}
+                    );
+                    })}
+                    <button
+                      type="button"
+                      onClick={() => setStrongerRepair((value) => !value)}
+                      className={`rounded-lg border px-2 py-2 text-[11px] font-semibold transition ${
+                        strongerRepair
+                          ? "border-brand-500 bg-brand-50 text-brand-700"
+                          : "border-neutral-200 bg-neutral-50 text-neutral-700 hover:border-neutral-300 hover:bg-neutral-100"
+                      }`}
+                    >
+                      Stronger change
+                    </button>
+                    <button
+                      type="button"
+                      onClick={applySelectedFitRepair}
+                      disabled={!selectedFitModes.length && !repairNote.trim()}
+                      className="col-span-2 rounded-lg bg-neutral-900 px-2 py-2.5 text-[11px] font-semibold text-white transition hover:bg-neutral-800 disabled:bg-neutral-300 disabled:text-neutral-500"
+                    >
+                      Apply selected fixes
+                    </button>
                   </div>
                 </div>
               )}

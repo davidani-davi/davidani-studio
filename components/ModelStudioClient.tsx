@@ -510,6 +510,9 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
         aspect,
         resolution,
         styleNumber: styleNumber.trim() || undefined,
+        humanModelId: selectedHumanModelId,
+        poseId: selectedPoseId,
+        view: selectedView,
       };
       setHistory((h) => [item, ...h]);
       setCurrentId(id);
@@ -547,6 +550,9 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
       styleNumber: styleNumber.trim() || undefined,
       prompts: [],
       batch: true,
+      humanModelId: selectedHumanModelId,
+      poseId: selectedPoseId,
+      view: selectedView,
     };
     setHistory((h) => [batchItem, ...h]);
     setCurrentId(batchId);
@@ -669,7 +675,10 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
     prompt: string;
     sourceUrl: string | null;
   }) {
-    if (!selectedHumanModelId || !selectedPoseId) return;
+    const repairHumanModelId = currentRun?.humanModelId || selectedHumanModelId;
+    const repairPoseId = currentRun?.poseId || selectedPoseId;
+    const repairView = (currentRun?.view as PresetView | undefined) || selectedView;
+    if (!repairHumanModelId || !repairPoseId) return;
     const sourceUrl = params.sourceUrl || selected[0];
     if (!sourceUrl) return;
 
@@ -694,9 +703,9 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           modelId,
-          humanModelId: selectedHumanModelId,
-          poseId: selectedPoseId,
-          view: selectedView,
+          humanModelId: repairHumanModelId,
+          poseId: repairPoseId,
+          view: repairView,
           prompt: imagePrompt,
           garmentImageUrls,
           aspectRatio: aspect,
@@ -725,6 +734,9 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
         aspect,
         resolution,
         styleNumber: styleNumber.trim() || undefined,
+        humanModelId: repairHumanModelId,
+        poseId: repairPoseId,
+        view: repairView,
       };
       setHistory((h) => [item, ...h]);
       setCurrentId(id);
