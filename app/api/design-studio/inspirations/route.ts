@@ -26,7 +26,13 @@ export async function POST(req: Request) {
     const source = await addInspirationSource({
       title: String(body?.title || ""),
       url: String(body?.url || ""),
+      imageUrl: body?.imageUrl ? String(body.imageUrl) : undefined,
       category: String(body?.category || ""),
+      tags: Array.isArray(body?.tags)
+        ? body.tags.map((tag: unknown) => String(tag || "")).filter(Boolean)
+        : typeof body?.tags === "string"
+        ? body.tags.split(",").map((tag: string) => tag.trim()).filter(Boolean)
+        : [],
       note: String(body?.note || ""),
     });
     return NextResponse.json({ ok: true, source });

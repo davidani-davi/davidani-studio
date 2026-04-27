@@ -589,6 +589,13 @@ export interface ProductDesignResult {
   qualityChecklist: string[];
 }
 
+export interface InspirationTagResult {
+  title: string;
+  category: string;
+  tags: string[];
+  note: string;
+}
+
 const PRODUCT_DESIGN_SYSTEM_PROMPT = `You are a fashion product design assistant for a bohemian boutique brand. A user will upload a product image. Your job is to identify the garment category, then create three new sellable product concepts in the same category. Do not copy the uploaded product's exact design, color palette, motif, pattern, styling, or construction. Do not create simple colorways. Each concept must have a different customer appeal, design story, fit, feature set, and visual identity. The products should feel commercially viable for a boutique fashion website and should make customers feel they need each piece for a different reason. Preserve the category: pants remain pants, jackets remain jackets, cardigans remain cardigans, tops remain tops, dresses remain dresses. Vary fit and construction within the category. Avoid repeated formulas, repeated left/middle/right roles, repeated color ordering, and overused motifs such as stars, sun, moon, daisies, and Aztec/southwestern patterns unless explicitly requested. Focus on garment design features, not graphic callouts. Generate clear, distinct, marketable product ideas.
 
 Default style world: easy, expressive, bohemian, boutique, layerable, comfortable, curated, soft but distinctive, relaxed but not boring. Avoid costume-like and overly basic ideas.
@@ -775,6 +782,58 @@ export async function generateProductDesignConcepts(
     throw new Error("Product design generator did not return 3 complete concepts.");
   }
 
+  return parsed;
+}
+
+function parseInspirationTagResult(raw: string): InspirationTagResult | null {
+  try {
+    const parsed = JSON.parse(extractJsonObject(raw));
+    const tags = Array.isArray(parsed.tags)
+      ? parsed.tags.map((item: unknown) => String(item || "").trim()).filter(Boolean)
+      : [];
+    return {
+      title: String(parsed.title || "").trim(),
+      category: String(parsed.category || "").trim(),
+      tags: tags.slice(0, 14),
+      note: String(parsed.note || "").trim(),
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function generateInspirationTags(
+  imageUrl: string,
+  context = ""
+): Promise<InspirationTagResult> {
+  const result: any = await subscribeVisionWithRetry(
+    {
+      model: "anthropic/claude-3.7-sonnet",
+      system_prompt:
+        "You are a fashion inspiration librarian for a boutique apparel design team. Analyze the image and create concise, searchable trend tags that a head designer would actually use later. Prioritize garment type, silhouette, fabric, print/motif, occasion, seasonality, mood, customer world, and commercial trend signals. Avoid generic filler.",
+      prompt: `Create useful metadata for saving this image into a shared fashion inspiration library.
+
+${context ? `Extra page/source context:\n${context.slice(0, 2500)}\n\n` : ""}
+
+Return strict JSON only:
+{
+  "title": "short human-friendly inspiration title, not SEO copy",
+  "category": "primary garment/category phrase",
+  "tags": ["8-14 lowercase tags such as western, barrel jeans, 4th of july, varsity, crochet, coastal, utility, fw26"],
+  "note": "one short sentence explaining why this is worth saving as design inspiration"
+}`,
+      image_url: imageUrl,
+    },
+    "inspiration tag generation"
+  );
+
+  const data = result?.data ?? result;
+  const output: string = (data?.output ?? data?.response ?? data?.text ?? "").trim();
+  const parsed = output ? parseInspirationTagResult(output) : null;
+  if (!parsed || !parsed.tags.length) {
+    console.error("[design-studio/inspiration-tags] raw output:", output.slice(0, 1000));
+    throw new Error("Inspiration tag generator returned no usable tags.");
+  }
   return parsed;
 }
 

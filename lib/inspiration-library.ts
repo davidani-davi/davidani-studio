@@ -6,7 +6,9 @@ export interface InspirationSource {
   id: string;
   title: string;
   url: string;
+  imageUrl?: string;
   category: string;
+  tags?: string[];
   note: string;
   createdAt: string;
   updatedAt: string;
@@ -97,12 +99,18 @@ export async function writeInspirationIndex(index: InspirationIndex): Promise<vo
 export async function addInspirationSource(input: {
   title: string;
   url: string;
+  imageUrl?: string;
   category: string;
+  tags?: string[];
   note: string;
 }): Promise<InspirationSource> {
   const url = normalizeUrl(input.url);
+  const imageUrl = input.imageUrl ? normalizeUrl(input.imageUrl) : undefined;
   const title = cleanText(input.title) || new URL(url).hostname.replace(/^www\./, "");
   const category = cleanText(input.category) || "General";
+  const tags = Array.isArray(input.tags)
+    ? input.tags.map((tag) => cleanText(String(tag || ""))).filter(Boolean).slice(0, 16)
+    : [];
   const note = cleanText(input.note);
   const index = await readInspirationIndex();
   const existing = index.sources.find((source) => source.url === url);
@@ -110,7 +118,9 @@ export async function addInspirationSource(input: {
 
   if (existing) {
     existing.title = title;
+    existing.imageUrl = imageUrl;
     existing.category = category;
+    existing.tags = tags;
     existing.note = note;
     existing.updatedAt = timestamp;
     await writeInspirationIndex(index);
@@ -121,7 +131,9 @@ export async function addInspirationSource(input: {
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     title,
     url,
+    imageUrl,
     category,
+    tags,
     note,
     createdAt: timestamp,
     updatedAt: timestamp,
@@ -144,7 +156,9 @@ export function filterInspirationSources(
   const hint = categoryHint.toLowerCase();
   const categoryWords = hint.split(/[^a-z0-9]+/).filter((word) => word.length > 2);
   const scored = sources.map((source) => {
-    const haystack = `${source.category} ${source.title} ${source.note} ${source.url}`.toLowerCase();
+    const haystack = `${source.category} ${source.title} ${source.note} ${
+      source.tags?.join(" ") || ""
+    } ${source.url}`.toLowerCase();
     const score = categoryWords.filter((word) => haystack.includes(word)).length;
     const general = /general|all|trend|bestseller|brand/i.test(source.category);
     return { source, score: score + (general ? 0.25 : 0) };

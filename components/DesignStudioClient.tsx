@@ -95,8 +95,18 @@ function scoreLabel(value?: number) {
   return n ? `${n}/10` : "-";
 }
 
+function sourceImage(source: InspirationSource): string {
+  if (source.imageUrl) return source.imageUrl;
+  return /\.(png|jpe?g|webp|gif)(\?.*)?$/i.test(source.url) ? source.url : "";
+}
+
+function tagText(source: InspirationSource): string {
+  return source.tags?.length ? source.tags.join(", ") : source.category;
+}
+
 export default function DesignStudioClient() {
   const inputRef = useRef<HTMLInputElement>(null);
+  const inspirationInputRef = useRef<HTMLInputElement>(null);
   const [uploads, setUploads] = useState<UploadedImage[]>([]);
   const [selectedUrl, setSelectedUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -114,10 +124,15 @@ export default function DesignStudioClient() {
   const [inspirationOpen, setInspirationOpen] = useState(false);
   const [savingInspiration, setSavingInspiration] = useState(false);
   const [savingGeneratedIndex, setSavingGeneratedIndex] = useState<number | null>(null);
+  const [analyzingInspiration, setAnalyzingInspiration] = useState(false);
+  const [draggingInspiration, setDraggingInspiration] = useState(false);
+  const [moodboardOpen, setMoodboardOpen] = useState(false);
   const [newInspiration, setNewInspiration] = useState({
     title: "",
     url: "",
+    imageUrl: "",
     category: "",
+    tags: "",
     note: "",
   });
 
@@ -160,6 +175,35 @@ export default function DesignStudioClient() {
     }
   }
 
+  async function addInspirationFiles(files: FileList) {
+    setAnalyzingInspiration(true);
+    setError(null);
+    try {
+      const first = files[0];
+      if (!first) return;
+      const resized = await resizeIfNeeded(first);
+      const form = new FormData();
+      form.append("files", resized);
+      const uploaded = await fetchJson("Upload inspiration", "/api/upload", {
+        method: "POST",
+        body: form,
+      });
+      const imageUrl = uploaded.uploads?.[0]?.url;
+      if (!imageUrl) throw new Error("Upload succeeded but no image URL returned");
+      setNewInspiration((item) => ({
+        ...item,
+        url: imageUrl,
+        imageUrl,
+      }));
+      await analyzeInspiration({ imageUrl, url: imageUrl });
+    } catch (err: any) {
+      setError(err?.message || "Inspiration upload failed");
+    } finally {
+      setAnalyzingInspiration(false);
+      setDraggingInspiration(false);
+    }
+  }
+
   function hasImageFiles(e: React.DragEvent): boolean {
     return Array.from(e.dataTransfer.items).some((item) => item.type.startsWith("image/"));
   }
@@ -168,6 +212,12 @@ export default function DesignStudioClient() {
     e.preventDefault();
     setDraggingUpload(false);
     if (e.dataTransfer.files.length) void addFiles(e.dataTransfer.files);
+  }
+
+  function handleInspirationDrop(e: React.DragEvent) {
+    e.preventDefault();
+    setDraggingInspiration(false);
+    if (e.dataTransfer.files.length) void addInspirationFiles(e.dataTransfer.files);
   }
 
   function removeUpload(url: string) {
@@ -262,20 +312,69 @@ export default function DesignStudioClient() {
     }
   }
 
+  async function analyzeInspiration(input: Partial<typeof newInspiration> = newInspiration) {
+    const url = (input.url || "").trim();
+    const imageUrl = (input.imageUrl || "").trim();
+    if (!url && !imageUrl) return null;
+    setAnalyzingInspiration(true);
+    setError(null);
+    try {
+      const data = await fetchJson("Analyze inspiration", "/api/design-studio/inspirations/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url, imageUrl }),
+      });
+      setNewInspiration((item) => ({
+        ...item,
+        url: item.url || url || data.imageUrl,
+        imageUrl: data.imageUrl || imageUrl,
+        title: item.title || data.title || "",
+        category: data.category || item.category,
+        tags: Array.isArray(data.tags) ? data.tags.join(", ") : item.tags,
+        note: item.note || data.note || "",
+      }));
+      return data;
+    } catch (err: any) {
+      setError(err?.message || "Failed to analyze inspiration");
+      return null;
+    } finally {
+      setAnalyzingInspiration(false);
+    }
+  }
+
   async function saveInspiration() {
     setSavingInspiration(true);
     setError(null);
     try {
+      let item = newInspiration;
+      if (!item.tags.trim() && (item.url.trim() || item.imageUrl.trim())) {
+        const analyzed = await analyzeInspiration(item);
+        if (analyzed) {
+          item = {
+            ...item,
+            url: item.url || analyzed.imageUrl || "",
+            imageUrl: analyzed.imageUrl || item.imageUrl,
+            title: item.title || analyzed.title || "",
+            category: analyzed.category || item.category,
+            tags: Array.isArray(analyzed.tags) ? analyzed.tags.join(", ") : item.tags,
+            note: item.note || analyzed.note || "",
+          };
+        }
+      }
       const data = await fetchJson("Save inspiration", "/api/design-studio/inspirations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newInspiration),
+        body: JSON.stringify({
+          ...item,
+          tags: item.tags.split(",").map((tag) => tag.trim()).filter(Boolean),
+        }),
       });
       setInspirations((items) => [
         data.source,
         ...items.filter((item) => item.id !== data.source.id),
       ]);
-      setNewInspiration({ title: "", url: "", category: "", note: "" });
+      setNewInspiration({ title: "", url: "", imageUrl: "", category: "", tags: "", note: "" });
+      setMoodboardOpen(true);
     } catch (err: any) {
       setError(err?.message || "Failed to save inspiration");
     } finally {
@@ -304,7 +403,14 @@ export default function DesignStudioClient() {
         body: JSON.stringify({
           title: concept.productName,
           url: concept.visualUrl,
+          imageUrl: concept.visualUrl,
           category: result.detectedCategory || concept.assortmentRole || "Generated design",
+          tags: [
+            result.detectedCategory,
+            concept.assortmentRole,
+            ...(concept.bestsellerDNA || []),
+            ...concept.keyFeatures,
+          ].filter(Boolean),
           note,
         }),
       });
@@ -517,12 +623,57 @@ export default function DesignStudioClient() {
 
             {inspirationOpen && (
               <div className="mt-3 grid gap-3">
+                <div
+                  className={`rounded-xl border border-dashed p-3 text-center transition ${
+                    draggingInspiration
+                      ? "border-brand-500 bg-brand-50 text-brand-700"
+                      : "border-neutral-200 bg-neutral-50 text-neutral-500"
+                  }`}
+                  onDragEnter={(e) => {
+                    if (!hasImageFiles(e)) return;
+                    e.preventDefault();
+                    setDraggingInspiration(true);
+                  }}
+                  onDragOver={(e) => {
+                    if (!hasImageFiles(e)) return;
+                    e.preventDefault();
+                  }}
+                  onDragLeave={(e) => {
+                    if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
+                      setDraggingInspiration(false);
+                    }
+                  }}
+                  onDrop={handleInspirationDrop}
+                >
+                  <button
+                    type="button"
+                    onClick={() => inspirationInputRef.current?.click()}
+                    disabled={analyzingInspiration || savingInspiration}
+                    className="inline-flex items-center justify-center gap-2 rounded-lg bg-white px-3 py-2 text-xs font-semibold text-neutral-800 shadow-sm ring-1 ring-neutral-200 hover:bg-neutral-50 disabled:opacity-50"
+                  >
+                    {analyzingInspiration ? <Spinner /> : IconUpload}
+                    Drop or upload image
+                  </button>
+                  <input
+                    ref={inspirationInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      if (e.target.files?.length) void addInspirationFiles(e.target.files);
+                      e.currentTarget.value = "";
+                    }}
+                  />
+                  <p className="mt-2 text-[10px] leading-relaxed">
+                    AI tags garment type, mood, trend, season, and design signals.
+                  </p>
+                </div>
                 <input
                   value={newInspiration.url}
                   onChange={(event) =>
                     setNewInspiration((item) => ({ ...item, url: event.target.value }))
                   }
-                  placeholder="https://brand.com/product"
+                  placeholder="Paste product page or image URL"
                   className="rounded-lg border border-neutral-200 px-3 py-2 text-xs outline-none focus:border-neutral-900"
                 />
                 <div className="grid grid-cols-2 gap-2">
@@ -535,36 +686,76 @@ export default function DesignStudioClient() {
                     className="rounded-lg border border-neutral-200 px-3 py-2 text-xs outline-none focus:border-neutral-900"
                   />
                   <input
-                    value={newInspiration.category}
+                    value={newInspiration.tags}
                     onChange={(event) =>
-                      setNewInspiration((item) => ({ ...item, category: event.target.value }))
+                      setNewInspiration((item) => ({ ...item, tags: event.target.value }))
                     }
-                    placeholder="Denim, cardigans..."
+                    placeholder="AI tags"
                     className="rounded-lg border border-neutral-200 px-3 py-2 text-xs outline-none focus:border-neutral-900"
                   />
                 </div>
+                {newInspiration.imageUrl ? (
+                  <button
+                    type="button"
+                    onClick={() => setPreviewSrc(newInspiration.imageUrl)}
+                    className="group relative aspect-[4/3] overflow-hidden rounded-xl bg-neutral-100"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={newInspiration.imageUrl}
+                      alt={newInspiration.title || "Inspiration preview"}
+                      className="h-full w-full object-cover"
+                    />
+                    <span className="absolute bottom-2 right-2 rounded-full bg-black/70 px-2 py-1 text-[10px] font-semibold text-white opacity-0 transition group-hover:opacity-100">
+                      View
+                    </span>
+                  </button>
+                ) : null}
                 <textarea
                   value={newInspiration.note}
                   onChange={(event) =>
                     setNewInspiration((item) => ({ ...item, note: event.target.value }))
                   }
                   rows={2}
-                  placeholder="Why save this? Bestseller, avoid, FW26, fit idea..."
+                  placeholder="AI note or your note: why save this?"
                   className="resize-none rounded-lg border border-neutral-200 px-3 py-2 text-xs outline-none focus:border-neutral-900"
                 />
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void analyzeInspiration()}
+                    disabled={
+                      analyzingInspiration ||
+                      (!newInspiration.url.trim() && !newInspiration.imageUrl.trim())
+                    }
+                    className="inline-flex items-center justify-center gap-2 rounded-lg border border-neutral-200 px-3 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
+                  >
+                    {analyzingInspiration ? <Spinner /> : IconSparkle}
+                    AI Tag
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void saveInspiration()}
+                    disabled={
+                      savingInspiration || analyzingInspiration || !newInspiration.url.trim()
+                    }
+                    className="rounded-lg bg-neutral-900 px-3 py-2 text-xs font-semibold text-white hover:bg-neutral-800 disabled:opacity-50"
+                  >
+                    {savingInspiration ? "Saving..." : "Save"}
+                  </button>
+                </div>
                 <button
                   type="button"
-                  onClick={() => void saveInspiration()}
-                  disabled={savingInspiration || !newInspiration.url.trim()}
-                  className="rounded-lg bg-neutral-900 px-3 py-2 text-xs font-semibold text-white hover:bg-neutral-800 disabled:opacity-50"
+                  onClick={() => setMoodboardOpen((open) => !open)}
+                  className="rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
                 >
-                  {savingInspiration ? "Saving..." : "Save Source"}
+                  {moodboardOpen ? "Hide Moodboard" : "Open Moodboard"}
                 </button>
 
                 <div className="max-h-56 overflow-y-auto rounded-lg border border-neutral-100">
                   {inspirations.length === 0 ? (
                     <div className="p-3 text-xs text-neutral-500">
-                      Add approved brand pages, best sellers, trend pages, or avoid examples.
+                      Add images or links. AI tags make them useful for future design runs.
                     </div>
                   ) : (
                     inspirations.slice(0, 12).map((source) => (
@@ -578,7 +769,7 @@ export default function DesignStudioClient() {
                               {source.title}
                             </p>
                             <p className="truncate text-[10px] text-neutral-400">
-                              {source.category}
+                              {tagText(source)}
                             </p>
                           </div>
                           <button
@@ -611,29 +802,129 @@ export default function DesignStudioClient() {
                 Live trend research in, three product visuals out.
               </p>
             </div>
-            <span
-              className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider ${
-                generating
-                  ? "bg-amber-50 text-amber-700"
-                  : result
-                  ? "bg-emerald-50 text-emerald-700"
-                  : "bg-neutral-100 text-neutral-500"
-              }`}
-            >
+            <div className="flex items-center gap-2">
               <span
-                className={`h-1.5 w-1.5 rounded-full ${
+                className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider ${
                   generating
-                    ? "bg-amber-400 animate-pulse"
+                    ? "bg-amber-50 text-amber-700"
                     : result
-                    ? "bg-emerald-500"
-                    : "bg-neutral-300"
+                    ? "bg-emerald-50 text-emerald-700"
+                    : "bg-neutral-100 text-neutral-500"
                 }`}
-              />
-              {generating ? "Researching + rendering" : result ? "Ready" : "Waiting"}
-            </span>
+              >
+                <span
+                  className={`h-1.5 w-1.5 rounded-full ${
+                    generating
+                      ? "bg-amber-400 animate-pulse"
+                      : result
+                      ? "bg-emerald-500"
+                      : "bg-neutral-300"
+                  }`}
+                />
+                {generating ? "Researching + rendering" : result ? "Ready" : "Waiting"}
+              </span>
+              <button
+                type="button"
+                onClick={() => setMoodboardOpen((open) => !open)}
+                className="rounded-full border border-neutral-200 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-neutral-600 hover:bg-neutral-50"
+              >
+                Moodboard
+              </button>
+            </div>
           </div>
 
           <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
+            {moodboardOpen && (
+              <section className="mb-5 rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-neutral-900">Inspiration Moodboard</p>
+                    <p className="text-xs text-neutral-500">
+                      Your full saved collection. Click to enlarge, drag image cards where you need them.
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-neutral-100 px-2.5 py-1 text-[10px] font-semibold text-neutral-500">
+                    {inspirations.length} saved
+                  </span>
+                </div>
+                {inspirations.length === 0 ? (
+                  <div className="rounded-lg border border-dashed border-neutral-200 bg-neutral-50 p-6 text-center text-sm text-neutral-500">
+                    Save inspiration images or generated designs and they will appear here.
+                  </div>
+                ) : (
+                  <div className="grid max-h-[65vh] grid-cols-2 gap-3 overflow-y-auto pr-1 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+                    {inspirations.map((source) => {
+                      const image = sourceImage(source);
+                      return (
+                        <article
+                          key={source.id}
+                          draggable={Boolean(image)}
+                          onDragStart={(event) => {
+                            if (!image) return;
+                            event.dataTransfer.setData("text/uri-list", image);
+                            event.dataTransfer.setData("text/plain", image);
+                          }}
+                          className="group overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm"
+                        >
+                          <button
+                            type="button"
+                            onClick={() => image && setPreviewSrc(image)}
+                            className="block aspect-[4/5] w-full bg-neutral-100"
+                          >
+                            {image ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={image}
+                                alt={source.title}
+                                className="h-full w-full object-cover transition group-hover:scale-[1.02]"
+                              />
+                            ) : (
+                              <div className="flex h-full items-center justify-center p-4 text-center text-xs text-neutral-400">
+                                Link saved without image preview
+                              </div>
+                            )}
+                          </button>
+                          <div className="p-3">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="min-w-0">
+                                <p className="truncate text-xs font-semibold text-neutral-900">
+                                  {source.title}
+                                </p>
+                                <p className="mt-0.5 truncate text-[10px] text-neutral-500">
+                                  {source.category}
+                                </p>
+                              </div>
+                              {image ? (
+                                <button
+                                  type="button"
+                                  onClick={() => downloadImage(image, safeFileName(source.title))}
+                                  className="rounded-md border border-neutral-200 px-2 py-1 text-[10px] font-semibold text-neutral-600 hover:bg-neutral-50"
+                                >
+                                  Download
+                                </button>
+                              ) : null}
+                            </div>
+                            {source.tags?.length ? (
+                              <div className="mt-2 flex flex-wrap gap-1">
+                                {source.tags.slice(0, 6).map((tag) => (
+                                  <span
+                                    key={tag}
+                                    className="rounded-full bg-neutral-100 px-2 py-0.5 text-[9px] font-semibold text-neutral-600"
+                                  >
+                                    {tag}
+                                  </span>
+                                ))}
+                              </div>
+                            ) : null}
+                          </div>
+                        </article>
+                      );
+                    })}
+                  </div>
+                )}
+              </section>
+            )}
+
             {!result ? (
               <div className="flex min-h-[420px] items-center justify-center rounded-xl border border-dashed border-neutral-300 bg-white px-5 text-center">
                 <div className="max-w-md">
