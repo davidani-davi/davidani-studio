@@ -575,6 +575,7 @@ export interface ProductDesignConcept {
   designDifferenceFromSource: string;
   imageGenerationPrompt: string;
   visualUrl?: string;
+  visualError?: string;
 }
 
 export interface ProductDesignResult {

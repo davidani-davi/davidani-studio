@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
 import {
   generateProductDesignConcepts,
-  type ProductDesignConcept,
 } from "@/lib/fal";
-import { generateViaKie } from "@/lib/kie";
+import { renderDesignVisual } from "@/lib/design-studio-render";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -102,22 +101,6 @@ async function fetchTrendResearch(): Promise<{
   };
 }
 
-function visualPrompt(concept: ProductDesignConcept, detectedCategory: string): string {
-  return (
-    `${concept.imageGenerationPrompt}\n\n` +
-    `Render one clean commercial boutique product visual for "${concept.productName}" as the ${concept.assortmentRole || "assortment"} option. ` +
-    `Garment category must stay ${detectedCategory}. Show the full garment clearly on a simple warm neutral studio background. ` +
-    `No text, labels, logos, callouts, hang tags, watermarks, collage frames, or infographic elements. ` +
-    `Do not recreate the uploaded product. Do not include a version that looks like the original. ` +
-    `Use the uploaded image only to understand category and customer world. ` +
-    (concept.customerReasonToBuy
-      ? `Design reason to buy: ${concept.customerReasonToBuy}. `
-      : "") +
-    `Build the features into the garment: ${concept.keyFeatures.join(", ")}. ` +
-    `Photorealistic ecommerce fashion product photography, boutique catalog quality.`
-  );
-}
-
 export async function POST(req: Request) {
   try {
     const { imageUrl, refinement } = (await req.json()) as {
@@ -138,22 +121,26 @@ export async function POST(req: Request) {
       research.text
     );
 
-    const visualResults = await Promise.all(
+    const visualResults = await Promise.allSettled(
       result.concepts.map((concept) =>
-        generateViaKie({
-          prompt: visualPrompt(concept, result.detectedCategory),
-          imageUrls: [imageUrl],
-          numImages: 1,
-          aspectRatio: "4:5",
-          format: "png",
-          model: "nano-banana-2",
+        renderDesignVisual({
+          concept,
+          detectedCategory: result.detectedCategory,
+          imageUrl,
         })
       )
     );
 
     result.concepts = result.concepts.map((concept, index) => ({
       ...concept,
-      visualUrl: visualResults[index]?.images?.[0]?.url,
+      visualUrl:
+        visualResults[index]?.status === "fulfilled"
+          ? visualResults[index].value
+          : undefined,
+      visualError:
+        visualResults[index]?.status === "rejected"
+          ? String(visualResults[index].reason?.message || visualResults[index].reason)
+          : undefined,
     }));
     result.trendSignals = research.signals;
     result.researchSources = research.sources;

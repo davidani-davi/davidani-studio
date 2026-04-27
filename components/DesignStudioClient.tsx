@@ -108,6 +108,7 @@ export default function DesignStudioClient() {
   const [copied, setCopied] = useState<string | null>(null);
   const [techpackFor, setTechpackFor] = useState<string | null>(null);
   const [techpack, setTechpack] = useState("");
+  const [renderingIndex, setRenderingIndex] = useState<number | null>(null);
 
   const selectedUpload = useMemo(
     () => uploads.find((u) => u.url === selectedUrl) ?? null,
@@ -190,6 +191,50 @@ export default function DesignStudioClient() {
     } catch (err: any) {
       setError(err?.message || "Techpack generation failed");
       setTechpackFor(null);
+    }
+  }
+
+  async function retryVisual(index: number) {
+    if (!result || !selectedUrl) return;
+    const concept = result.concepts[index];
+    setRenderingIndex(index);
+    setError(null);
+    try {
+      const data = await fetchJson("Render product visual", "/api/design-studio/render", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          concept,
+          detectedCategory: result.detectedCategory,
+          imageUrl: selectedUrl,
+        }),
+      });
+      setResult((current) => {
+        if (!current) return current;
+        return {
+          ...current,
+          concepts: current.concepts.map((item, itemIndex) =>
+            itemIndex === index
+              ? { ...item, visualUrl: data.visualUrl, visualError: undefined }
+              : item
+          ),
+        };
+      });
+    } catch (err: any) {
+      setResult((current) => {
+        if (!current) return current;
+        return {
+          ...current,
+          concepts: current.concepts.map((item, itemIndex) =>
+            itemIndex === index
+              ? { ...item, visualError: err?.message || "Visual render failed" }
+              : item
+          ),
+        };
+      });
+      setError(err?.message || "Visual render failed");
+    } finally {
+      setRenderingIndex(null);
     }
   }
 
@@ -473,8 +518,17 @@ export default function DesignStudioClient() {
                             className="h-full w-full object-cover"
                           />
                         ) : (
-                          <div className="flex h-full items-center justify-center text-xs text-neutral-400">
-                            Rendering failed
+                          <div className="flex h-full items-center justify-center px-5 text-center text-xs text-neutral-500">
+                            {renderingIndex === index ? (
+                              <span className="inline-flex items-center gap-2">
+                                <Spinner />
+                                Rendering
+                              </span>
+                            ) : concept.visualError ? (
+                              "Renderer is busy. Retry this visual."
+                            ) : (
+                              "Visual pending"
+                            )}
                           </div>
                         )}
                       </button>
@@ -547,6 +601,17 @@ export default function DesignStudioClient() {
                         </div>
 
                         <div className="mt-4 grid grid-cols-2 gap-2">
+                          {!concept.visualUrl && (
+                            <button
+                              type="button"
+                              onClick={() => void retryVisual(index)}
+                              disabled={renderingIndex !== null}
+                              className="col-span-2 inline-flex items-center justify-center gap-2 rounded-lg border border-neutral-200 px-3 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
+                            >
+                              {renderingIndex === index ? <Spinner /> : null}
+                              Retry Visual
+                            </button>
+                          )}
                           <button
                             type="button"
                             onClick={() => void createTechpack(concept)}
