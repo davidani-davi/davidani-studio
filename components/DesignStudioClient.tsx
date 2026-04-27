@@ -75,6 +75,17 @@ const refinementOptions = [
   "More FW26",
 ];
 
+const stemOptions = [
+  "Make this more FW26",
+  "Change the color story",
+  "Make the silhouette more balloon shaped",
+  "Make it more boutique and sellable",
+  "Make it younger and Gen Z friendly",
+  "Make it softer and more romantic",
+  "Make it more casual everyday",
+  "Add a novelty detail without making it costume-like",
+];
+
 function downloadImage(url: string, filename: string) {
   const anchor = document.createElement("a");
   anchor.href = url;
@@ -145,6 +156,8 @@ export default function DesignStudioClient() {
   const [moodboardQuery, setMoodboardQuery] = useState("");
   const [moodboardTag, setMoodboardTag] = useState("All");
   const [moodboardDensity, setMoodboardDensity] = useState<"large" | "dense">("large");
+  const [stemSource, setStemSource] = useState<InspirationSource | null>(null);
+  const [stemInstruction, setStemInstruction] = useState("");
   const [newInspiration, setNewInspiration] = useState({
     title: "",
     url: "",
@@ -265,8 +278,39 @@ export default function DesignStudioClient() {
     }
   }
 
-  async function generateConcepts(nextRefinement = refinement) {
-    if (!selectedUrl) return;
+  function buildStemRefinement(source: InspirationSource, instruction: string) {
+    const tags = source.tags?.length ? source.tags.join(", ") : source.category;
+    return [
+      `Use this saved inspiration as a creative launchpad, not as something to copy: ${source.title}.`,
+      source.category ? `Inspiration category: ${source.category}.` : "",
+      tags ? `Inspiration tags: ${tags}.` : "",
+      source.note ? `Why it was saved: ${source.note}.` : "",
+      instruction
+        ? `Designer direction: ${instruction}.`
+        : "Designer direction: create a fresh, commercially sellable evolution from this inspiration.",
+      "Do not recreate the original saved image exactly. Extract the useful design DNA and make new boutique-ready product ideas.",
+    ]
+      .filter(Boolean)
+      .join(" ");
+  }
+
+  function useInspirationAsUpload(source: InspirationSource) {
+    const image = sourceImage(source);
+    if (!image) return null;
+    setUploads((list) =>
+      list.some((item) => item.url === image)
+        ? list
+        : [...list, { name: source.title || "Inspiration source", url: image }]
+    );
+    setSelectedUrl(image);
+    setResult(null);
+    setTechpack("");
+    return image;
+  }
+
+  async function generateConcepts(nextRefinement = refinement, imageOverride?: string) {
+    const imageUrl = imageOverride || selectedUrl;
+    if (!imageUrl) return;
     setGenerating(true);
     setError(null);
     setCopied(null);
@@ -275,13 +319,31 @@ export default function DesignStudioClient() {
       const data = await fetchJson("Generate product visuals", "/api/design-studio/concepts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageUrl: selectedUrl, refinement: nextRefinement }),
+        body: JSON.stringify({ imageUrl, refinement: nextRefinement }),
       });
       setResult(data.result || null);
     } catch (err: any) {
       setError(err?.message || "Product visual generation failed");
     } finally {
       setGenerating(false);
+    }
+  }
+
+  async function applyStem(generateNow: boolean, useSourceImage = false) {
+    if (!stemSource) return;
+    const nextRefinement = buildStemRefinement(stemSource, stemInstruction.trim());
+    setRefinement(nextRefinement);
+    setMoodboardOpen(false);
+    setStemSource(null);
+    setStemInstruction("");
+
+    const image = useSourceImage ? useInspirationAsUpload(stemSource) : selectedUrl;
+    if (generateNow) {
+      if (!image) {
+        setError("Select a product image first, or use the inspiration image as the source.");
+        return;
+      }
+      await generateConcepts(nextRefinement, image);
     }
   }
 
@@ -1009,6 +1071,16 @@ export default function DesignStudioClient() {
                               <div className="absolute inset-x-2 bottom-2 flex justify-end gap-1 opacity-0 transition group-hover:opacity-100">
                                 <button
                                   type="button"
+                                  onClick={() => {
+                                    setStemSource(source);
+                                    setStemInstruction("");
+                                  }}
+                                  className="rounded-full bg-brand-500 px-2.5 py-1 text-[10px] font-semibold text-white shadow-sm backdrop-blur hover:bg-brand-600"
+                                >
+                                  Stem
+                                </button>
+                                <button
+                                  type="button"
                                   onClick={() => setPreviewSrc(image)}
                                   className="rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-semibold text-neutral-800 shadow-sm backdrop-blur hover:bg-white"
                                 >
@@ -1034,13 +1106,25 @@ export default function DesignStudioClient() {
                                   {source.category}
                                 </p>
                               </div>
-                              <button
-                                type="button"
-                                onClick={() => void deleteInspiration(source.id)}
-                                className="rounded-full px-2 py-1 text-[10px] font-semibold text-neutral-400 hover:bg-red-50 hover:text-red-600"
-                              >
-                                Remove
-                              </button>
+                              <div className="flex shrink-0 items-center gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setStemSource(source);
+                                    setStemInstruction("");
+                                  }}
+                                  className="rounded-full bg-neutral-100 px-2 py-1 text-[10px] font-semibold text-neutral-700 hover:bg-brand-50 hover:text-brand-700"
+                                >
+                                  Stem
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => void deleteInspiration(source.id)}
+                                  className="rounded-full px-2 py-1 text-[10px] font-semibold text-neutral-400 hover:bg-red-50 hover:text-red-600"
+                                >
+                                  Remove
+                                </button>
+                              </div>
                             </div>
                             {source.tags?.length ? (
                               <div className="mt-2 flex flex-wrap gap-1">
@@ -1311,6 +1395,135 @@ export default function DesignStudioClient() {
           </div>
         </section>
       </div>
+
+      {stemSource && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4">
+          <div className="grid max-h-[92vh] w-full max-w-5xl overflow-hidden rounded-2xl bg-white shadow-2xl lg:grid-cols-[minmax(280px,0.78fr)_1fr]">
+            <div className="bg-neutral-100">
+              {sourceImage(stemSource) ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={sourceImage(stemSource)}
+                  alt={stemSource.title}
+                  className="h-full min-h-[320px] w-full object-cover"
+                />
+              ) : (
+                <div className="flex h-full min-h-[320px] items-center justify-center p-6 text-center text-sm text-neutral-500">
+                  This saved source does not have an image preview, but its tags can still guide
+                  the design direction.
+                </div>
+              )}
+            </div>
+            <div className="flex max-h-[92vh] flex-col">
+              <div className="border-b border-neutral-200 px-5 py-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
+                      Stem From Inspiration
+                    </p>
+                    <h2 className="mt-1 font-serif text-3xl leading-none text-neutral-950">
+                      What should this become?
+                    </h2>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStemSource(null);
+                      setStemInstruction("");
+                    }}
+                    className="rounded-full border border-neutral-200 px-3 py-1.5 text-xs font-semibold text-neutral-600 hover:bg-neutral-50"
+                  >
+                    Close
+                  </button>
+                </div>
+                <div className="mt-3">
+                  <p className="text-sm font-semibold text-neutral-900">{stemSource.title}</p>
+                  <p className="mt-1 text-xs leading-relaxed text-neutral-500">
+                    {[stemSource.category, stemSource.tags?.join(", ")].filter(Boolean).join(" · ")}
+                  </p>
+                  {stemSource.note ? (
+                    <p className="mt-2 text-xs leading-relaxed text-neutral-500">
+                      {stemSource.note}
+                    </p>
+                  ) : null}
+                </div>
+              </div>
+
+              <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+                <p className="text-xs font-semibold uppercase tracking-widest text-neutral-500">
+                  Quick Designer Directions
+                </p>
+                <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  {stemOptions.map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => setStemInstruction(option)}
+                      className={`rounded-xl border px-3 py-2 text-left text-xs font-semibold transition ${
+                        stemInstruction === option
+                          ? "border-brand-500 bg-brand-50 text-brand-700"
+                          : "border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50"
+                      }`}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+
+                <label className="mt-4 block">
+                  <span className="text-xs font-semibold uppercase tracking-widest text-neutral-500">
+                    Or write your own direction
+                  </span>
+                  <textarea
+                    value={stemInstruction}
+                    onChange={(event) => setStemInstruction(event.target.value)}
+                    rows={4}
+                    placeholder="Example: turn this into a barrel jean with a softer FW26 color story and a more premium boutique detail."
+                    className="mt-2 w-full resize-none rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm leading-relaxed outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+                  />
+                </label>
+
+                <div className="mt-4 rounded-xl bg-neutral-50 p-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
+                    How it will work
+                  </p>
+                  <p className="mt-1 text-xs leading-relaxed text-neutral-600">
+                    The AI will use this image as inspiration DNA only. It will not copy the saved
+                    design exactly; it will create fresh, sellable product directions from the
+                    instruction you choose.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid gap-2 border-t border-neutral-200 p-5 sm:grid-cols-3">
+                <button
+                  type="button"
+                  onClick={() => void applyStem(false)}
+                  className="rounded-xl border border-neutral-200 px-3 py-2.5 text-sm font-semibold text-neutral-700 hover:bg-neutral-50"
+                >
+                  Set Direction
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void applyStem(true, false)}
+                  disabled={!selectedUrl || generating}
+                  className="rounded-xl border border-neutral-200 px-3 py-2.5 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
+                >
+                  Apply to Product
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void applyStem(true, true)}
+                  disabled={!sourceImage(stemSource) || generating}
+                  className="rounded-xl bg-neutral-900 px-3 py-2.5 text-sm font-semibold text-white hover:bg-neutral-800 disabled:opacity-50"
+                >
+                  Use Inspo as Source
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {techpackFor && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4">
