@@ -445,6 +445,22 @@ export async function updateLibraryStyle(input: {
   return style;
 }
 
+export async function removeLibraryStyleView(input: {
+  styleId: string;
+  viewId: string;
+}): Promise<LibraryStyle> {
+  const index = await readLibraryIndex();
+  const style = index.styles.find((item) => item.id === input.styleId);
+  if (!style) throw new Error("Library style not found.");
+  const nextViews = style.views.filter((view) => view.id !== input.viewId);
+  if (nextViews.length === style.views.length) throw new Error("Library view not found.");
+  if (nextViews.length === 0) throw new Error("A style must keep at least one view.");
+  style.views = nextViews;
+  style.updatedAt = nowIso();
+  await writeLibraryIndex(index);
+  return style;
+}
+
 export function filterLibraryStyles(
   index: LibraryIndex,
   query: string | null,

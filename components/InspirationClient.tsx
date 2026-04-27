@@ -112,7 +112,7 @@ export default function InspirationClient() {
   const [dragging, setDragging] = useState(false);
   const [query, setQuery] = useState("");
   const [activeTag, setActiveTag] = useState("All");
-  const [density, setDensity] = useState<"large" | "dense">("large");
+  const [density, setDensity] = useState<"large" | "dense">("dense");
   const [preview, setPreview] = useState<string | null>(null);
   const [stemSource, setStemSource] = useState<InspirationSource | null>(null);
   const [stemInstruction, setStemInstruction] = useState("");
@@ -275,6 +275,24 @@ export default function InspirationClient() {
       refinement: buildStemRefinement(stemSource, stemInstruction.trim()),
       imageUrl: useImage ? imageUrl : "",
       title: stemSource.title,
+    };
+    localStorage.setItem(DESIGN_STUDIO_INSPIRATION_KEY, JSON.stringify(payload));
+    window.location.href = "/design-studio";
+  }
+
+  function sendBestsellerRemix(source: InspirationSource) {
+    const imageUrl = sourceImage(source);
+    const payload = {
+      refinement: [
+        "Bestseller Remix Engine: use this saved inspiration as a commercial bestseller signal, not as a design to copy.",
+        buildStemRefinement(
+          source,
+          "Create three new boutique-ready product directions that feel more sellable, more trend-aware, and more commercially useful for Davi & Dani customers."
+        ),
+        "Prioritize wearable novelty, clear product value, strong Faire listing potential, and designs a buyer can immediately understand.",
+      ].join(" "),
+      imageUrl,
+      title: `${source.title} Bestseller Remix`,
     };
     localStorage.setItem(DESIGN_STUDIO_INSPIRATION_KEY, JSON.stringify(payload));
     window.location.href = "/design-studio";
@@ -489,19 +507,19 @@ export default function InspirationClient() {
               <div
                 className={`grid max-h-[calc(100vh-260px)] overflow-y-auto p-4 ${
                   density === "large"
-                    ? "grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3"
-                    : "grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5"
+                    ? "grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4"
+                    : "grid-cols-2 gap-2.5 md:grid-cols-4 xl:grid-cols-6"
                 }`}
               >
                 {filteredSources.map((source) => {
                   const image = sourceImage(source);
                   return (
-                    <article key={source.id} className="group overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+                    <article key={source.id} className="group overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
                       <div className="relative">
                         <button
                           type="button"
                           onClick={() => image && setPreview(image)}
-                          className={`block w-full bg-neutral-100 ${density === "large" ? "aspect-[4/5]" : "aspect-square"}`}
+                          className={`block w-full bg-neutral-100 ${density === "large" ? "aspect-[3/4]" : "aspect-[4/3]"}`}
                         >
                           {image ? (
                             // eslint-disable-next-line @next/next/no-img-element
@@ -514,16 +532,6 @@ export default function InspirationClient() {
                         </button>
                         {image ? (
                           <div className="absolute inset-x-2 bottom-2 flex justify-end gap-1 opacity-0 transition group-hover:opacity-100">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setStemSource(source);
-                                setStemInstruction("");
-                              }}
-                              className="rounded-full bg-brand-500 px-2.5 py-1 text-[10px] font-semibold text-white shadow-sm backdrop-blur hover:bg-brand-600"
-                            >
-                              Stem
-                            </button>
                             <button
                               type="button"
                               onClick={() => setPreview(image)}
@@ -550,16 +558,6 @@ export default function InspirationClient() {
                           <div className="flex shrink-0 items-center gap-1">
                             <button
                               type="button"
-                              onClick={() => {
-                                setStemSource(source);
-                                setStemInstruction("");
-                              }}
-                              className="rounded-full bg-neutral-100 px-2 py-1 text-[10px] font-semibold text-neutral-700 hover:bg-brand-50 hover:text-brand-700"
-                            >
-                              Stem
-                            </button>
-                            <button
-                              type="button"
                               onClick={() => void deleteSource(source.id)}
                               className="rounded-full px-2 py-1 text-[10px] font-semibold text-neutral-400 hover:bg-red-50 hover:text-red-600"
                             >
@@ -567,9 +565,28 @@ export default function InspirationClient() {
                             </button>
                           </div>
                         </div>
+                        <div className="mt-2 grid grid-cols-2 gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setStemSource(source);
+                              setStemInstruction("");
+                            }}
+                            className="rounded-lg bg-brand-500 px-2 py-1.5 text-[10px] font-semibold text-white hover:bg-brand-600"
+                          >
+                            Stem
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => sendBestsellerRemix(source)}
+                            className="rounded-lg bg-neutral-950 px-2 py-1.5 text-[10px] font-semibold text-white hover:bg-neutral-800"
+                          >
+                            Remix
+                          </button>
+                        </div>
                         {source.tags?.length ? (
                           <div className="mt-2 flex flex-wrap gap-1">
-                            {source.tags.slice(0, density === "large" ? 8 : 4).map((tag) => (
+                            {source.tags.slice(0, density === "large" ? 6 : 3).map((tag) => (
                               <span key={tag} className="rounded-full bg-neutral-100 px-2 py-0.5 text-[9px] font-semibold text-neutral-600">
                                 {tag}
                               </span>

@@ -405,6 +405,25 @@ export default function LibraryClient() {
     }));
   }
 
+  async function removeView(styleId: string, viewId: string) {
+    setError(null);
+    try {
+      const res = await fetch("/api/library", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "remove-view", styleId, viewId }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data?.ok) throw new Error(data?.error || "Remove view failed");
+      setStyles((items) =>
+        items.map((item) => (item.id === styleId ? data.style : item))
+      );
+      setDrafts((items) => ({ ...items, [styleId]: makeDraft(data.style) }));
+    } catch (err: any) {
+      setError(err?.message || "Remove view failed");
+    }
+  }
+
   async function saveDraft(styleId: string) {
     const draft = drafts[styleId];
     if (!draft) return;
@@ -835,25 +854,11 @@ export default function LibraryClient() {
                       >
                         {copied === `seo-${style.id}` ? "Copied" : "Copy Faire"}
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => void copyToClipboard(`launch-${style.id}`, launchPack(style))}
-                        className="rounded-lg border border-neutral-200 px-3 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
-                      >
-                        {copied === `launch-${style.id}` ? "Copied" : "Copy Launch Pack"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => downloadText(`${safeExportName(style, "launch-pack")}.txt`, launchPack(style))}
-                        className="rounded-lg bg-neutral-900 px-3 py-2 text-xs font-semibold text-white hover:bg-neutral-800"
-                      >
-                        Export Pack
-                      </button>
                     </div>
                   </div>
 
-                  <div className="grid gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_360px]">
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                  <div className="grid gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_330px]">
+                    <div className="grid grid-cols-2 gap-3 xl:grid-cols-3">
                       {style.views.map((view) => {
                         const label =
                           draft.views.find((item) => item.id === view.id)?.label ||
@@ -885,7 +890,7 @@ export default function LibraryClient() {
                                 View
                               </span>
                             </button>
-                            <div className="mt-2 flex items-center gap-2">
+                            <div className="mt-2 grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-1.5">
                               {isEditing ? (
                                 <input
                                   value={label}
@@ -903,16 +908,24 @@ export default function LibraryClient() {
                               <button
                                 type="button"
                                 onClick={() => downloadImage(view.imageUrl, filename)}
-                                className="rounded-lg border border-neutral-200 px-3 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
+                                className="rounded-lg border border-neutral-200 px-2.5 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
                               >
                                 Download
                               </button>
                               <button
                                 type="button"
                                 onClick={() => sendToModelStudio(style, view)}
-                                className="rounded-lg bg-neutral-900 px-3 py-2 text-xs font-semibold text-white hover:bg-neutral-800"
+                                className="rounded-lg bg-neutral-900 px-2.5 py-2 text-xs font-semibold text-white hover:bg-neutral-800"
                               >
-                                Use in Model
+                                Model
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => void removeView(style.id, view.id)}
+                                disabled={style.views.length <= 1}
+                                className="col-span-3 rounded-lg border border-red-100 px-2 py-1.5 text-[10px] font-semibold text-red-500 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
+                              >
+                                Remove this view
                               </button>
                             </div>
                           </figure>
@@ -927,11 +940,7 @@ export default function LibraryClient() {
                               Style Launch Pack
                             </p>
                             <p className="mt-1 text-sm font-semibold text-neutral-950">
-                              {launchScore}% ready for sales
-                            </p>
-                            <p className="mt-1 text-xs leading-relaxed text-neutral-500">
-                              Copy, listing data, image views, and buyer notes for web, Faire, and
-                              sales.
+                              Faire-ready assets
                             </p>
                           </div>
                           <span
@@ -966,9 +975,6 @@ export default function LibraryClient() {
                             <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
                               Missing View Control
                             </p>
-                            <p className="text-[10px] text-neutral-400">
-                              upload real views first
-                            </p>
                           </div>
                           <div className="grid grid-cols-2 gap-1.5">
                             {CORE_ECOMMERCE_VIEWS.map((label) => {
@@ -996,10 +1002,6 @@ export default function LibraryClient() {
                               );
                             })}
                           </div>
-                          <p className="mt-2 text-[10px] leading-relaxed text-neutral-500">
-                            If a back, side, or detail has special artwork, upload it here before
-                            using AI to fill the remaining views.
-                          </p>
                         </div>
                         <div className="mt-3 grid grid-cols-2 gap-2">
                           <button
@@ -1021,24 +1023,10 @@ export default function LibraryClient() {
                           </button>
                           <button
                             type="button"
-                            onClick={() => void copyToClipboard(`launch-panel-${style.id}`, launchPack(style))}
-                            className="rounded-lg bg-neutral-900 px-3 py-2 text-xs font-semibold text-white hover:bg-neutral-800"
-                          >
-                            {copied === `launch-panel-${style.id}` ? "Copied" : "Copy Pack"}
-                          </button>
-                          <button
-                            type="button"
                             onClick={() => downloadText(`${safeExportName(style, "faire-csv")}.csv`, styleCsv(style), "text/csv;charset=utf-8")}
                             className="rounded-lg border border-neutral-200 px-3 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
                           >
                             Export CSV
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => void copyToClipboard(`buyer-${style.id}`, buyerPitch(style))}
-                            className="rounded-lg border border-neutral-200 px-3 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
-                          >
-                            {copied === `buyer-${style.id}` ? "Copied" : "Buyer Pitch"}
                           </button>
                           <button
                             type="button"
