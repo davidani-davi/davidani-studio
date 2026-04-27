@@ -284,6 +284,7 @@ function bestsellerRemixRefinement(style: LibraryStyle): string {
     .join(", ");
   return [
     "Bestseller Remix Engine: treat this uploaded Library style as a proven seller or strong commercial reference.",
+    "Target customer: women's boutique apparel shoppers in the Free People / Anthropologie / young contemporary bohemian world. Prioritize feminine, expressive, wearable, boutique-ready ideas. Do not drift into menswear, male styling, masculine workwear, or men's fit language unless the user explicitly asks.",
     `Style number: ${style.styleNumber}. Color: ${style.color}.`,
     style.garmentType ? `Category: ${style.garmentType}.` : "",
     style.silhouette ? `Current silhouette: ${style.silhouette}.` : "",
@@ -292,7 +293,7 @@ function bestsellerRemixRefinement(style: LibraryStyle): string {
     style.seoDescription ? `Current buyer-facing description: ${style.seoDescription}` : "",
     "Generate 6 concepts: 2 safe commercial extensions, 2 trend-forward extensions, 1 lower-risk reorder extension, and 1 novelty statement extension.",
     "Preserve the exact product category, but do not copy the exact design, artwork, placement, color story, or trim layout.",
-    "Each concept should feel like a new SKU a boutique buyer could add for a different reason.",
+    "Each concept should feel like a new women's boutique SKU a Faire buyer could add for a different reason.",
   ]
     .filter(Boolean)
     .join(" ");

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   addInspirationSource,
+  addInspirationImages,
   deleteInspirationSource,
   readInspirationIndex,
 } from "@/lib/inspiration-library";
@@ -27,6 +28,9 @@ export async function POST(req: Request) {
       title: String(body?.title || ""),
       url: String(body?.url || ""),
       imageUrl: body?.imageUrl ? String(body.imageUrl) : undefined,
+      imageUrls: Array.isArray(body?.imageUrls)
+        ? body.imageUrls.map((url: unknown) => String(url || "")).filter(Boolean)
+        : undefined,
       category: String(body?.category || ""),
       tags: Array.isArray(body?.tags)
         ? body.tags.map((tag: unknown) => String(tag || "")).filter(Boolean)
@@ -39,6 +43,27 @@ export async function POST(req: Request) {
   } catch (err: any) {
     return NextResponse.json(
       { ok: false, error: err?.message || "Failed to save inspiration" },
+      { status: 400 }
+    );
+  }
+}
+
+export async function PATCH(req: Request) {
+  try {
+    const body = await req.json();
+    if (body?.action === "add-images") {
+      const source = await addInspirationImages({
+        id: String(body?.id || ""),
+        imageUrls: Array.isArray(body?.imageUrls)
+          ? body.imageUrls.map((url: unknown) => String(url || "")).filter(Boolean)
+          : [],
+      });
+      return NextResponse.json({ ok: true, source });
+    }
+    return NextResponse.json({ ok: false, error: "Unknown action." }, { status: 400 });
+  } catch (err: any) {
+    return NextResponse.json(
+      { ok: false, error: err?.message || "Failed to update inspiration" },
       { status: 400 }
     );
   }

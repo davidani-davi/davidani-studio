@@ -7,6 +7,7 @@ export interface InspirationSource {
   title: string;
   url: string;
   imageUrl?: string;
+  imageUrls?: string[];
   category: string;
   tags?: string[];
   note: string;
@@ -100,12 +101,20 @@ export async function addInspirationSource(input: {
   title: string;
   url: string;
   imageUrl?: string;
+  imageUrls?: string[];
   category: string;
   tags?: string[];
   note: string;
 }): Promise<InspirationSource> {
   const url = normalizeUrl(input.url);
   const imageUrl = input.imageUrl ? normalizeUrl(input.imageUrl) : undefined;
+  const imageUrls = Array.isArray(input.imageUrls)
+    ? Array.from(
+        new Set(input.imageUrls.map((item) => normalizeUrl(String(item || ""))).filter(Boolean))
+      ).slice(0, 12)
+    : imageUrl
+    ? [imageUrl]
+    : [];
   const title = cleanText(input.title) || new URL(url).hostname.replace(/^www\./, "");
   const category = cleanText(input.category) || "General";
   const tags = Array.isArray(input.tags)
@@ -118,7 +127,8 @@ export async function addInspirationSource(input: {
 
   if (existing) {
     existing.title = title;
-    existing.imageUrl = imageUrl;
+    existing.imageUrl = imageUrl || imageUrls[0];
+    existing.imageUrls = imageUrls.length ? imageUrls : existing.imageUrls;
     existing.category = category;
     existing.tags = tags;
     existing.note = note;
@@ -131,7 +141,8 @@ export async function addInspirationSource(input: {
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     title,
     url,
-    imageUrl,
+    imageUrl: imageUrl || imageUrls[0],
+    imageUrls,
     category,
     tags,
     note,
@@ -139,6 +150,31 @@ export async function addInspirationSource(input: {
     updatedAt: timestamp,
   };
   index.sources.push(source);
+  await writeInspirationIndex(index);
+  return source;
+}
+
+export async function addInspirationImages(input: {
+  id: string;
+  imageUrls: string[];
+}): Promise<InspirationSource> {
+  const index = await readInspirationIndex();
+  const source = index.sources.find((item) => item.id === input.id);
+  if (!source) throw new Error("Inspiration not found.");
+  const existing = source.imageUrls?.length
+    ? source.imageUrls
+    : source.imageUrl
+    ? [source.imageUrl]
+    : [];
+  const next = Array.from(
+    new Set([
+      ...existing,
+      ...input.imageUrls.map((item) => normalizeUrl(String(item || ""))).filter(Boolean),
+    ])
+  ).slice(0, 12);
+  source.imageUrls = next;
+  source.imageUrl = next[0] || source.imageUrl;
+  source.updatedAt = nowIso();
   await writeInspirationIndex(index);
   return source;
 }

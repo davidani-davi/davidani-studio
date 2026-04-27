@@ -53,8 +53,20 @@ const stemOptions = [
 ];
 
 function sourceImage(source: InspirationSource): string {
+  if (source.imageUrls?.length) return source.imageUrls[0];
   if (source.imageUrl) return source.imageUrl;
   return /\.(png|jpe?g|webp|gif)(\?.*)?$/i.test(source.url) ? source.url : "";
+}
+
+function sourceImages(source: InspirationSource): string[] {
+  const urls = source.imageUrls?.length
+    ? source.imageUrls
+    : source.imageUrl
+    ? [source.imageUrl]
+    : sourceImage(source)
+    ? [sourceImage(source)]
+    : [];
+  return Array.from(new Set(urls)).filter(Boolean);
 }
 
 function safeFileName(value: string) {
@@ -105,6 +117,7 @@ function buildStemRefinement(source: InspirationSource, instruction: string) {
 
 export default function InspirationClient() {
   const inputRef = useRef<HTMLInputElement>(null);
+  const addViewsInputRef = useRef<HTMLInputElement>(null);
   const [sources, setSources] = useState<InspirationSource[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -116,11 +129,13 @@ export default function InspirationClient() {
   const [preview, setPreview] = useState<string | null>(null);
   const [stemSource, setStemSource] = useState<InspirationSource | null>(null);
   const [stemInstruction, setStemInstruction] = useState("");
+  const [addViewsTarget, setAddViewsTarget] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [draft, setDraft] = useState({
     title: "",
     url: "",
     imageUrl: "",
+    imageUrls: [] as string[],
     category: "",
     tags: "",
     note: "",
@@ -167,24 +182,68 @@ export default function InspirationClient() {
     setAnalyzing(true);
     setError(null);
     try {
-      const first = files[0];
-      if (!first) return;
-      const resized = await resizeIfNeeded(first);
+      const picked = Array.from(files).filter((file) => file.type.startsWith("image/"));
+      if (!picked.length) return;
       const form = new FormData();
-      form.append("files", resized);
+      for (const file of picked.slice(0, 12)) {
+        form.append("files", await resizeIfNeeded(file));
+      }
       const uploaded = await fetchJson("Upload inspiration", "/api/upload", {
         method: "POST",
         body: form,
       });
-      const imageUrl = uploaded.uploads?.[0]?.url;
+      const imageUrls = (uploaded.uploads || [])
+        .map((item: { url?: string }) => item.url)
+        .filter(Boolean);
+      const imageUrl = imageUrls[0];
       if (!imageUrl) throw new Error("Upload succeeded but no image URL returned");
-      setDraft((item) => ({ ...item, url: imageUrl, imageUrl }));
+      setDraft((item) => ({
+        ...item,
+        url: item.url || imageUrl,
+        imageUrl,
+        imageUrls: Array.from(new Set([...(item.imageUrls || []), ...imageUrls])),
+      }));
       await analyzeDraft({ url: imageUrl, imageUrl });
     } catch (err: any) {
       setError(err?.message || "Inspiration upload failed");
     } finally {
       setAnalyzing(false);
       setDragging(false);
+    }
+  }
+
+  async function addViewsToSource(sourceId: string, files: FileList) {
+    setError(null);
+    setAnalyzing(true);
+    try {
+      const picked = Array.from(files).filter((file) => file.type.startsWith("image/"));
+      if (!picked.length) return;
+      const form = new FormData();
+      for (const file of picked.slice(0, 12)) {
+        form.append("files", await resizeIfNeeded(file));
+      }
+      const uploaded = await fetchJson("Upload inspiration views", "/api/upload", {
+        method: "POST",
+        body: form,
+      });
+      const imageUrls = (uploaded.uploads || [])
+        .map((item: { url?: string }) => item.url)
+        .filter(Boolean);
+      if (!imageUrls.length) throw new Error("Upload succeeded but no image URLs returned");
+      const data = await fetchJson("Save inspiration views", "/api/design-studio/inspirations", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "add-images", id: sourceId, imageUrls }),
+      });
+      setSources((items) =>
+        items.map((source) => (source.id === sourceId ? data.source : source))
+      );
+    } catch (err: any) {
+      setError(err?.message || "Failed to add inspiration views");
+    } finally {
+      setAnalyzing(false);
+      setAddViewsTarget(null);
+      if (addViewsInputRef.current) addViewsInputRef.current.value = "";
     }
   }
 
@@ -242,11 +301,12 @@ export default function InspirationClient() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...item,
+          imageUrls: item.imageUrls,
           tags: item.tags.split(",").map((tag) => tag.trim()).filter(Boolean),
         }),
       });
       setSources((items) => [data.source, ...items.filter((source) => source.id !== data.source.id)]);
-      setDraft({ title: "", url: "", imageUrl: "", category: "", tags: "", note: "" });
+      setDraft({ title: "", url: "", imageUrl: "", imageUrls: [], category: "", tags: "", note: "" });
     } catch (err: any) {
       setError(err?.message || "Failed to save inspiration");
     } finally {
@@ -285,9 +345,10 @@ export default function InspirationClient() {
     const payload = {
       refinement: [
         "Bestseller Remix Engine: use this saved inspiration as a commercial bestseller signal, not as a design to copy.",
+        "Target customer: women's boutique apparel shoppers in the Free People / Anthropologie / young contemporary bohemian world. Prioritize feminine, expressive, wearable, boutique-ready ideas. Do not drift into menswear, male styling, masculine workwear, or men's fit language unless the user explicitly asks.",
         buildStemRefinement(
           source,
-          "Create three new boutique-ready product directions that feel more sellable, more trend-aware, and more commercially useful for Davi & Dani customers."
+          "Create three new women's boutique product directions that feel more sellable, more trend-aware, and more commercially useful for Davi & Dani customers."
         ),
         "Prioritize wearable novelty, clear product value, strong Faire listing potential, and designs a buyer can immediately understand.",
       ].join(" "),
@@ -360,6 +421,7 @@ export default function InspirationClient() {
                 ref={inputRef}
                 type="file"
                 accept="image/*"
+                multiple
                 className="hidden"
                 onChange={(e) => {
                   if (e.target.files?.length) void addFiles(e.target.files);
@@ -392,14 +454,24 @@ export default function InspirationClient() {
               />
             </div>
             {draft.imageUrl ? (
-              <button
-                type="button"
-                onClick={() => setPreview(draft.imageUrl)}
-                className="group relative aspect-[4/3] overflow-hidden rounded-xl bg-neutral-100"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={draft.imageUrl} alt={draft.title || "Inspiration preview"} className="h-full w-full object-cover" />
-              </button>
+              <div className="grid grid-cols-3 gap-2">
+                {(draft.imageUrls.length ? draft.imageUrls : [draft.imageUrl]).map((url, idx) => (
+                  <button
+                    key={`${url}-${idx}`}
+                    type="button"
+                    onClick={() => setPreview(url)}
+                    className="group relative aspect-square overflow-hidden rounded-lg bg-neutral-100"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={url} alt={draft.title || "Inspiration preview"} className="h-full w-full object-cover" />
+                    {idx === 0 && (
+                      <span className="absolute left-1 top-1 rounded-full bg-white/90 px-1.5 py-0.5 text-[9px] font-semibold text-neutral-700">
+                        Main
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
             ) : null}
             <textarea
               value={draft.note}
@@ -431,6 +503,18 @@ export default function InspirationClient() {
         </aside>
 
         <section className="min-w-0 bg-neutral-50 p-5">
+          <input
+            ref={addViewsInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={(event) => {
+              if (event.target.files?.length && addViewsTarget) {
+                void addViewsToSource(addViewsTarget, event.target.files);
+              }
+            }}
+          />
           <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm">
             <div className="border-b border-neutral-100 bg-gradient-to-b from-white to-neutral-50 px-4 py-4">
               <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
@@ -513,6 +597,7 @@ export default function InspirationClient() {
               >
                 {filteredSources.map((source) => {
                   const image = sourceImage(source);
+                  const gallery = sourceImages(source);
                   return (
                     <article key={source.id} className="group overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
                       <div className="relative">
@@ -550,12 +635,43 @@ export default function InspirationClient() {
                         ) : null}
                       </div>
                       <div className={density === "large" ? "p-3" : "p-2.5"}>
+                        {gallery.length > 1 && (
+                          <div className="mb-2 flex gap-1 overflow-x-auto">
+                            {gallery.slice(0, 5).map((url, idx) => (
+                              <button
+                                key={`${source.id}-${url}`}
+                                type="button"
+                                onClick={() => setPreview(url)}
+                                className="relative h-9 w-9 shrink-0 overflow-hidden rounded-md bg-neutral-100"
+                                title={`View ${idx + 1}`}
+                              >
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src={url} alt="" className="h-full w-full object-cover" />
+                              </button>
+                            ))}
+                            {gallery.length > 5 && (
+                              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-md bg-neutral-100 text-[10px] font-semibold text-neutral-500">
+                                +{gallery.length - 5}
+                              </span>
+                            )}
+                          </div>
+                        )}
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
                             <p className="truncate text-xs font-semibold text-neutral-950">{source.title}</p>
                             <p className="mt-0.5 truncate text-[10px] text-neutral-500">{source.category}</p>
                           </div>
                           <div className="flex shrink-0 items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setAddViewsTarget(source.id);
+                                window.setTimeout(() => addViewsInputRef.current?.click(), 0);
+                              }}
+                              className="rounded-full bg-neutral-100 px-2 py-1 text-[10px] font-semibold text-neutral-700 hover:bg-brand-50 hover:text-brand-700"
+                            >
+                              Add views
+                            </button>
                             <button
                               type="button"
                               onClick={() => void deleteSource(source.id)}
