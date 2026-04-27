@@ -16,8 +16,8 @@ function clamp(value: number, min: number, max: number): number {
 
 export default function ResizableStudioLayout({ left, center, right }: Props) {
   const rootRef = useRef<HTMLDivElement | null>(null);
-  const [leftWidth, setLeftWidth] = useState(288);
-  const [rightWidth, setRightWidth] = useState(384);
+  const [leftWidth, setLeftWidth] = useState(312);
+  const [rightWidth, setRightWidth] = useState(430);
   const dragRef = useRef<{
     side: DragSide;
     startX: number;
@@ -32,14 +32,14 @@ export default function ResizableStudioLayout({ left, center, right }: Props) {
       if (!drag) return;
 
       const delta = event.clientX - drag.startX;
-      const centerMin = 420;
+      const centerMin = 520;
 
       if (drag.side === "left") {
-        const maxLeft = Math.max(240, drag.rootWidth - drag.rightWidth - centerMin);
-        setLeftWidth(clamp(drag.leftWidth + delta, 240, Math.min(560, maxLeft)));
+        const maxLeft = Math.max(260, drag.rootWidth - drag.rightWidth - centerMin);
+        setLeftWidth(clamp(drag.leftWidth + delta, 260, Math.min(600, maxLeft)));
       } else {
-        const maxRight = Math.max(300, drag.rootWidth - drag.leftWidth - centerMin);
-        setRightWidth(clamp(drag.rightWidth - delta, 300, Math.min(760, maxRight)));
+        const maxRight = Math.max(340, drag.rootWidth - drag.leftWidth - centerMin);
+        setRightWidth(clamp(drag.rightWidth - delta, 340, Math.min(820, maxRight)));
       }
     }
 
@@ -71,15 +71,14 @@ export default function ResizableStudioLayout({ left, center, right }: Props) {
     event.currentTarget.setPointerCapture(event.pointerId);
   }
 
-  const dividerClass =
-    "hidden cursor-col-resize border-x border-neutral-200 bg-neutral-50 transition hover:bg-neutral-100 lg:flex lg:items-center lg:justify-center";
+  const dividerClass = "studio-resizer hidden lg:flex";
 
   return (
     <div
       ref={rootRef}
-      className="flex min-h-0 flex-1 flex-col lg:grid"
+      className="studio-workspace flex min-h-0 flex-1 flex-col lg:grid"
       style={{
-        gridTemplateColumns: `${leftWidth}px 8px minmax(420px, 1fr) 8px ${rightWidth}px`,
+        gridTemplateColumns: `${leftWidth}px 10px minmax(520px, 1fr) 10px ${rightWidth}px`,
       }}
     >
       <div className="min-h-0 min-w-0">{left}</div>
@@ -89,7 +88,7 @@ export default function ResizableStudioLayout({ left, center, right }: Props) {
         onPointerDown={(event) => beginDrag("left", event)}
         className={dividerClass}
       >
-        <span className="h-10 w-0.5 rounded-full bg-neutral-300" />
+        <span className="studio-resizer__handle" />
       </button>
       <div className="min-h-0 min-w-0">{center}</div>
       <button
@@ -98,7 +97,7 @@ export default function ResizableStudioLayout({ left, center, right }: Props) {
         onPointerDown={(event) => beginDrag("right", event)}
         className={dividerClass}
       >
-        <span className="h-10 w-0.5 rounded-full bg-neutral-300" />
+        <span className="studio-resizer__handle" />
       </button>
       <div className="min-h-0 min-w-0">{right}</div>
     </div>

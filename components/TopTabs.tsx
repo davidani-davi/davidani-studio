@@ -26,18 +26,14 @@ export default function TopTabs({ active }: Props) {
   ];
 
   return (
-    <nav className="flex flex-wrap items-center gap-1 text-sm sm:ml-6">
+    <nav className="studio-tabs" aria-label="Studio navigation">
       {tabs.map((t) => {
         const isActive = t.id === active;
         return (
           <Link
             key={t.id}
             href={t.href}
-            className={`relative px-2 py-1.5 text-[12px] font-medium transition ${
-              isActive
-                ? "text-neutral-950 after:absolute after:inset-x-2 after:-bottom-[15px] after:h-0.5 after:bg-brand-500"
-                : "text-neutral-500 hover:text-neutral-900"
-            }`}
+            className={`studio-tab ${isActive ? "studio-tab--active" : ""}`}
           >
             {t.label}
           </Link>

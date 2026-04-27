@@ -207,10 +207,10 @@ export default function Sidebar(p: Props) {
   }
 
   return (
-    <aside className="flex w-full shrink-0 flex-col overflow-y-auto border-b border-neutral-200 bg-white lg:h-full lg:border-b-0 lg:border-r">
+    <aside className="image-sidebar flex w-full shrink-0 flex-col overflow-y-auto border-b border-neutral-200 bg-white lg:h-full lg:border-b-0 lg:border-r">
       {/* ========== PRODUCT PHOTOS (image 1) ========== */}
       <section
-        className={`border-b border-neutral-100 p-5 transition ${
+        className={`image-sidebar-card border-b border-neutral-100 p-5 transition ${
           draggingUploads ? "bg-brand-50/70" : ""
         }`}
         onDragEnter={(e) => {
@@ -229,20 +229,28 @@ export default function Sidebar(p: Props) {
         }}
         onDrop={handleUploadDrop}
       >
-        <SectionHeader icon={IconCamera} title="Product photo" hint={refHint} />
+        <SectionHeader icon={IconCamera} title="Product intake" hint={refHint} />
 
-        <div className="grid grid-cols-4 gap-2">
+        <div className={uploadCount === 0 ? "grid gap-2" : "grid grid-cols-3 gap-2"}>
           {/* + add button */}
           <label
-            className={`flex aspect-square cursor-pointer items-center justify-center rounded-lg border border-dashed text-lg transition hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600 ${
+            className={`group flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed text-center transition hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600 ${
               draggingUploads
                 ? "border-brand-500 bg-brand-50 text-brand-700"
                 : "border-neutral-300 bg-neutral-50 text-neutral-400"
-            }`}
+            } ${uploadCount === 0 ? "min-h-[164px] px-4 py-6" : "aspect-square"}`}
           >
-            <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
+            <svg viewBox="0 0 20 20" fill="currentColor" className={uploadCount === 0 ? "mb-2 h-6 w-6" : "h-4 w-4"}>
               <path d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" />
             </svg>
+            {uploadCount === 0 && (
+              <>
+                <span className="text-sm font-semibold text-neutral-800">Drop product photo</span>
+                <span className="mt-1 max-w-[230px] text-[11px] leading-relaxed text-neutral-500">
+                  Upload one style, or select multiple images for batch cleanup.
+                </span>
+              </>
+            )}
             <input
               type="file"
               accept="image/*"
@@ -300,17 +308,16 @@ export default function Sidebar(p: Props) {
           })}
         </div>
 
-        {uploadCount === 0 && (
-          <p className="mt-3 text-[11px] leading-relaxed text-neutral-500">
-            Upload an iPhone product photo to get started. Click to select which
-            photo to analyze.
-          </p>
-        )}
+        <div className="mt-3 grid grid-cols-3 gap-1.5 text-center text-[10px] font-medium text-neutral-500">
+          <span className="rounded-full bg-neutral-50 px-2 py-1">1. Upload</span>
+          <span className="rounded-full bg-neutral-50 px-2 py-1">2. Style</span>
+          <span className="rounded-full bg-neutral-50 px-2 py-1">3. Export</span>
+        </div>
       </section>
 
       {/* ========== STYLE REFERENCE (image 2) ========== */}
       <section
-        className={`border-b border-neutral-100 p-5 transition ${
+        className={`image-sidebar-card border-b border-neutral-100 p-5 transition ${
           draggingReference ? "bg-brand-50/70" : ""
         }`}
         onDragEnter={(e) => {
@@ -335,6 +342,7 @@ export default function Sidebar(p: Props) {
           hint={hasCustomReference ? "Custom" : "Default"}
         />
 
+        <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-2">
         <div className="flex gap-3">
           <button
             type="button"
@@ -398,10 +406,11 @@ export default function Sidebar(p: Props) {
             />
           </div>
         </div>
+        </div>
       </section>
 
       {/* ========== BACKGROUND ========== */}
-      <section className="border-b border-neutral-100 p-5">
+      <section className="image-sidebar-card border-b border-neutral-100 p-5">
         <SectionHeader icon={IconSwatch} title="Background" />
 
         <div className="mb-3 grid grid-cols-3 gap-2">
@@ -413,18 +422,16 @@ export default function Sidebar(p: Props) {
                 key={preset.hex}
                 onClick={() => p.onBackgroundColorChange(preset.hex)}
                 title={`${preset.label} (${preset.hex})`}
-                className={`flex aspect-square items-center justify-center rounded-lg border transition ${
+                className={`flex aspect-[4/3] items-end justify-center rounded-lg border p-1.5 transition ${
                   active
                     ? "border-brand-500 ring-2 ring-brand-200"
                     : "border-neutral-200 hover:border-neutral-400"
                 }`}
                 style={{ backgroundColor: preset.hex }}
               >
-                {active && (
-                  <span className="text-[11px] font-bold text-neutral-700">
-                    ✓
-                  </span>
-                )}
+                <span className={`rounded-full bg-white/80 px-2 py-0.5 text-[9px] font-semibold ${active ? "text-brand-700" : "text-neutral-600"}`}>
+                  {active ? "✓ " : ""}{preset.label}
+                </span>
               </button>
             );
           })}
@@ -470,10 +477,10 @@ export default function Sidebar(p: Props) {
       </section>
 
       {/* ========== TEXT OVERLAY ========== */}
-      <section className="border-b border-neutral-100 p-5">
+      <section className="image-sidebar-card border-b border-neutral-100 p-5">
         <SectionHeader icon={IconText} title="Text overlay" />
 
-        <label className="mb-2 flex items-center gap-2">
+        <label className={`mb-2 flex items-center gap-2 rounded-lg border p-2 transition ${p.showName ? "border-brand-500 bg-brand-50" : "border-neutral-200 bg-white"}`}>
           <input
             type="checkbox"
             checked={p.showName}
@@ -485,11 +492,11 @@ export default function Sidebar(p: Props) {
             value={p.colorName}
             onChange={(e) => p.onColorNameChange(e.target.value)}
             placeholder="Color name"
-            className="w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+            className="w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
           />
         </label>
 
-        <label className="mb-3 flex items-center gap-2">
+        <label className={`mb-3 flex items-center gap-2 rounded-lg border p-2 transition ${p.showNumber ? "border-brand-500 bg-brand-50" : "border-neutral-200 bg-white"}`}>
           <input
             type="checkbox"
             checked={p.showNumber}
@@ -501,7 +508,7 @@ export default function Sidebar(p: Props) {
             value={p.styleNumber}
             onChange={(e) => p.onStyleNumberChange(e.target.value)}
             placeholder="Style number"
-            className="w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+            className="w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
           />
         </label>
 
@@ -568,7 +575,7 @@ export default function Sidebar(p: Props) {
       </section>
 
       {/* ========== OUTPUT SETTINGS (collapsible) ========== */}
-      <section className="border-b border-neutral-100 p-5">
+      <section className="image-sidebar-card border-b border-neutral-100 p-5">
         <SectionHeader
           icon={IconSliders}
           title="Output settings"

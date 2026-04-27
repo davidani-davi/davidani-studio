@@ -232,7 +232,7 @@ export default function PromptPanel(p: Props) {
           </span>
         </label>
         {(p.onFitAdjustmentChange || p.onLengthAdjustmentChange) && (
-          <div className="mt-2.5 flex flex-wrap gap-4 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2.5">
+          <div className="model-direction-panel mt-2.5 flex flex-wrap gap-4 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2.5">
             {p.onFitAdjustmentChange && (
               <div className="min-w-[220px] flex-1">
                 <div className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-neutral-500">

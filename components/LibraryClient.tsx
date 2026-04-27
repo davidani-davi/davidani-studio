@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import TopTabs from "./TopTabs";
+import StudioHeader from "@/components/StudioHeader";
 import type { LibraryStyle, LibraryView } from "@/lib/style-library";
 
 interface LibraryDraft {
@@ -620,25 +620,21 @@ export default function LibraryClient() {
           event.currentTarget.value = "";
         }}
       />
-      <header className="flex flex-col gap-3 border-b border-neutral-200 bg-white px-4 py-3 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-neutral-900 text-xs font-bold text-white">
-            D
-          </div>
-          <span className="text-sm font-semibold">Davi &amp; Dani Photo Studio</span>
-          <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-neutral-600">
-            Library
-          </span>
-          <TopTabs active="library" />
-        </div>
-        <button
-          type="button"
-          onClick={() => void load()}
-          className="rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
-        >
-          Refresh
-        </button>
-      </header>
+      <StudioHeader
+        active="library"
+        title="Library"
+        subtitle="Approved style assets, launch packs, and ecommerce sets."
+        badge="Library"
+        action={
+          <button
+            type="button"
+            onClick={() => void load()}
+            className="rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
+          >
+            Refresh
+          </button>
+        }
+      />
 
       <section className="border-b border-neutral-200 bg-white px-5 py-4">
         <div className="mx-auto flex max-w-6xl flex-col gap-3 md:flex-row">

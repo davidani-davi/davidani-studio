@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import ImageLightbox from "@/components/ImageLightbox";
-import TopTabs from "@/components/TopTabs";
+import StudioHeader from "@/components/StudioHeader";
 import { resizeIfNeeded } from "@/lib/image-resize";
 import type { InspirationSource } from "@/lib/inspiration-library";
 
@@ -282,23 +282,15 @@ export default function InspirationClient() {
 
   return (
     <main className="flex min-h-screen flex-col bg-neutral-50">
-      <header className="flex flex-col gap-3 border-b border-neutral-200 bg-white px-4 py-3 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-neutral-900 text-xs font-bold text-white">
-            D
-          </div>
-          <span className="text-sm font-semibold">Davi &amp; Dani Photo Studio</span>
-          <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-neutral-600">
-            V1.5
-          </span>
-          <TopTabs active="inspiration" />
-        </div>
-        <div className="flex items-center gap-3 text-xs text-neutral-500 lg:justify-end">
-          <span>{sources.length} saved</span>
-          <span>·</span>
-          <span>Active: {saving || analyzing ? 1 : 0}</span>
-        </div>
-      </header>
+      <StudioHeader
+        active="inspiration"
+        title="Inspiration"
+        subtitle="Collect references, auto-tag them, and stem new design directions."
+        metrics={[
+          { label: "Saved", value: sources.length },
+          { label: "Active", value: saving || analyzing ? 1 : 0 },
+        ]}
+      />
 
       <div className="grid min-h-0 flex-1 lg:grid-cols-[360px_1fr]">
         <aside className="border-b border-neutral-200 bg-white p-5 lg:border-b-0 lg:border-r">

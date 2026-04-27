@@ -7,8 +7,7 @@ import PromptPanel, {
   type BatchProgress,
 } from "@/components/PromptPanel";
 import OutputPanel from "@/components/OutputPanel";
-import ResizableStudioLayout from "@/components/ResizableStudioLayout";
-import TopTabs from "@/components/TopTabs";
+import StudioHeader from "@/components/StudioHeader";
 import type { HistoryItem, UploadedImage } from "@/components/types";
 import type {
   GarmentFitAdjustment,
@@ -752,27 +751,18 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
 
   return (
     <main className="flex min-h-screen flex-col bg-neutral-50 lg:h-screen">
-      {/* Top bar */}
-      <header className="flex flex-col gap-3 border-b border-neutral-200 bg-white px-4 py-3 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-neutral-900 text-xs font-bold text-white">
-            D
-          </div>
-          <span className="text-sm font-semibold">Davi &amp; Dani Photo Studio</span>
-          <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-neutral-600">
-            V1.5
-          </span>
-          <TopTabs active="model" />
-        </div>
-        <div className="flex items-center gap-3 text-xs text-neutral-500 lg:justify-end">
-          <span>Runs: {history.length}</span>
-          <span>·</span>
-          <span>Active: {loading || batchProgress ? 1 : 0}</span>
-        </div>
-      </header>
+      <StudioHeader
+        active="model"
+        title="Model Studio"
+        subtitle="Generate on-model photography, then repair fit, pose, and proportion."
+        metrics={[
+          { label: "Runs", value: history.length },
+          { label: "Active", value: loading || batchProgress ? 1 : 0 },
+        ]}
+      />
 
-      <ResizableStudioLayout
-        left={
+      <div className="model-studio-layout min-h-0 flex-1">
+        <div className="model-studio-setup min-h-0">
           <ModelSidebar
             modelId={modelId}
             onModelChange={setModelId}
@@ -810,8 +800,9 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
             fontSize={fontSize}
             onFontSizeChange={setFontSize}
           />
-        }
-        center={
+        </div>
+        <div className="model-studio-workbench min-h-0">
+          <div className="model-studio-brief min-h-0">
           <PromptPanel
             prompt={prompt}
             onPromptChange={setPrompt}
@@ -835,8 +826,8 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
             analysisReview={twoPiece ? null : analysisReview}
             onAnalysisReviewChange={twoPiece ? undefined : handleAnalysisReviewChange}
           />
-        }
-        right={
+          </div>
+          <div className="model-studio-output min-h-0">
           <OutputPanel
             current={currentRun}
             history={history}
@@ -848,8 +839,9 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
               setCurrentId(null);
             }}
           />
-        }
-      />
+          </div>
+        </div>
+      </div>
 
       {/* Error toast */}
       {error && (

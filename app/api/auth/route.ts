@@ -21,9 +21,10 @@ export async function POST(req: Request) {
 
   const token = await createSessionToken(secret);
   const res = NextResponse.json({ ok: true });
+  const isSecureRequest = new URL(req.url).protocol === "https:";
   res.cookies.set(SESSION_COOKIE, token, {
     httpOnly: true,
-    secure: true,
+    secure: isSecureRequest,
     sameSite: "lax",
     path: "/",
     maxAge: SESSION_MAX_AGE,

@@ -15,6 +15,19 @@ type FitRepairMode =
   | "more-oversized"
   | "more-fitted";
 
+type QcMode =
+  | "restore-face"
+  | "proportion-natural"
+  | "head-smaller"
+  | "head-larger"
+  | "fit"
+  | "more-oversized"
+  | "more-fitted"
+  | "length-shorter"
+  | "length-longer"
+  | "match-original"
+  | "different-pose";
+
 interface Props {
   current: HistoryItem | null;
   history: HistoryItem[];
@@ -58,8 +71,8 @@ export default function OutputPanel({
   const [index, setIndex] = useState(0);
   const [previewSrc, setPreviewSrc] = useState<string | null>(null);
   const [promptOpen, setPromptOpen] = useState(false);
-  const [fitToolsOpen, setFitToolsOpen] = useState(false);
-  const [proportionToolsOpen, setProportionToolsOpen] = useState(false);
+  const [qcDrawerOpen, setQcDrawerOpen] = useState(false);
+  const [selectedQcModes, setSelectedQcModes] = useState<QcMode[]>(["fit"]);
   const [previewHeight, setPreviewHeight] = useState(560);
   const [fitReferenceUploading, setFitReferenceUploading] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
@@ -69,7 +82,6 @@ export default function OutputPanel({
   const [libraryStatus, setLibraryStatus] = useState<string | null>(null);
   const [libraryUploading, setLibraryUploading] = useState(false);
   const [repairNote, setRepairNote] = useState("");
-  const [selectedFitModes, setSelectedFitModes] = useState<FitRepairMode[]>([]);
   const [strongerRepair, setStrongerRepair] = useState(false);
   const fitReferenceInputRef = useRef<HTMLInputElement | null>(null);
   const previewResizeRef = useRef<{ startY: number; height: number } | null>(null);
@@ -79,12 +91,11 @@ export default function OutputPanel({
   // out-of-range index left over from a previous multi-variant run.
   useEffect(() => {
     setIndex(0);
-    setFitToolsOpen(false);
-    setProportionToolsOpen(false);
+    setQcDrawerOpen(false);
+    setSelectedQcModes(["fit"]);
     setLibraryOpen(false);
     setLibraryStatus(null);
     setRepairNote("");
-    setSelectedFitModes([]);
     setStrongerRepair(false);
     setLibraryStyleNumber(current?.styleNumber || "");
   }, [current?.id]);
@@ -137,53 +148,103 @@ export default function OutputPanel({
       ? current?.referenceUrls?.[safeIndex] ?? null
       : current?.referenceUrls?.[0] ?? null;
 
-  function toggleFitMode(mode: FitRepairMode) {
-    setSelectedFitModes((current) => {
+  function toggleQcMode(mode: QcMode) {
+    setSelectedQcModes((current) => {
+      const exclusiveGroups: QcMode[][] = [
+        ["proportion-natural", "head-smaller", "head-larger"],
+        ["more-oversized", "more-fitted"],
+        ["length-shorter", "length-longer"],
+      ];
+      const withoutConflicts = current.filter((item) => {
+        const group = exclusiveGroups.find((candidate) => candidate.includes(mode));
+        return !group || !group.includes(item);
+      });
       if (current.includes(mode)) return current.filter((item) => item !== mode);
-      if (mode === "all") return ["all"];
-      const conflicts: Partial<Record<FitRepairMode, FitRepairMode[]>> = {
-        "more-oversized": ["more-fitted", "all"],
-        "more-fitted": ["more-oversized", "all"],
-        "length-shorter": ["length-longer", "all"],
-        "length-longer": ["length-shorter", "all"],
-      };
-      return [...current.filter((item) => !(conflicts[mode] || ["all"]).includes(item)), mode];
+      return [...withoutConflicts, mode];
     });
   }
 
-  function buildRepairNote() {
-    const labels: Record<FitRepairMode, string> = {
-      all: "match the original garment reference more closely overall",
-      silhouette: "repair the garment silhouette",
-      "upload-reference": "use the uploaded fit reference",
-      "length-shorter": "make the garment shorter",
-      "length-longer": "make the garment longer",
-      "length-much-shorter": "make the garment much shorter",
-      "length-much-longer": "make the garment much longer",
+  function repairNoteWithGuidance() {
+    const modeLabels: Record<QcMode, string> = {
+      "restore-face": "restore the selected model's face and identity",
+      "proportion-natural": "restore realistic overall body proportions",
+      "head-smaller": "make the head and face slightly smaller",
+      "head-larger": "make the head and face slightly larger",
+      fit: "repair the garment fit",
       "more-oversized": "make the garment more oversized",
       "more-fitted": "make the garment more fitted",
+      "length-shorter": "make the garment slightly shorter",
+      "length-longer": "make the garment slightly longer",
+      "match-original": "match the original garment reference more closely",
+      "different-pose": "create a subtle neighboring pose variation",
     };
     return [
-      selectedFitModes.length
-        ? `Selected repair directions: ${selectedFitModes.map((mode) => labels[mode]).join(", ")}.`
+      selectedQcModes.length
+        ? `Guided repair selections: ${selectedQcModes.map((mode) => modeLabels[mode]).join(", ")}.`
         : "",
-      strongerRepair
-        ? "Make the selected fit and length corrections visibly stronger, not subtle."
-        : "",
+      "Preserve the selected result's model identity, pose family, camera angle, lighting, background, garment fabric, seams, trims, stitching, hardware, graphics, and material behavior unless the repair specifically requires a tiny localized adjustment.",
+      strongerRepair ? "Use a stronger visible correction while still keeping the edit natural and commercially usable." : "Use a subtle natural correction.",
       repairNote.trim(),
     ]
       .filter(Boolean)
       .join(" ");
   }
 
-  function applySelectedFitRepair() {
-    if (!onQualityControl || !activePrompt) return;
-    const primaryMode =
-      selectedFitModes.length === 1 ? selectedFitModes[0] : selectedFitModes.includes("all") ? "all" : "all";
+  function fitModeFromQc(): FitRepairMode {
+    if (selectedQcModes.includes("more-oversized")) return "more-oversized";
+    if (selectedQcModes.includes("more-fitted")) return "more-fitted";
+    if (selectedQcModes.includes("length-shorter")) return "length-shorter";
+    if (selectedQcModes.includes("length-longer")) return "length-longer";
+    if (selectedQcModes.includes("match-original")) return "all";
+    return "all";
+  }
+
+  function applyGuidedRepair() {
+    if (!onQualityControl || !activePrompt || selectedQcModes.length === 0) return;
+    const note = repairNoteWithGuidance();
+    const first = selectedQcModes[0];
+
+    if (first === "restore-face") {
+      onQualityControl({
+        action: "restore-face",
+        repairNote: note,
+        prompt: activePrompt,
+        sourceUrl: activeSource,
+      });
+      return;
+    }
+
+    if (["proportion-natural", "head-smaller", "head-larger"].includes(first)) {
+      const proportionMode =
+        first === "head-smaller"
+          ? "head-smaller"
+          : first === "head-larger"
+          ? "head-larger"
+          : "natural-proportion";
+      onQualityControl({
+        action: "restore-proportion",
+        proportionMode,
+        repairNote: note,
+        prompt: activePrompt,
+        sourceUrl: activeSource,
+      });
+      return;
+    }
+
+    if (first === "different-pose") {
+      onQualityControl({
+        action: "different-pose",
+        repairNote: note,
+        prompt: activePrompt,
+        sourceUrl: activeSource,
+      });
+      return;
+    }
+
     onQualityControl({
       action: "retry-closer",
-      fitMode: primaryMode,
-      repairNote: buildRepairNote(),
+      fitMode: fitModeFromQc(),
+      repairNote: note,
       prompt: activePrompt,
       sourceUrl: activeSource,
     });
@@ -204,7 +265,7 @@ export default function OutputPanel({
         action: "retry-closer",
         fitMode: "upload-reference",
         fitReferenceUrl: data.uploads[0].url,
-        repairNote: buildRepairNote(),
+        repairNote: repairNoteWithGuidance(),
         prompt: activePrompt,
         sourceUrl: activeSource,
       });
@@ -417,104 +478,27 @@ export default function OutputPanel({
       {current && (
         <div className="border-t border-neutral-200 px-5 py-3">
           {onQualityControl && activePrompt && (
-            <div className="mb-3 rounded-2xl border border-neutral-200 bg-neutral-50 p-2.5">
-              <div className="mb-2 flex items-center justify-between">
-                <span className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
-                  Quality Control
+            <div className="mb-3 overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-50">
+              <button
+                type="button"
+                onClick={() => setQcDrawerOpen((open) => !open)}
+                className="flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left"
+              >
+                <span>
+                  <span className="block text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
+                    Quality Control
+                  </span>
+                  <span className="mt-0.5 block text-[11px] text-neutral-500">
+                    Guided repair for the selected result
+                  </span>
                 </span>
-                <span className="rounded-full bg-white px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-neutral-400">
-                  Refine
+                <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-neutral-600">
+                  {qcDrawerOpen ? "Close" : "Refine"}
                 </span>
-              </div>
-              <div className="grid grid-cols-2 gap-1.5">
-                <button
-                  type="button"
-                  onClick={() =>
-                    onQualityControl({
-                      action: "restore-face",
-                      repairNote: repairNote.trim(),
-                      prompt: activePrompt,
-                      sourceUrl: activeSource,
-                    })
-                  }
-                  className="rounded-xl border border-neutral-200 bg-white px-2 py-2 text-[11px] font-semibold text-neutral-700 shadow-sm transition hover:-translate-y-0.5 hover:border-neutral-300 hover:shadow"
-                >
-                  Restore face
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setProportionToolsOpen((open) => !open)}
-                  className="rounded-xl border border-neutral-200 bg-white px-2 py-2 text-[11px] font-semibold text-neutral-700 shadow-sm transition hover:-translate-y-0.5 hover:border-neutral-300 hover:shadow"
-                >
-                  Proportion
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setFitToolsOpen((open) => !open)}
-                  className="rounded-xl border border-neutral-200 bg-white px-2 py-2 text-[11px] font-semibold text-neutral-700 shadow-sm transition hover:-translate-y-0.5 hover:border-neutral-300 hover:shadow"
-                >
-                  Restore fit
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    onQualityControl({
-                      action: "different-pose",
-                      repairNote: repairNote.trim(),
-                      prompt: activePrompt,
-                      sourceUrl: activeSource,
-                    })
-                  }
-                  className="rounded-xl border border-neutral-200 bg-white px-2 py-2 text-[11px] font-semibold text-neutral-700 shadow-sm transition hover:-translate-y-0.5 hover:border-neutral-300 hover:shadow"
-                >
-                  New pose
-                </button>
-              </div>
-              {proportionToolsOpen && (
-                <div className="mt-2 rounded-xl border border-neutral-200 bg-white p-2">
-                  <div className="mb-2 flex items-center justify-between gap-2">
-                    <span className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
-                      Proportion
-                    </span>
-                    <span className="text-[10px] text-neutral-400">subtle scale</span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-1.5">
-                    {[
-                      ["head-smaller", "Head smaller"],
-                      ["head-larger", "Head larger"],
-                      ["natural-proportion", "Natural"],
-                    ].map(([proportionMode, label]) => (
-                      <button
-                        key={proportionMode}
-                        type="button"
-                        onClick={() =>
-                          onQualityControl({
-                            action: "restore-proportion",
-                            proportionMode: proportionMode as
-                              | "head-smaller"
-                              | "head-larger"
-                              | "natural-proportion",
-                            repairNote: repairNote.trim(),
-                            prompt: activePrompt,
-                            sourceUrl: activeSource,
-                          })
-                        }
-                        className="rounded-lg border border-neutral-200 bg-neutral-50 px-2 py-2 text-[11px] font-semibold text-neutral-700 transition hover:border-neutral-300 hover:bg-neutral-100"
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {fitToolsOpen && (
-                <div className="mt-2 rounded-xl border border-neutral-200 bg-white p-2">
-                  <div className="mb-2 flex items-center justify-between gap-2">
-                    <span className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
-                      Fit Repair
-                    </span>
-                    <span className="text-[10px] text-neutral-400">pick a fix</span>
-                  </div>
+              </button>
+
+              {qcDrawerOpen && (
+                <div className="border-t border-neutral-200 bg-white p-3">
                   <input
                     ref={fitReferenceInputRef}
                     type="file"
@@ -525,46 +509,95 @@ export default function OutputPanel({
                       if (file) void uploadFitReference(file);
                     }}
                   />
-                  <div className="grid grid-cols-2 gap-1.5">
-                    <button
-                      type="button"
-                      disabled={fitReferenceUploading}
-                      onClick={() => fitReferenceInputRef.current?.click()}
-                      className="col-span-2 rounded-lg border border-neutral-200 bg-neutral-50 px-2 py-2 text-[11px] font-semibold text-neutral-700 transition hover:border-neutral-300 hover:bg-neutral-100 disabled:opacity-60"
-                    >
-                      {fitReferenceUploading ? "Uploading fit ref..." : "Upload ref fit"}
-                    </button>
-                    <textarea
-                      value={repairNote}
-                      onChange={(event) => setRepairNote(event.target.value)}
-                      rows={3}
-                      placeholder="Tell AI what went wrong: make jacket much longer, more oversized through sleeves, keep snake patch..."
-                      className="col-span-2 resize-none rounded-lg border border-neutral-200 bg-white px-2 py-2 text-[11px] leading-relaxed text-neutral-700 outline-none transition placeholder:text-neutral-400 focus:border-neutral-900"
-                    />
+
+                  <div className="mb-3 grid gap-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <div>
+                        <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
+                          What went wrong?
+                        </p>
+                        <p className="text-[11px] text-neutral-500">
+                          Pick one or more. The repair stays anchored to this image.
+                        </p>
+                      </div>
+                      {current.imageUrls.length > 1 && (
+                        <span className="rounded-full bg-neutral-100 px-2 py-1 text-[10px] font-semibold text-neutral-500">
+                          Image {safeIndex + 1}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {[
+                        ["restore-face", "Face / identity"],
+                        ["proportion-natural", "Body proportion"],
+                        ["fit", "Garment fit"],
+                        ["match-original", "Match original"],
+                        ["different-pose", "New pose"],
+                      ].map(([mode, label]) => {
+                        const selected = selectedQcModes.includes(mode as QcMode);
+                        return (
+                          <button
+                            key={mode}
+                            type="button"
+                            onClick={() => toggleQcMode(mode as QcMode)}
+                            className={`rounded-lg border px-2 py-2 text-[11px] font-semibold transition ${
+                              selected
+                                ? "border-neutral-900 bg-neutral-900 text-white"
+                                : "border-neutral-200 bg-neutral-50 text-neutral-700 hover:border-neutral-300 hover:bg-neutral-100"
+                            }`}
+                          >
+                            {label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="mb-3 grid grid-cols-2 gap-1.5">
                     {[
                       ["more-oversized", "More oversized"],
                       ["more-fitted", "More fitted"],
                       ["length-shorter", "Shorter"],
                       ["length-longer", "Longer"],
-                      ["all", "Match original"],
-                    ].map(([fitMode, label]) => {
-                      const mode = fitMode as FitRepairMode;
-                      const selected = selectedFitModes.includes(mode);
+                      ["head-smaller", "Head smaller"],
+                      ["head-larger", "Head larger"],
+                    ].map(([mode, label]) => {
+                      const selected = selectedQcModes.includes(mode as QcMode);
                       return (
-                      <button
-                        key={fitMode}
-                        type="button"
-                        onClick={() => toggleFitMode(mode)}
-                        className={`rounded-lg border px-2 py-2 text-[11px] font-semibold transition ${
-                          selected
-                            ? "border-neutral-900 bg-neutral-900 text-white"
-                            : "border-neutral-200 bg-neutral-50 text-neutral-700 hover:border-neutral-300 hover:bg-neutral-100"
-                        }`}
-                      >
-                        {label}
-                      </button>
-                    );
+                        <button
+                          key={mode}
+                          type="button"
+                          onClick={() => toggleQcMode(mode as QcMode)}
+                          className={`rounded-lg border px-2 py-2 text-[11px] font-semibold transition ${
+                            selected
+                              ? "border-brand-500 bg-brand-50 text-brand-700"
+                              : "border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300 hover:bg-neutral-50"
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      );
                     })}
+                  </div>
+
+                  <textarea
+                    value={repairNote}
+                    onChange={(event) => setRepairNote(event.target.value)}
+                    rows={3}
+                    placeholder="Tell AI what went wrong: make jacket much longer, more oversized through sleeves, keep snake patch..."
+                    className="mb-2 w-full resize-none rounded-lg border border-neutral-200 bg-white px-3 py-2 text-[11px] leading-relaxed text-neutral-700 outline-none transition placeholder:text-neutral-400 focus:border-neutral-900"
+                  />
+
+                  <div className="mb-3 grid grid-cols-2 gap-1.5">
+                    <button
+                      type="button"
+                      disabled={fitReferenceUploading}
+                      onClick={() => fitReferenceInputRef.current?.click()}
+                      className="rounded-lg border border-neutral-200 bg-neutral-50 px-2 py-2 text-[11px] font-semibold text-neutral-700 transition hover:border-neutral-300 hover:bg-neutral-100 disabled:opacity-60"
+                    >
+                      {fitReferenceUploading ? "Uploading..." : "Upload fit ref"}
+                    </button>
                     <button
                       type="button"
                       onClick={() => setStrongerRepair((value) => !value)}
@@ -574,17 +607,28 @@ export default function OutputPanel({
                           : "border-neutral-200 bg-neutral-50 text-neutral-700 hover:border-neutral-300 hover:bg-neutral-100"
                       }`}
                     >
-                      Stronger change
-                    </button>
-                    <button
-                      type="button"
-                      onClick={applySelectedFitRepair}
-                      disabled={!selectedFitModes.length && !repairNote.trim()}
-                      className="col-span-2 rounded-lg bg-neutral-900 px-2 py-2.5 text-[11px] font-semibold text-white transition hover:bg-neutral-800 disabled:bg-neutral-300 disabled:text-neutral-500"
-                    >
-                      Apply selected fixes
+                      {strongerRepair ? "Strong repair" : "Subtle repair"}
                     </button>
                   </div>
+
+                  <div className="mb-3 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2">
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
+                      Preserve
+                    </p>
+                    <p className="mt-1 text-[11px] leading-relaxed text-neutral-600">
+                      Same selected result, model identity, pose family, garment details, seams,
+                      trims, hardware, lighting, background, and camera angle.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={applyGuidedRepair}
+                    disabled={!selectedQcModes.length && !repairNote.trim()}
+                    className="w-full rounded-lg bg-neutral-900 px-3 py-2.5 text-[11px] font-semibold text-white transition hover:bg-neutral-800 disabled:bg-neutral-300 disabled:text-neutral-500"
+                  >
+                    Apply guided repair
+                  </button>
                 </div>
               )}
             </div>

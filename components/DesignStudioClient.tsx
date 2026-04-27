@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import ImageLightbox, { ZoomButton } from "@/components/ImageLightbox";
-import TopTabs from "@/components/TopTabs";
+import StudioHeader from "@/components/StudioHeader";
 import type { UploadedImage } from "@/components/types";
 import { resizeIfNeeded } from "@/lib/image-resize";
 import type { ProductDesignConcept, ProductDesignResult } from "@/lib/fal";
@@ -603,23 +603,15 @@ export default function DesignStudioClient() {
 
   return (
     <main className="flex min-h-screen flex-col bg-neutral-50 lg:h-screen">
-      <header className="flex flex-col gap-3 border-b border-neutral-200 bg-white px-4 py-3 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-neutral-900 text-xs font-bold text-white">
-            D
-          </div>
-          <span className="text-sm font-semibold">Davi &amp; Dani Photo Studio</span>
-          <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-neutral-600">
-            V1.5
-          </span>
-          <TopTabs active="design" />
-        </div>
-        <div className="flex items-center gap-3 text-xs text-neutral-500 lg:justify-end">
-          <span>Visuals: {result?.concepts.length ?? 0}</span>
-          <span>·</span>
-          <span>Active: {uploading || generating || techpackFor ? 1 : 0}</span>
-        </div>
-      </header>
+      <StudioHeader
+        active="design"
+        title="Design Studio"
+        subtitle="Trend-backed product ideas with visual concepts and techpack starts."
+        metrics={[
+          { label: "Visuals", value: result?.concepts.length ?? 0 },
+          { label: "Active", value: uploading || generating || techpackFor ? 1 : 0 },
+        ]}
+      />
 
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
         <aside className="flex w-full shrink-0 flex-col overflow-y-auto border-b border-neutral-200 bg-white lg:w-80 lg:border-b-0 lg:border-r">
