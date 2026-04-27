@@ -86,6 +86,15 @@ const stemOptions = [
   "Add a novelty detail without making it costume-like",
 ];
 
+const designerIdeaChips = [
+  "washed red denim with western details",
+  "more FW26 but still commercial",
+  "make it balloon shaped",
+  "soft romantic boutique version",
+  "less embellished, more everyday",
+  "same idea but better for Faire",
+];
+
 function downloadImage(url: string, filename: string) {
   const anchor = document.createElement("a");
   anchor.href = url;
@@ -158,6 +167,7 @@ export default function DesignStudioClient() {
   const [moodboardDensity, setMoodboardDensity] = useState<"large" | "dense">("large");
   const [stemSource, setStemSource] = useState<InspirationSource | null>(null);
   const [stemInstruction, setStemInstruction] = useState("");
+  const [designerIdea, setDesignerIdea] = useState("");
   const [newInspiration, setNewInspiration] = useState({
     title: "",
     url: "",
@@ -345,6 +355,20 @@ export default function DesignStudioClient() {
       }
       await generateConcepts(nextRefinement, image);
     }
+  }
+
+  async function recreateWithDesignerIdea() {
+    const idea = designerIdea.trim();
+    if (!idea) return;
+    const nextRefinement = [
+      `Designer idea: ${idea}.`,
+      result?.detectedCategory ? `Keep the category as ${result.detectedCategory}.` : "",
+      "Use the idea to create fresh, sellable boutique product concepts. Do not simply recolor the current outputs unless the idea specifically asks for color. Make the new set feel meaningfully improved and commercially useful.",
+    ]
+      .filter(Boolean)
+      .join(" ");
+    setRefinement(nextRefinement);
+    await generateConcepts(nextRefinement);
   }
 
   async function createTechpack(concept: ProductDesignConcept) {
@@ -1166,6 +1190,57 @@ export default function DesignStudioClient() {
               </div>
             ) : (
               <div className="grid gap-4">
+                <section className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
+                  <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
+                        Designer Idea
+                      </p>
+                      <h2 className="mt-1 font-serif text-2xl leading-none text-neutral-950">
+                        Tell AI what to recreate next.
+                      </h2>
+                      <p className="mt-1 max-w-xl text-xs leading-relaxed text-neutral-500">
+                        Write your own product thought, trend instinct, buyer note, or styling
+                        direction. The AI will turn it into a fresh set of visuals.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => void recreateWithDesignerIdea()}
+                      disabled={!selectedUrl || generating || !designerIdea.trim()}
+                      className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-neutral-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-neutral-800 disabled:opacity-50"
+                    >
+                      {generating ? <Spinner /> : IconSparkle}
+                      Recreate
+                    </button>
+                  </div>
+
+                  <textarea
+                    value={designerIdea}
+                    onChange={(event) => setDesignerIdea(event.target.value)}
+                    rows={3}
+                    placeholder="Example: make this barrel jean feel more FW26 with a washed berry color, subtle western seam lines, and a boutique-friendly novelty detail."
+                    className="mt-4 w-full resize-none rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm leading-relaxed outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+                  />
+
+                  <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+                    {designerIdeaChips.map((chip) => (
+                      <button
+                        key={chip}
+                        type="button"
+                        onClick={() =>
+                          setDesignerIdea((current) =>
+                            current.trim() ? `${current.trim()}, ${chip}` : chip
+                          )
+                        }
+                        className="shrink-0 rounded-full border border-neutral-200 bg-white px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-neutral-600 hover:bg-neutral-50"
+                      >
+                        {chip}
+                      </button>
+                    ))}
+                  </div>
+                </section>
+
                 <div className="flex flex-col gap-2 rounded-xl border border-neutral-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
