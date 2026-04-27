@@ -557,6 +557,168 @@ export async function generateRecoloringPrompts(
   return prompts;
 }
 
+export interface ProductDesignConcept {
+  productName: string;
+  customerMood: string;
+  productDescription: string;
+  keyFeatures: string[];
+  designDifferenceFromSource: string;
+  imageGenerationPrompt: string;
+}
+
+export interface ProductDesignResult {
+  detectedCategory: string;
+  customerWorld: string;
+  concepts: ProductDesignConcept[];
+  qualityChecklist: string[];
+}
+
+const PRODUCT_DESIGN_SYSTEM_PROMPT = `You are a fashion product design assistant for a bohemian boutique brand. A user will upload a product image. Your job is to identify the garment category, then create three new sellable product concepts in the same category. Do not copy the uploaded product's exact design, color palette, motif, pattern, styling, or construction. Do not create simple colorways. Each concept must have a different customer appeal, design story, fit, feature set, and visual identity. The products should feel commercially viable for a boutique fashion website and should make customers feel they need each piece for a different reason. Preserve the category: pants remain pants, jackets remain jackets, cardigans remain cardigans, tops remain tops, dresses remain dresses. Vary fit and construction within the category. Avoid repeated formulas, repeated left/middle/right roles, repeated color ordering, and overused motifs such as stars, sun, moon, daisies, and Aztec/southwestern patterns unless explicitly requested. Focus on garment design features, not graphic callouts. Generate clear, distinct, marketable product ideas.
+
+Default style world: easy, expressive, bohemian, boutique, layerable, comfortable, curated, soft but distinctive, relaxed but not boring. Avoid costume-like and overly basic ideas.
+
+Avoid weak repeated defaults: stars, sun motifs, moon motifs, celestial names, daisies, generic florals, Aztec/southwestern motifs, cream striped tops, big square front patches, obvious rectangle patchwork, identical oversized slouchy silhouettes, beige/cream/brown/blue-only palettes, and simple/patchwork/statement role formulas.
+
+Use broader themes when appropriate: coastal workwear, vintage varsity, painterly abstract, cottage utility, soft romantic layering, market-day artisan, road-trip utility, washed nautical, retro 70s color blocking, mineral-wash lounge, heirloom lace, modern prairie, worn-in workwear, scarf-print inspired, folk minimalism, textural monochrome, patchwork without obvious rectangles, hand-drawn animal motifs, quilted comfort, utility romance, boutique athleisure, soft grunge boho, country club boho, painter studio casual.`;
+
+function extractJsonObject(raw: string): string {
+  const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/i)?.[1];
+  if (fenced) return fenced.trim();
+  const start = raw.indexOf("{");
+  const end = raw.lastIndexOf("}");
+  if (start >= 0 && end > start) return raw.slice(start, end + 1);
+  return raw.trim();
+}
+
+function normalizeConcept(value: any): ProductDesignConcept | null {
+  if (!value || typeof value !== "object") return null;
+  const keyFeatures = Array.isArray(value.keyFeatures)
+    ? value.keyFeatures.map((item: unknown) => String(item || "").trim()).filter(Boolean)
+    : [];
+  const concept: ProductDesignConcept = {
+    productName: String(value.productName || "").trim(),
+    customerMood: String(value.customerMood || "").trim(),
+    productDescription: String(value.productDescription || "").trim(),
+    keyFeatures: keyFeatures.slice(0, 6),
+    designDifferenceFromSource: String(value.designDifferenceFromSource || "").trim(),
+    imageGenerationPrompt: String(value.imageGenerationPrompt || "").trim(),
+  };
+  if (
+    !concept.productName ||
+    !concept.customerMood ||
+    !concept.productDescription ||
+    concept.keyFeatures.length < 4 ||
+    !concept.designDifferenceFromSource ||
+    !concept.imageGenerationPrompt
+  ) {
+    return null;
+  }
+  return concept;
+}
+
+function parseProductDesignResult(raw: string): ProductDesignResult | null {
+  try {
+    const parsed = JSON.parse(extractJsonObject(raw));
+    const concepts = Array.isArray(parsed.concepts)
+      ? parsed.concepts.map(normalizeConcept).filter(Boolean).slice(0, 3)
+      : [];
+    if (concepts.length !== 3) return null;
+    return {
+      detectedCategory: String(parsed.detectedCategory || "").trim() || "Detected garment",
+      customerWorld:
+        String(parsed.customerWorld || "").trim() || "Bohemian boutique customer",
+      concepts: concepts as ProductDesignConcept[],
+      qualityChecklist: Array.isArray(parsed.qualityChecklist)
+        ? parsed.qualityChecklist
+            .map((item: unknown) => String(item || "").trim())
+            .filter(Boolean)
+            .slice(0, 10)
+        : [],
+    };
+  } catch {
+    return null;
+  }
+}
+
+function productDesignUserPrompt(refinement?: string): string {
+  return `Analyze the uploaded product image only to identify product category, general garment type, customer/style world, and commercial context.
+
+Generate exactly 3 new product design concepts in the same product category.
+
+Do not recreate the uploaded product. Do not include a version that looks like the original. Use the image only to identify the product category and general customer world. Create three new, sellable products in the same category with different silhouettes, construction, fabrics, trims, details, and stories.
+
+Category preservation examples:
+- If the image is pants, generate pants only.
+- If the image is a cardigan, generate cardigans only.
+- If the image is a jacket, generate jackets only.
+- If the image is a hoodie dress, generate hoodie dresses or tunic dresses only.
+- Do not turn pants into skirts, jackets into coats, cardigans into tops, or dresses into separates.
+
+Each concept must answer why a customer would need it. Each concept must have a different customer appeal, styling story, construction or feature set, and product identity.
+
+Vary fit, silhouette, construction, fabric combination, trims, pockets, closures, sleeve shape, neckline, hemline, print placement, embroidery, texture, color story, customer appeal, and product story where relevant to the detected category.
+
+Before returning the final result, internally check:
+- all 3 products preserve the source category
+- no product is too close to the source
+- the 3 concepts are meaningfully different from each other
+- features are built into the garment
+- color stories and silhouettes are varied
+- motifs are fresh and not repeated
+- each product has a different reason to buy
+- the result does not look like 3 colorways
+- the set feels sellable for a boutique fashion website
+
+${refinement ? `User refinement request: ${refinement}` : "No extra user refinement request."}
+
+Return strict JSON only:
+{
+  "detectedCategory": "short category phrase",
+  "customerWorld": "short style/customer context",
+  "concepts": [
+    {
+      "productName": "short boutique-style name",
+      "customerMood": "short phrase",
+      "productDescription": "concise selling description",
+      "keyFeatures": ["4-6 specific garment features"],
+      "designDifferenceFromSource": "short explanation of how it avoids copying",
+      "imageGenerationPrompt": "ready-to-use visual prompt specifying 3 side-by-side product variations, same product category, clear garment view, commercial boutique product-photo style, simple beige or neutral background, Three Bird Nest bohemian boutique direction, and no copying of source design/color/motif/layout"
+    }
+  ],
+  "qualityChecklist": ["brief passed-check notes"]
+}`;
+}
+
+export async function generateProductDesignConcepts(
+  imageUrl: string,
+  refinement?: string
+): Promise<ProductDesignResult> {
+  const result: any = await subscribeVisionWithRetry(
+    {
+      model: "anthropic/claude-3.7-sonnet",
+      system_prompt: PRODUCT_DESIGN_SYSTEM_PROMPT,
+      prompt: productDesignUserPrompt(refinement),
+      image_url: imageUrl,
+    },
+    "product design concept generation"
+  );
+
+  const data = result?.data ?? result;
+  const output: string = (data?.output ?? data?.response ?? data?.text ?? "").trim();
+  if (!output) {
+    console.error("[design-studio] full response:", JSON.stringify(data).slice(0, 1000));
+    throw new Error("Product design generator returned no text output.");
+  }
+
+  const parsed = parseProductDesignResult(output);
+  if (!parsed) {
+    console.error("[design-studio] raw output:", output.slice(0, 2000));
+    throw new Error("Product design generator did not return 3 complete concepts.");
+  }
+
+  return parsed;
+}
+
 /* ===========================================================================
  * TWO-PIECE SETS
  * ---------------------------------------------------------------------------
