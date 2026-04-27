@@ -157,7 +157,7 @@ export default function PromptStudioClient() {
           </div>
           <span className="text-sm font-semibold">Davi &amp; Dani Photo Studio</span>
           <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-neutral-600">
-            V1.3
+            V1.5
           </span>
           <TopTabs active="prompt" />
         </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import TopTabs from "./TopTabs";
 import type { LibraryStyle, LibraryView } from "@/lib/style-library";
 
@@ -26,6 +26,11 @@ interface PreviewImage {
   filename: string;
 }
 
+interface LaunchChecklistItem {
+  label: string;
+  done: boolean;
+}
+
 async function fetchLibrary(q = "", styleNumber = ""): Promise<LibraryStyle[]> {
   const params = new URLSearchParams();
   if (q.trim()) params.set("q", q.trim());
@@ -37,6 +42,8 @@ async function fetchLibrary(q = "", styleNumber = ""): Promise<LibraryStyle[]> {
 }
 
 const MODEL_STUDIO_IMPORT_KEY = "davidani:model-studio:library-import";
+const DESIGN_STUDIO_INSPIRATION_KEY = "davidani:design-studio:inspiration-stem";
+const CORE_ECOMMERCE_VIEWS = ["Front", "Side", "Back", "Detail"] as const;
 
 function formatViewLabel(label: string): string {
   const clean = (label || "View").replace(/[-_]+/g, " ").trim();
@@ -73,6 +80,18 @@ function downloadImage(url: string, filename: string) {
   document.body.appendChild(anchor);
   anchor.click();
   anchor.remove();
+}
+
+function downloadText(filename: string, text: string, type = "text/plain;charset=utf-8") {
+  const blob = new Blob([text], { type });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
 }
 
 function filenameFor(style: LibraryStyle, view: LibraryView) {
@@ -140,7 +159,173 @@ function fairePack(style: LibraryStyle): string {
   return `Title:\n${style.seoName}\n\nDescription:\n${style.seoDescription}${bullets}${tags}`;
 }
 
+function styleDescriptor(style: LibraryStyle): string {
+  return [
+    style.color,
+    style.silhouette,
+    style.fabric,
+    style.garmentType,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function shopifyCopy(style: LibraryStyle): string {
+  const descriptor = styleDescriptor(style) || style.seoName;
+  const bullets = style.faireBullets?.length
+    ? `\n\nDetails:\n${style.faireBullets.map((bullet) => `- ${bullet}`).join("\n")}`
+    : "";
+  return `${style.seoName}\n\n${style.seoDescription}\n\nStyle ${style.styleNumber} in ${style.color}. Designed as a ${descriptor} with boutique-friendly styling appeal.${bullets}`;
+}
+
+function buyerPitch(style: LibraryStyle): string {
+  const tags = [...(style.vibeTags || []), ...(style.libraryTags || [])]
+    .slice(0, 5)
+    .join(", ");
+  return [
+    `${style.seoName}`,
+    "",
+    `Buyer note: ${style.styleNumber} in ${style.color} is a strong add for boutiques looking for ${tags || "easy, wearable novelty"}.`,
+    `Why it works: ${style.seoDescription}`,
+    style.faireBullets?.length ? `Key selling points: ${style.faireBullets.join("; ")}.` : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+function socialHooks(style: LibraryStyle): string {
+  const noun = style.garmentType || "new arrival";
+  return [
+    `New arrival: ${style.color} ${noun} with the details boutiques always reach for.`,
+    `Style ${style.styleNumber}: easy to wear, special enough to stop the scroll.`,
+    `For the customer who wants everyday comfort with a little boutique personality.`,
+  ].join("\n");
+}
+
+function launchPack(style: LibraryStyle): string {
+  const viewList = style.views
+    .map((view) => `- ${formatViewLabel(view.label)}: ${view.imageUrl}`)
+    .join("\n");
+  return [
+    `STYLE LAUNCH PACK`,
+    ``,
+    `Style: ${style.styleNumber}`,
+    `Color: ${style.color}`,
+    `Type: ${style.garmentType || ""}`,
+    `Silhouette: ${style.silhouette || ""}`,
+    `Fabric/Texture: ${style.fabric || ""}`,
+    `Season: ${style.season || ""}`,
+    ``,
+    `FAIRE COPY`,
+    fairePack(style),
+    ``,
+    `SHOPIFY / WEB COPY`,
+    shopifyCopy(style),
+    ``,
+    `BUYER PITCH`,
+    buyerPitch(style),
+    ``,
+    `SOCIAL HOOKS`,
+    socialHooks(style),
+    ``,
+    `IMAGE VIEWS`,
+    viewList,
+  ].join("\n");
+}
+
+function csvEscape(value: string): string {
+  return `"${value.replace(/"/g, '""')}"`;
+}
+
+function styleCsv(style: LibraryStyle): string {
+  const headers = [
+    "style_number",
+    "color",
+    "title",
+    "description",
+    "bullets",
+    "tags",
+    "garment_type",
+    "silhouette",
+    "fabric",
+    "season",
+    "image_urls",
+  ];
+  const row = [
+    style.styleNumber,
+    style.color,
+    style.seoName,
+    style.seoDescription,
+    (style.faireBullets || []).join(" | "),
+    (style.seoTags || []).join(", "),
+    style.garmentType || "",
+    style.silhouette || "",
+    style.fabric || "",
+    style.season || "",
+    style.views.map((view) => `${formatViewLabel(view.label)}: ${view.imageUrl}`).join(" | "),
+  ];
+  return `${headers.join(",")}\n${row.map(csvEscape).join(",")}\n`;
+}
+
+function primaryStyleImage(style: LibraryStyle): LibraryView | null {
+  return (
+    style.views.find((view) => /front/i.test(view.label)) ||
+    style.views.find((view) => /full/i.test(view.label)) ||
+    style.views[0] ||
+    null
+  );
+}
+
+function bestsellerRemixRefinement(style: LibraryStyle): string {
+  const tags = [...(style.vibeTags || []), ...(style.libraryTags || [])]
+    .slice(0, 8)
+    .join(", ");
+  return [
+    "Bestseller Remix Engine: treat this uploaded Library style as a proven seller or strong commercial reference.",
+    `Style number: ${style.styleNumber}. Color: ${style.color}.`,
+    style.garmentType ? `Category: ${style.garmentType}.` : "",
+    style.silhouette ? `Current silhouette: ${style.silhouette}.` : "",
+    style.fabric ? `Fabric/texture signal: ${style.fabric}.` : "",
+    tags ? `Known commercial tags: ${tags}.` : "",
+    style.seoDescription ? `Current buyer-facing description: ${style.seoDescription}` : "",
+    "Generate 6 concepts: 2 safe commercial extensions, 2 trend-forward extensions, 1 lower-risk reorder extension, and 1 novelty statement extension.",
+    "Preserve the exact product category, but do not copy the exact design, artwork, placement, color story, or trim layout.",
+    "Each concept should feel like a new SKU a boutique buyer could add for a different reason.",
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
+function launchChecklist(style: LibraryStyle): LaunchChecklistItem[] {
+  return [
+    { label: "Style number", done: Boolean(style.styleNumber.trim()) },
+    { label: "Color", done: Boolean(style.color.trim()) },
+    { label: "Front view", done: style.views.some((view) => /front/i.test(view.label)) },
+    { label: "Back or side view", done: style.views.some((view) => /back|side/i.test(view.label)) },
+    { label: "Faire title", done: Boolean(style.seoName.trim()) },
+    { label: "Faire description", done: Boolean(style.seoDescription.trim()) },
+    { label: "Selling bullets", done: Boolean(style.faireBullets?.length) },
+    { label: "Search tags", done: Boolean(style.seoTags?.length) },
+  ];
+}
+
+function hasNamedView(style: LibraryStyle, label: string): boolean {
+  return style.views.some((view) =>
+    view.label.toLowerCase().includes(label.toLowerCase())
+  );
+}
+
+function safeExportName(style: LibraryStyle, suffix: string) {
+  return `${style.styleNumber}-${style.color}-${suffix}`
+    .replace(/[^a-z0-9]+/gi, "-")
+    .replace(/^-+|-+$/g, "")
+    .toLowerCase();
+}
+
 export default function LibraryClient() {
+  const manualViewInputRef = useRef<HTMLInputElement | null>(null);
   const [styles, setStyles] = useState<LibraryStyle[]>([]);
   const [q, setQ] = useState("");
   const [styleNumber, setStyleNumber] = useState("");
@@ -151,9 +336,17 @@ export default function LibraryClient() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<Record<string, LibraryDraft>>({});
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [ecommerceGeneratingId, setEcommerceGeneratingId] = useState<string | null>(null);
+  const [ecommerceStatus, setEcommerceStatus] = useState<string | null>(null);
+  const [manualViewTarget, setManualViewTarget] = useState<{
+    styleId: string;
+    label: string;
+  } | null>(null);
+  const [manualViewUploading, setManualViewUploading] = useState<string | null>(null);
   const [preview, setPreview] = useState<PreviewImage | null>(null);
   const [activeTag, setActiveTag] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState<string | null>(null);
 
   const tagOptions = useMemo(() => uniqueTags(styles), [styles]);
   const filteredStyles = useMemo(() => {
@@ -288,6 +481,80 @@ export default function LibraryClient() {
     }
   }
 
+  async function createEcommerceSet(styleId: string) {
+    setEcommerceGeneratingId(styleId);
+    setEcommerceStatus("Creating missing ecommerce views...");
+    setError(null);
+    try {
+      const res = await fetch("/api/library/ecommerce-set", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ styleId }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data?.ok) throw new Error(data?.error || "Ecommerce set failed");
+      setStyles((items) =>
+        items.map((item) => (item.id === styleId ? data.style : item))
+      );
+      const generatedCount = data.generated?.length || 0;
+      const failureCount = data.failures?.length || 0;
+      setEcommerceStatus(
+        failureCount
+          ? `Created ${generatedCount} view${generatedCount === 1 ? "" : "s"}; ${failureCount} view${failureCount === 1 ? "" : "s"} need retry.`
+          : `Created ${generatedCount} ecommerce view${generatedCount === 1 ? "" : "s"}.`
+      );
+    } catch (err: any) {
+      setError(err?.message || "Ecommerce set failed");
+      setEcommerceStatus(null);
+    } finally {
+      setEcommerceGeneratingId(null);
+    }
+  }
+
+  async function uploadManualView(file: File, target: { styleId: string; label: string }) {
+    setManualViewUploading(`${target.styleId}-${target.label}`);
+    setEcommerceStatus(`Uploading ${target.label.toLowerCase()} view...`);
+    setError(null);
+    try {
+      const form = new FormData();
+      form.append("files", file);
+      const uploadRes = await fetch("/api/upload", { method: "POST", body: form });
+      const uploadData = await uploadRes.json();
+      if (!uploadRes.ok || !uploadData?.ok || !uploadData.uploads?.[0]?.url) {
+        throw new Error(uploadData?.error || "View upload failed");
+      }
+
+      const res = await fetch("/api/library", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          styleNumber: styles.find((style) => style.id === target.styleId)?.styleNumber,
+          color: styles.find((style) => style.id === target.styleId)?.color,
+          viewLabel: target.label,
+          imageUrl: uploadData.uploads[0].url,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data?.ok) throw new Error(data?.error || "Could not save view");
+      setStyles((items) =>
+        items.map((item) => (item.id === target.styleId ? data.style : item))
+      );
+      setEcommerceStatus(`Saved ${target.label.toLowerCase()} view to this style.`);
+    } catch (err: any) {
+      setError(err?.message || "View upload failed");
+      setEcommerceStatus(null);
+    } finally {
+      setManualViewUploading(null);
+      setManualViewTarget(null);
+      if (manualViewInputRef.current) manualViewInputRef.current.value = "";
+    }
+  }
+
+  function chooseManualViewUpload(styleId: string, label: string) {
+    setManualViewTarget({ styleId, label });
+    window.setTimeout(() => manualViewInputRef.current?.click(), 0);
+  }
+
   function sendToModelStudio(style: LibraryStyle, view: LibraryView) {
     try {
       localStorage.setItem(
@@ -306,8 +573,53 @@ export default function LibraryClient() {
     }
   }
 
+  function sendToBestsellerRemix(style: LibraryStyle) {
+    const source = primaryStyleImage(style);
+    if (!source?.imageUrl) {
+      setError("This style needs at least one image before it can be remixed.");
+      return;
+    }
+    try {
+      localStorage.setItem(
+        DESIGN_STUDIO_INSPIRATION_KEY,
+        JSON.stringify({
+          title: `${style.styleNumber} ${style.color} Bestseller Remix`,
+          imageUrl: source.imageUrl,
+          refinement: bestsellerRemixRefinement(style),
+        })
+      );
+      window.location.href = "/design-studio";
+    } catch {
+      setError("Could not send this style to Design Studio.");
+    }
+  }
+
+  async function copyToClipboard(label: string, text: string) {
+    await navigator.clipboard.writeText(text);
+    setCopied(label);
+    window.setTimeout(() => setCopied(null), 1400);
+  }
+
+  async function downloadAllViews(style: LibraryStyle) {
+    for (const [index, view] of style.views.entries()) {
+      downloadImage(view.imageUrl, filenameFor(style, view));
+      await new Promise((resolve) => window.setTimeout(resolve, 250 + index * 120));
+    }
+  }
+
   return (
     <main className="min-h-screen bg-neutral-50">
+      <input
+        ref={manualViewInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          if (file && manualViewTarget) void uploadManualView(file, manualViewTarget);
+          event.currentTarget.value = "";
+        }}
+      />
       <header className="flex flex-col gap-3 border-b border-neutral-200 bg-white px-4 py-3 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex h-7 w-7 items-center justify-center rounded-full bg-neutral-900 text-xs font-bold text-white">
@@ -412,6 +724,11 @@ export default function LibraryClient() {
             {bulkProgress}
           </div>
         )}
+        {ecommerceStatus && (
+          <div className="mb-4 rounded-lg bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
+            {ecommerceStatus}
+          </div>
+        )}
         {loading ? (
           <p className="text-sm text-neutral-500">Loading library...</p>
         ) : styles.length === 0 ? (
@@ -429,6 +746,10 @@ export default function LibraryClient() {
               const isEditing = editingId === style.id;
               const draft = drafts[style.id] || makeDraft(style);
               const related = similarStyles(style, styles);
+              const checklist = launchChecklist(style);
+              const launchScore = Math.round(
+                (checklist.filter((item) => item.done).length / checklist.length) * 100
+              );
 
               return (
                 <article
@@ -509,25 +830,28 @@ export default function LibraryClient() {
                         disabled={regeneratingId === style.id}
                         className="rounded-lg border border-neutral-200 px-3 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50 disabled:opacity-60"
                       >
-                        {regeneratingId === style.id ? "Analyzing..." : "Redo SEO"}
+                        {regeneratingId === style.id ? "Analyzing..." : "Rewrite Faire Copy"}
                       </button>
                       <button
                         type="button"
-                        onClick={() =>
-                          navigator.clipboard.writeText(
-                            `${style.seoName}\n\n${style.seoDescription}`
-                          )
-                        }
+                        onClick={() => void copyToClipboard(`seo-${style.id}`, `${style.seoName}\n\n${style.seoDescription}`)}
                         className="rounded-lg border border-neutral-200 px-3 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
                       >
-                        Copy SEO
+                        {copied === `seo-${style.id}` ? "Copied" : "Copy Faire"}
                       </button>
                       <button
                         type="button"
-                        onClick={() => navigator.clipboard.writeText(fairePack(style))}
+                        onClick={() => void copyToClipboard(`launch-${style.id}`, launchPack(style))}
                         className="rounded-lg border border-neutral-200 px-3 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
                       >
-                        Copy Faire Pack
+                        {copied === `launch-${style.id}` ? "Copied" : "Copy Launch Pack"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => downloadText(`${safeExportName(style, "launch-pack")}.txt`, launchPack(style))}
+                        className="rounded-lg bg-neutral-900 px-3 py-2 text-xs font-semibold text-white hover:bg-neutral-800"
+                      >
+                        Export Pack
                       </button>
                     </div>
                   </div>
@@ -600,6 +924,135 @@ export default function LibraryClient() {
                       })}
                     </div>
                     <div className="rounded-lg bg-neutral-50 p-4">
+                      <div className="mb-4 rounded-xl border border-neutral-200 bg-white p-3 shadow-sm">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
+                              Style Launch Pack
+                            </p>
+                            <p className="mt-1 text-sm font-semibold text-neutral-950">
+                              {launchScore}% ready for sales
+                            </p>
+                            <p className="mt-1 text-xs leading-relaxed text-neutral-500">
+                              Copy, listing data, image views, and buyer notes for web, Faire, and
+                              sales.
+                            </p>
+                          </div>
+                          <span
+                            className={`rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-wider ${
+                              launchScore >= 85
+                                ? "bg-emerald-50 text-emerald-700"
+                                : launchScore >= 60
+                                ? "bg-amber-50 text-amber-700"
+                                : "bg-neutral-100 text-neutral-500"
+                            }`}
+                          >
+                            {launchScore >= 85 ? "Ready" : "Needs work"}
+                          </span>
+                        </div>
+                        <div className="mt-3 grid grid-cols-2 gap-1.5">
+                          {checklist.map((item) => (
+                            <div
+                              key={item.label}
+                              className={`rounded-lg px-2 py-1.5 text-[10px] font-semibold ${
+                                item.done
+                                  ? "bg-emerald-50 text-emerald-700"
+                                  : "bg-neutral-50 text-neutral-400"
+                              }`}
+                            >
+                              {item.done ? "Done: " : "Missing: "}
+                              {item.label}
+                            </div>
+                          ))}
+                        </div>
+                        <div className="mt-3 rounded-xl border border-neutral-200 bg-neutral-50 p-2">
+                          <div className="mb-2 flex items-center justify-between gap-2">
+                            <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
+                              Missing View Control
+                            </p>
+                            <p className="text-[10px] text-neutral-400">
+                              upload real views first
+                            </p>
+                          </div>
+                          <div className="grid grid-cols-2 gap-1.5">
+                            {CORE_ECOMMERCE_VIEWS.map((label) => {
+                              const done = hasNamedView(style, label);
+                              const uploading =
+                                manualViewUploading === `${style.id}-${label}`;
+                              return (
+                                <button
+                                  key={label}
+                                  type="button"
+                                  onClick={() => chooseManualViewUpload(style.id, label)}
+                                  disabled={Boolean(manualViewUploading)}
+                                  className={`rounded-lg border px-2 py-2 text-[10px] font-semibold transition disabled:opacity-50 ${
+                                    done
+                                      ? "border-emerald-100 bg-emerald-50 text-emerald-700"
+                                      : "border-neutral-200 bg-white text-neutral-700 hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700"
+                                  }`}
+                                >
+                                  {uploading
+                                    ? "Uploading..."
+                                    : done
+                                    ? `${label} saved`
+                                    : `Upload ${label}`}
+                                </button>
+                              );
+                            })}
+                          </div>
+                          <p className="mt-2 text-[10px] leading-relaxed text-neutral-500">
+                            If a back, side, or detail has special artwork, upload it here before
+                            using AI to fill the remaining views.
+                          </p>
+                        </div>
+                        <div className="mt-3 grid grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => void createEcommerceSet(style.id)}
+                            disabled={ecommerceGeneratingId !== null}
+                            className="col-span-2 rounded-lg bg-brand-500 px-3 py-2 text-xs font-semibold text-white hover:bg-brand-600 disabled:opacity-50"
+                          >
+                            {ecommerceGeneratingId === style.id
+                              ? "Creating ecommerce set..."
+                              : "Create Full Ecommerce Set"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => sendToBestsellerRemix(style)}
+                            className="col-span-2 rounded-lg bg-neutral-950 px-3 py-2 text-xs font-semibold text-white hover:bg-neutral-800"
+                          >
+                            Bestseller Remix
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void copyToClipboard(`launch-panel-${style.id}`, launchPack(style))}
+                            className="rounded-lg bg-neutral-900 px-3 py-2 text-xs font-semibold text-white hover:bg-neutral-800"
+                          >
+                            {copied === `launch-panel-${style.id}` ? "Copied" : "Copy Pack"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => downloadText(`${safeExportName(style, "faire-csv")}.csv`, styleCsv(style), "text/csv;charset=utf-8")}
+                            className="rounded-lg border border-neutral-200 px-3 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
+                          >
+                            Export CSV
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void copyToClipboard(`buyer-${style.id}`, buyerPitch(style))}
+                            className="rounded-lg border border-neutral-200 px-3 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
+                          >
+                            {copied === `buyer-${style.id}` ? "Copied" : "Buyer Pitch"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void downloadAllViews(style)}
+                            className="rounded-lg border border-neutral-200 px-3 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
+                          >
+                            Download Views
+                          </button>
+                        </div>
+                      </div>
                       <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
                         Faire SEO Title
                       </p>

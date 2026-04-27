@@ -55,7 +55,11 @@ type FitRepairMode =
   | "silhouette"
   | "upload-reference"
   | "length-shorter"
-  | "length-longer";
+  | "length-longer"
+  | "length-much-shorter"
+  | "length-much-longer"
+  | "more-oversized"
+  | "more-fitted";
 type ProportionRepairMode = "head-smaller" | "head-larger" | "natural-proportion";
 type QualityControlAction =
   | "restore-face"
@@ -66,65 +70,107 @@ type QualityControlAction =
 function buildQualityControlSuffix(
   action: QualityControlAction,
   fitMode?: FitRepairMode,
-  proportionMode?: ProportionRepairMode
+  proportionMode?: ProportionRepairMode,
+  repairNote?: string
 ): string {
+  const userCorrection = repairNote?.trim()
+    ? ` User correction note from the designer: "${repairNote.trim()}". Treat this note as the highest-priority repair instruction while still preserving the garment identity, model identity, pose family, lighting, background, and camera angle unless the note explicitly asks otherwise.`
+    : "";
   if (action === "restore-face") {
     return (
       " Quality control directive: restore and preserve the model's original face, facial features, skin tone, expression, hair, head angle, body proportions, and identity from the selected model pose image exactly. " +
-      "Do not beautify, age-shift, reshape, repaint, or replace the face. Keep the background, lighting, camera angle, and garment edit otherwise unchanged."
+      "Do not beautify, age-shift, reshape, repaint, or replace the face. Keep the background, lighting, camera angle, and garment edit otherwise unchanged." +
+      userCorrection
     );
   }
   if (action === "restore-proportion") {
     if (proportionMode === "head-smaller") {
       return (
         " Quality control directive: the previous result made the model's head or face look too large for the body. Regenerate with the head and face scaled slightly smaller to restore natural fashion-model proportions. " +
-        "Make only a subtle proportional correction; preserve the exact face identity, facial features, hair, expression, pose, body shape, garment fit, garment details, lighting, background, and camera angle."
+        "Make only a subtle proportional correction; preserve the exact face identity, facial features, hair, expression, pose, body shape, garment fit, garment details, lighting, background, and camera angle." +
+        userCorrection
       );
     }
     if (proportionMode === "head-larger") {
       return (
         " Quality control directive: the previous result made the model's head or face look too small for the body. Regenerate with the head and face scaled slightly larger to restore natural fashion-model proportions. " +
-        "Make only a subtle proportional correction; preserve the exact face identity, facial features, hair, expression, pose, body shape, garment fit, garment details, lighting, background, and camera angle."
+        "Make only a subtle proportional correction; preserve the exact face identity, facial features, hair, expression, pose, body shape, garment fit, garment details, lighting, background, and camera angle." +
+        userCorrection
       );
     }
     return (
       " Quality control directive: restore accurate, realistic model proportions. Match the selected model pose image's natural head-to-body scale, face size, neck length, shoulder width, torso length, limb proportions, and overall fashion photography anatomy. " +
-      "Do not alter identity, pose, garment, lighting, background, or camera angle except for subtle proportional correction."
+      "Do not alter identity, pose, garment, lighting, background, or camera angle except for subtle proportional correction." +
+      userCorrection
     );
   }
   if (action === "retry-closer") {
     if (fitMode === "silhouette") {
       return (
         " Quality control directive: repair the garment silhouette and fit using the uploaded garment reference as the source of truth. Match the original width, volume, body distance, shoulder/waist/hip proportions, leg or sleeve shape, drape, and overall outline. " +
-        "Do not make the garment tighter, looser, straighter, puffier, cropped, or longer unless that exact shape is visible in the reference."
+        "Do not make the garment tighter, looser, straighter, puffier, cropped, or longer unless that exact shape is visible in the reference." +
+        userCorrection
       );
     }
     if (fitMode === "upload-reference") {
       return (
         " Quality control directive: use the additional uploaded fit reference image only as a fit and proportion guide. Copy its garment fit, body distance, length, volume, drape, and silhouette behavior onto the original garment from the product reference. " +
-        "Do not copy the fit reference's color, print, fabric, trims, styling, model, face, pose, background, or unrelated garment details. Preserve the original garment identity while borrowing only the fit."
+        "Do not copy the fit reference's color, print, fabric, trims, styling, model, face, pose, background, or unrelated garment details. Preserve the original garment identity while borrowing only the fit." +
+        userCorrection
       );
     }
     if (fitMode === "length-shorter") {
       return (
         " Quality control directive: the previous result made the garment too long. Regenerate the garment slightly shorter while still matching the uploaded garment reference as closely as possible. " +
-        "Make only a subtle length correction; move hems, cuffs, crop points, inseams, rises, and sleeve endings shorter only where needed. Preserve silhouette, seams, stitching, fabric behavior, trims, hardware, model identity, pose, lighting, and background."
+        "Make only a subtle length correction; move hems, cuffs, crop points, inseams, rises, and sleeve endings shorter only where needed. Preserve silhouette, seams, stitching, fabric behavior, trims, hardware, model identity, pose, lighting, and background." +
+        userCorrection
       );
     }
     if (fitMode === "length-longer") {
       return (
         " Quality control directive: the previous result made the garment too short or too cropped. Regenerate the garment slightly longer while still matching the uploaded garment reference as closely as possible. " +
-        "Make only a subtle length correction; extend hems, cuffs, crop points, inseams, rises, and sleeve endings longer only where needed. Preserve silhouette, seams, stitching, fabric behavior, trims, hardware, model identity, pose, lighting, and background."
+        "Make only a subtle length correction; extend hems, cuffs, crop points, inseams, rises, and sleeve endings longer only where needed. Preserve silhouette, seams, stitching, fabric behavior, trims, hardware, model identity, pose, lighting, and background." +
+        userCorrection
+      );
+    }
+    if (fitMode === "length-much-shorter") {
+      return (
+        " Quality control directive: the previous result is far too long. Regenerate the garment noticeably shorter, not just a tiny crop adjustment, while preserving the garment category and construction. " +
+        "Move the hem/cuffs/crop point meaningfully upward so the change is visually obvious, but keep seams, stitching, trims, hardware, fabric behavior, model identity, pose, lighting, and background intact." +
+        userCorrection
+      );
+    }
+    if (fitMode === "length-much-longer") {
+      return (
+        " Quality control directive: the previous result is still too short. Regenerate the garment noticeably longer, not just slightly longer. " +
+        "Extend the hem/cuffs/crop point downward enough that the change is visually obvious. For jackets and tops, lengthen the body coverage clearly below the previous hem while preserving the original silhouette logic, pockets, drawstrings, trims, sleeve shape, model identity, pose, lighting, and background." +
+        userCorrection
+      );
+    }
+    if (fitMode === "more-oversized") {
+      return (
+        " Quality control directive: the previous result is not oversized enough. Regenerate with a clearly more oversized fit: more body ease, wider torso, roomier sleeves, lower/relaxed shoulder behavior when appropriate, and a looser drape away from the body. " +
+        "The garment should visibly read oversized while preserving the exact product identity, construction, seams, trims, pockets, hardware, graphics, fabric behavior, model identity, pose, lighting, and background." +
+        userCorrection
+      );
+    }
+    if (fitMode === "more-fitted") {
+      return (
+        " Quality control directive: the previous result is too oversized or bulky. Regenerate with a more fitted, closer-to-body fit while preserving the garment category and all visible product details. " +
+        "Reduce excess width and volume through the body and sleeves without changing the fabric, construction, trims, pockets, hardware, graphics, model identity, pose, lighting, and background." +
+        userCorrection
       );
     }
     return (
       " Quality control directive: retry closer to the uploaded garment reference. Preserve the garment's exact silhouette, fit, length, seam placement, stitching, fabric texture, trims, hardware, pockets, cuffs, waistband, and material behavior. " +
-      "Use the uploaded garment as the source of truth because the previous result drifted away from the product shape. Do not simplify the construction, do not change the garment category, and do not drift away from the original product."
+      "Use the uploaded garment as the source of truth because the previous result drifted away from the product shape. Do not simplify the construction, do not change the garment category, and do not drift away from the original product." +
+      userCorrection
     );
   }
   return (
     " Quality control directive: create a neighboring pose variation while preserving the same model identity, face, body proportions, garment, background, lighting, and camera style. " +
-    "Use a subtle different pose: a small head angle change, slight shoulder rotation, gentle hand/arm variation, or natural weight shift. Do not change the view into a dramatically different shot."
+    "Use a subtle different pose: a small head angle change, slight shoulder rotation, gentle hand/arm variation, or natural weight shift. Do not change the view into a dramatically different shot." +
+    userCorrection
   );
 }
 
@@ -619,6 +665,7 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
     fitMode?: FitRepairMode;
     proportionMode?: ProportionRepairMode;
     fitReferenceUrl?: string;
+    repairNote?: string;
     prompt: string;
     sourceUrl: string | null;
   }) {
@@ -631,7 +678,8 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
       `${params.prompt.trim()}${buildQualityControlSuffix(
         params.action,
         params.fitMode,
-        params.proportionMode
+        params.proportionMode,
+        params.repairNote
       )}`
     );
     const garmentImageUrls = params.fitReferenceUrl
@@ -700,7 +748,7 @@ export default function ModelStudioClient({ initialHumanModels }: Props) {
           </div>
           <span className="text-sm font-semibold">Davi &amp; Dani Photo Studio</span>
           <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-neutral-600">
-            V1.3
+            V1.5
           </span>
           <TopTabs active="model" />
         </div>

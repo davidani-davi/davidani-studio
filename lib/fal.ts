@@ -596,7 +596,7 @@ export interface InspirationTagResult {
   note: string;
 }
 
-const PRODUCT_DESIGN_SYSTEM_PROMPT = `You are a fashion product design assistant for a bohemian boutique brand. A user will upload a product image. Your job is to identify the garment category, then create three new sellable product concepts in the same category. Do not copy the uploaded product's exact design, color palette, motif, pattern, styling, or construction. Do not create simple colorways. Each concept must have a different customer appeal, design story, fit, feature set, and visual identity. The products should feel commercially viable for a boutique fashion website and should make customers feel they need each piece for a different reason. Preserve the category: pants remain pants, jackets remain jackets, cardigans remain cardigans, tops remain tops, dresses remain dresses. Vary fit and construction within the category. Avoid repeated formulas, repeated left/middle/right roles, repeated color ordering, and overused motifs such as stars, sun, moon, daisies, and Aztec/southwestern patterns unless explicitly requested. Focus on garment design features, not graphic callouts. Generate clear, distinct, marketable product ideas.
+const PRODUCT_DESIGN_SYSTEM_PROMPT = `You are a fashion product design assistant for a bohemian boutique brand. A user will upload a product image. Your job is to identify the garment category, then create sellable product concepts in the same category. Do not copy the uploaded product's exact design, color palette, motif, pattern, styling, or construction. Do not create simple colorways. Each concept must have a different customer appeal, design story, fit, feature set, and visual identity. The products should feel commercially viable for a boutique fashion website and should make customers feel they need each piece for a different reason. Preserve the category: pants remain pants, jackets remain jackets, cardigans remain cardigans, tops remain tops, dresses remain dresses. Vary fit and construction within the category. Avoid repeated formulas, repeated left/middle/right roles, repeated color ordering, and overused motifs such as stars, sun, moon, daisies, and Aztec/southwestern patterns unless explicitly requested. Focus on garment design features, not graphic callouts. Generate clear, distinct, marketable product ideas.
 
 Default style world: easy, expressive, bohemian, boutique, layerable, comfortable, curated, soft but distinctive, relaxed but not boring. Avoid costume-like and overly basic ideas.
 
@@ -657,9 +657,9 @@ function parseProductDesignResult(raw: string): ProductDesignResult | null {
   try {
     const parsed = JSON.parse(extractJsonObject(raw));
     const concepts = Array.isArray(parsed.concepts)
-      ? parsed.concepts.map(normalizeConcept).filter(Boolean).slice(0, 3)
+      ? parsed.concepts.map(normalizeConcept).filter(Boolean).slice(0, 6)
       : [];
-    if (concepts.length !== 3) return null;
+    if (concepts.length < 3) return null;
     return {
       detectedCategory: String(parsed.detectedCategory || "").trim() || "Detected garment",
       customerWorld:
@@ -685,14 +685,28 @@ function parseProductDesignResult(raw: string): ProductDesignResult | null {
 }
 
 function productDesignUserPrompt(refinement?: string): string {
+  const wantsBestsellerRemix = /bestseller remix|remix engine|strong seller|current winner|6 concepts|six concepts/i.test(
+    refinement || ""
+  );
+  const conceptCount = wantsBestsellerRemix ? 6 : 3;
+  const assortmentRoles = wantsBestsellerRemix
+    ? [
+        "two Safe Commercial Extensions: wearable, close enough to proven bestseller DNA but meaningfully new",
+        "two Trend-Forward Extensions: fresher silhouette/detail/color/fabric directions, still sellable",
+        "one Reorder Extension: lower-risk continuation designed for replenishment and easy buying",
+        "one Novelty Statement: strongest visual hook with clear boutique/social merchandising appeal",
+      ]
+    : [
+        "one Safe Bestseller: most wearable, highest commercial probability, easy buy",
+        "one Trend Driver: newest silhouette/detail/color/fabric direction, still wearable",
+        "one Novelty Statement: strongest visual hook/social merchandising idea, higher risk but exciting",
+      ];
   return `Analyze the uploaded product image only to identify product category, general garment type, customer/style world, and commercial context.
 
-Extract the likely bestseller DNA from the uploaded product first: what makes the category commercially useful, wearable, emotionally appealing, easy to buy, and worth improving. Then generate exactly 3 new product design concepts in the same product category.
+Extract the likely bestseller DNA from the uploaded product first: what makes the category commercially useful, wearable, emotionally appealing, easy to buy, and worth improving. Then generate exactly ${conceptCount} new product design concepts in the same product category.
 
-Build the 3 concepts as a balanced mini assortment:
-- one Safe Bestseller: most wearable, highest commercial probability, easy buy
-- one Trend Driver: newest silhouette/detail/color/fabric direction, still wearable
-- one Novelty Statement: strongest visual hook/social merchandising idea, higher risk but exciting
+Build the ${conceptCount} concepts as a balanced mini assortment:
+${assortmentRoles.map((role) => `- ${role}`).join("\n")}
 
 Do not recreate the uploaded product. Do not include a version that looks like the original. Use the image only to identify the product category and general customer world. Create three new, sellable products in the same category with different silhouettes, construction, fabrics, trims, details, and stories.
 
@@ -708,14 +722,14 @@ Each concept must answer why a customer would need it. Each concept must have a 
 Vary fit, silhouette, construction, fabric combination, trims, pockets, closures, sleeve shape, neckline, hemline, print placement, embroidery, texture, color story, customer appeal, and product story where relevant to the detected category.
 
 Before returning the final result, internally check:
-- all 3 products preserve the source category
+- all ${conceptCount} products preserve the source category
 - no product is too close to the source
-- the 3 concepts are meaningfully different from each other
+- the ${conceptCount} concepts are meaningfully different from each other
 - features are built into the garment
 - color stories and silhouettes are varied
 - motifs are fresh and not repeated
 - each product has a different reason to buy
-- the result does not look like 3 colorways
+- the result does not look like simple colorways
 - the set feels sellable for a boutique fashion website
 
 ${refinement ? `User refinement request: ${refinement}` : "No extra user refinement request."}
@@ -728,7 +742,7 @@ Return strict JSON only:
   "assortmentStrategy": "one short sentence explaining why the 3 concepts work together as a balanced mini line",
   "concepts": [
     {
-      "assortmentRole": "Safe Bestseller | Trend Driver | Novelty Statement",
+      "assortmentRole": "Safe Commercial Extension | Trend-Forward Extension | Reorder Extension | Novelty Statement | Safe Bestseller | Trend Driver",
       "productName": "short boutique-style name",
       "customerMood": "short phrase",
       "productDescription": "concise selling description",
@@ -779,7 +793,7 @@ export async function generateProductDesignConcepts(
   const parsed = parseProductDesignResult(output);
   if (!parsed) {
     console.error("[design-studio] raw output:", output.slice(0, 2000));
-    throw new Error("Product design generator did not return 3 complete concepts.");
+    throw new Error("Product design generator did not return complete concepts.");
   }
 
   return parsed;
@@ -1503,6 +1517,12 @@ export interface GenerateParams {
   format?: "png" | "jpeg";
   numImages?: number;
   overlay?: OverlayOptions;
+  /**
+   * Image Studio normally auto-adds a styled reference canvas. Some workflows
+   * (e.g. Library ecommerce-set expansion) need to edit from the supplied
+   * approved image only, so they can opt out.
+   */
+  useDefaultReference?: boolean;
 }
 
 const PLACEMENT_TO_ENGLISH: Record<OverlayPlacement, string> = {
@@ -1606,7 +1626,7 @@ export async function generate(params: GenerateParams): Promise<GenerationResult
   // else defaults to style-reference.png.
   const category = inferGarmentCategory(params.prompt);
   let referenceUrl: string | null = params.referenceImageUrl || null;
-  if (!referenceUrl) {
+  if (!referenceUrl && params.useDefaultReference !== false) {
     try {
       referenceUrl = await getStyleReferenceUrl(category);
     } catch (err) {

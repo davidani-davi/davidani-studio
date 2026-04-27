@@ -357,6 +357,35 @@ export async function regenerateLibraryStyleSeo(styleId: string): Promise<Librar
   return style;
 }
 
+export async function addGeneratedLibraryViews(input: {
+  styleId: string;
+  views: Array<{ label: string; imageUrl: string; prompt?: string }>;
+}): Promise<LibraryStyle> {
+  const index = await readLibraryIndex();
+  const style = index.styles.find((item) => item.id === input.styleId);
+  if (!style) throw new Error("Library style not found.");
+
+  const createdAt = nowIso();
+  for (const view of input.views) {
+    const label = view.label.trim() || "View";
+    const imageUrl = view.imageUrl.trim();
+    if (!imageUrl) continue;
+    const duplicate = style.views.some((item) => item.imageUrl === imageUrl);
+    if (duplicate) continue;
+    style.views.push({
+      id: `${slug(label) || "view"}-${Date.now()}-${style.views.length}`,
+      label,
+      imageUrl,
+      prompt: view.prompt,
+      createdAt,
+    });
+  }
+
+  style.updatedAt = nowIso();
+  await writeLibraryIndex(index);
+  return style;
+}
+
 export async function updateLibraryStyle(input: {
   styleId: string;
   styleNumber: string;

@@ -23,9 +23,14 @@ interface Props {
       | "silhouette"
       | "upload-reference"
       | "length-shorter"
-      | "length-longer";
+      | "length-longer"
+      | "length-much-shorter"
+      | "length-much-longer"
+      | "more-oversized"
+      | "more-fitted";
     proportionMode?: "head-smaller" | "head-larger" | "natural-proportion";
     fitReferenceUrl?: string;
+    repairNote?: string;
     prompt: string;
     sourceUrl: string | null;
   }) => void;
@@ -61,6 +66,7 @@ export default function OutputPanel({
   const [libraryViewLabel, setLibraryViewLabel] = useState("front");
   const [libraryStatus, setLibraryStatus] = useState<string | null>(null);
   const [libraryUploading, setLibraryUploading] = useState(false);
+  const [repairNote, setRepairNote] = useState("");
   const fitReferenceInputRef = useRef<HTMLInputElement | null>(null);
   const previewResizeRef = useRef<{ startY: number; height: number } | null>(null);
 
@@ -73,6 +79,7 @@ export default function OutputPanel({
     setProportionToolsOpen(false);
     setLibraryOpen(false);
     setLibraryStatus(null);
+    setRepairNote("");
     setLibraryStyleNumber(current?.styleNumber || "");
   }, [current?.id]);
 
@@ -139,6 +146,7 @@ export default function OutputPanel({
         action: "retry-closer",
         fitMode: "upload-reference",
         fitReferenceUrl: data.uploads[0].url,
+        repairNote: repairNote.trim(),
         prompt: activePrompt,
         sourceUrl: activeSource,
       });
@@ -366,6 +374,7 @@ export default function OutputPanel({
                   onClick={() =>
                     onQualityControl({
                       action: "restore-face",
+                      repairNote: repairNote.trim(),
                       prompt: activePrompt,
                       sourceUrl: activeSource,
                     })
@@ -393,6 +402,7 @@ export default function OutputPanel({
                   onClick={() =>
                     onQualityControl({
                       action: "different-pose",
+                      repairNote: repairNote.trim(),
                       prompt: activePrompt,
                       sourceUrl: activeSource,
                     })
@@ -426,6 +436,7 @@ export default function OutputPanel({
                               | "head-smaller"
                               | "head-larger"
                               | "natural-proportion",
+                            repairNote: repairNote.trim(),
                             prompt: activePrompt,
                             sourceUrl: activeSource,
                           })
@@ -465,9 +476,20 @@ export default function OutputPanel({
                     >
                       {fitReferenceUploading ? "Uploading fit ref..." : "Upload ref fit"}
                     </button>
+                    <textarea
+                      value={repairNote}
+                      onChange={(event) => setRepairNote(event.target.value)}
+                      rows={3}
+                      placeholder="Tell AI what went wrong: make jacket much longer, more oversized through sleeves, keep snake patch..."
+                      className="col-span-2 resize-none rounded-lg border border-neutral-200 bg-white px-2 py-2 text-[11px] leading-relaxed text-neutral-700 outline-none transition placeholder:text-neutral-400 focus:border-neutral-900"
+                    />
                     {[
+                      ["more-oversized", "More oversized"],
+                      ["more-fitted", "More fitted"],
                       ["length-shorter", "Slightly shorter"],
                       ["length-longer", "Slightly longer"],
+                      ["length-much-shorter", "Much shorter"],
+                      ["length-much-longer", "Much longer"],
                       ["silhouette", "Silhouette"],
                       ["all", "Match original"],
                     ].map(([fitMode, label]) => (
@@ -482,7 +504,12 @@ export default function OutputPanel({
                               | "silhouette"
                               | "upload-reference"
                               | "length-shorter"
-                              | "length-longer",
+                              | "length-longer"
+                              | "length-much-shorter"
+                              | "length-much-longer"
+                              | "more-oversized"
+                              | "more-fitted",
+                            repairNote: repairNote.trim(),
                             prompt: activePrompt,
                             sourceUrl: activeSource,
                           })
