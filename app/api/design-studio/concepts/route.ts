@@ -105,11 +105,14 @@ async function fetchTrendResearch(): Promise<{
 function visualPrompt(concept: ProductDesignConcept, detectedCategory: string): string {
   return (
     `${concept.imageGenerationPrompt}\n\n` +
-    `Render one clean commercial boutique product visual for "${concept.productName}". ` +
+    `Render one clean commercial boutique product visual for "${concept.productName}" as the ${concept.assortmentRole || "assortment"} option. ` +
     `Garment category must stay ${detectedCategory}. Show the full garment clearly on a simple warm neutral studio background. ` +
     `No text, labels, logos, callouts, hang tags, watermarks, collage frames, or infographic elements. ` +
     `Do not recreate the uploaded product. Do not include a version that looks like the original. ` +
     `Use the uploaded image only to understand category and customer world. ` +
+    (concept.customerReasonToBuy
+      ? `Design reason to buy: ${concept.customerReasonToBuy}. `
+      : "") +
     `Build the features into the garment: ${concept.keyFeatures.join(", ")}. ` +
     `Photorealistic ecommerce fashion product photography, boutique catalog quality.`
   );

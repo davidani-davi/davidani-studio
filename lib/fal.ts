@@ -558,10 +558,20 @@ export async function generateRecoloringPrompts(
 }
 
 export interface ProductDesignConcept {
+  assortmentRole?: string;
   productName: string;
   customerMood: string;
   productDescription: string;
   keyFeatures: string[];
+  customerReasonToBuy?: string;
+  bestsellerDNA?: string[];
+  commercialScores?: {
+    commerciality: number;
+    novelty: number;
+    brandFit: number;
+    productionEase: number;
+    risk: number;
+  };
   designDifferenceFromSource: string;
   imageGenerationPrompt: string;
   visualUrl?: string;
@@ -570,6 +580,8 @@ export interface ProductDesignConcept {
 export interface ProductDesignResult {
   detectedCategory: string;
   customerWorld: string;
+  bestsellerDNA?: string[];
+  assortmentStrategy?: string;
   trendSignals?: string[];
   researchSources?: { title: string; url: string }[];
   concepts: ProductDesignConcept[];
@@ -598,11 +610,25 @@ function normalizeConcept(value: any): ProductDesignConcept | null {
   const keyFeatures = Array.isArray(value.keyFeatures)
     ? value.keyFeatures.map((item: unknown) => String(item || "").trim()).filter(Boolean)
     : [];
+  const bestsellerDNA = Array.isArray(value.bestsellerDNA)
+    ? value.bestsellerDNA.map((item: unknown) => String(item || "").trim()).filter(Boolean)
+    : [];
+  const scores = value.commercialScores || {};
   const concept: ProductDesignConcept = {
+    assortmentRole: String(value.assortmentRole || "").trim(),
     productName: String(value.productName || "").trim(),
     customerMood: String(value.customerMood || "").trim(),
     productDescription: String(value.productDescription || "").trim(),
     keyFeatures: keyFeatures.slice(0, 6),
+    customerReasonToBuy: String(value.customerReasonToBuy || "").trim(),
+    bestsellerDNA: bestsellerDNA.slice(0, 4),
+    commercialScores: {
+      commerciality: Number(scores.commerciality || 0),
+      novelty: Number(scores.novelty || 0),
+      brandFit: Number(scores.brandFit || 0),
+      productionEase: Number(scores.productionEase || 0),
+      risk: Number(scores.risk || 0),
+    },
     designDifferenceFromSource: String(value.designDifferenceFromSource || "").trim(),
     imageGenerationPrompt: String(value.imageGenerationPrompt || "").trim(),
   };
@@ -630,6 +656,13 @@ function parseProductDesignResult(raw: string): ProductDesignResult | null {
       detectedCategory: String(parsed.detectedCategory || "").trim() || "Detected garment",
       customerWorld:
         String(parsed.customerWorld || "").trim() || "Bohemian boutique customer",
+      bestsellerDNA: Array.isArray(parsed.bestsellerDNA)
+        ? parsed.bestsellerDNA
+            .map((item: unknown) => String(item || "").trim())
+            .filter(Boolean)
+            .slice(0, 8)
+        : [],
+      assortmentStrategy: String(parsed.assortmentStrategy || "").trim(),
       concepts: concepts as ProductDesignConcept[],
       qualityChecklist: Array.isArray(parsed.qualityChecklist)
         ? parsed.qualityChecklist
@@ -646,7 +679,12 @@ function parseProductDesignResult(raw: string): ProductDesignResult | null {
 function productDesignUserPrompt(refinement?: string): string {
   return `Analyze the uploaded product image only to identify product category, general garment type, customer/style world, and commercial context.
 
-Generate exactly 3 new product design concepts in the same product category.
+Extract the likely bestseller DNA from the uploaded product first: what makes the category commercially useful, wearable, emotionally appealing, easy to buy, and worth improving. Then generate exactly 3 new product design concepts in the same product category.
+
+Build the 3 concepts as a balanced mini assortment:
+- one Safe Bestseller: most wearable, highest commercial probability, easy buy
+- one Trend Driver: newest silhouette/detail/color/fabric direction, still wearable
+- one Novelty Statement: strongest visual hook/social merchandising idea, higher risk but exciting
 
 Do not recreate the uploaded product. Do not include a version that looks like the original. Use the image only to identify the product category and general customer world. Create three new, sellable products in the same category with different silhouettes, construction, fabrics, trims, details, and stories.
 
@@ -678,12 +716,24 @@ Return strict JSON only:
 {
   "detectedCategory": "short category phrase",
   "customerWorld": "short style/customer context",
+  "bestsellerDNA": ["5-8 concise bullets describing the commercial DNA extracted from the upload and live research"],
+  "assortmentStrategy": "one short sentence explaining why the 3 concepts work together as a balanced mini line",
   "concepts": [
     {
+      "assortmentRole": "Safe Bestseller | Trend Driver | Novelty Statement",
       "productName": "short boutique-style name",
       "customerMood": "short phrase",
       "productDescription": "concise selling description",
       "keyFeatures": ["4-6 specific garment features"],
+      "customerReasonToBuy": "one short reason this customer would need it",
+      "bestsellerDNA": ["2-4 specific bestseller/commercial signals used in this concept"],
+      "commercialScores": {
+        "commerciality": 1-10,
+        "novelty": 1-10,
+        "brandFit": 1-10,
+        "productionEase": 1-10,
+        "risk": 1-10
+      },
       "designDifferenceFromSource": "short explanation of how it avoids copying",
       "imageGenerationPrompt": "ready-to-use visual prompt for one single product visual of this exact concept, same product category as the uploaded source, clear garment view, commercial boutique product-photo style, simple beige or neutral background, Three Bird Nest bohemian boutique direction, and no copying of source design/color/motif/layout"
     }
