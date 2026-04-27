@@ -113,6 +113,7 @@ export default function DesignStudioClient() {
   const [inspirations, setInspirations] = useState<InspirationSource[]>([]);
   const [inspirationOpen, setInspirationOpen] = useState(false);
   const [savingInspiration, setSavingInspiration] = useState(false);
+  const [savingGeneratedIndex, setSavingGeneratedIndex] = useState<number | null>(null);
   const [newInspiration, setNewInspiration] = useState({
     title: "",
     url: "",
@@ -279,6 +280,43 @@ export default function DesignStudioClient() {
       setError(err?.message || "Failed to save inspiration");
     } finally {
       setSavingInspiration(false);
+    }
+  }
+
+  async function saveGeneratedInspiration(concept: ProductDesignConcept, index: number) {
+    if (!concept.visualUrl || !result) return;
+    setSavingGeneratedIndex(index);
+    setError(null);
+    try {
+      const note = [
+        concept.assortmentRole,
+        concept.customerReasonToBuy,
+        concept.bestsellerDNA?.length
+          ? `DNA: ${concept.bestsellerDNA.join(", ")}`
+          : "",
+        concept.keyFeatures.length ? `Features: ${concept.keyFeatures.join(", ")}` : "",
+      ]
+        .filter(Boolean)
+        .join(" | ");
+      const data = await fetchJson("Save generated inspiration", "/api/design-studio/inspirations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: concept.productName,
+          url: concept.visualUrl,
+          category: result.detectedCategory || concept.assortmentRole || "Generated design",
+          note,
+        }),
+      });
+      setInspirations((items) => [
+        data.source,
+        ...items.filter((item) => item.id !== data.source.id),
+      ]);
+      setInspirationOpen(true);
+    } catch (err: any) {
+      setError(err?.message || "Failed to save generated inspiration");
+    } finally {
+      setSavingGeneratedIndex(null);
     }
   }
 
@@ -767,6 +805,17 @@ export default function DesignStudioClient() {
                             >
                               {renderingIndex === index ? <Spinner /> : null}
                               Retry Visual
+                            </button>
+                          )}
+                          {concept.visualUrl && (
+                            <button
+                              type="button"
+                              onClick={() => void saveGeneratedInspiration(concept, index)}
+                              disabled={savingGeneratedIndex !== null}
+                              className="col-span-2 inline-flex items-center justify-center gap-2 rounded-lg border border-neutral-200 px-3 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
+                            >
+                              {savingGeneratedIndex === index ? <Spinner /> : null}
+                              Save Inspiration
                             </button>
                           )}
                           <button
