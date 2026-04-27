@@ -9,7 +9,7 @@ import Link from "next/link";
  * header statically without a router-hook round-trip on mount.
  */
 
-export type StudioTab = "image" | "model" | "prompt" | "design" | "library";
+export type StudioTab = "image" | "model" | "prompt" | "design" | "inspiration" | "library";
 
 interface Props {
   active: StudioTab;
@@ -21,6 +21,7 @@ export default function TopTabs({ active }: Props) {
     { id: "model", label: "Model Studio", href: "/model-studio" },
     { id: "prompt", label: "Prompt Studio", href: "/prompt-studio" },
     { id: "design", label: "Design Studio", href: "/design-studio" },
+    { id: "inspiration", label: "Inspiration", href: "/inspiration" },
     { id: "library", label: "Library", href: "/library" },
   ];
 
