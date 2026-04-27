@@ -5,7 +5,7 @@ import ImageLightbox, { ZoomButton } from "@/components/ImageLightbox";
 import TopTabs from "@/components/TopTabs";
 import type { UploadedImage } from "@/components/types";
 import { resizeIfNeeded } from "@/lib/image-resize";
-import type { ProductDesignResult } from "@/lib/fal";
+import type { ProductDesignConcept, ProductDesignResult } from "@/lib/fal";
 
 async function fetchJson(label: string, input: string, init?: RequestInit): Promise<any> {
   const res = await fetch(input, init);
@@ -64,28 +64,27 @@ const IconCopy = (
 );
 
 const refinementOptions = [
-  "Make it more dramatic",
-  "Make it simpler",
-  "More boutique",
+  "More bestseller-driven",
+  "More visually bold",
+  "More wearable",
   "Less similar to original",
-  "More features",
-  "Same category, different fit",
-  "Try again with no repeated themes",
+  "More boutique",
+  "More FW26",
 ];
 
-function conceptText(result: ProductDesignResult): string {
-  return result.concepts
-    .map(
-      (concept, index) =>
-        `${index + 1}. ${concept.productName}\nCustomer Mood: ${
-          concept.customerMood
-        }\nDescription: ${concept.productDescription}\nKey Features:\n${concept.keyFeatures
-          .map((feature) => `- ${feature}`)
-          .join("\n")}\nDesign Difference From Source: ${
-          concept.designDifferenceFromSource
-        }\nImage Generation Prompt: ${concept.imageGenerationPrompt}`
-    )
-    .join("\n\n");
+function downloadImage(url: string, filename: string) {
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.target = "_blank";
+  anchor.rel = "noopener noreferrer";
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+}
+
+function safeFileName(value: string) {
+  return `${value.replace(/[^a-z0-9]+/gi, "-").replace(/^-+|-+$/g, "") || "design"}.png`;
 }
 
 export default function DesignStudioClient() {
@@ -100,6 +99,8 @@ export default function DesignStudioClient() {
   const [previewSrc, setPreviewSrc] = useState<string | null>(null);
   const [draggingUpload, setDraggingUpload] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
+  const [techpackFor, setTechpackFor] = useState<string | null>(null);
+  const [techpack, setTechpack] = useState("");
 
   const selectedUpload = useMemo(
     () => uploads.find((u) => u.url === selectedUrl) ?? null,
@@ -119,6 +120,7 @@ export default function DesignStudioClient() {
       setUploads((list) => [...list, ...added]);
       setSelectedUrl(added[0].url);
       setResult(null);
+      setTechpack("");
     } catch (err: any) {
       setError(err?.message || "Upload failed");
     } finally {
@@ -142,6 +144,7 @@ export default function DesignStudioClient() {
       const remaining = uploads.filter((u) => u.url !== url);
       setSelectedUrl(remaining[0]?.url ?? null);
       setResult(null);
+      setTechpack("");
     }
   }
 
@@ -150,17 +153,36 @@ export default function DesignStudioClient() {
     setGenerating(true);
     setError(null);
     setCopied(null);
+    setTechpack("");
     try {
-      const data = await fetchJson("Generate product concepts", "/api/design-studio/concepts", {
+      const data = await fetchJson("Generate product visuals", "/api/design-studio/concepts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ imageUrl: selectedUrl, refinement: nextRefinement }),
       });
       setResult(data.result || null);
     } catch (err: any) {
-      setError(err?.message || "Product design generation failed");
+      setError(err?.message || "Product visual generation failed");
     } finally {
       setGenerating(false);
+    }
+  }
+
+  async function createTechpack(concept: ProductDesignConcept) {
+    if (!concept.visualUrl) return;
+    setTechpackFor(concept.productName);
+    setTechpack("");
+    setError(null);
+    try {
+      const data = await fetchJson("Create techpack", "/api/design-studio/techpack", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ concept, imageUrl: concept.visualUrl }),
+      });
+      setTechpack(data.techpack || "");
+    } catch (err: any) {
+      setError(err?.message || "Techpack generation failed");
+      setTechpackFor(null);
     }
   }
 
@@ -184,9 +206,9 @@ export default function DesignStudioClient() {
           <TopTabs active="design" />
         </div>
         <div className="flex items-center gap-3 text-xs text-neutral-500 lg:justify-end">
-          <span>Concepts: {result?.concepts.length ?? 0}</span>
+          <span>Visuals: {result?.concepts.length ?? 0}</span>
           <span>·</span>
-          <span>Active: {uploading || generating ? 1 : 0}</span>
+          <span>Active: {uploading || generating || techpackFor ? 1 : 0}</span>
         </div>
       </header>
 
@@ -275,6 +297,7 @@ export default function DesignStudioClient() {
                         onClick={() => {
                           setSelectedUrl(u.url);
                           setResult(null);
+                          setTechpack("");
                         }}
                         className="block h-full w-full"
                       >
@@ -303,18 +326,18 @@ export default function DesignStudioClient() {
             <div className="mb-3 flex items-center gap-2">
               <span className="text-neutral-400">{IconSparkle}</span>
               <h2 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-700">
-                Direction
+                Trend direction
               </h2>
             </div>
             <textarea
               value={refinement}
               onChange={(event) => setRefinement(event.target.value)}
               disabled={generating}
-              rows={5}
-              placeholder="Optional direction, e.g. more elevated, younger customer, less boho, more fall delivery..."
+              rows={4}
+              placeholder="Optional: FW26, younger, best-seller friendly, more novelty denim..."
               className="w-full resize-none rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm outline-none transition placeholder:text-neutral-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 disabled:cursor-not-allowed disabled:bg-neutral-50 disabled:text-neutral-400"
             />
-            <div className="mt-3 grid gap-2">
+            <div className="mt-3 grid grid-cols-2 gap-2">
               {refinementOptions.map((option) => (
                 <button
                   key={option}
@@ -336,9 +359,9 @@ export default function DesignStudioClient() {
         <section className="flex min-w-0 flex-1 flex-col bg-neutral-50">
           <div className="flex items-center justify-between border-b border-neutral-200 bg-white px-6 py-4">
             <div>
-              <h1 className="text-sm font-semibold text-neutral-900">Product Design Generator</h1>
+              <h1 className="text-sm font-semibold text-neutral-900">Trend Design Studio</h1>
               <p className="text-[11px] text-neutral-500">
-                Creates three new sellable concepts in the same category as the upload.
+                Live trend research in, three product visuals out.
               </p>
             </div>
             <span
@@ -359,7 +382,7 @@ export default function DesignStudioClient() {
                     : "bg-neutral-300"
                 }`}
               />
-              {generating ? "Designing" : result ? "Ready" : "Waiting"}
+              {generating ? "Researching + rendering" : result ? "Ready" : "Waiting"}
             </span>
           </div>
 
@@ -368,99 +391,118 @@ export default function DesignStudioClient() {
               <div className="flex min-h-[420px] items-center justify-center rounded-xl border border-dashed border-neutral-300 bg-white px-5 text-center">
                 <div className="max-w-md">
                   <p className="text-sm font-semibold text-neutral-800">
-                    Upload a product image to generate new design directions.
+                    Upload a product, then generate trend-backed visuals.
                   </p>
                   <p className="mt-2 text-sm leading-relaxed text-neutral-500">
-                    The tool keeps the product category intact, then creates distinct boutique
-                    concepts with different fits, stories, construction, trims, and customer appeal.
+                    The AI researches current public brand/bestseller signals, keeps the uploaded
+                    category intact, and renders three new product ideas.
                   </p>
                 </div>
               </div>
             ) : (
               <div className="grid gap-4">
-                <div className="rounded-xl border border-neutral-200 bg-white p-4">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
-                        Detected Category
-                      </p>
-                      <p className="mt-1 text-sm font-semibold text-neutral-900">
-                        {result.detectedCategory}
-                      </p>
-                      <p className="mt-1 text-xs text-neutral-500">{result.customerWorld}</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => copyText("all", conceptText(result))}
-                      className="inline-flex items-center justify-center gap-2 rounded-lg border border-neutral-200 px-3 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
-                    >
-                      {IconCopy}
-                      {copied === "all" ? "Copied" : "Copy All"}
-                    </button>
+                <div className="flex flex-col gap-2 rounded-xl border border-neutral-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
+                      {result.detectedCategory}
+                    </p>
+                    <p className="mt-1 text-sm font-semibold text-neutral-900">
+                      {result.customerWorld}
+                    </p>
                   </div>
+                  {result.trendSignals?.length ? (
+                    <div className="flex max-w-2xl flex-wrap gap-1.5">
+                      {result.trendSignals.slice(0, 8).map((signal) => (
+                        <span
+                          key={signal}
+                          className="rounded-full bg-neutral-100 px-2 py-1 text-[10px] font-semibold text-neutral-600"
+                        >
+                          {signal}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
 
                 <div className="grid gap-4 xl:grid-cols-3">
                   {result.concepts.map((concept, index) => (
                     <article
                       key={`${concept.productName}-${index}`}
-                      className="flex min-w-0 flex-col rounded-xl border border-neutral-200 bg-white shadow-sm"
+                      className="overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm"
                     >
-                      <div className="border-b border-neutral-100 p-4">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                          Concept {index + 1}
-                        </p>
-                        <h2 className="mt-2 text-base font-semibold text-neutral-950">
-                          {concept.productName}
-                        </h2>
-                        <p className="mt-1 text-sm font-medium text-brand-700">
-                          {concept.customerMood}
-                        </p>
-                      </div>
-                      <div className="grid flex-1 gap-4 p-4">
-                        <p className="text-sm leading-relaxed text-neutral-700">
-                          {concept.productDescription}
-                        </p>
-                        <div>
-                          <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
-                            Key Features
-                          </p>
-                          <ul className="mt-2 space-y-1 text-sm leading-relaxed text-neutral-700">
-                            {concept.keyFeatures.map((feature) => (
-                              <li key={feature}>- {feature}</li>
-                            ))}
-                          </ul>
-                        </div>
-                        <div className="rounded-lg bg-neutral-50 p-3">
-                          <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
-                            Difference
-                          </p>
-                          <p className="mt-1 text-xs leading-relaxed text-neutral-600">
-                            {concept.designDifferenceFromSource}
-                          </p>
-                        </div>
-                        <div>
-                          <div className="mb-2 flex items-center justify-between gap-2">
-                            <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
-                              Image Prompt
+                      <button
+                        type="button"
+                        onClick={() => concept.visualUrl && setPreviewSrc(concept.visualUrl)}
+                        className="block aspect-[4/5] w-full bg-neutral-100"
+                      >
+                        {concept.visualUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={concept.visualUrl}
+                            alt={concept.productName}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-full items-center justify-center text-xs text-neutral-400">
+                            Rendering failed
+                          </div>
+                        )}
+                      </button>
+                      <div className="p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                              Option {index + 1}
                             </p>
+                            <h2 className="mt-1 text-base font-semibold text-neutral-950">
+                              {concept.productName}
+                            </h2>
+                            <p className="mt-1 text-xs font-medium text-brand-700">
+                              {concept.customerMood}
+                            </p>
+                          </div>
+                          {concept.visualUrl && (
                             <button
                               type="button"
                               onClick={() =>
-                                copyText(`prompt-${index}`, concept.imageGenerationPrompt)
+                                downloadImage(concept.visualUrl!, safeFileName(concept.productName))
                               }
-                              className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 px-2 py-1 text-[10px] font-semibold text-neutral-700 hover:bg-neutral-50"
+                              className="rounded-lg border border-neutral-200 px-2 py-1.5 text-[10px] font-semibold text-neutral-700 hover:bg-neutral-50"
                             >
-                              {IconCopy}
-                              {copied === `prompt-${index}` ? "Copied" : "Copy"}
+                              Download
                             </button>
-                          </div>
-                          <textarea
-                            value={concept.imageGenerationPrompt}
-                            readOnly
-                            rows={8}
-                            className="prompt-mono w-full resize-y rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-xs leading-relaxed text-neutral-700 outline-none"
-                          />
+                          )}
+                        </div>
+
+                        <div className="mt-3 flex flex-wrap gap-1.5">
+                          {concept.keyFeatures.slice(0, 4).map((feature) => (
+                            <span
+                              key={feature}
+                              className="rounded-full bg-neutral-100 px-2 py-1 text-[10px] font-semibold text-neutral-600"
+                            >
+                              {feature}
+                            </span>
+                          ))}
+                        </div>
+
+                        <div className="mt-4 grid grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => void createTechpack(concept)}
+                            disabled={!concept.visualUrl || !!techpackFor}
+                            className="inline-flex items-center justify-center gap-2 rounded-lg bg-neutral-900 px-3 py-2 text-xs font-semibold text-white hover:bg-neutral-800 disabled:opacity-50"
+                          >
+                            {techpackFor === concept.productName ? <Spinner /> : null}
+                            Techpack
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => copyText(`prompt-${index}`, concept.imageGenerationPrompt)}
+                            className="inline-flex items-center justify-center gap-2 rounded-lg border border-neutral-200 px-3 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
+                          >
+                            {IconCopy}
+                            {copied === `prompt-${index}` ? "Copied" : "Prompt"}
+                          </button>
                         </div>
                       </div>
                     </article>
@@ -491,62 +533,70 @@ export default function DesignStudioClient() {
               {generating ? (
                 <>
                   <Spinner />
-                  Generating
+                  Research + Render
                 </>
               ) : (
                 <>
                   {IconSparkle}
-                  Generate Concepts
+                  Generate Visuals
                 </>
               )}
             </button>
           </div>
         </section>
-
-        <aside className="hidden w-80 shrink-0 overflow-y-auto border-l border-neutral-200 bg-neutral-50 p-5 xl:block">
-          <div className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-neutral-500">
-            Source
-          </div>
-          <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white">
-            {selectedUpload ? (
-              <button
-                type="button"
-                onClick={() => setPreviewSrc(selectedUpload.url)}
-                className="block w-full"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={selectedUpload.url}
-                  alt={selectedUpload.name}
-                  className="aspect-[4/5] w-full object-cover"
-                />
-              </button>
-            ) : (
-              <div className="flex aspect-[4/5] items-center justify-center text-xs text-neutral-400">
-                No product selected
-              </div>
-            )}
-          </div>
-
-          {result?.qualityChecklist?.length ? (
-            <div className="mt-4 rounded-lg border border-neutral-200 bg-white p-4">
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
-                Quality Check
-              </p>
-              <ul className="mt-2 space-y-1 text-xs leading-relaxed text-neutral-600">
-                {result.qualityChecklist.map((item) => (
-                  <li key={item}>- {item}</li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
-        </aside>
       </div>
+
+      {techpackFor && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4">
+          <div className="max-h-[90vh] w-full max-w-4xl overflow-hidden rounded-xl bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-neutral-200 px-4 py-3">
+              <div>
+                <p className="text-sm font-semibold text-neutral-900">Techpack</p>
+                <p className="text-xs text-neutral-500">{techpackFor}</p>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => techpack && copyText("techpack", techpack)}
+                  disabled={!techpack}
+                  className="rounded-lg border border-neutral-200 px-3 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
+                >
+                  {copied === "techpack" ? "Copied" : "Copy"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTechpackFor(null);
+                    setTechpack("");
+                  }}
+                  className="rounded-lg bg-neutral-900 px-3 py-2 text-xs font-semibold text-white hover:bg-neutral-800"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+            <div className="max-h-[calc(90vh-62px)] overflow-y-auto p-4">
+              {techpack ? (
+                <pre className="whitespace-pre-wrap rounded-lg bg-neutral-50 p-4 text-sm leading-relaxed text-neutral-800">
+                  {techpack}
+                </pre>
+              ) : (
+                <div className="flex h-60 items-center justify-center text-sm text-neutral-500">
+                  <span className="inline-flex items-center gap-2">
+                    <Spinner />
+                    Creating manufacturer notes...
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {previewSrc && (
         <ImageLightbox
           src={previewSrc}
-          alt="Uploaded product preview"
+          alt="Design studio preview"
           onClose={() => setPreviewSrc(null)}
         />
       )}

@@ -564,11 +564,14 @@ export interface ProductDesignConcept {
   keyFeatures: string[];
   designDifferenceFromSource: string;
   imageGenerationPrompt: string;
+  visualUrl?: string;
 }
 
 export interface ProductDesignResult {
   detectedCategory: string;
   customerWorld: string;
+  trendSignals?: string[];
+  researchSources?: { title: string; url: string }[];
   concepts: ProductDesignConcept[];
   qualityChecklist: string[];
 }
@@ -682,7 +685,7 @@ Return strict JSON only:
       "productDescription": "concise selling description",
       "keyFeatures": ["4-6 specific garment features"],
       "designDifferenceFromSource": "short explanation of how it avoids copying",
-      "imageGenerationPrompt": "ready-to-use visual prompt specifying 3 side-by-side product variations, same product category, clear garment view, commercial boutique product-photo style, simple beige or neutral background, Three Bird Nest bohemian boutique direction, and no copying of source design/color/motif/layout"
+      "imageGenerationPrompt": "ready-to-use visual prompt for one single product visual of this exact concept, same product category as the uploaded source, clear garment view, commercial boutique product-photo style, simple beige or neutral background, Three Bird Nest bohemian boutique direction, and no copying of source design/color/motif/layout"
     }
   ],
   "qualityChecklist": ["brief passed-check notes"]
@@ -691,13 +694,18 @@ Return strict JSON only:
 
 export async function generateProductDesignConcepts(
   imageUrl: string,
-  refinement?: string
+  refinement?: string,
+  trendResearch?: string
 ): Promise<ProductDesignResult> {
   const result: any = await subscribeVisionWithRetry(
     {
       model: "anthropic/claude-3.7-sonnet",
       system_prompt: PRODUCT_DESIGN_SYSTEM_PROMPT,
-      prompt: productDesignUserPrompt(refinement),
+      prompt:
+        productDesignUserPrompt(refinement) +
+        (trendResearch
+          ? `\n\nLIVE TREND AND BESTSELLER RESEARCH TO USE AS COMMERCIAL INPUT:\n${trendResearch}\n\nUse these signals as inspiration only. Do not copy named products, exact brand designs, or protected graphics.`
+          : ""),
       image_url: imageUrl,
     },
     "product design concept generation"
