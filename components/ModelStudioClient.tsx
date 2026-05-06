@@ -886,6 +886,7 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
             format,
             numImages: useTrio ? 1 : numImages,
             overlay,
+            outputSize: { width: 2000, height: 3000 },
             // Default to the selected pose photo as the model canvas. The trio
             // path below asks for poseVariantIndex 0/1/2 so Variant A/B/C can
             // use front/front2/front3, side/side2/side3, etc. when available.

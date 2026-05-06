@@ -67,6 +67,7 @@ export async function POST(req: Request) {
       format,
       numImages,
       overlay,
+      outputSize,
       poseVariantIndex,
       preserveSecondaryReferences,
     } = body as {
@@ -82,6 +83,7 @@ export async function POST(req: Request) {
       format?: "png" | "jpeg";
       numImages?: number;
       overlay?: OverlayOptions;
+      outputSize?: { width: number; height: number } | null;
       poseVariantIndex?: number;
       preserveSecondaryReferences?: boolean;
     };
@@ -135,6 +137,7 @@ export async function POST(req: Request) {
         format,
         numImages: numImages ?? 1,
         overlay,
+        outputSize,
       });
     } catch (err: any) {
       const message = String(err?.message || err || "");
@@ -170,6 +173,7 @@ export async function POST(req: Request) {
         format,
         numImages: numImages ?? 1,
         overlay,
+        outputSize,
       });
     }
 
