@@ -913,7 +913,7 @@ export default function StudioPage() {
         active="image"
         title="Image Studio"
         subtitle="Generate clean product photos from uploaded garments."
-        badge="V2.1"
+        badge="V2.2"
         metrics={[
           { label: "Runs", value: history.length },
           {
