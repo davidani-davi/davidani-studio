@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { generate, type OverlayOptions } from "@/lib/fal";
 import { MODELS, type ModelId } from "@/lib/models";
 import { getPosePublicPath, getPoseUrl, type PresetView } from "@/lib/models-registry";
+import { MODEL_STUDIO_OUTPUT_SIZE } from "@/lib/output-sizes";
 
 export const runtime = "nodejs";
 export const maxDuration = 800;
@@ -67,7 +68,6 @@ export async function POST(req: Request) {
       format,
       numImages,
       overlay,
-      outputSize,
       poseVariantIndex,
       preserveSecondaryReferences,
     } = body as {
@@ -83,7 +83,6 @@ export async function POST(req: Request) {
       format?: "png" | "jpeg";
       numImages?: number;
       overlay?: OverlayOptions;
-      outputSize?: { width: number; height: number } | null;
       poseVariantIndex?: number;
       preserveSecondaryReferences?: boolean;
     };
@@ -137,7 +136,8 @@ export async function POST(req: Request) {
         format,
         numImages: numImages ?? 1,
         overlay,
-        outputSize,
+        // Always locked server-side — client value is intentionally ignored.
+        outputSize: MODEL_STUDIO_OUTPUT_SIZE,
       });
     } catch (err: any) {
       const message = String(err?.message || err || "");
@@ -173,7 +173,8 @@ export async function POST(req: Request) {
         format,
         numImages: numImages ?? 1,
         overlay,
-        outputSize,
+        // Always locked server-side — client value is intentionally ignored.
+        outputSize: MODEL_STUDIO_OUTPUT_SIZE,
       });
     }
 
