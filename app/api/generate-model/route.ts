@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { generate, type OverlayOptions } from "@/lib/fal";
 import { MODELS, type ModelId } from "@/lib/models";
 import { getPosePublicPath, getPoseUrl, type PresetView } from "@/lib/models-registry";
-import { MODEL_STUDIO_OUTPUT_SIZE } from "@/lib/output-sizes";
 
 export const runtime = "nodejs";
 export const maxDuration = 800;
@@ -136,8 +135,8 @@ export async function POST(req: Request) {
         format,
         numImages: numImages ?? 1,
         overlay,
-        // Always locked server-side — client value is intentionally ignored.
-        outputSize: MODEL_STUDIO_OUTPUT_SIZE,
+        // No resize — return native model output at 4K 2:3 for speed.
+        outputSize: null,
       });
     } catch (err: any) {
       const message = String(err?.message || err || "");
@@ -173,8 +172,8 @@ export async function POST(req: Request) {
         format,
         numImages: numImages ?? 1,
         overlay,
-        // Always locked server-side — client value is intentionally ignored.
-        outputSize: MODEL_STUDIO_OUTPUT_SIZE,
+        // No resize — return native model output at 4K 2:3 for speed.
+        outputSize: null,
       });
     }
 

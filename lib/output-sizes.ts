@@ -10,5 +10,8 @@
  * Model Studios → 2000 × 3000  (2:3 portrait, on-model ecommerce)
  */
 
+// Image Studio flat-lay — resize enforced server-side in /api/generate.
 export const IMAGE_STUDIO_OUTPUT_SIZE = { width: 2160, height: 2700 } as const;
-export const MODEL_STUDIO_OUTPUT_SIZE = { width: 2000, height: 3000 } as const;
+
+// Model Studios — no resize, native 4K 2:3 output from kie.ai for speed.
+// export const MODEL_STUDIO_OUTPUT_SIZE = { width: 2000, height: 3000 } as const;
