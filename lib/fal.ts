@@ -2599,10 +2599,9 @@ async function resizeGeneratedImages(
           position: "center",
           withoutEnlargement: false,
         })
-        .png({
-          compressionLevel: 9,
-          adaptiveFiltering: true,
-          palette: false,
+        .jpeg({
+          quality: 92,
+          mozjpeg: true,
         })
         .toBuffer();
       const blobPart = output.buffer.slice(
@@ -2610,15 +2609,15 @@ async function resizeGeneratedImages(
         output.byteOffset + output.byteLength
       ) as ArrayBuffer;
       const url = await uploadToFal(
-        new Blob([blobPart], { type: "image/png" }),
-        `davidani-${size.width}x${size.height}-${index + 1}.png`
+        new Blob([blobPart], { type: "image/jpeg" }),
+        `davidani-${size.width}x${size.height}-${index + 1}.jpg`
       );
       return {
         ...image,
         url,
         width: size.width,
         height: size.height,
-        content_type: "image/png",
+        content_type: "image/jpeg",
       };
     })
   );
