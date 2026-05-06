@@ -104,7 +104,9 @@ function buildMultiModelViewSuffix(view: PresetView, hasBackReference: boolean):
     (hasBackReference
       ? "Combined garment contract: the first garment reference and second garment reference together define one exact SKU. The first image supplies the front-facing truth; the second image supplies the back-facing truth. Merge both references into one physical garment identity, not two garments, not two design options, and not inspiration images. "
       : "") +
-    (view === "back" && hasBackReference
+    (view === "front"
+      ? "For this front view, the first uploaded garment image is the absolute source of truth. You MUST reproduce every piece of visible artwork exactly as it appears on the front of the garment — including any center-chest graphic, patch, print, embroidery, or logo. Do not leave the chest blank. Do not simplify, omit, or relocate any front-facing artwork. Every graphic element visible on the front of the uploaded garment reference must appear on the model's garment in the correct position, size, and placement. "
+      : view === "back" && hasBackReference
       ? "For this back view, use the second uploaded garment image as the back-reference source of truth for back artwork, seams, pockets, hem shape, wash, construction, and trim placement. The model must face away from camera in a true rear view: show the back of the head, shoulders, torso, sleeves, and garment back. Do not show the model's face, do not use an over-the-shoulder glance, and do not rotate into a 3/4 back pose. "
       : view === "back"
       ? "For this back view, infer the back logically from the front garment image while preserving the same garment category, fabric, construction, trims, and realistic production details. The model must face away from camera in a true rear view; do not show the model's face or an over-the-shoulder glance. "
