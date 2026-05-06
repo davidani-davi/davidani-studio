@@ -38,7 +38,7 @@ const HISTORY_KEY = "davidani_history_v1";
 const CURRENT_ID_KEY = "davidani_image_current_run_v1";
 const IMAGE_JOBS_KEY = "davidani_image_jobs_v1";
 const USER_ID_KEY = "davidani_user_id_v1";
-const IMAGE_STUDIO_VERSION = "1.7";
+const IMAGE_STUDIO_VERSION = "2.2";
 const IMAGE_STUDIO_OUTPUT_SIZE = { width: 2160, height: 2700 } as const;
 
 function productShotViewDirective(mode: ProductShotMode, target?: "front" | "back"): string {
@@ -595,7 +595,7 @@ export default function StudioPage() {
             modelId,
             prompt: contractMode
               ? `Front product shot prompt:\n${leftPromptUsed}\n\nBack product shot prompt:\n${rightPromptUsed}`
-              : `Image A / current prompt:\n${oldPromptUsed}\n\nImage B / V1.7 prompt:\n${newPromptUsed}`,
+              : `Image A / current prompt:\n${oldPromptUsed}\n\nImage B / V2.2 prompt:\n${newPromptUsed}`,
             imageUrls: [leftUrl, rightUrl],
             referenceUrls: [...selectedUrls],
             sourceImageUrls: [...selectedUrls],
@@ -608,7 +608,7 @@ export default function StudioPage() {
               ? ["Front", "Back"]
               : [productShotMode === "single-back" ? "Back A" : "Front A", productShotMode === "single-back" ? "Back B" : "Front B"],
             abTest: {
-              version: "1.7",
+              version: "2.2",
             },
           };
           setHistory((existing) => [item, ...existing.filter((run) => run.id !== item.id)].slice(0, 50));

@@ -10,7 +10,7 @@ export interface AbPreferenceEvent {
   timestamp: string;
   selected_image: AbSelection;
   prompt_used: string;
-  version: "1.7";
+  version: "2.2";
 }
 
 export interface AbPreferenceIndex {
@@ -32,8 +32,8 @@ export interface AbReportSummary {
   notableTrends: string[];
 }
 
-const STORE_KEY = "ab-testing/v1.7-events.json";
-const LOCAL_STORE = path.join(process.cwd(), ".data", "ab-testing-v1.7.json");
+const STORE_KEY = "ab-testing/v2.2-events.json";
+const LOCAL_STORE = path.join(process.cwd(), ".data", "ab-testing-v2.2.json");
 
 function canUseBlob(): boolean {
   return Boolean(process.env.BLOB_READ_WRITE_TOKEN);
@@ -116,7 +116,7 @@ export function summarizeAbPreferences(
   const windowStartDate = new Date(now.getTime() - windowMs);
   const scoped = events.filter((event) => {
     const timestamp = new Date(event.timestamp).getTime();
-    return event.version === "1.7" && timestamp >= windowStartDate.getTime() && timestamp <= now.getTime();
+    return event.version === "2.2" && timestamp >= windowStartDate.getTime() && timestamp <= now.getTime();
   });
 
   const leftPreferenceCount = scoped.filter((event) => event.selected_image === "left").length;
@@ -130,7 +130,7 @@ export function summarizeAbPreferences(
   const newPercent = percent(rightPreferenceCount);
   const oldPercent = percent(leftPreferenceCount);
   if (totalGenerations === 0) {
-    notableTrends.push("No V1.7 A/B preferences were collected during this window.");
+    notableTrends.push("No V2.2 A/B preferences were collected during this window.");
   } else if (newPercent >= oldPercent + 15) {
     notableTrends.push("New prompt model is materially outperforming the current prompt model.");
   } else if (oldPercent >= newPercent + 15) {
@@ -160,7 +160,7 @@ export function summarizeAbPreferences(
 
 export function formatAbReportEmail(summary: AbReportSummary): { subject: string; text: string } {
   const label = summary.period === "weekly" ? "Weekly" : "Daily";
-  const subject = `Davi Studio V1.7 A/B ${label} Report`;
+  const subject = `Davi Studio V2.2 A/B ${label} Report`;
   const text = [
     subject,
     "",

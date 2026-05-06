@@ -59,7 +59,7 @@ export interface HistoryItem {
     createdAt: number;
   }>;
   abTest?: {
-    version: "1.7";
+    version: "2.2";
     selectedImage?: "left" | "right" | "no_preference";
   };
   // Multi-option run with per-view trios. Front trio lives at imageUrls[0..2]

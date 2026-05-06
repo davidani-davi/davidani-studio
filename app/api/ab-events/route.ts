@@ -32,7 +32,7 @@ export async function POST(req: Request) {
       timestamp: new Date().toISOString(),
       selected_image: selected,
       prompt_used: String(body?.prompt_used || ""),
-      version: "1.7",
+      version: "2.2",
     });
 
     return NextResponse.json({ ok: true, event });
