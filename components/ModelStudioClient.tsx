@@ -131,6 +131,7 @@ function buildMultiModelConsistencySuffix(garment: string, features: string): st
     "The front and back uploads are paired evidence for the same garment and must be reconciled into one complete product map before generating any angle. " +
     "All four outputs must look like one real garment photographed from front, side, back, and full-body angles, not four related garments, not four colorways, and not four reinterpretations. " +
     "Keep the same garment length, volume, fit, fabric texture, color, construction logic, pocket size and placement, closure type, cuff/hem behavior, graphics, and trim placement across the set. " +
+    "ALL-OVER PATTERN RULE: if the garment reference shows a scattered, all-over, or repeat graphic/patch/print that covers the full body surface (chest, torso, sleeves), reproduce that pattern across ALL those areas in every view — do not simplify to sleeve-only or partial placement. The pattern density and surface coverage must match the reference exactly. " +
     "Only reveal angle-specific information that would naturally be visible from that view."
   );
 }

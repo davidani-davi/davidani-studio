@@ -209,7 +209,7 @@ FEATURES: <comma-separated noun phrases enumerating clearly visible structural d
 
 RULES:
 - NEVER invent text, letters, numbers, logos, brand names, or made-up words.
-- NEVER describe individual motifs inside a print/pattern. Name the pattern TYPE only.
+- NEVER describe individual motifs inside a print/pattern. Name the pattern TYPE only (e.g. "scattered oval patch design", "all-over floral print", "plaid"). However, you MUST describe the COVERAGE and PLACEMENT of every graphic or pattern — state exactly which areas it covers: e.g. "all-over scattered patches covering the full chest, torso, and both sleeves", "graphic on left chest panel only", "patch on right sleeve only", "patches on both sleeves with a clean chest panel". Coverage and placement are required even when motif detail is omitted.
 - Use only real, common English words.
 - Describe only the garment itself. Ignore background, hanger, or mannequin.
 - PANTS SHAPE AUDIT: If the garment has two leg openings, a waistband, and no neckline, it is a bottom. Never call pants a top. Pay special attention to the outer leg line: rounded outward curve + tapered ankle = barrel; consistent width = wide-leg or straight-leg; widening below knee = flare or bootcut; close fit through ankle = skinny or slim; roomy thigh narrowing to ankle = tapered or jogger.
