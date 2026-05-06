@@ -2574,15 +2574,9 @@ export interface GenerationResult {
   cost?: number;
 }
 
-function defaultOutputSize(params: GenerateParams, resolution: string) {
-  if (
-    params.outputSize === undefined &&
-    params.modelId === "nano-banana" &&
-    resolution === "4K" &&
-    (params.aspectRatio === "2:3" || !params.aspectRatio)
-  ) {
-    return { width: 2160, height: 2700 };
-  }
+function defaultOutputSize(params: GenerateParams, _resolution: string) {
+  // Only resize when the caller explicitly provides outputSize (Image Studio always does).
+  // Model Studios do NOT pass outputSize and must never be force-resized here.
   return params.outputSize ?? null;
 }
 
