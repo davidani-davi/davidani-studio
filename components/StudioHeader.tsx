@@ -1,7 +1,10 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { useEffect, useState } from "react";
+import JobCenter from "@/components/JobCenter";
 import TopTabs, { type StudioTab } from "@/components/TopTabs";
+import { activeStudioJobCount, subscribeStudioJobs } from "@/components/studio-job-store";
 
 interface Metric {
   label: string;
@@ -23,10 +26,33 @@ export default function StudioHeader({
   eyebrow = "Davi & Dani",
   title = "Photo Studio",
   subtitle,
-  badge = "V1.5",
+  badge = "V2.1",
   metrics = [],
   action,
 }: Props) {
+  const [globalActiveJobs, setGlobalActiveJobs] = useState(0);
+
+  useEffect(() => {
+    const refresh = () => setGlobalActiveJobs(activeStudioJobCount());
+    refresh();
+    const unsubscribe = subscribeStudioJobs(refresh);
+    window.addEventListener("storage", refresh);
+    window.addEventListener("davidani:generation-jobs-updated", refresh);
+    return () => {
+      unsubscribe();
+      window.removeEventListener("storage", refresh);
+      window.removeEventListener("davidani:generation-jobs-updated", refresh);
+    };
+  }, []);
+
+  const visibleMetrics =
+    globalActiveJobs > 0
+      ? [
+          ...metrics.filter((metric) => metric.label.toLowerCase() !== "active"),
+          { label: "Active", value: globalActiveJobs },
+        ]
+      : metrics;
+
   return (
     <header className="studio-header">
       <div className="studio-header__brand">
@@ -44,9 +70,10 @@ export default function StudioHeader({
       <TopTabs active={active} />
 
       <div className="studio-header__meta">
-        {metrics.length ? (
+        <JobCenter />
+        {visibleMetrics.length ? (
           <div className="studio-metrics">
-            {metrics.map((metric) => (
+            {visibleMetrics.map((metric) => (
               <span key={metric.label} className="studio-metric">
                 <span>{metric.label}</span>
                 <strong>{metric.value}</strong>

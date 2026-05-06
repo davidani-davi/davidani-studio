@@ -1,0 +1,21 @@
+{
+  "functions": {
+    "app/api/generate-model/route.ts": {
+      "maxDuration": 800
+    }
+  },
+  "crons": [
+    {
+      "path": "/api/ab-report?period=daily",
+      "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/ab-report?period=weekly",
+      "schedule": "0 15 * * 1"
+    },
+    {
+      "path": "/api/history/cleanup",
+      "schedule": "30 8 * * *"
+    }
+  ]
+}

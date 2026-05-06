@@ -2,26 +2,47 @@ import { NextResponse } from "next/server";
 import {
   analyzeModelPhoto,
   analyzeGarmentToPrompt,
-  buildModelSwapPrompt,
-  buildModelSwapTwoPiecePrompt,
+  buildModelStudioBetaPromptVariants,
+  buildModelSwapPromptVariants,
+  buildModelSwapTwoPiecePromptVariants,
   extractTwoPieceFields,
+  inferSwapScope,
+  MODEL_PHOTO_ANALYSIS_FALLBACK,
   type GarmentAdjustments,
+  type SwapScope,
 } from "@/lib/fal";
-import { getPosePublicPath, type PresetView } from "@/lib/models-registry";
+import { getPosePublicPath, getPoseUrl, type PresetView } from "@/lib/models-registry";
 import { fal } from "@fal-ai/client";
 
 export const runtime = "nodejs";
 export const maxDuration = 180;
 
-function absoluteUrl(req: Request, publicPath: string): string {
-  const proto = req.headers.get("x-forwarded-proto") || "https";
-  const host = req.headers.get("x-forwarded-host") || req.headers.get("host");
-  if (!host) throw new Error("Unable to resolve public asset host");
-  return new URL(encodeURI(publicPath), `${proto}://${host}`).toString();
+let falConfigured = false;
+
+function ensureFalConfigured() {
+  if (falConfigured) return;
+  const key = process.env.FAL_KEY;
+  if (!key) throw new Error("FAL_KEY environment variable is missing.");
+  fal.config({ credentials: key });
+  falConfigured = true;
 }
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function resolvePoseUrl(
+  req: Request,
+  modelId: string,
+  poseId: string,
+  view: PresetView,
+  poseVariantIndex: number
+): Promise<string> {
+  if (process.env.VERCEL) {
+    const publicPath = getPosePublicPath(modelId, poseId, view, poseVariantIndex);
+    return new URL(publicPath, req.url).toString();
+  }
+  return getPoseUrl(modelId, poseId, view, poseVariantIndex);
 }
 
 function isRetryableVisionError(err: unknown): boolean {
@@ -35,21 +56,109 @@ function isRetryableVisionError(err: unknown): boolean {
   return (
     /bad gateway|gateway|502|upstream|overloaded|temporarily unavailable|service unavailable/.test(
       message
+    ) ||
+    /bad request|invalid image|image.*url|url.*image|fetch.*image|download.*image|validation|400/.test(
+      message
     )
   );
+}
+
+const ANTHROPIC_MODEL_MAP: Record<string, string> = {
+  "anthropic/claude-haiku-4.5": "claude-haiku-4-5-20251001",
+  "anthropic/claude-3.7-sonnet": "claude-3-7-sonnet-20250219",
+};
+
+async function callAnthropicVisionDirect(
+  input: Record<string, unknown>,
+  label: string
+): Promise<any> {
+  const apiKey = process.env.ANTHROPIC_API_KEY!;
+  const modelId =
+    ANTHROPIC_MODEL_MAP[String(input.model || "")] || "claude-haiku-4-5-20251001";
+  const systemText = String(input.system_prompt || "");
+  const userText = String(input.prompt || "");
+
+  const imageUrls: string[] = [];
+  if (input.image_url && typeof input.image_url === "string") {
+    imageUrls.push(input.image_url);
+  } else if (Array.isArray(input.image_urls)) {
+    imageUrls.push(...(input.image_urls as string[]));
+  }
+
+  const imageBlocks = imageUrls.map((url) => ({
+    type: "image" as const,
+    source: { type: "url" as const, url },
+  }));
+
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+      "anthropic-beta": "prompt-caching-2024-07-31",
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      model: modelId,
+      max_tokens: 2048,
+      system: [{ type: "text", text: systemText, cache_control: { type: "ephemeral" } }],
+      messages: [{ role: "user", content: [...imageBlocks, { type: "text", text: userText }] }],
+    }),
+  });
+
+  if (!res.ok) {
+    const errText = await res.text().catch(() => `HTTP ${res.status}`);
+    throw new Error(`Anthropic API ${res.status}: ${errText.slice(0, 300)}`);
+  }
+
+  const data = await res.json();
+  const text = (data.content as any[])
+    .filter((b) => b.type === "text")
+    .map((b) => String(b.text || ""))
+    .join("");
+
+  if (data.usage) {
+    console.log(
+      `[${label}] anthropic usage: input=${data.usage.input_tokens} ` +
+        `cache_read=${data.usage.cache_read_input_tokens ?? 0} ` +
+        `output=${data.usage.output_tokens}`
+    );
+  }
+
+  return { data: { output: text } };
 }
 
 async function subscribeVisionWithRetry(
   input: Record<string, unknown>,
   label: string
 ): Promise<any> {
+  const delays = [0, 900, 2200];
   let lastErr: unknown;
-  const delays = [0, 700, 1600];
+
+  // Direct Anthropic path — remove ANTHROPIC_API_KEY to revert to fal.ai proxy.
+  if (process.env.ANTHROPIC_API_KEY) {
+    for (let attempt = 0; attempt < delays.length; attempt++) {
+      if (delays[attempt] > 0) await sleep(delays[attempt]);
+      try {
+        return await callAnthropicVisionDirect(input, label);
+      } catch (err) {
+        lastErr = err;
+        if (!isRetryableVisionError(err) || attempt === delays.length - 1) break;
+        console.warn(
+          `[${label}] transient Anthropic error on attempt ${attempt + 1}, retrying:`,
+          err
+        );
+      }
+    }
+    const finalMessage = (lastErr as any)?.message || String(lastErr) || "unknown error";
+    throw new Error(`${label} failed: ${finalMessage}`);
+  }
+
+  // Fallback: fal.ai proxy (original behavior when no ANTHROPIC_API_KEY).
+  ensureFalConfigured();
 
   for (let attempt = 0; attempt < delays.length; attempt++) {
-    if (delays[attempt] > 0) {
-      await sleep(delays[attempt]);
-    }
+    if (delays[attempt] > 0) await sleep(delays[attempt]);
     try {
       return await fal.subscribe("fal-ai/any-llm/vision", {
         input,
@@ -57,9 +166,7 @@ async function subscribeVisionWithRetry(
       });
     } catch (err) {
       lastErr = err;
-      if (!isRetryableVisionError(err) || attempt === delays.length - 1) {
-        break;
-      }
+      if (!isRetryableVisionError(err) || attempt === delays.length - 1) break;
       console.warn(`[${label}] transient vision error on attempt ${attempt + 1}, retrying:`, err);
     }
   }
@@ -97,8 +204,8 @@ async function subscribeVisionWithRetry(
 async function extractGarmentFields(imageUrl: string): Promise<{ garment: string; features: string }> {
   const SYSTEM = `You are a product catalog analyzer. You see a single garment photograph and must output exactly two lines, in this exact format, with no preamble, no markdown, and no extra lines:
 
-GARMENT: <a short noun phrase describing the garment — include primary color, fabric/texture, an explicit silhouette / cut / fit descriptor, and garment type. For pants and jeans, choose the most accurate mainstream leg-shape word: barrel-fit, wide-leg, straight-leg, flare, bootcut, skinny, slim, relaxed, baggy, tapered, cargo, jogger, trouser, palazzo, cropped, or bermuda. Example: "barrel-fit dark indigo denim jeans", "wide-leg cream linen trousers", "straight-leg black cargo pants".>
-FEATURES: <comma-separated noun phrases enumerating clearly visible structural details. ALWAYS begin with a silhouette clause that restates the garment's cut/fit/leg-shape in concrete visual terms. For barrel pants, use language like "a rounded barrel-shaped leg that curves outward through the thigh and knee then tapers toward the ankle"; for wide-leg, "a wide leg of generous width from hip to hem"; for straight-leg, "an even-width leg from thigh to hem"; for flare, "a leg that widens from knee to hem".>
+GARMENT: <a short noun phrase describing the garment — include primary color, fabric/texture, an explicit silhouette / cut / fit descriptor, body-length descriptor for tops/jackets/cardigans, and garment type. For pants and jeans, choose the most accurate mainstream leg-shape word: barrel-fit, wide-leg, straight-leg, flare, bootcut, skinny, slim, relaxed, baggy, tapered, cargo, jogger, trouser, palazzo, cropped, or bermuda. Example: "hip-length boxy cream fleece bomber jacket", "barrel-fit dark indigo denim jeans", "wide-leg cream linen trousers".>
+FEATURES: <comma-separated noun phrases enumerating clearly visible structural details. ALWAYS begin with a silhouette clause that restates the garment's cut/fit/leg-shape/body length in concrete visual terms. For jackets, tops, cardigans, sweaters, and shirts, explicitly state where the body hem appears to land: cropped above waist, at waistband, below waistband, high hip, hip length, below hip, tunic length, etc. For barrel pants, use language like "a rounded barrel-shaped leg that curves outward through the thigh and knee then tapers toward the ankle"; for wide-leg, "a wide leg of generous width from hip to hem"; for straight-leg, "an even-width leg from thigh to hem"; for flare, "a leg that widens from knee to hem".>
 
 RULES:
 - NEVER invent text, letters, numbers, logos, brand names, or made-up words.
@@ -108,11 +215,14 @@ RULES:
 - PANTS SHAPE AUDIT: If the garment has two leg openings, a waistband, and no neckline, it is a bottom. Never call pants a top. Pay special attention to the outer leg line: rounded outward curve + tapered ankle = barrel; consistent width = wide-leg or straight-leg; widening below knee = flare or bootcut; close fit through ankle = skinny or slim; roomy thigh narrowing to ankle = tapered or jogger.
 - If the uploaded garment is barrel pants, both GARMENT and FEATURES must explicitly say barrel/barrel-shaped. Do not soften barrel pants into straight-leg, relaxed, or wide-leg.
 - If the exact pants cut is uncertain, choose the closest visible mainstream leg-shape descriptor and describe the evidence in FEATURES.
+- HEM GEOMETRY AUDIT: For tops, jackets, cardigans, sweaters, shirts, blouses, hoodies, pullovers, and outerwear, examine whether the front hem and back hem land at the same height. If the back panel is visibly longer than the front (a longer back hem peeks out below the front hem on a hanger or flat-lay), say so explicitly in both GARMENT and FEATURES using one of these terms: "high-low hem", "shirttail hem", "stepped hem", "extended back hem", or "asymmetric hem with longer back panel". Treat the longer back panel as part of the SAME garment.
+- LAYERING DISAMBIGUATION: Do not describe any visible inner-fabric portion as an "undershirt", "cami", "inner top", "second layer", "underlayer", "layered piece", "two-piece", or any phrase that implies more than one garment, UNLESS the photograph clearly shows two physically separate garments hanging together. A longer back hem peeking below a shorter front hem on the same hanger is ONE garment with an asymmetric hem — never two garments. A contrasting band visible at a hem is part of the garment's own construction (color-block, banded hem, raw edge), not a second garment.
+- ONE GARMENT DEFAULT: If only one garment is hanging in the photograph, both GARMENT and FEATURES must describe ONE garment. Never split a single hanging garment into "top + cami", "shirt + inner tank", or any layered description.
 - Output exactly two lines: GARMENT: and FEATURES:, nothing else.`;
 
   const result: any = await subscribeVisionWithRetry(
     {
-      model: "anthropic/claude-3.7-sonnet",
+      model: "anthropic/claude-haiku-4.5",
       system_prompt: SYSTEM,
       prompt:
         "Analyze the garment in this photograph using the two-line GARMENT / FEATURES format. Output exactly those two lines, nothing else.",
@@ -122,19 +232,70 @@ RULES:
   );
   const data = result?.data ?? result;
   const output: string = (data?.output ?? data?.response ?? data?.text ?? "").trim();
-  const garment = (output.match(/GARMENT:\s*(.+?)\s*(?:\r?\n|$)/i)?.[1] || "")
+  const garmentRaw = (output.match(/GARMENT:\s*(.+?)\s*(?:\r?\n|$)/i)?.[1] || "")
     .trim()
     .replace(/\.$/, "");
-  const features = (
+  const featuresRaw = (
     output.match(/FEATURES:\s*([\s\S]+?)\s*(?:\r?\n(?=[A-Z ]+:)|$)/i)?.[1] || ""
   )
     .trim()
     .replace(/\.$/, "");
+  // The vision model occasionally repeats the trailing category word
+  // ("…ruffled cotton romper romper"). Collapse trailing duplicate words —
+  // single token or two-word categories — so downstream scope inference
+  // and prompt rendering see clean text.
+  const garment = dedupeTrailingWords(garmentRaw);
+  const features = dedupeTrailingWords(featuresRaw);
   if (!garment) {
     console.error("[analyze-model] garment parse failed:", output.slice(0, 400));
     throw new Error("Could not extract garment description from uploaded photo.");
   }
   return { garment, features };
+}
+
+/**
+ * Collapse trailing duplicate word/word-pairs that the vision LLM sometimes
+ * emits, e.g. "ruffled cotton romper romper" → "ruffled cotton romper",
+ * "matching crop top crop top" → "matching crop top". Operates on the last
+ * 1-2 tokens only; intentionally conservative.
+ */
+function dedupeTrailingWords(text: string): string {
+  if (!text) return text;
+  const tokens = text.split(/\s+/);
+  if (tokens.length >= 2 && tokens[tokens.length - 1].toLowerCase() === tokens[tokens.length - 2].toLowerCase()) {
+    return tokens.slice(0, -1).join(" ");
+  }
+  if (
+    tokens.length >= 4 &&
+    tokens[tokens.length - 1].toLowerCase() === tokens[tokens.length - 3].toLowerCase() &&
+    tokens[tokens.length - 2].toLowerCase() === tokens[tokens.length - 4].toLowerCase()
+  ) {
+    return tokens.slice(0, -2).join(" ");
+  }
+  return text;
+}
+
+function fallbackGarmentFields(reason: unknown): { garment: string; features: string } {
+  const message = String((reason as any)?.message || reason || "unknown");
+  console.warn("[analyze-model] garment analysis failed; using safe garment fallback:", message);
+  return {
+    garment: "uploaded upper-body apparel garment from the product reference image",
+    features:
+      "preserve the exact uploaded garment category, silhouette, body length, sleeve shape, hood/collar/neckline, fabric texture, color, seams, trims, drawstrings, pockets, hem, cuffs, graphics, embellishments, hardware, and construction from the product reference image; ignore mannequin, hanger, background, and display form",
+  };
+}
+
+function fallbackTwoPieceFields(reason: unknown): Awaited<ReturnType<typeof extractTwoPieceFields>> {
+  const message = String((reason as any)?.message || reason || "unknown");
+  console.warn("[analyze-model] two-piece analysis failed; using safe set fallback:", message);
+  return {
+    top: "uploaded top piece from the two-piece product reference",
+    topFeatures:
+      "preserve the exact uploaded top garment category, silhouette, body length, sleeve shape, neckline, fabric texture, color, seams, trims, pockets, graphics, embellishments, hardware, and construction from the first product reference image",
+    bottom: "uploaded bottom piece from the two-piece product reference",
+    bottomFeatures:
+      "preserve the exact uploaded bottom garment category, silhouette, length, leg or skirt shape, waistband, fabric texture, color, seams, trims, pockets, graphics, embellishments, hardware, and construction from the second product reference image",
+  };
 }
 
 type GarmentPart = "top" | "bottom" | "full-look" | "unknown";
@@ -206,7 +367,17 @@ async function extractTwoPieceFieldsFromSeparateImages(
     throw new Error("Two-piece mode with separate uploads requires one top image and one bottom image.");
   }
 
-  const analyzed = await Promise.all(imageUrls.slice(0, 2).map((url) => extractGarmentFields(url)));
+  const analyzed = await Promise.all(
+    imageUrls
+      .slice(0, 2)
+      .map(async (url, index) =>
+        extractGarmentFields(url).catch((err) =>
+          fallbackGarmentFields(
+            `two-piece upload ${index + 1}: ${(err as any)?.message || String(err)}`
+          )
+        )
+      )
+  );
   const classified = analyzed.map((fields) => ({
     ...fields,
     part: classifyGarmentPart(fields.garment),
@@ -214,26 +385,46 @@ async function extractTwoPieceFieldsFromSeparateImages(
 
   const top = classified.find((item) => item.part === "top");
   const bottom = classified.find((item) => item.part === "bottom");
+  const inferredTop =
+    top ||
+    classified.find((item) => item.part !== "bottom") ||
+    classified[0];
+  const inferredBottom =
+    bottom ||
+    classified.find((item) => item !== inferredTop && item.part !== "top") ||
+    classified[1] ||
+    classified[0];
 
   if (!top || !bottom) {
-    const summary = classified.map((item) => `"${item.garment}" → ${item.part}`).join(", ");
-    throw new Error(
-      `Two-piece mode expected one top and one bottom upload, but detected: ${summary}. Upload one top image and one bottom image.`
+    const summary = classified.map((item) => `"${item.garment}" -> ${item.part}`).join(", ");
+    console.warn(
+      `[analyze-model] two-piece classification was uncertain; using upload order fallback: ${summary}`
     );
   }
 
   return {
-    top: top.garment,
-    topFeatures: top.features,
-    bottom: bottom.garment,
-    bottomFeatures: bottom.features,
+    top: inferredTop.garment,
+    topFeatures: inferredTop.features,
+    bottom: inferredBottom.garment,
+    bottomFeatures: inferredBottom.features,
   };
 }
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { modelId, poseId, garmentImageUrl, garmentImageUrls, twoPiece, view, garmentOverride } =
+    const {
+      modelId,
+      poseId,
+      garmentImageUrl,
+      garmentImageUrls,
+      twoPiece,
+      view,
+      garmentOverride,
+      promptMode,
+      swapScopeOverride,
+      poseVariantIndex,
+    } =
       body as {
       modelId: string;
       poseId: string;
@@ -243,8 +434,23 @@ export async function POST(req: Request) {
       adjustments?: GarmentAdjustments;
       view?: PresetView;
       garmentOverride?: unknown;
+      promptMode?: "classic" | "beta";
+      swapScopeOverride?: SwapScope | "auto";
+      poseVariantIndex?: number;
     };
+    // Clamp to a sane range so an out-of-bounds index doesn't surprise the
+    // resolver. Anything > 0 only matters when the look has viewVariants.
+    const safePoseVariantIndex =
+      typeof poseVariantIndex === "number" && Number.isFinite(poseVariantIndex)
+        ? Math.max(0, Math.min(8, Math.floor(poseVariantIndex)))
+        : 0;
     const adjustments = body?.adjustments as GarmentAdjustments | undefined;
+    const validScopeOverride: SwapScope | undefined =
+      swapScopeOverride === "upper-body" ||
+      swapScopeOverride === "lower-body" ||
+      swapScopeOverride === "full-look"
+        ? swapScopeOverride
+        : undefined;
     const singleGarmentOverride =
       !twoPiece &&
       garmentOverride &&
@@ -278,7 +484,13 @@ export async function POST(req: Request) {
       );
     }
 
-    const poseUrl = absoluteUrl(req, getPosePublicPath(modelId, poseId, view || "front"));
+    const poseUrl = await resolvePoseUrl(
+      req,
+      modelId,
+      poseId,
+      view || "front",
+      safePoseVariantIndex
+    );
 
     // Run both vision passes in parallel but use allSettled so we can report
     // which one failed. Previously a 400 from fal.ai would surface as a
@@ -298,27 +510,52 @@ export async function POST(req: Request) {
         : extractGarmentFields(garmentUrls[0]),
       analyzeModelPhoto(poseUrl),
     ]);
-    if (garmentResult.status === "rejected") {
-      console.error("[analyze-model] garment analysis failed:", garmentResult.reason);
-      const msg =
-        garmentResult.reason?.message || String(garmentResult.reason) || "unknown";
-      throw new Error(`Garment photo analysis failed: ${msg}`);
-    }
+    const modelFields =
+      modelResult.status === "rejected"
+        ? MODEL_PHOTO_ANALYSIS_FALLBACK
+        : modelResult.value;
     if (modelResult.status === "rejected") {
-      console.error("[analyze-model] pose analysis failed:", modelResult.reason);
-      const msg =
-        modelResult.reason?.message || String(modelResult.reason) || "unknown";
-      throw new Error(`Pose photo analysis failed: ${msg}`);
+      console.warn(
+        "[analyze-model] pose analysis failed; continuing with safe fallback:",
+        modelResult.reason
+      );
     }
-    const modelFields = modelResult.value;
 
     let prompt: string;
+    // For Studio 1 (classic prompt mode), also return three Image-A/Image-B
+    // variants so the client can run them in parallel and offer a 3-up picker.
+    // Beta keeps a single composition-first prompt.
+    let prompts: string[] | undefined;
     let responseGarmentMeta: Record<string, unknown>;
+    let inferredScope: SwapScope = "upper-body";
+    let effectiveScope: SwapScope = "upper-body";
     if (twoPiece) {
-      const twoPieceFields = garmentResult.value as Awaited<
-        ReturnType<typeof extractTwoPieceFields>
-      >;
-      prompt = buildModelSwapTwoPiecePrompt(twoPieceFields, modelFields, adjustments);
+      const twoPieceFields =
+        garmentResult.status === "fulfilled"
+          ? (garmentResult.value as Awaited<ReturnType<typeof extractTwoPieceFields>>)
+          : fallbackTwoPieceFields(garmentResult.reason);
+      // Two-piece is always full-look; the override doesn't apply because
+      // a coordinated set replaces both halves of the outfit by definition.
+      inferredScope = "full-look";
+      effectiveScope = "full-look";
+      if (promptMode === "beta") {
+        const variants = buildModelStudioBetaPromptVariants(
+          `${twoPieceFields.top} and ${twoPieceFields.bottom} coordinated set`,
+          [twoPieceFields.topFeatures, twoPieceFields.bottomFeatures].filter(Boolean).join(", "),
+          modelFields,
+          adjustments
+        );
+        prompt = variants[0];
+        prompts = variants;
+      } else {
+        const variants = buildModelSwapTwoPiecePromptVariants(
+          twoPieceFields,
+          modelFields,
+          adjustments
+        );
+        prompt = variants[0];
+        prompts = variants;
+      }
       responseGarmentMeta = {
         twoPiece: true,
         top: twoPieceFields.top,
@@ -327,15 +564,32 @@ export async function POST(req: Request) {
         bottomFeatures: twoPieceFields.bottomFeatures,
       };
     } else {
-      const singleFields = garmentResult.value as Awaited<
-        ReturnType<typeof extractGarmentFields>
-      >;
-      prompt = buildModelSwapPrompt(
-        singleFields.garment,
-        singleFields.features,
-        modelFields,
-        adjustments
-      );
+      const singleFields =
+        garmentResult.status === "fulfilled"
+          ? (garmentResult.value as Awaited<ReturnType<typeof extractGarmentFields>>)
+          : fallbackGarmentFields(garmentResult.reason);
+      inferredScope = inferSwapScope(singleFields.garment);
+      effectiveScope = validScopeOverride ?? inferredScope;
+      if (promptMode === "beta") {
+        const variants = buildModelStudioBetaPromptVariants(
+          singleFields.garment,
+          singleFields.features,
+          modelFields,
+          adjustments
+        );
+        prompt = variants[0];
+        prompts = variants;
+      } else {
+        const variants = buildModelSwapPromptVariants(
+          singleFields.garment,
+          singleFields.features,
+          modelFields,
+          adjustments,
+          validScopeOverride
+        );
+        prompt = variants[0];
+        prompts = variants;
+      }
       responseGarmentMeta = {
         twoPiece: false,
         garment: singleFields.garment,
@@ -348,7 +602,10 @@ export async function POST(req: Request) {
     return NextResponse.json({
       ok: true,
       prompt,
+      ...(prompts ? { prompts } : {}),
       poseUrl,
+      inferredScope,
+      effectiveScope,
       ...responseGarmentMeta,
       model: modelFields,
     });

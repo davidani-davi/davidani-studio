@@ -42,7 +42,7 @@ async function fetchLibrary(q = "", styleNumber = ""): Promise<LibraryStyle[]> {
 }
 
 const MODEL_STUDIO_IMPORT_KEY = "davidani:model-studio:library-import";
-const DESIGN_STUDIO_INSPIRATION_KEY = "davidani:design-studio:inspiration-stem";
+const PROMPT_STUDIO_IMPORT_KEY = "davidani:prompt-studio:import";
 const CORE_ECOMMERCE_VIEWS = ["Front", "Side", "Back", "Detail"] as const;
 
 function formatViewLabel(label: string): string {
@@ -276,27 +276,6 @@ function primaryStyleImage(style: LibraryStyle): LibraryView | null {
     style.views[0] ||
     null
   );
-}
-
-function bestsellerRemixRefinement(style: LibraryStyle): string {
-  const tags = [...(style.vibeTags || []), ...(style.libraryTags || [])]
-    .slice(0, 8)
-    .join(", ");
-  return [
-    "Bestseller Remix Engine: treat this uploaded Library style as a proven seller or strong commercial reference.",
-    "Target customer: women's boutique apparel shoppers in the Free People / Anthropologie / young contemporary bohemian world. Prioritize feminine, expressive, wearable, boutique-ready ideas. Do not drift into menswear, male styling, masculine workwear, or men's fit language unless the user explicitly asks.",
-    `Style number: ${style.styleNumber}. Color: ${style.color}.`,
-    style.garmentType ? `Category: ${style.garmentType}.` : "",
-    style.silhouette ? `Current silhouette: ${style.silhouette}.` : "",
-    style.fabric ? `Fabric/texture signal: ${style.fabric}.` : "",
-    tags ? `Known commercial tags: ${tags}.` : "",
-    style.seoDescription ? `Current buyer-facing description: ${style.seoDescription}` : "",
-    "Generate 6 concepts: 2 safe commercial extensions, 2 trend-forward extensions, 1 lower-risk reorder extension, and 1 novelty statement extension.",
-    "Preserve the exact product category, but do not copy the exact design, artwork, placement, color story, or trim layout.",
-    "Each concept should feel like a new women's boutique SKU a Faire buyer could add for a different reason.",
-  ]
-    .filter(Boolean)
-    .join(" ");
 }
 
 function launchChecklist(style: LibraryStyle): LaunchChecklistItem[] {
@@ -589,7 +568,7 @@ export default function LibraryClient() {
       );
       window.location.href = "/model-studio";
     } catch {
-      setError("Could not send this image to Model Studio.");
+      setError("Could not send this image to Single Model Studio.");
     }
   }
 
@@ -601,16 +580,16 @@ export default function LibraryClient() {
     }
     try {
       localStorage.setItem(
-        DESIGN_STUDIO_INSPIRATION_KEY,
+        PROMPT_STUDIO_IMPORT_KEY,
         JSON.stringify({
+          tool: "bestseller-remix",
           title: `${style.styleNumber} ${style.color} Bestseller Remix`,
           imageUrl: source.imageUrl,
-          refinement: bestsellerRemixRefinement(style),
         })
       );
-      window.location.href = "/design-studio";
+      window.location.href = "/prompt-studio";
     } catch {
-      setError("Could not send this style to Design Studio.");
+      setError("Could not send this style to Prompt Studio.");
     }
   }
 
@@ -749,7 +728,7 @@ export default function LibraryClient() {
           <p className="text-sm text-neutral-500">Loading library...</p>
         ) : styles.length === 0 ? (
           <div className="rounded-xl border border-dashed border-neutral-300 bg-white px-5 py-10 text-center text-sm text-neutral-500">
-            No styles yet. Upload a result from Image Studio or Model Studio to start the team
+            No styles yet. Upload a result from Image Studio or Single Model Studio to start the team
             library.
           </div>
         ) : filteredStyles.length === 0 ? (

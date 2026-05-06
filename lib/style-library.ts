@@ -229,7 +229,7 @@ export async function generateStyleSeo(input: {
     fal.config({ credentials: key });
     const result: any = await fal.subscribe("fal-ai/any-llm/vision", {
       input: {
-        model: "anthropic/claude-3.7-sonnet",
+        model: "anthropic/claude-haiku-4.5",
         system_prompt:
           "You are a senior ecommerce fashion copywriter for Faire wholesale listings. You must analyze the garment visible in the image and write accurate, sellable product copy. Never describe the model, pose, background, photography, or team workflow. Never use generic filler.",
         image_url: input.imageUrl,

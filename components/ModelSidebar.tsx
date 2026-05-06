@@ -53,6 +53,7 @@ interface Props {
   onFontFamilyChange: (v: string) => void;
   fontSize: number;
   onFontSizeChange: (v: number) => void;
+  multiModelMode?: boolean;
 }
 
 const PLACEMENTS: { value: OverlayPlacement; label: string }[] = [
@@ -75,7 +76,7 @@ const FONT_FAMILIES: string[] = [
   "Courier New",
 ];
 
-const PRESET_VIEWS: { value: PresetView; label: string }[] = [
+const PRESET_VIEWS: Array<{ value: PresetView; label: string }> = [
   { value: "front", label: "Front" },
   { value: "side", label: "Side" },
   { value: "back", label: "Back" },
@@ -103,7 +104,7 @@ function SectionHeader({
     <div className="flex w-full items-center justify-between">
       <div className="flex items-center gap-2">
         <span className="text-neutral-400">{icon}</span>
-        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-700">
+        <h3 className="text-[12px] font-semibold text-neutral-800">
           {title}
         </h3>
       </div>
@@ -173,8 +174,8 @@ export default function ModelSidebar(p: Props) {
   const selectedModel: HumanModel | null =
     p.humanModels.find((m) => m.id === p.selectedHumanModelId) ?? null;
   const poses: ModelPose[] = selectedModel?.poses ?? [];
-  const activeLook = poses.find((pose) => pose.id === p.selectedPoseId) ?? null;
-
+  const selectedPose: ModelPose | null =
+    poses.find((pose) => pose.id === p.selectedPoseId) ?? poses[0] ?? null;
   function hasImageFiles(e: React.DragEvent): boolean {
     return Array.from(e.dataTransfer.items).some((item) => item.type.startsWith("image/"));
   }
@@ -210,6 +211,69 @@ export default function ModelSidebar(p: Props) {
       >
         <SectionHeader icon={IconCamera} title="Garment intake" hint={refHint} />
 
+        {p.multiModelMode ? (
+          <div className="grid gap-2">
+            {(["Front Garment Image", "Back Garment Image"] as const).map((label, slotIndex) => {
+              const upload = p.uploads[slotIndex];
+              const required = slotIndex === 0;
+              return (
+                <div key={label} className="rounded-xl border border-neutral-200 bg-neutral-50 p-2">
+                  <div className="mb-2 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-neutral-500">
+                    <span>{label}</span>
+                    <span>{required ? "Required" : "Optional"}</span>
+                  </div>
+                  {upload ? (
+                    <div className="group relative aspect-[4/3] overflow-hidden rounded-lg border border-brand-200 bg-white">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={upload.url} alt={upload.name} className="h-full w-full object-cover" />
+                      <button
+                        onClick={() => p.onRemoveUpload(upload.url)}
+                        className="absolute left-2 top-2 rounded-full bg-black/70 px-2 py-0.5 text-[10px] font-semibold text-white opacity-0 transition group-hover:opacity-100"
+                        title="Remove"
+                      >
+                        Remove
+                      </button>
+                      <ZoomButton
+                        onClick={() => setPreviewSrc(upload.url)}
+                        title="Preview at full size"
+                        className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100"
+                      />
+                    </div>
+                  ) : (
+                    <label
+                      className={`flex min-h-[112px] cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed text-center transition hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600 ${
+                        draggingUploads
+                          ? "border-brand-500 bg-brand-50 text-brand-700"
+                          : "border-neutral-300 bg-white text-neutral-400"
+                      }`}
+                    >
+                      <svg viewBox="0 0 20 20" fill="currentColor" className="mb-2 h-5 w-5">
+                        <path d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" />
+                      </svg>
+                      <span className="text-xs font-semibold text-neutral-800">
+                        {required ? "Upload front" : "Upload back"}
+                      </span>
+                      <span className="mt-1 max-w-[220px] text-[10px] leading-relaxed text-neutral-500">
+                        {required
+                          ? "Main garment reference for all 4 views."
+                          : "Improves back accuracy when artwork or construction is hidden."}
+                      </span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          if (e.target.files?.length) p.onAddFiles(e.target.files);
+                          e.currentTarget.value = "";
+                        }}
+                      />
+                    </label>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        ) : (
         <div className={uploadCount === 0 ? "grid gap-2" : "grid grid-cols-3 gap-2"}>
           <label
             className={`group flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed text-center transition hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600 ${
@@ -281,6 +345,7 @@ export default function ModelSidebar(p: Props) {
             );
           })}
         </div>
+        )}
 
         <div className="mt-3 grid grid-cols-3 gap-1.5 text-center text-[10px] font-medium text-neutral-500">
           <span className="rounded-full bg-neutral-50 px-2 py-1">1. Upload</span>
@@ -303,54 +368,90 @@ export default function ModelSidebar(p: Props) {
           }
         />
 
-        {/* Model picker */}
-        <div className="mb-4 grid grid-cols-2 gap-2">
+        {/* Model picker — grouped by family. Models with the same prefix word
+            (e.g. "celine 1", "celine 2", "celine 3" → "Celine") are clustered
+            together under a small header. Single-model families still show a
+            tier header so Pants and Sydney do not look like leftovers. */}
+        <div className="mb-4 space-y-3">
           {p.humanModels.length === 0 && !p.modelsLoading && (
-            <p className="col-span-2 text-[11px] text-neutral-500">
+            <p className="text-[11px] text-neutral-500">
               No models found. Add look presets under{" "}
               <code className="rounded bg-neutral-100 px-1">public/models/</code>.
             </p>
           )}
-          {p.humanModels.map((m) => {
-            const active = m.id === p.selectedHumanModelId;
-            const poseCount = m.poses.length;
-            const primaryThumb =
-              m.poses[0]?.views?.front ||
-              m.poses[0]?.views?.full ||
-              m.poses[0]?.views?.side ||
-              m.poses[0]?.views?.back;
-            return (
-              <button
-                key={m.id}
-                onClick={() => p.onHumanModelChange(m.id)}
-                className={`group flex min-h-[74px] items-center gap-2 rounded-lg border p-2 text-left transition ${
-                  active
-                    ? "border-brand-500 bg-brand-50 text-brand-700 shadow-sm"
-                    : "border-neutral-200 bg-white text-neutral-700 hover:border-neutral-400 hover:bg-neutral-50"
-                }`}
-              >
-                <span className="relative h-12 w-9 shrink-0 overflow-hidden rounded-md border border-neutral-200 bg-neutral-100">
-                  {primaryThumb ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={primaryThumb.publicPath || m.poses[0]?.publicPath}
-                      alt=""
-                      className="h-full w-full object-cover transition group-hover:scale-105"
-                    />
-                  ) : null}
-                  {active && (
-                    <span className="absolute right-0.5 top-0.5 h-2 w-2 rounded-full bg-brand-600" />
-                  )}
-                </span>
-                <span className="min-w-0">
-                  <span className="block truncate text-xs font-semibold">{m.name}</span>
-                  <span className="mt-0.5 block text-[10px] text-neutral-500">
-                    {poseCount} {poseCount === 1 ? "look" : "looks"}
-                  </span>
-                </span>
-              </button>
-            );
-          })}
+          {(() => {
+            // Bucket models by family prefix while preserving the registry's
+            // existing sort order. The prefix is everything before the first
+            // numeric token, lowercased and trimmed (e.g. "celine 1" → "celine",
+            // "pants 2" → "pants", "sydney" → "sydney").
+            const familyOrder: string[] = [];
+            const buckets = new Map<string, typeof p.humanModels>();
+            for (const m of p.humanModels) {
+              const family = m.name.replace(/\s*\d+\s*$/, "").trim() || m.name;
+              if (!buckets.has(family)) {
+                buckets.set(family, []);
+                familyOrder.push(family);
+              }
+              buckets.get(family)!.push(m);
+            }
+            return familyOrder.map((family) => {
+              const familyModels = buckets.get(family)!;
+              return (
+                <div key={family} className="space-y-1.5">
+                  <div className="flex items-center gap-2 px-0.5">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400">
+                      {family}
+                    </span>
+                    <span className="h-px flex-1 bg-neutral-200" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {familyModels.map((m) => {
+                      const active = m.id === p.selectedHumanModelId;
+                      const primaryThumb =
+                        m.poses[0]?.views?.front ||
+                        m.poses[0]?.views?.full ||
+                        m.poses[0]?.views?.side ||
+                        m.poses[0]?.views?.back;
+                      // Show the variant suffix ("1" / "2" / "3") inside each
+                      // family tier, while singleton names such as Sydney remain
+                      // readable.
+                      const label = m.name.replace(family, "").trim() || m.name;
+                      return (
+                        <button
+                          key={m.id}
+                          onClick={() => p.onHumanModelChange(m.id)}
+                          className={`group flex min-h-[60px] items-center gap-2 rounded-lg border p-2 text-left transition ${
+                            active
+                              ? "border-brand-500 bg-brand-50 text-brand-700 shadow-sm"
+                              : "border-neutral-200 bg-white text-neutral-700 hover:border-neutral-400 hover:bg-neutral-50"
+                          }`}
+                        >
+                          <span className="relative h-12 w-9 shrink-0 overflow-hidden rounded-md border border-neutral-200 bg-neutral-100">
+                            {primaryThumb ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={primaryThumb.publicPath || m.poses[0]?.publicPath}
+                                alt=""
+                                className="h-full w-full object-cover transition group-hover:scale-105"
+                              />
+                            ) : null}
+                            {active && (
+                              <span className="absolute right-0.5 top-0.5 h-2 w-2 rounded-full bg-brand-600" />
+                            )}
+                          </span>
+                          <span className="min-w-0">
+                            <span className="block truncate text-xs font-semibold">
+                              {label}
+                            </span>
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            });
+          })()}
         </div>
 
         {selectedModel?.id.startsWith("pants") && (
@@ -360,92 +461,147 @@ export default function ModelSidebar(p: Props) {
           </p>
         )}
 
-        {/* Look preset grid */}
+        {/* Look preset / reference preview */}
         {selectedModel && poses.length > 0 && (
           <>
-            <label className="mb-1 block text-[10px] font-medium text-neutral-500">
-              Look Preset
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              {poses.map((pose) => {
-                const active = pose.id === p.selectedPoseId;
-                const thumb =
-                  pose.views[p.selectedView] ||
-                  pose.views.front ||
-                  pose.views.full ||
-                  pose.views.side ||
-                  pose.views.back;
-                return (
-                  <div
-                    key={pose.id}
-                    className={`group relative aspect-[4/5] overflow-hidden rounded-lg border transition ${
-                      active
-                        ? "border-brand-500 ring-2 ring-brand-200"
-                        : "border-neutral-200 hover:border-neutral-400"
-                    }`}
-                  >
-                    <button
-                      onClick={() => p.onPoseChange(pose.id)}
-                      className="absolute inset-0 block"
-                      title={pose.label}
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={thumb?.publicPath || pose.publicPath}
-                        alt={pose.label}
-                        className="h-full w-full object-cover"
-                      />
-                      <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/55 to-transparent px-2 pb-1.5 pt-6 text-left text-[10px] font-semibold text-white">
-                        {pose.label}
-                      </span>
-                      {active && (
-                        <span className="pointer-events-none absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-brand-600 text-[9px] font-bold text-white">
-                          ✓
+            {p.multiModelMode ? (
+              <>
+                <label className="mb-2 block text-[10px] font-medium text-neutral-500">
+                  Reference views
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {PRESET_VIEWS.map((view) => {
+                    const thumb = selectedPose?.views?.[view.value] || selectedPose?.publicPath;
+                    const available = Boolean(thumb);
+                    return (
+                      <button
+                        key={view.value}
+                        type="button"
+                        onClick={() => {
+                          if (!thumb) return;
+                          setPreviewSrc(typeof thumb === "string" ? thumb : thumb.publicPath);
+                        }}
+                        disabled={!available}
+                        className={`group relative aspect-[3/4] overflow-hidden rounded-xl border bg-neutral-50 text-left transition ${
+                          available
+                            ? "border-neutral-200 hover:border-neutral-400 hover:shadow-sm"
+                            : "cursor-not-allowed border-neutral-100 text-neutral-300"
+                        }`}
+                        title={
+                          available
+                            ? `Preview ${view.label.toLowerCase()} reference`
+                            : `${view.label} reference is not available for this look`
+                        }
+                      >
+                        {thumb ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={typeof thumb === "string" ? thumb : thumb.publicPath}
+                            alt={`${selectedPose?.label || "Selected look"} ${view.label} reference`}
+                            className="h-full w-full object-cover transition group-hover:scale-105"
+                          />
+                        ) : null}
+                        <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent px-2 pb-2 pt-8 text-[11px] font-semibold text-white">
+                          {view.label}
                         </span>
-                      )}
-                    </button>
-                    <ZoomButton
-                      onClick={() => setPreviewSrc(thumb?.publicPath || pose.publicPath)}
-                      title="Preview at full size"
-                      className="absolute bottom-1 right-1 opacity-0 group-hover:opacity-100"
-                    />
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="mt-3">
-              <label className="mb-1 block text-[10px] font-medium text-neutral-500">
-                View
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {PRESET_VIEWS.map((option) => {
-                  const available = !!activeLook?.views?.[option.value];
-                  const active = p.selectedView === option.value;
-                  return (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => p.onViewChange(option.value)}
-                      disabled={!available}
-                      className={`rounded-full border px-3 py-1 text-xs font-medium transition disabled:cursor-not-allowed ${
-                        active
-                          ? "border-brand-500 bg-brand-50 text-brand-700"
-                          : available
-                          ? "border-neutral-200 bg-white text-neutral-600 hover:border-neutral-400"
-                          : "border-neutral-200 bg-neutral-100 text-neutral-400"
-                      }`}
-                    >
-                      {option.label}
-                    </button>
-                  );
-                })}
-              </div>
-              <p className="mt-2 text-[11px] leading-relaxed text-neutral-500">
-                Front is the default. Side, back, and full use linked variant images only when
-                available for the selected look.
-              </p>
-            </div>
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="mt-2 text-[11px] leading-relaxed text-neutral-500">
+                  These four references guide the generated front, side, back, and full views.
+                </p>
+              </>
+            ) : (
+              <>
+                <label className="mb-1 block text-[10px] font-medium text-neutral-500">
+                  Look Preset
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {poses.map((pose) => {
+                    const active = pose.id === p.selectedPoseId;
+                    const thumb =
+                      (active ? pose.views[p.selectedView] : null) ||
+                      pose.views.front ||
+                      pose.views.full ||
+                      pose.views.side ||
+                      pose.views.back;
+                    return (
+                      <div
+                        key={pose.id}
+                        className={`group relative aspect-[4/5] overflow-hidden rounded-lg border transition ${
+                          active
+                            ? "border-brand-500 ring-2 ring-brand-200"
+                            : "border-neutral-200 hover:border-neutral-400"
+                        }`}
+                      >
+                        <button
+                          onClick={() => p.onPoseChange(pose.id)}
+                          className="absolute inset-0 block"
+                          title={pose.label}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={thumb?.publicPath || pose.publicPath}
+                            alt={pose.label}
+                            className="h-full w-full object-cover"
+                          />
+                          <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/55 to-transparent px-2 pb-1.5 pt-6 text-left text-[10px] font-semibold text-white">
+                            {pose.label}
+                          </span>
+                          {active && (
+                            <span className="pointer-events-none absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-brand-600 text-[9px] font-bold text-white">
+                              ✓
+                            </span>
+                          )}
+                        </button>
+                        <ZoomButton
+                          onClick={() => setPreviewSrc(thumb?.publicPath || pose.publicPath)}
+                          title="Preview at full size"
+                          className="absolute bottom-1 right-1 opacity-0 group-hover:opacity-100"
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+                <label className="mb-1 mt-4 block text-[10px] font-medium text-neutral-500">
+                  View
+                </label>
+                <div className="grid grid-cols-4 gap-1.5">
+                  {PRESET_VIEWS.map((view) => {
+                    const available = Boolean(selectedPose?.views?.[view.value]);
+                    const active = p.selectedView === view.value;
+                    return (
+                      <button
+                        key={view.value}
+                        type="button"
+                        onClick={() => {
+                          if (available) p.onViewChange(view.value);
+                        }}
+                        disabled={!available}
+                        className={`rounded-full border px-2 py-2 text-xs font-semibold transition ${
+                          active
+                            ? "border-brand-500 bg-brand-50 text-brand-700"
+                            : available
+                            ? "border-neutral-200 bg-white text-neutral-600 hover:border-neutral-400 hover:bg-neutral-50"
+                            : "cursor-not-allowed border-neutral-100 bg-neutral-50 text-neutral-300"
+                        }`}
+                        title={
+                          available
+                            ? `Use ${view.label.toLowerCase()} reference for generation`
+                            : `${view.label} is not available for this look`
+                        }
+                      >
+                        {view.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="mt-2 text-[11px] leading-relaxed text-neutral-500">
+                  Choose the model reference angle used for the next generation.
+                </p>
+              </>
+            )}
           </>
         )}
       </section>
@@ -636,12 +792,17 @@ export default function ModelSidebar(p: Props) {
               <div className="grid grid-cols-2 overflow-hidden rounded-lg border border-neutral-200">
                 {FORMATS.map((f) => {
                   const active = p.format === f.value;
+                  const disabled = p.modelId === "nano-banana" && f.value === "jpeg";
                   return (
                     <button
                       key={f.value}
+                      disabled={disabled}
+                      title={disabled ? "Nano Banana only supports PNG output in this app." : undefined}
                       onClick={() => p.onFormatChange(f.value as "png" | "jpeg")}
                       className={`border-r border-neutral-200 px-2 py-1.5 text-xs font-medium last:border-r-0 transition ${
-                        active
+                        disabled
+                          ? "cursor-not-allowed bg-neutral-50 text-neutral-300"
+                          : active
                           ? "bg-neutral-900 text-white"
                           : "bg-white text-neutral-600 hover:bg-neutral-50"
                       }`}

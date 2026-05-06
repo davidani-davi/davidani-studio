@@ -3,10 +3,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import ImageLightbox from "@/components/ImageLightbox";
 import StudioHeader from "@/components/StudioHeader";
+import { readTasteSignals, toggleTasteSignal } from "@/lib/design-memory";
 import { resizeIfNeeded } from "@/lib/image-resize";
 import type { InspirationSource } from "@/lib/inspiration-library";
 
-const DESIGN_STUDIO_INSPIRATION_KEY = "davidani:design-studio:inspiration-stem";
+const PROMPT_STUDIO_IMPORT_KEY = "davidani:prompt-studio:import";
 
 async function fetchJson(label: string, input: string, init?: RequestInit): Promise<any> {
   const res = await fetch(input, init);
@@ -40,17 +41,6 @@ const IconUpload = (
     <path d="M4 12a1 1 0 011 1v2h10v-2a1 1 0 112 0v2a2 2 0 01-2 2H5a2 2 0 01-2-2v-2a1 1 0 011-1z" />
   </svg>
 );
-
-const stemOptions = [
-  "Make this more FW26",
-  "Change the color story",
-  "Make the silhouette more balloon shaped",
-  "Make it more boutique and sellable",
-  "Make it younger and Gen Z friendly",
-  "Make it softer and more romantic",
-  "Make it more casual everyday",
-  "Add a novelty detail without making it costume-like",
-];
 
 function sourceImage(source: InspirationSource): string {
   if (source.imageUrls?.length) return source.imageUrls[0];
@@ -99,22 +89,6 @@ function uniqueTags(sources: InspirationSource[]): string[] {
     .map(([tag]) => tag);
 }
 
-function buildStemRefinement(source: InspirationSource, instruction: string) {
-  const tags = source.tags?.length ? source.tags.join(", ") : source.category;
-  return [
-    `Use this saved inspiration as a creative launchpad, not as something to copy: ${source.title}.`,
-    source.category ? `Inspiration category: ${source.category}.` : "",
-    tags ? `Inspiration tags: ${tags}.` : "",
-    source.note ? `Why it was saved: ${source.note}.` : "",
-    instruction
-      ? `Designer direction: ${instruction}.`
-      : "Designer direction: create a fresh, commercially sellable evolution from this inspiration.",
-    "Do not recreate the original saved image exactly. Extract the useful design DNA and make new boutique-ready product ideas.",
-  ]
-    .filter(Boolean)
-    .join(" ");
-}
-
 export default function InspirationClient() {
   const inputRef = useRef<HTMLInputElement>(null);
   const addViewsInputRef = useRef<HTMLInputElement>(null);
@@ -127,9 +101,9 @@ export default function InspirationClient() {
   const [activeTag, setActiveTag] = useState("All");
   const [density, setDensity] = useState<"large" | "dense">("dense");
   const [preview, setPreview] = useState<string | null>(null);
-  const [stemSource, setStemSource] = useState<InspirationSource | null>(null);
-  const [stemInstruction, setStemInstruction] = useState("");
   const [addViewsTarget, setAddViewsTarget] = useState<string | null>(null);
+  const [tasteVersion, setTasteVersion] = useState(0);
+  const [likedTasteKeys, setLikedTasteKeys] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [draft, setDraft] = useState({
     title: "",
@@ -142,6 +116,8 @@ export default function InspirationClient() {
   });
 
   const tags = useMemo(() => uniqueTags(sources), [sources]);
+  const likedKeys = useMemo(() => new Set(likedTasteKeys), [likedTasteKeys]);
+  const likedCount = likedTasteKeys.length;
   const filteredSources = useMemo(() => {
     const q = query.trim().toLowerCase();
     const tag = activeTag.toLowerCase();
@@ -161,7 +137,7 @@ export default function InspirationClient() {
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchJson("Load inspirations", "/api/design-studio/inspirations");
+      const data = await fetchJson("Load inspirations", "/api/inspiration");
       setSources(data.sources || []);
     } catch (err: any) {
       setError(err?.message || "Failed to load inspirations");
@@ -173,6 +149,10 @@ export default function InspirationClient() {
   useEffect(() => {
     void loadSources();
   }, []);
+
+  useEffect(() => {
+    setLikedTasteKeys(readTasteSignals().map((signal) => signal.key));
+  }, [tasteVersion]);
 
   function hasImageFiles(e: React.DragEvent) {
     return Array.from(e.dataTransfer.items).some((item) => item.type.startsWith("image/"));
@@ -230,7 +210,7 @@ export default function InspirationClient() {
         .map((item: { url?: string }) => item.url)
         .filter(Boolean);
       if (!imageUrls.length) throw new Error("Upload succeeded but no image URLs returned");
-      const data = await fetchJson("Save inspiration views", "/api/design-studio/inspirations", {
+      const data = await fetchJson("Save inspiration views", "/api/inspiration", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "add-images", id: sourceId, imageUrls }),
@@ -254,7 +234,7 @@ export default function InspirationClient() {
     setAnalyzing(true);
     setError(null);
     try {
-      const data = await fetchJson("Analyze inspiration", "/api/design-studio/inspirations/analyze", {
+      const data = await fetchJson("Analyze inspiration", "/api/inspiration/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url, imageUrl }),
@@ -296,7 +276,7 @@ export default function InspirationClient() {
           };
         }
       }
-      const data = await fetchJson("Save inspiration", "/api/design-studio/inspirations", {
+      const data = await fetchJson("Save inspiration", "/api/inspiration", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -319,7 +299,7 @@ export default function InspirationClient() {
     try {
       await fetchJson(
         "Delete inspiration",
-        `/api/design-studio/inspirations?id=${encodeURIComponent(id)}`,
+        `/api/inspiration?id=${encodeURIComponent(id)}`,
         { method: "DELETE" }
       );
       setSources((items) => items.filter((source) => source.id !== id));
@@ -328,35 +308,36 @@ export default function InspirationClient() {
     }
   }
 
-  function sendToDesignStudio(useImage: boolean) {
-    if (!stemSource) return;
-    const imageUrl = sourceImage(stemSource);
-    const payload = {
-      refinement: buildStemRefinement(stemSource, stemInstruction.trim()),
-      imageUrl: useImage ? imageUrl : "",
-      title: stemSource.title,
-    };
-    localStorage.setItem(DESIGN_STUDIO_INSPIRATION_KEY, JSON.stringify(payload));
-    window.location.href = "/design-studio";
-  }
-
   function sendBestsellerRemix(source: InspirationSource) {
     const imageUrl = sourceImage(source);
+    if (!imageUrl) {
+      setError("This inspiration needs an image before it can be remixed.");
+      return;
+    }
     const payload = {
-      refinement: [
-        "Bestseller Remix Engine: use this saved inspiration as a commercial bestseller signal, not as a design to copy.",
-        "Target customer: women's boutique apparel shoppers in the Free People / Anthropologie / young contemporary bohemian world. Prioritize feminine, expressive, wearable, boutique-ready ideas. Do not drift into menswear, male styling, masculine workwear, or men's fit language unless the user explicitly asks.",
-        buildStemRefinement(
-          source,
-          "Create three new women's boutique product directions that feel more sellable, more trend-aware, and more commercially useful for Davi & Dani customers."
-        ),
-        "Prioritize wearable novelty, clear product value, strong Faire listing potential, and designs a buyer can immediately understand.",
-      ].join(" "),
+      tool: "bestseller-remix",
       imageUrl,
       title: `${source.title} Bestseller Remix`,
     };
-    localStorage.setItem(DESIGN_STUDIO_INSPIRATION_KEY, JSON.stringify(payload));
-    window.location.href = "/design-studio";
+    localStorage.setItem(PROMPT_STUDIO_IMPORT_KEY, JSON.stringify(payload));
+    window.location.href = "/prompt-studio";
+  }
+
+  function tasteSignalForSource(source: InspirationSource) {
+    return {
+      key: `inspiration:${source.id}`,
+      type: "inspiration" as const,
+      title: source.title || "Saved inspiration",
+      category: source.category,
+      tags: source.tags,
+      note: source.note,
+      imageUrl: sourceImage(source),
+    };
+  }
+
+  function toggleSourceLike(source: InspirationSource) {
+    toggleTasteSignal(tasteSignalForSource(source));
+    setTasteVersion((value) => value + 1);
   }
 
   return (
@@ -364,9 +345,10 @@ export default function InspirationClient() {
       <StudioHeader
         active="inspiration"
         title="Inspiration"
-        subtitle="Collect references, auto-tag them, and stem new design directions."
+        subtitle="Collect references, auto-tag them, and turn strong ideas into prompt-ready product remixes."
         metrics={[
           { label: "Saved", value: sources.length },
+          { label: "Liked", value: likedCount },
           { label: "Active", value: saving || analyzing ? 1 : 0 },
         ]}
       />
@@ -378,10 +360,10 @@ export default function InspirationClient() {
               Inspiration Library
             </p>
             <h1 className="mt-1 font-serif text-4xl leading-none text-neutral-950">
-              Collect. Tag. Stem.
+              Collect. Tag. Create.
             </h1>
             <p className="mt-2 text-sm leading-relaxed text-neutral-500">
-              Save visual references here, let AI tag them, then send any idea into Design Studio.
+              Save visual references here, let AI tag them, then remix the strongest ideas in Prompt Studio.
             </p>
           </div>
 
@@ -531,7 +513,7 @@ export default function InspirationClient() {
                     ) : null}
                   </div>
                   <p className="mt-1 max-w-2xl text-xs leading-relaxed text-neutral-500">
-                    Click Stem on any saved reference to send a creative direction into Design Studio.
+                    Use any saved reference as a design direction or bestseller remix.
                   </p>
                 </div>
                 <div className="rounded-full bg-neutral-100 p-1">
@@ -598,6 +580,8 @@ export default function InspirationClient() {
                 {filteredSources.map((source) => {
                   const image = sourceImage(source);
                   const gallery = sourceImages(source);
+                  const tasteSignal = tasteSignalForSource(source);
+                  const liked = likedKeys.has(tasteSignal.key);
                   return (
                     <article key={source.id} className="group overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
                       <div className="relative">
@@ -617,6 +601,17 @@ export default function InspirationClient() {
                         </button>
                         {image ? (
                           <div className="absolute inset-x-2 bottom-2 flex justify-end gap-1 opacity-0 transition group-hover:opacity-100">
+                            <button
+                              type="button"
+                              onClick={() => toggleSourceLike(source)}
+                              className={`rounded-full px-2.5 py-1 text-[10px] font-semibold shadow-sm backdrop-blur ${
+                                liked
+                                  ? "bg-brand-500 text-white hover:bg-brand-600"
+                                  : "bg-white/90 text-neutral-800 hover:bg-white"
+                              }`}
+                            >
+                              {liked ? "Liked" : "Like"}
+                            </button>
                             <button
                               type="button"
                               onClick={() => setPreview(image)}
@@ -684,20 +679,21 @@ export default function InspirationClient() {
                         <div className="mt-2 grid grid-cols-2 gap-1.5">
                           <button
                             type="button"
-                            onClick={() => {
-                              setStemSource(source);
-                              setStemInstruction("");
-                            }}
-                            className="rounded-lg bg-brand-500 px-2 py-1.5 text-[10px] font-semibold text-white hover:bg-brand-600"
+                            onClick={() => sendBestsellerRemix(source)}
+                            className="col-span-2 rounded-lg bg-neutral-950 px-2 py-1.5 text-[10px] font-semibold text-white hover:bg-neutral-800"
                           >
-                            Stem
+                            Bestseller Remix
                           </button>
                           <button
                             type="button"
-                            onClick={() => sendBestsellerRemix(source)}
-                            className="rounded-lg bg-neutral-950 px-2 py-1.5 text-[10px] font-semibold text-white hover:bg-neutral-800"
+                            onClick={() => toggleSourceLike(source)}
+                            className={`col-span-2 rounded-lg border px-2 py-1.5 text-[10px] font-semibold ${
+                              liked
+                                ? "border-brand-500 bg-brand-50 text-brand-700"
+                                : "border-neutral-200 text-neutral-700 hover:bg-neutral-50"
+                            }`}
                           >
-                            Remix
+                            {liked ? "Liked for Taste" : "Like for Taste"}
                           </button>
                         </div>
                         {source.tags?.length ? (
@@ -721,96 +717,6 @@ export default function InspirationClient() {
           </div>
         </section>
       </div>
-
-      {stemSource && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4">
-          <div className="grid max-h-[92vh] w-full max-w-5xl overflow-hidden rounded-2xl bg-white shadow-2xl lg:grid-cols-[minmax(280px,0.78fr)_1fr]">
-            <div className="bg-neutral-100">
-              {sourceImage(stemSource) ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={sourceImage(stemSource)} alt={stemSource.title} className="h-full min-h-[320px] w-full object-cover" />
-              ) : (
-                <div className="flex h-full min-h-[320px] items-center justify-center p-6 text-center text-sm text-neutral-500">
-                  This saved source does not have an image preview, but its tags can still guide the design direction.
-                </div>
-              )}
-            </div>
-            <div className="flex max-h-[92vh] flex-col">
-              <div className="border-b border-neutral-200 px-5 py-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">Stem From Inspiration</p>
-                    <h2 className="mt-1 font-serif text-3xl leading-none text-neutral-950">What should this become?</h2>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setStemSource(null);
-                      setStemInstruction("");
-                    }}
-                    className="rounded-full border border-neutral-200 px-3 py-1.5 text-xs font-semibold text-neutral-600 hover:bg-neutral-50"
-                  >
-                    Close
-                  </button>
-                </div>
-                <div className="mt-3">
-                  <p className="text-sm font-semibold text-neutral-900">{stemSource.title}</p>
-                  <p className="mt-1 text-xs leading-relaxed text-neutral-500">
-                    {[stemSource.category, stemSource.tags?.join(", ")].filter(Boolean).join(" · ")}
-                  </p>
-                  {stemSource.note ? <p className="mt-2 text-xs leading-relaxed text-neutral-500">{stemSource.note}</p> : null}
-                </div>
-              </div>
-              <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
-                <p className="text-xs font-semibold uppercase tracking-widest text-neutral-500">Quick Designer Directions</p>
-                <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  {stemOptions.map((option) => (
-                    <button
-                      key={option}
-                      type="button"
-                      onClick={() => setStemInstruction(option)}
-                      className={`rounded-xl border px-3 py-2 text-left text-xs font-semibold transition ${
-                        stemInstruction === option
-                          ? "border-brand-500 bg-brand-50 text-brand-700"
-                          : "border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50"
-                      }`}
-                    >
-                      {option}
-                    </button>
-                  ))}
-                </div>
-                <label className="mt-4 block">
-                  <span className="text-xs font-semibold uppercase tracking-widest text-neutral-500">Or write your own direction</span>
-                  <textarea
-                    value={stemInstruction}
-                    onChange={(event) => setStemInstruction(event.target.value)}
-                    rows={4}
-                    placeholder="Example: turn this into a barrel jean with a softer FW26 color story and a more premium boutique detail."
-                    className="mt-2 w-full resize-none rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm leading-relaxed outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
-                  />
-                </label>
-              </div>
-              <div className="grid gap-2 border-t border-neutral-200 p-5 sm:grid-cols-2">
-                <button
-                  type="button"
-                  onClick={() => sendToDesignStudio(false)}
-                  className="rounded-xl border border-neutral-200 px-3 py-2.5 text-sm font-semibold text-neutral-700 hover:bg-neutral-50"
-                >
-                  Send Direction
-                </button>
-                <button
-                  type="button"
-                  onClick={() => sendToDesignStudio(true)}
-                  disabled={!sourceImage(stemSource)}
-                  className="rounded-xl bg-neutral-900 px-3 py-2.5 text-sm font-semibold text-white hover:bg-neutral-800 disabled:opacity-50"
-                >
-                  Use Image in Design Studio
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {preview && <ImageLightbox src={preview} alt="Inspiration preview" onClose={() => setPreview(null)} />}
 

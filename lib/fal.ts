@@ -1,4 +1,5 @@
 import { fal } from "@fal-ai/client";
+import sharp from "sharp";
 import fs from "node:fs";
 import path from "node:path";
 import { MODELS, type ModelId } from "./models";
@@ -13,6 +14,25 @@ function ensureConfigured() {
   configured = true;
 }
 
+/**
+ * Vision model used by every analyzer pass (garment fields, model photo,
+ * inspiration analysis, design-studio concept extraction). Centralized so a
+ * single swap propagates everywhere.
+ *
+ * Claude Haiku 4.5 — chosen over Sonnet 3.7 because the analyzer task is
+ * constrained-format extraction (GARMENT / FEATURES / POSE / SCENE noun
+ * phrases), where Haiku's accuracy is comparable but ~2x faster (saves
+ * ~3s per generation).
+ */
+const VISION_MODEL = "anthropic/claude-haiku-4.5";
+
+// Maps fal.ai model IDs to Anthropic API model IDs for direct calls.
+const ANTHROPIC_MODEL_MAP: Record<string, string> = {
+  "anthropic/claude-haiku-4.5": "claude-haiku-4-5-20251001",
+  "anthropic/claude-3.7-sonnet": "claude-3-7-sonnet-20250219",
+  "anthropic/claude-3.5-sonnet": "claude-3-5-sonnet-20241022",
+};
+
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -26,25 +46,123 @@ function isRetryableVisionError(err: unknown): boolean {
       ""
   ).toLowerCase();
   return (
-    /bad gateway|gateway|502|upstream|overloaded|temporarily unavailable|service unavailable/.test(
+    /bad gateway|gateway|502|upstream|overloaded|temporarily unavailable|service unavailable|rate.?limit|529|overloaded/.test(
       message
     )
   );
+}
+
+/**
+ * Calls Anthropic's Messages API directly using fetch — no SDK dependency.
+ * Enables prompt caching on the system prompt, which saves ~70% of input
+ * token cost and shaves ~400ms off cold analyses by skipping fal.ai's proxy.
+ *
+ * Falls back automatically to fal.ai if ANTHROPIC_API_KEY is not set.
+ */
+async function callAnthropicVisionDirect(
+  input: Record<string, unknown>,
+  label: string
+): Promise<any> {
+  const apiKey = process.env.ANTHROPIC_API_KEY!;
+  const modelId =
+    ANTHROPIC_MODEL_MAP[String(input.model || "")] || "claude-haiku-4-5-20251001";
+  const systemText = String(input.system_prompt || "");
+  const userText = String(input.prompt || "");
+
+  // Collect image URLs in order — single image_url takes precedence, then image_urls array.
+  const imageUrls: string[] = [];
+  if (input.image_url && typeof input.image_url === "string") {
+    imageUrls.push(input.image_url);
+  } else if (Array.isArray(input.image_urls)) {
+    imageUrls.push(...(input.image_urls as string[]));
+  }
+
+  const imageBlocks = imageUrls.map((url) => ({
+    type: "image" as const,
+    source: { type: "url" as const, url },
+  }));
+
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+      "anthropic-beta": "prompt-caching-2024-07-31",
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      model: modelId,
+      max_tokens: 2048,
+      system: [
+        // cache_control marks this large system prompt for KV caching (5 min TTL).
+        // Repeated calls within that window skip reprocessing it, saving ~400ms each.
+        { type: "text", text: systemText, cache_control: { type: "ephemeral" } },
+      ],
+      messages: [
+        {
+          role: "user",
+          content: [...imageBlocks, { type: "text", text: userText }],
+        },
+      ],
+    }),
+  });
+
+  if (!res.ok) {
+    const errText = await res.text().catch(() => `HTTP ${res.status}`);
+    throw new Error(`Anthropic API ${res.status}: ${errText.slice(0, 300)}`);
+  }
+
+  const data = await res.json();
+  const text = (data.content as any[])
+    .filter((b) => b.type === "text")
+    .map((b) => String(b.text || ""))
+    .join("");
+
+  if (data.usage) {
+    console.log(
+      `[${label}] anthropic usage: input=${data.usage.input_tokens} ` +
+        `cache_read=${data.usage.cache_read_input_tokens ?? 0} ` +
+        `cache_write=${data.usage.cache_creation_input_tokens ?? 0} ` +
+        `output=${data.usage.output_tokens}`
+    );
+  }
+
+  return { data: { output: text } };
 }
 
 async function subscribeVisionWithRetry(
   input: Record<string, unknown>,
   label: string
 ): Promise<any> {
+  const delays = [0, 700, 1600];
+  let lastErr: unknown;
+
+  // Direct Anthropic path — faster and supports prompt caching.
+  // Activated by adding ANTHROPIC_API_KEY to your environment.
+  // Remove the key to revert to the fal.ai proxy path below.
+  if (process.env.ANTHROPIC_API_KEY) {
+    for (let attempt = 0; attempt < delays.length; attempt++) {
+      if (delays[attempt] > 0) await sleep(delays[attempt]);
+      try {
+        return await callAnthropicVisionDirect(input, label);
+      } catch (err) {
+        lastErr = err;
+        if (!isRetryableVisionError(err) || attempt === delays.length - 1) break;
+        console.warn(
+          `[${label}] transient Anthropic error on attempt ${attempt + 1}, retrying:`,
+          err
+        );
+      }
+    }
+    const finalMessage = (lastErr as any)?.message || String(lastErr) || "unknown error";
+    throw new Error(`${label} failed: ${finalMessage}`);
+  }
+
+  // Fallback: fal.ai/any-llm/vision proxy (original behavior when no ANTHROPIC_API_KEY).
   ensureConfigured();
 
-  let lastErr: unknown;
-  const delays = [0, 700, 1600];
-
   for (let attempt = 0; attempt < delays.length; attempt++) {
-    if (delays[attempt] > 0) {
-      await sleep(delays[attempt]);
-    }
+    if (delays[attempt] > 0) await sleep(delays[attempt]);
     try {
       return await fal.subscribe("fal-ai/any-llm/vision", {
         input,
@@ -52,9 +170,7 @@ async function subscribeVisionWithRetry(
       });
     } catch (err) {
       lastErr = err;
-      if (!isRetryableVisionError(err) || attempt === delays.length - 1) {
-        break;
-      }
+      if (!isRetryableVisionError(err) || attempt === delays.length - 1) break;
       console.warn(`[${label}] transient vision error on attempt ${attempt + 1}, retrying:`, err);
     }
   }
@@ -69,12 +185,12 @@ async function subscribeVisionWithRetry(
 }
 
 /**
- * Reads a style-reference image from public/ and uploads it to fal.ai once,
+ * Reads a product-shot style-reference image from public/product-shots/ and uploads it to fal.ai once,
  * caching the resulting URL in memory per "kind". Returns null if no file exists.
  *
  * Routing:
- *   - kind === "pants" → matches public/style-reference-2.{png,jpg,jpeg,webp}
- *   - kind === "other" → matches public/style-reference.{png,jpg,jpeg,webp}
+ *   - kind === "pants" → matches public/product-shots/style-reference-2.{png,jpg,jpeg,webp}
+ *   - kind === "other" → matches public/product-shots/style-reference.{png,jpg,jpeg,webp}
  *                        (explicitly EXCLUDES style-reference-2.*)
  *
  * The style reference is appended as the LAST image_url on every generation,
@@ -86,38 +202,127 @@ const cachedStyleReferenceUrls: Partial<Record<StyleReferenceKind, string>> = {}
 const styleReferenceUploadsInFlight: Partial<
   Record<StyleReferenceKind, Promise<string | null>>
 > = {};
+const cachedPublicAssetUrls: Record<string, string> = {};
+const publicAssetUploadsInFlight: Partial<Record<string, Promise<string>>> = {};
+
+function localPublicPathFromUrl(input: string): string | null {
+  const raw = String(input || "").trim();
+  if (!raw || raw.startsWith("data:") || raw.startsWith("blob:")) return null;
+
+  let pathname = raw;
+  try {
+    const parsed = new URL(raw);
+    const host = parsed.hostname.toLowerCase();
+    const isLocalHost =
+      host === "localhost" ||
+      host === "127.0.0.1" ||
+      host === "::1" ||
+      host.endsWith(".local");
+    if (!isLocalHost) return null;
+    pathname = parsed.pathname;
+  } catch {
+    if (!raw.startsWith("/")) return null;
+  }
+
+  const decoded = decodeURIComponent(pathname.split("?")[0] || "");
+  if (!decoded.startsWith("/")) return null;
+  return decoded;
+}
+
+async function uploadLocalPublicImageUrl(input: string): Promise<string> {
+  const publicPath = localPublicPathFromUrl(input);
+  if (!publicPath) return input;
+
+  const relative = publicPath.replace(/^\/+/, "");
+  const publicRoot = path.join(process.cwd(), "public");
+  const fullPath = path.normalize(path.join(publicRoot, relative));
+  if (!fullPath.startsWith(publicRoot + path.sep)) {
+    throw new Error(`Refusing to read image outside public/: ${publicPath}`);
+  }
+  if (!fs.existsSync(fullPath)) {
+    throw new Error(`Local reference image not found in public/: ${publicPath}`);
+  }
+
+  if (cachedPublicAssetUrls[fullPath]) return cachedPublicAssetUrls[fullPath];
+  if (publicAssetUploadsInFlight[fullPath]) return publicAssetUploadsInFlight[fullPath];
+
+  const upload = (async () => {
+    const filename = path.basename(fullPath);
+    const ext = path.extname(filename).slice(1).toLowerCase();
+    const mimeType =
+      ext === "jpg" || ext === "jpeg"
+        ? "image/jpeg"
+        : ext === "webp"
+        ? "image/webp"
+        : ext === "gif"
+        ? "image/gif"
+        : "image/png";
+    const buffer = fs.readFileSync(fullPath);
+    const url = await uploadToFal(new Blob([buffer], { type: mimeType }), filename);
+    cachedPublicAssetUrls[fullPath] = url;
+    console.log(`[public-image] uploaded ${publicPath} → ${url}`);
+    return url;
+  })().finally(() => {
+    delete publicAssetUploadsInFlight[fullPath];
+  });
+
+  publicAssetUploadsInFlight[fullPath] = upload;
+  return upload;
+}
+
+async function prepareGeneratorImageUrls(urls: string[]): Promise<string[]> {
+  return Promise.all(urls.map((url) => uploadLocalPublicImageUrl(url)));
+}
 
 export async function getStyleReferenceUrl(
   kind: StyleReferenceKind = "other"
 ): Promise<string | null> {
   if (cachedStyleReferenceUrls[kind]) return cachedStyleReferenceUrls[kind]!;
+
+  const targetStem = kind === "pants" ? "style-reference-2" : "style-reference";
+  const publicDir = path.join(process.cwd(), "public", "product-shots");
+  const imageExts = new Set(["png", "jpg", "jpeg", "webp"]);
+
+  const findFile = (): string | null => {
+    if (!fs.existsSync(publicDir)) return null;
+    const entries = fs.readdirSync(publicDir);
+    return (
+      entries.find((name) => {
+        const lower = name.toLowerCase();
+        const parts = lower.split(".");
+        const last = parts[parts.length - 1];
+        if (!imageExts.has(last)) return false;
+        return parts[0] === targetStem;
+      }) ?? null
+    );
+  };
+
+  // On Vercel, public/product-shots/ files are served from the CDN at a stable
+  // URL. Return that directly instead of uploading to fal.ai on every cold start.
+  const vercelHost =
+    process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL;
+  if (vercelHost) {
+    const found = findFile();
+    if (!found) {
+      console.warn(
+        `[style-reference] no file matching ${targetStem}.* found in public/product-shots/ (kind=${kind})`
+      );
+      return null;
+    }
+    const url = `https://${vercelHost}/product-shots/${found}`;
+    cachedStyleReferenceUrls[kind] = url;
+    console.log(`[style-reference] CDN URL: ${url} (kind=${kind})`);
+    return url;
+  }
+
+  // Local dev fallback: upload to fal.ai once and cache in memory.
   if (styleReferenceUploadsInFlight[kind]) return styleReferenceUploadsInFlight[kind]!;
 
   const upload = (async () => {
-    const publicDir = path.join(process.cwd(), "public");
-    if (!fs.existsSync(publicDir)) {
-      console.warn("[style-reference] public/ directory not found");
-      return null;
-    }
-
-    // Tolerant match: any file whose base name exactly equals the target stem
-    // and whose final meaningful extension is an image type. Handles macOS's
-    // "style-reference.png.png" quirk too.
-    const targetStem = kind === "pants" ? "style-reference-2" : "style-reference";
-    const entries = fs.readdirSync(publicDir);
-    const imageExts = new Set(["png", "jpg", "jpeg", "webp"]);
-    const found = entries.find((name) => {
-      const lower = name.toLowerCase();
-      const parts = lower.split(".");
-      const last = parts[parts.length - 1];
-      if (!imageExts.has(last)) return false;
-      const stem = parts[0];
-      return stem === targetStem;
-    });
-
+    const found = findFile();
     if (!found) {
       console.warn(
-        `[style-reference] no file matching ${targetStem}.* found in public/ (kind=${kind})`
+        `[style-reference] no file matching ${targetStem}.* found in public/product-shots/ (kind=${kind})`
       );
       return null;
     }
@@ -339,6 +544,63 @@ export interface AnalyzedGarment {
   features: string;
 }
 
+function parseGarmentAnalysisOutput(output: string, label: string): { garment: string; features: string } {
+  const garmentMatch = output.match(/GARMENT:\s*(.+?)\s*(?:\r?\n|$)/i);
+  const featuresMatch = output.match(/FEATURES:\s*([\s\S]+?)\s*(?:\r?\n(?=[A-Z ]+:)|$)/i);
+  const garment = (garmentMatch?.[1] || "").trim().replace(/\.$/, "");
+  const features = (featuresMatch?.[1] || "").trim().replace(/\.$/, "");
+
+  if (!garment) {
+    console.error(`[${label}] could not parse GARMENT from output:`, output.slice(0, 400));
+    throw new Error("Analyzer did not return a GARMENT line.");
+  }
+
+  return { garment, features };
+}
+
+async function extractCatalogGarmentFields(imageUrl: string, label = "analyze") {
+  const result: any = await subscribeVisionWithRetry(
+    {
+      model: VISION_MODEL,
+      system_prompt: ANALYSIS_SYSTEM_PROMPT,
+      prompt:
+        "Analyze the garment in this photograph using the two-line GARMENT / FEATURES format defined in your system prompt. Output exactly those two lines, nothing else.",
+      image_url: imageUrl,
+    },
+    "garment analysis"
+  );
+
+  const data = result?.data ?? result;
+  console.log(`[${label}] raw response keys:`, Object.keys(data || {}));
+  console.log(`[${label}] usage:`, data?.usage);
+
+  const output: string = (data?.output ?? data?.response ?? data?.text ?? "").trim();
+  if (!output) {
+    console.error(`[${label}] full response:`, JSON.stringify(data).slice(0, 1000));
+    throw new Error("Vision analysis returned no text output.");
+  }
+
+  const fields = parseGarmentAnalysisOutput(output, label);
+  console.log(`[${label}] garment:`, fields.garment);
+  console.log(`[${label}] features:`, fields.features);
+  return fields;
+}
+
+function buildFrontBackContractPrompt(front: { garment: string; features: string }, back: { garment: string; features: string }) {
+  const contractFeatures = [
+    front.features ? `Front-facing source of truth: ${front.features}` : "",
+    back.features ? `Back-facing source of truth: ${back.features}` : "",
+    "The first uploaded product image supplies the front truth and the second uploaded product image supplies the back truth for the same physical SKU.",
+    "Merge both product references into one complete garment identity, not two garments and not two design options.",
+    "Preserve front and back construction consistently: body length, hem geometry, sleeve or leg length, silhouette, fabric, wash, color, pockets, seams, cuffs, waistband, neckline, closures, trims, graphics, artwork placement, and hardware.",
+    "When the final product-shot angle exposes any back-facing details, use the second uploaded image as the back source of truth. When the angle exposes front-facing details, use the first uploaded image as the front source of truth.",
+  ]
+    .filter(Boolean)
+    .join(", ");
+  const garment = front.garment || back.garment || "uploaded apparel product";
+  return buildTwoImagePrompt(garment, contractFeatures);
+}
+
 /**
  * Assemble the final garment-swap prompt from the parsed GARMENT + FEATURES.
  *
@@ -383,6 +645,12 @@ export function buildTwoImagePrompt(garment: string, features: string): string {
       `centered composition. Do NOT inherit garment-shape cues (silhouette, cut, fit, leg width, ` +
       `torso fit, length) from the primary studio photograph — those come exclusively from the ` +
       `reference photograph. ` +
+      `BACKGROUND UNIFORMITY: the studio background must be rendered as one perfectly flat, ` +
+      `seamless solid color across the ENTIRE frame — from the top edge to the bottom edge and ` +
+      `from the left edge to the right edge. There must be no color patches, rectangular blocks, ` +
+      `banding, tiling artifacts, gradient shifts, lighter or darker zones, or mismatched regions ` +
+      `anywhere in the background. The background should read as a single continuous flat surface ` +
+      `with no visible seams or transitions. ` +
       `RENDER THE REPLACEMENT GARMENT FRESH — do not copy the wrinkles, folds, creases, twists, ` +
       `asymmetries, or specific placement of whatever garment was originally in the primary ` +
       `photograph. The new ${g} must be perfectly symmetrical along the vertical centerline, ` +
@@ -419,44 +687,23 @@ export async function analyzeGarmentToPrompt(
   imageUrl: string,
   _opts: AnalyzeOptions = {}
 ): Promise<string> {
-  const result: any = await subscribeVisionWithRetry(
-    {
-      model: "anthropic/claude-3.7-sonnet",
-      system_prompt: ANALYSIS_SYSTEM_PROMPT,
-      prompt:
-        "Analyze the garment in this photograph using the two-line GARMENT / FEATURES format defined in your system prompt. Output exactly those two lines, nothing else.",
-      image_url: imageUrl,
-    },
-    "garment analysis"
-  );
-
-  const data = result?.data ?? result;
-  console.log("[analyze] raw response keys:", Object.keys(data || {}));
-  console.log("[analyze] usage:", data?.usage);
-
-  const output: string = (data?.output ?? data?.response ?? data?.text ?? "").trim();
-  if (!output) {
-    console.error("[analyze] full response:", JSON.stringify(data).slice(0, 1000));
-    throw new Error("Vision analysis returned no text output.");
-  }
-
-  // Parse GARMENT / FEATURES lines. The model occasionally adds prose around
-  // them; we tolerate that and extract whatever matches.
-  const garmentMatch = output.match(/GARMENT:\s*(.+?)\s*(?:\r?\n|$)/i);
-  const featuresMatch = output.match(/FEATURES:\s*([\s\S]+?)\s*(?:\r?\n(?=[A-Z ]+:)|$)/i);
-  const garment = (garmentMatch?.[1] || "").trim().replace(/\.$/, "");
-  const features = (featuresMatch?.[1] || "").trim().replace(/\.$/, "");
-
-  if (!garment) {
-    console.error("[analyze] could not parse GARMENT from output:", output.slice(0, 400));
-    throw new Error("Analyzer did not return a GARMENT line.");
-  }
-
-  console.log("[analyze] garment:", garment);
-  console.log("[analyze] features:", features);
-
+  const { garment, features } = await extractCatalogGarmentFields(imageUrl);
   const finalPrompt = buildTwoImagePrompt(garment, features);
   console.log("[analyze] final prompt preview:", finalPrompt.slice(0, 240));
+  return finalPrompt;
+}
+
+export async function analyzeFrontBackGarmentToPrompt(
+  frontImageUrl: string,
+  backImageUrl: string,
+  _opts: AnalyzeOptions = {}
+): Promise<string> {
+  const [front, back] = await Promise.all([
+    extractCatalogGarmentFields(frontImageUrl, "analyze-front"),
+    extractCatalogGarmentFields(backImageUrl, "analyze-back"),
+  ]);
+  const finalPrompt = buildFrontBackContractPrompt(front, back);
+  console.log("[analyze-front-back] final prompt preview:", finalPrompt.slice(0, 240));
   return finalPrompt;
 }
 
@@ -529,7 +776,7 @@ export async function generateRecoloringPrompts(
   const requestedColors = parseRequestedColors(requestedColorInput);
   const result: any = await subscribeVisionWithRetry(
     {
-      model: "anthropic/claude-3.7-sonnet",
+      model: VISION_MODEL,
       system_prompt: RECOLORING_PROMPT_SYSTEM_PROMPT,
       prompt:
         "Create exactly 10 plain-text recoloring prompts for ChatGPT Image 2.0 from this garment image. Follow the system output rules exactly.\n\n" +
@@ -557,36 +804,138 @@ export async function generateRecoloringPrompts(
   return prompts;
 }
 
-export interface ProductDesignConcept {
-  assortmentRole?: string;
-  productName: string;
-  customerMood: string;
-  productDescription: string;
-  keyFeatures: string[];
-  customerReasonToBuy?: string;
-  bestsellerDNA?: string[];
-  commercialScores?: {
-    commerciality: number;
-    novelty: number;
-    brandFit: number;
-    productionEase: number;
-    risk: number;
-  };
-  designDifferenceFromSource: string;
-  imageGenerationPrompt: string;
-  visualUrl?: string;
-  visualError?: string;
+const BESTSELLER_REMIX_PROMPT_SYSTEM_PROMPT = `You are a senior head designer, wholesale sales strategist, boutique buyer, ecommerce manager, and production-aware apparel developer for Davi & Dani.
+
+You inspect one uploaded apparel product image. First analyze the product internally for Product DNA: garment category, body type, fit, silhouette, fabric appearance, color, wash, texture, construction details, trims, closures, pockets, ribbing, waistband, hem, graphics, embroidery, patches, print technique, styling vibe, seasonality, price perception, wholesale buyer appeal, and boutique merchandising potential.
+
+Your job is not to describe the uploaded image. Your job is to turn its commercial formula into exactly 10 new sellable apparel product mockup prompts that feel realistic, boutique-ready, production-aware, line-sheet-ready, and commercially grounded.
+
+Output exactly 10 prompts. Each prompt must be one full paragraph. Separate each paragraph with one blank line.
+
+Every prompt must follow this structure:
+Ultra-realistic 4K studio image of [garment body] in [specific color + fabric], displayed in a clean side-by-side composition showing front view on the left and back view on the right, same model, same pose alignment, neutral beige background, soft diffused lighting. [Main design detail with exact placement, text, artwork, embroidery/print/applique technique, and color contrast]. [Front detail with exact placement]. [Secondary details such as sleeves, pockets, ribbing, waistband, hem, zipper, patches, stitching, trims]. [Fit, silhouette, styling purpose, boutique appeal, and highly detailed fabric texture].
+
+Mandatory visual requirements:
+- Every prompt must generate a side-by-side front and back view in one image.
+- Front view must be on the left.
+- Back view must be on the right.
+- Both views must use the same model.
+- Both views must have the same pose alignment.
+- Both views must use the same lighting, background, scale, and camera angle.
+- The image must feel like a clean ecommerce or wholesale line sheet mockup.
+- The back view should clearly show the strongest selling graphic or hero detail.
+- The front view should clearly show fit, silhouette, and front details.
+
+Category distribution rule:
+- Do not over-concentrate the 10 outputs into one garment category unless the user explicitly asks for one single category. The uploaded image alone is not a request to repeat that category.
+- Build a full collection ecosystem from the source Product DNA, not 10 versions of the same garment body.
+- Default mix must include 2 to 3 outerwear pieces such as jackets, bombers, puffers, shackets, anoraks, or vests.
+- Default mix must include 2 to 3 tops such as hoodies, crewnecks, zip-ups, sweaters, knit tops, cardigans, or layering tops.
+- Default mix must include exactly 2 bottoms such as cargo pants, sweatpants, skirts, denim, barrel pants, wide-leg pants, joggers, or utility pants.
+- Default mix must include 2 to 3 expansion pieces such as vests, dresses, matching sets, cardigans, shackets, anoraks, puffers, skirts, or other outfit-building items.
+- No single garment category may appear more than 3 times unless directly requested.
+- Preserve the original product's design DNA, styling world, icon language, trim logic, fabric attitude, and commercial reason to buy, but translate that DNA across different garment bodies.
+- If the uploaded image is a bottom, do not make the set mostly bottoms. Generate complementary tops, outerwear, sets, and outfit builders around the bottom's DNA.
+- If the uploaded image is outerwear, do not make the set mostly outerwear. Generate tops, bottoms, sets, and outfit builders that extend the outerwear's DNA.
+- If the uploaded image is a top, do not make the set mostly tops. Generate bottoms, outerwear, sets, and outfit builders that complete the product world.
+- If the uploaded image is a dress, cardigan, vest, set, or hybrid piece, keep only 2 to 3 prompts close to that source body and use the remaining prompts to build adjacent commercial categories.
+- The goal is a balanced sellable mini collection with multiple reasons to buy, not a single-category repetition or colorway pack.
+
+Each prompt must include exact garment type, exact fit and silhouette, specific fabric, specific color direction, side-by-side front and back composition, main back design or hero detail, front design detail, secondary design details, placement details, technique details such as chenille, embroidery, applique, puff print, screen print, patchwork, tonal stitching, contrast stitching, quilting, distressing, wash, or hardware, color contrast details, styling purpose, wholesale/boutique appeal, high realism, and texture detail.
+
+Design rules:
+- Every idea must feel like a real SKU that could be added to a Davi & Dani wholesale line sheet.
+- Every idea must be sellable, not abstract.
+- Every idea must have a clear reason to exist.
+- Every idea must feel boutique-friendly, young contemporary, trend-aware, realistic, and production-aware.
+- Every idea must be visually clear at thumbnail size.
+- Every idea must have strong front and back product value.
+- Increase perceived value through details, trims, placement, graphics, texture, wash, or construction.
+- Avoid vague words like cool, cute, stylish, nice, trendy, or unique unless supported by specific visual details.
+
+Graphic-driven products:
+- Prioritize large readable back graphics.
+- Use emotional phrases, club names, destination names, lifestyle names, or identity-based slogans.
+- Use strong icon systems such as horse, rose, bow, star, horseshoe, sunburst, motel key, eagle, wildflower, racing flag, crest, ribbon, or postcard stamp when relevant.
+- Make sure the graphic feels like a world, not just decoration.
+- The graphic should feel like something a customer wants to belong to.
+
+Non-graphic products:
+- Focus on fabric, silhouette, wash, texture, trim, proportion, construction, styling, and merchandising.
+- Create details that increase perceived value without forcing random graphics.
+
+Output rules:
+- Only output the 10 prompts.
+- No intro.
+- No explanation.
+- No markdown.
+- No numbering.
+- No titles.
+- No dividers.
+- No extra commentary.
+- Each prompt must be separated by one blank line.`;
+
+function normalizeBestsellerRemixPrompts(raw: string): string {
+  const cleaned = raw
+    .trim()
+    .replace(/^```(?:text)?/i, "")
+    .replace(/```$/i, "")
+    .trim();
+
+  let paragraphs = cleaned
+    .split(/\n\s*\n+/)
+    .map((paragraph) =>
+      paragraph
+        .replace(/\s*\n\s*/g, " ")
+        .replace(/^["'`]+|["'`]+$/g, "")
+        .replace(/^\s*(?:[-*•]|\d+[\.)]|Prompt\s*\d+\s*[:.)-])\s*/i, "")
+        .trim()
+    )
+    .filter(Boolean);
+
+  if (paragraphs.length < 10) {
+    paragraphs = cleaned
+      .split(/\r?\n/)
+      .map((line) =>
+        line
+          .replace(/^["'`]+|["'`]+$/g, "")
+          .replace(/^\s*(?:[-*•]|\d+[\.)]|Prompt\s*\d+\s*[:.)-])\s*/i, "")
+          .trim()
+      )
+      .filter(Boolean);
+  }
+
+  return paragraphs.slice(0, 10).join("\n\n");
 }
 
-export interface ProductDesignResult {
-  detectedCategory: string;
-  customerWorld: string;
-  bestsellerDNA?: string[];
-  assortmentStrategy?: string;
-  trendSignals?: string[];
-  researchSources?: { title: string; url: string }[];
-  concepts: ProductDesignConcept[];
-  qualityChecklist: string[];
+export async function generateBestsellerRemixPrompts(imageUrl: string): Promise<string> {
+  const result: any = await subscribeVisionWithRetry(
+    {
+      model: VISION_MODEL,
+      system_prompt: BESTSELLER_REMIX_PROMPT_SYSTEM_PROMPT,
+      prompt:
+        "Analyze this uploaded apparel product image for commercial Product DNA, then output exactly 10 line-sheet-ready AI image prompts for new sellable product mockups. Follow every output rule exactly. Each prompt must be one full paragraph separated by one blank line.",
+      image_url: imageUrl,
+    },
+    "bestseller remix prompt generation"
+  );
+
+  const data = result?.data ?? result;
+  const output: string = (data?.output ?? data?.response ?? data?.text ?? "").trim();
+  if (!output) {
+    console.error("[prompt-studio/bestseller-remix] full response:", JSON.stringify(data).slice(0, 1000));
+    throw new Error("Bestseller remix prompt generator returned no text output.");
+  }
+
+  const prompts = normalizeBestsellerRemixPrompts(output);
+  const count = prompts ? prompts.split(/\n\s*\n/).filter(Boolean).length : 0;
+  if (count !== 10) {
+    console.error("[prompt-studio/bestseller-remix] expected 10 prompts, got:", count);
+    console.error("[prompt-studio/bestseller-remix] raw output:", output.slice(0, 1000));
+    throw new Error("Bestseller remix prompt generator did not return exactly 10 prompts.");
+  }
+
+  return prompts;
 }
 
 export interface InspirationTagResult {
@@ -596,14 +945,6 @@ export interface InspirationTagResult {
   note: string;
 }
 
-const PRODUCT_DESIGN_SYSTEM_PROMPT = `You are a fashion product design assistant for a bohemian boutique brand. A user will upload a product image. Your job is to identify the garment category, then create sellable product concepts in the same category. Do not copy the uploaded product's exact design, color palette, motif, pattern, styling, or construction. Do not create simple colorways. Each concept must have a different customer appeal, design story, fit, feature set, and visual identity. The products should feel commercially viable for a boutique fashion website and should make customers feel they need each piece for a different reason. Preserve the category: pants remain pants, jackets remain jackets, cardigans remain cardigans, tops remain tops, dresses remain dresses. Vary fit and construction within the category. Avoid repeated formulas, repeated left/middle/right roles, repeated color ordering, and overused motifs such as stars, sun, moon, daisies, and Aztec/southwestern patterns unless explicitly requested. Focus on garment design features, not graphic callouts. Generate clear, distinct, marketable product ideas.
-
-Default style world: easy, expressive, bohemian, boutique, layerable, comfortable, curated, soft but distinctive, relaxed but not boring. Avoid costume-like and overly basic ideas.
-
-Avoid weak repeated defaults: stars, sun motifs, moon motifs, celestial names, daisies, generic florals, Aztec/southwestern motifs, cream striped tops, big square front patches, obvious rectangle patchwork, identical oversized slouchy silhouettes, beige/cream/brown/blue-only palettes, and simple/patchwork/statement role formulas.
-
-Use broader themes when appropriate: coastal workwear, vintage varsity, painterly abstract, cottage utility, soft romantic layering, market-day artisan, road-trip utility, washed nautical, retro 70s color blocking, mineral-wash lounge, heirloom lace, modern prairie, worn-in workwear, scarf-print inspired, folk minimalism, textural monochrome, patchwork without obvious rectangles, hand-drawn animal motifs, quilted comfort, utility romance, boutique athleisure, soft grunge boho, country club boho, painter studio casual.`;
-
 function extractJsonObject(raw: string): string {
   const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/i)?.[1];
   if (fenced) return fenced.trim();
@@ -611,192 +952,6 @@ function extractJsonObject(raw: string): string {
   const end = raw.lastIndexOf("}");
   if (start >= 0 && end > start) return raw.slice(start, end + 1);
   return raw.trim();
-}
-
-function normalizeConcept(value: any): ProductDesignConcept | null {
-  if (!value || typeof value !== "object") return null;
-  const keyFeatures = Array.isArray(value.keyFeatures)
-    ? value.keyFeatures.map((item: unknown) => String(item || "").trim()).filter(Boolean)
-    : [];
-  const bestsellerDNA = Array.isArray(value.bestsellerDNA)
-    ? value.bestsellerDNA.map((item: unknown) => String(item || "").trim()).filter(Boolean)
-    : [];
-  const scores = value.commercialScores || {};
-  const concept: ProductDesignConcept = {
-    assortmentRole: String(value.assortmentRole || "").trim(),
-    productName: String(value.productName || "").trim(),
-    customerMood: String(value.customerMood || "").trim(),
-    productDescription: String(value.productDescription || "").trim(),
-    keyFeatures: keyFeatures.slice(0, 6),
-    customerReasonToBuy: String(value.customerReasonToBuy || "").trim(),
-    bestsellerDNA: bestsellerDNA.slice(0, 4),
-    commercialScores: {
-      commerciality: Number(scores.commerciality || 0),
-      novelty: Number(scores.novelty || 0),
-      brandFit: Number(scores.brandFit || 0),
-      productionEase: Number(scores.productionEase || 0),
-      risk: Number(scores.risk || 0),
-    },
-    designDifferenceFromSource: String(value.designDifferenceFromSource || "").trim(),
-    imageGenerationPrompt: String(value.imageGenerationPrompt || "").trim(),
-  };
-  if (
-    !concept.productName ||
-    !concept.customerMood ||
-    !concept.productDescription ||
-    concept.keyFeatures.length < 4 ||
-    !concept.designDifferenceFromSource ||
-    !concept.imageGenerationPrompt
-  ) {
-    return null;
-  }
-  return concept;
-}
-
-function parseProductDesignResult(raw: string): ProductDesignResult | null {
-  try {
-    const parsed = JSON.parse(extractJsonObject(raw));
-    const concepts = Array.isArray(parsed.concepts)
-      ? parsed.concepts.map(normalizeConcept).filter(Boolean).slice(0, 6)
-      : [];
-    if (concepts.length < 3) return null;
-    return {
-      detectedCategory: String(parsed.detectedCategory || "").trim() || "Detected garment",
-      customerWorld:
-        String(parsed.customerWorld || "").trim() || "Bohemian boutique customer",
-      bestsellerDNA: Array.isArray(parsed.bestsellerDNA)
-        ? parsed.bestsellerDNA
-            .map((item: unknown) => String(item || "").trim())
-            .filter(Boolean)
-            .slice(0, 8)
-        : [],
-      assortmentStrategy: String(parsed.assortmentStrategy || "").trim(),
-      concepts: concepts as ProductDesignConcept[],
-      qualityChecklist: Array.isArray(parsed.qualityChecklist)
-        ? parsed.qualityChecklist
-            .map((item: unknown) => String(item || "").trim())
-            .filter(Boolean)
-            .slice(0, 10)
-        : [],
-    };
-  } catch {
-    return null;
-  }
-}
-
-function productDesignUserPrompt(refinement?: string): string {
-  const wantsBestsellerRemix = /bestseller remix|remix engine|strong seller|current winner|6 concepts|six concepts/i.test(
-    refinement || ""
-  );
-  const conceptCount = wantsBestsellerRemix ? 6 : 3;
-  const assortmentRoles = wantsBestsellerRemix
-    ? [
-        "two Safe Commercial Extensions: wearable, close enough to proven bestseller DNA but meaningfully new",
-        "two Trend-Forward Extensions: fresher silhouette/detail/color/fabric directions, still sellable",
-        "one Reorder Extension: lower-risk continuation designed for replenishment and easy buying",
-        "one Novelty Statement: strongest visual hook with clear boutique/social merchandising appeal",
-      ]
-    : [
-        "one Safe Bestseller: most wearable, highest commercial probability, easy buy",
-        "one Trend Driver: newest silhouette/detail/color/fabric direction, still wearable",
-        "one Novelty Statement: strongest visual hook/social merchandising idea, higher risk but exciting",
-      ];
-  return `Analyze the uploaded product image only to identify product category, general garment type, customer/style world, and commercial context.
-
-Extract the likely bestseller DNA from the uploaded product first: what makes the category commercially useful, wearable, emotionally appealing, easy to buy, and worth improving. Then generate exactly ${conceptCount} new product design concepts in the same product category.
-
-Build the ${conceptCount} concepts as a balanced mini assortment:
-${assortmentRoles.map((role) => `- ${role}`).join("\n")}
-
-Do not recreate the uploaded product. Do not include a version that looks like the original. Use the image only to identify the product category and general customer world. Create three new, sellable products in the same category with different silhouettes, construction, fabrics, trims, details, and stories.
-
-Category preservation examples:
-- If the image is pants, generate pants only.
-- If the image is a cardigan, generate cardigans only.
-- If the image is a jacket, generate jackets only.
-- If the image is a hoodie dress, generate hoodie dresses or tunic dresses only.
-- Do not turn pants into skirts, jackets into coats, cardigans into tops, or dresses into separates.
-
-Each concept must answer why a customer would need it. Each concept must have a different customer appeal, styling story, construction or feature set, and product identity.
-
-Vary fit, silhouette, construction, fabric combination, trims, pockets, closures, sleeve shape, neckline, hemline, print placement, embroidery, texture, color story, customer appeal, and product story where relevant to the detected category.
-
-Before returning the final result, internally check:
-- all ${conceptCount} products preserve the source category
-- no product is too close to the source
-- the ${conceptCount} concepts are meaningfully different from each other
-- features are built into the garment
-- color stories and silhouettes are varied
-- motifs are fresh and not repeated
-- each product has a different reason to buy
-- the result does not look like simple colorways
-- the set feels sellable for a boutique fashion website
-
-${refinement ? `User refinement request: ${refinement}` : "No extra user refinement request."}
-
-Return strict JSON only:
-{
-  "detectedCategory": "short category phrase",
-  "customerWorld": "short style/customer context",
-  "bestsellerDNA": ["5-8 concise bullets describing the commercial DNA extracted from the upload and live research"],
-  "assortmentStrategy": "one short sentence explaining why the 3 concepts work together as a balanced mini line",
-  "concepts": [
-    {
-      "assortmentRole": "Safe Commercial Extension | Trend-Forward Extension | Reorder Extension | Novelty Statement | Safe Bestseller | Trend Driver",
-      "productName": "short boutique-style name",
-      "customerMood": "short phrase",
-      "productDescription": "concise selling description",
-      "keyFeatures": ["4-6 specific garment features"],
-      "customerReasonToBuy": "one short reason this customer would need it",
-      "bestsellerDNA": ["2-4 specific bestseller/commercial signals used in this concept"],
-      "commercialScores": {
-        "commerciality": 1-10,
-        "novelty": 1-10,
-        "brandFit": 1-10,
-        "productionEase": 1-10,
-        "risk": 1-10
-      },
-      "designDifferenceFromSource": "short explanation of how it avoids copying",
-      "imageGenerationPrompt": "ready-to-use visual prompt for one single product visual of this exact concept, same product category as the uploaded source, clear garment view, commercial boutique product-photo style, simple beige or neutral background, Three Bird Nest bohemian boutique direction, and no copying of source design/color/motif/layout"
-    }
-  ],
-  "qualityChecklist": ["brief passed-check notes"]
-}`;
-}
-
-export async function generateProductDesignConcepts(
-  imageUrl: string,
-  refinement?: string,
-  trendResearch?: string
-): Promise<ProductDesignResult> {
-  const result: any = await subscribeVisionWithRetry(
-    {
-      model: "anthropic/claude-3.7-sonnet",
-      system_prompt: PRODUCT_DESIGN_SYSTEM_PROMPT,
-      prompt:
-        productDesignUserPrompt(refinement) +
-        (trendResearch
-          ? `\n\nLIVE TREND AND BESTSELLER RESEARCH TO USE AS COMMERCIAL INPUT:\n${trendResearch}\n\nUse these signals as inspiration only. Do not copy named products, exact brand designs, or protected graphics.`
-          : ""),
-      image_url: imageUrl,
-    },
-    "product design concept generation"
-  );
-
-  const data = result?.data ?? result;
-  const output: string = (data?.output ?? data?.response ?? data?.text ?? "").trim();
-  if (!output) {
-    console.error("[design-studio] full response:", JSON.stringify(data).slice(0, 1000));
-    throw new Error("Product design generator returned no text output.");
-  }
-
-  const parsed = parseProductDesignResult(output);
-  if (!parsed) {
-    console.error("[design-studio] raw output:", output.slice(0, 2000));
-    throw new Error("Product design generator did not return complete concepts.");
-  }
-
-  return parsed;
 }
 
 function parseInspirationTagResult(raw: string): InspirationTagResult | null {
@@ -822,7 +977,7 @@ export async function generateInspirationTags(
 ): Promise<InspirationTagResult> {
   const result: any = await subscribeVisionWithRetry(
     {
-      model: "anthropic/claude-3.7-sonnet",
+      model: VISION_MODEL,
       system_prompt:
         "You are a fashion inspiration librarian for a boutique apparel design team. Analyze the image and create concise, searchable trend tags that a head designer would actually use later. Prioritize garment type, silhouette, fabric, print/motif, occasion, seasonality, mood, customer world, and commercial trend signals. Avoid generic filler.",
       prompt: `Create useful metadata for saving this image into a shared fashion inspiration library.
@@ -845,8 +1000,509 @@ Return strict JSON only:
   const output: string = (data?.output ?? data?.response ?? data?.text ?? "").trim();
   const parsed = output ? parseInspirationTagResult(output) : null;
   if (!parsed || !parsed.tags.length) {
-    console.error("[design-studio/inspiration-tags] raw output:", output.slice(0, 1000));
+    console.error("[inspiration-tags] raw output:", output.slice(0, 1000));
     throw new Error("Inspiration tag generator returned no usable tags.");
+  }
+  return parsed;
+}
+
+export interface TechpackTable {
+  columns: string[];
+  rows: string[][];
+}
+
+export interface TechpackSection {
+  heading: string;
+  body?: string;
+  bullets?: string[];
+  table?: TechpackTable;
+}
+
+export interface TechpackPage {
+  pageNumber: number;
+  title: string;
+  summary?: string;
+  sections: TechpackSection[];
+}
+
+export interface TechpackResult {
+  styleName: string;
+  styleNumber: string;
+  season: string;
+  category: string;
+  baseSize: string;
+  sizeRange: string;
+  dateCreated: string;
+  pages: TechpackPage[];
+}
+
+export interface TechpackInput {
+  imageUrl: string;
+  supportImageUrls?: string[];
+  styleName?: string;
+  styleNumber?: string;
+  season?: string;
+  category?: string;
+  baseSize?: string;
+  sizeRange?: string;
+  designerName?: string;
+  contact?: string;
+  seamAllowance?: string;
+  colorwayCount?: string;
+  notes?: string;
+}
+
+const TECHPACK_SYSTEM_PROMPT = `You are a senior apparel technical designer and production manager. You create factory-ready technical packs from uploaded garment flats, sketches, renders, or clear garment images.
+
+Use the uploaded image as the primary source of truth. Do not invent unnecessary garment features. If construction information is not visible, infer logically using industry-standard garment construction and mark the value with "proposed". If information is missing, use a professional placeholder such as "[TBC supplier]", "[TBC Pantone]", "[TBC artwork file]", or "[TBC measurement]".
+
+Brand name is always Davi&Dani.
+
+Return strict JSON only. No markdown. No prose outside JSON.
+
+The JSON shape must be:
+{
+  "styleName": "string",
+  "styleNumber": "string",
+  "season": "string",
+  "category": "string",
+  "baseSize": "string",
+  "sizeRange": "string",
+  "dateCreated": "string",
+  "pages": [
+    {
+      "pageNumber": 1,
+      "title": "PAGE 1 — COVER PAGE / STYLE SUMMARY",
+      "summary": "short page summary",
+      "sections": [
+        {
+          "heading": "section heading",
+          "body": "optional paragraph",
+          "bullets": ["optional bullets"],
+          "table": { "columns": ["col"], "rows": [["value"]] }
+        }
+      ]
+    }
+  ]
+}
+
+Create exactly 7 pages:
+PAGE 1 — COVER PAGE / STYLE SUMMARY
+PAGE 2 — CONSTRUCTION & DETAIL CALLOUTS
+PAGE 3 — BILL OF MATERIALS / BOM
+PAGE 4 — COLORWAYS & ARTWORK PLACEMENT
+PAGE 5 — MEASUREMENT SPECIFICATIONS / BASE SIZE SPEC SHEET
+PAGE 6 — SIZE GRADING
+PAGE 7 — LABELS & PACKAGING
+
+Content requirements:
+- Page 1 must include brand, logo placeholder, contact, style name, style number, season, gender/category, base sample size, date created, designer, revision history table, front/back flat description, and garment summary.
+- Page 2 must include construction callouts, detail views, seam types, stitching SPI/thread instructions, hardware placement, edge finishing, reinforcement points, and seam allowance standard.
+- Page 3 must include a BOM table with columns Item number, Component category, Component description, Placement / usage, Fiber content / composition, Fabric weight or trim size, Color, Supplier / supplier code, Consumption per garment, Notes. Include only components required or logically proposed.
+- Page 4 must include colorway chart, artwork reference table, placement measurements, application technique, artwork size, color specification, and no-artwork layout if no artwork is visible.
+- Page 5 must include POM diagram notes and a base-size POM table with POM code, Point of Measure name, Measurement description, Base size measurement, Tolerance, How to measure, Notes.
+- Page 6 must include size range, base size, grading table with grade rules and tolerances.
+- Page 7 must include label placements, label dimensions, care label placeholder, care symbols placeholder, fiber content matching BOM, hangtag, folding, polybag, barcode sticker, size/color sticker, and carton notes where relevant.
+
+Keep all pages internally consistent. Use metric measurements. Use professional factory terminology. The output is a technical document, not a moodboard or ecommerce page.`;
+
+const TECHPACK_PAGE_TITLES = [
+  "PAGE 1 — COVER PAGE / STYLE SUMMARY",
+  "PAGE 2 — CONSTRUCTION & DETAIL CALLOUTS",
+  "PAGE 3 — BILL OF MATERIALS / BOM",
+  "PAGE 4 — COLORWAYS & ARTWORK PLACEMENT",
+  "PAGE 5 — MEASUREMENT SPECIFICATIONS / BASE SIZE SPEC SHEET",
+  "PAGE 6 — SIZE GRADING",
+  "PAGE 7 — LABELS & PACKAGING",
+];
+
+function techpackMetaFromInput(input?: TechpackInput) {
+  return {
+    styleName: String(input?.styleName || "Davi&Dani Garment").trim(),
+    styleNumber: String(input?.styleNumber || "[TBC style number]").trim(),
+    season: String(input?.season || "[TBC season]").trim(),
+    category: String(input?.category || "[TBC category]").trim(),
+    baseSize: String(input?.baseSize || "[TBC base size]").trim(),
+    sizeRange: String(input?.sizeRange || "[TBC size range]").trim(),
+    dateCreated: new Date().toISOString().slice(0, 10),
+    designerName: String(input?.designerName || "[TBC designer]").trim(),
+    contact: String(input?.contact || "[TBC email / website / contact]").trim(),
+    seamAllowance: String(input?.seamAllowance || "1 cm seam allowance unless otherwise stated").trim(),
+    colorwayCount: Math.max(1, Number(input?.colorwayCount || 3) || 3),
+  };
+}
+
+function fallbackTechpackPage(pageNumber: number, input?: TechpackInput): TechpackPage {
+  const meta = techpackMetaFromInput(input);
+  const title = TECHPACK_PAGE_TITLES[pageNumber - 1] || `PAGE ${pageNumber}`;
+
+  if (pageNumber === 1) {
+    return {
+      pageNumber,
+      title,
+      summary: "Factory-facing style summary created from visible image information and user-entered metadata.",
+      sections: [
+        {
+          heading: "Style Identification",
+          table: {
+            columns: ["Field", "Value"],
+            rows: [
+              ["Brand", "Davi&Dani"],
+              ["Logo placement", "[TBC logo placement]"],
+              ["Contact", meta.contact],
+              ["Style name", meta.styleName],
+              ["Style number", meta.styleNumber],
+              ["Target season", meta.season],
+              ["Gender/category", meta.category],
+              ["Base sample size", meta.baseSize],
+              ["Date created", meta.dateCreated],
+              ["Designer", meta.designerName],
+            ],
+          },
+        },
+        {
+          heading: "Garment Summary",
+          body:
+            "Use uploaded garment image as primary source of truth. Front/back technical flats should be created from visible silhouette, closures, trims, pockets, ribbing, artwork, and construction details. Any non-visible information is proposed and must be confirmed before bulk production.",
+        },
+        {
+          heading: "Revision History",
+          table: {
+            columns: ["Revision number", "Date", "Description of change", "Approved by"],
+            rows: [["0", meta.dateCreated, "Initial AI-generated tech pack draft", "[TBC approver]"]],
+          },
+        },
+      ],
+    };
+  }
+
+  if (pageNumber === 2) {
+    return {
+      pageNumber,
+      title,
+      summary: "Construction standards and callouts for factory sampling.",
+      sections: [
+        {
+          heading: "Construction Callouts",
+          bullets: [
+            "Create numbered front and back flat callouts from visible seams, closures, pockets, collar/neckline, cuffs, hem, waistband, artwork, trims, and hardware.",
+            "Use lockstitch for visible topstitching unless a specialized seam is visible or specified.",
+            "Use 5-thread overlock or safety stitch for main joining seams where appropriate, proposed.",
+            "Apply bartacks at pocket openings, zipper stress points, drawcord exits, side seam openings, and other stress points, proposed.",
+            `Seam allowance standard: ${meta.seamAllowance}.`,
+          ],
+        },
+        {
+          heading: "Stitching Standards",
+          table: {
+            columns: ["Area", "Stitch type", "SPI", "Thread", "Notes"],
+            rows: [
+              ["Main joining seams", "5-thread overlock / safety stitch, proposed", "10-12 SPI", "[TBC thread ticket]", "Confirm with factory based on fabric weight"],
+              ["Visible topstitching", "Single-needle lockstitch, proposed", "8-10 SPI", "Color match unless contrast is visible", "Keep stitch lines straight and even"],
+              ["Hem / cuff / edge finish", "Coverstitch, binding, or clean-finished lockstitch, proposed", "10-12 SPI", "[TBC thread ticket]", "Match visible reference construction"],
+            ],
+          },
+        },
+      ],
+    };
+  }
+
+  if (pageNumber === 3) {
+    return {
+      pageNumber,
+      title,
+      summary: "Bill of materials draft for one garment.",
+      sections: [
+        {
+          heading: "Bill Of Materials",
+          table: {
+            columns: [
+              "Item number",
+              "Component category",
+              "Component description",
+              "Placement / usage",
+              "Fiber content / composition",
+              "Fabric weight or trim size",
+              "Color",
+              "Supplier / supplier code",
+              "Consumption per garment",
+              "Notes",
+            ],
+            rows: [
+              ["1", "Main fabric", "Primary shell fabric based on uploaded image", "Body and major panels", "[TBC fiber content]", "[TBC GSM/weight]", "[TBC Pantone]", "[TBC supplier]", "[TBC consumption]", "Proposed based on image; confirm with physical sample"],
+              ["2", "Thread", "Sewing thread", "All seams and topstitching", "Polyester, proposed", "[TBC ticket size]", "Color match shell unless contrast visible", "[TBC supplier]", "[TBC consumption]", "Confirm after lab dip"],
+              ["3", "Labels", "Main label, size label, care/content label", "Inside neck/waist or side seam", "Woven/satin, proposed", "[TBC dimensions]", "Davi&Dani brand standard", "[TBC supplier]", "1 set", "Placement to be confirmed"],
+              ["4", "Packaging", "Polybag, barcode sticker, size/color sticker", "Packed garment", "LDPE/polybag, proposed", "[TBC polybag size]", "Clear", "[TBC supplier]", "1 set", "Factory to confirm carton pack method"],
+            ],
+          },
+        },
+      ],
+    };
+  }
+
+  if (pageNumber === 4) {
+    const count = meta.colorwayCount;
+    return {
+      pageNumber,
+      title,
+      summary: "Colorway and artwork placement controls.",
+      sections: [
+        {
+          heading: "Colorway Chart",
+          table: {
+            columns: ["Colorway name", "Main fabric Pantone/TCX", "Secondary fabric color", "Rib/trim color", "Thread color", "Hardware color", "Artwork color"],
+            rows: Array.from({ length: count }, (_, index) => [
+              index === 0 ? "Original / uploaded reference" : `Proposed colorway ${index + 1}`,
+              "[TBC Pantone]",
+              "[TBC secondary color]",
+              "[TBC trim color]",
+              "Color match unless contrast specified",
+              "[TBC hardware finish]",
+              "[TBC artwork color / no artwork required]",
+            ]),
+          },
+        },
+        {
+          heading: "Artwork Placement",
+          table: {
+            columns: ["Artwork name", "File name", "File format", "Placement", "Scale", "Application method"],
+            rows: [["Visible or proposed artwork", "[TBC artwork file]", "[TBC format]", "Match uploaded image placement; measure from fixed seams", "[TBC size]", "Embroidery / print / patch method to be confirmed"]],
+          },
+        },
+      ],
+    };
+  }
+
+  if (pageNumber === 5) {
+    return {
+      pageNumber,
+      title,
+      summary: `Base-size measurement specification for ${meta.baseSize}.`,
+      sections: [
+        {
+          heading: "POM Diagram Notes",
+          body:
+            "Add front and back measurement diagrams with numbered measurement lines. Use visible garment proportions as the visual guide and confirm final measurements against approved sample.",
+        },
+        {
+          heading: "Base Size POM Table",
+          table: {
+            columns: ["POM code", "Point of Measure name", "Measurement description", "Base size measurement", "Tolerance", "How to measure", "Notes"],
+            rows: [
+              ["A", "Body length", "Highest shoulder point to bottom hem", "[TBC measurement]", "+/- 1.0 cm", "Measure straight from HPS to hem", "Confirm from approved sample"],
+              ["B", "Chest width", "Across chest 2.5 cm below armhole", "[TBC measurement]", "+/- 1.0 cm", "Lay flat, measure edge to edge", "Double for circumference if needed"],
+              ["C", "Hem width", "Across bottom opening", "[TBC measurement]", "+/- 1.0 cm", "Lay flat, measure edge to edge", "Must match intended fit"],
+              ["D", "Shoulder width", "Shoulder point to shoulder point", "[TBC measurement]", "+/- 0.8 cm", "Measure straight across back", "Use only when applicable"],
+              ["E", "Sleeve length", "Shoulder point to sleeve opening", "[TBC measurement]", "+/- 1.0 cm", "Measure along outer sleeve", "Use for tops/jackets/dresses with sleeves"],
+            ],
+          },
+        },
+      ],
+    };
+  }
+
+  if (pageNumber === 6) {
+    const sizes = meta.sizeRange.split(",").map((item) => item.trim()).filter(Boolean);
+    const normalizedSizes = sizes.length ? sizes : ["XS", "S", "M", "L", "XL"];
+    return {
+      pageNumber,
+      title,
+      summary: "Size grading draft using standard apparel grade logic.",
+      sections: [
+        {
+          heading: "Grade Rule Table",
+          table: {
+            columns: ["POM code", "POM name", ...normalizedSizes, "Grade rule between sizes", "Tolerance"],
+            rows: [
+              ["A", "Body length", ...normalizedSizes.map((size) => (size === meta.baseSize ? "[TBC base]" : "[TBC]")), "0.5-1.0 cm per size, proposed", "+/- 1.0 cm"],
+              ["B", "Chest width", ...normalizedSizes.map((size) => (size === meta.baseSize ? "[TBC base]" : "[TBC]")), "2.0-2.5 cm circumference per size, proposed", "+/- 1.0 cm"],
+              ["C", "Hem width", ...normalizedSizes.map((size) => (size === meta.baseSize ? "[TBC base]" : "[TBC]")), "2.0-2.5 cm circumference per size, proposed", "+/- 1.0 cm"],
+            ],
+          },
+        },
+        {
+          heading: "Grading Notes",
+          body:
+            "Grade rules are proposed until approved fit sample measurements are confirmed. Maintain intended relaxed, fitted, cropped, oversized, or regular fit proportions consistently across the size range.",
+        },
+      ],
+    };
+  }
+
+  return {
+    pageNumber,
+    title,
+    summary: "Labels, hangtags, folding, and packaging controls.",
+    sections: [
+      {
+        heading: "Labels And Packaging",
+        table: {
+          columns: ["Item", "Placement", "Dimensions", "Material", "Notes"],
+          rows: [
+            ["Main brand label", "Inside back neck / waistband, proposed", "[TBC dimensions]", "Woven label, proposed", "Davi&Dani brand label"],
+            ["Size label", "Next to main label, proposed", "[TBC dimensions]", "Woven or printed, proposed", "Must match size range"],
+            ["Care/content label", "Side seam / inner facing, proposed", "[TBC dimensions]", "Satin care label, proposed", "Include fiber content, care symbols, RN, country of origin placeholder"],
+            ["Hangtag", "Attached at neck label, zipper pull, or main opening, proposed", "[TBC size]", "Card stock, proposed", "Include barcode/SKU if required"],
+            ["Polybag", "One garment per bag", "[TBC dimensions]", "Clear LDPE, proposed", "Include suffocation warning, barcode sticker, size/color sticker"],
+          ],
+        },
+      },
+      {
+        heading: "Folding Instructions",
+        bullets: [
+          "Fold garment flat with front facing up unless factory pack standard requires otherwise.",
+          "Fold sleeves/body cleanly to fit approved polybag dimension, proposed.",
+          "Do not crush trims, artwork, hardware, raised embroidery, or padded/lofty fabric.",
+        ],
+      },
+    ],
+  };
+}
+
+function completeTechpackPages(pages: TechpackPage[], input?: TechpackInput): TechpackPage[] {
+  const byNumber = new Map<number, TechpackPage>();
+
+  pages.forEach((page, index) => {
+    const pageNumber = Number.isFinite(page.pageNumber) && page.pageNumber >= 1 && page.pageNumber <= 7
+      ? Math.trunc(page.pageNumber)
+      : index + 1;
+    if (!byNumber.has(pageNumber)) {
+      byNumber.set(pageNumber, {
+        ...page,
+        pageNumber,
+        title: TECHPACK_PAGE_TITLES[pageNumber - 1] || page.title || `PAGE ${pageNumber}`,
+        sections: page.sections.length ? page.sections : fallbackTechpackPage(pageNumber, input).sections,
+      });
+    }
+  });
+
+  return TECHPACK_PAGE_TITLES.map((_, index) => {
+    const pageNumber = index + 1;
+    return byNumber.get(pageNumber) ?? fallbackTechpackPage(pageNumber, input);
+  });
+}
+
+function normalizeTechpackTable(value: any): TechpackTable | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const columns = Array.isArray(value.columns)
+    ? value.columns.map((item: unknown) => String(item || "").trim()).filter(Boolean)
+    : [];
+  const rows = Array.isArray(value.rows)
+    ? value.rows
+        .map((row: unknown) =>
+          Array.isArray(row)
+            ? row.map((cell: unknown) => String(cell ?? "").trim())
+            : []
+        )
+        .filter((row: string[]) => row.length)
+    : [];
+  if (!columns.length || !rows.length) return undefined;
+  return { columns, rows };
+}
+
+function normalizeTechpackResult(raw: string, input?: TechpackInput): TechpackResult | null {
+  try {
+    const parsed = JSON.parse(extractJsonObject(raw));
+    const pages = Array.isArray(parsed.pages)
+      ? parsed.pages
+          .map((page: any, index: number) => {
+            const sections = Array.isArray(page.sections)
+              ? page.sections
+                  .map((section: any) => {
+                    const bullets = Array.isArray(section.bullets)
+                      ? section.bullets
+                          .map((item: unknown) => String(item || "").trim())
+                          .filter(Boolean)
+                      : [];
+                    const normalized: TechpackSection = {
+                      heading: String(section.heading || "Section").trim(),
+                    };
+                    const body = String(section.body || "").trim();
+                    if (body) normalized.body = body;
+                    if (bullets.length) normalized.bullets = bullets;
+                    const table = normalizeTechpackTable(section.table);
+                    if (table) normalized.table = table;
+                    return normalized;
+                  })
+                  .filter((section: TechpackSection) => section.heading)
+              : [];
+            return {
+              pageNumber: Number(page.pageNumber || index + 1),
+              title: String(page.title || `PAGE ${index + 1}`).trim(),
+              summary: String(page.summary || "").trim(),
+              sections,
+            } as TechpackPage;
+          })
+          .filter((page: TechpackPage) => page.sections.length)
+      : [];
+    if (!pages.length) return input ? buildFallbackTechpack(input) : null;
+    const fallbackMeta = techpackMetaFromInput(input);
+    return {
+      styleName: String(parsed.styleName || fallbackMeta.styleName).trim(),
+      styleNumber: String(parsed.styleNumber || fallbackMeta.styleNumber).trim(),
+      season: String(parsed.season || fallbackMeta.season).trim(),
+      category: String(parsed.category || fallbackMeta.category).trim(),
+      baseSize: String(parsed.baseSize || fallbackMeta.baseSize).trim(),
+      sizeRange: String(parsed.sizeRange || fallbackMeta.sizeRange).trim(),
+      dateCreated: String(parsed.dateCreated || fallbackMeta.dateCreated).trim(),
+      pages: completeTechpackPages(pages, input),
+    };
+  } catch {
+    return input ? buildFallbackTechpack(input) : null;
+  }
+}
+
+function buildFallbackTechpack(input: TechpackInput): TechpackResult {
+  const meta = techpackMetaFromInput(input);
+  return {
+    styleName: meta.styleName,
+    styleNumber: meta.styleNumber,
+    season: meta.season,
+    category: meta.category,
+    baseSize: meta.baseSize,
+    sizeRange: meta.sizeRange,
+    dateCreated: meta.dateCreated,
+    pages: completeTechpackPages([], input),
+  };
+}
+
+export async function generateTechpack(input: TechpackInput): Promise<TechpackResult> {
+  const context = [
+    `Brand name: Davi&Dani`,
+    `Style name: ${input.styleName || "[TBC style name]"}`,
+    `Style number: ${input.styleNumber || "[TBC style number]"}`,
+    `Target season: ${input.season || "[TBC season]"}`,
+    `Gender/category: ${input.category || "[TBC category]"}`,
+    `Base sample size: ${input.baseSize || "[TBC base size]"}`,
+    `Size range: ${input.sizeRange || "[TBC size range]"}`,
+    `Designer name: ${input.designerName || "[TBC designer]"}`,
+    `Brand contact details: ${input.contact || "[TBC email / website / contact]"}`,
+    `Seam allowance standard: ${input.seamAllowance || "1 cm seam allowance unless otherwise stated"}`,
+    `Requested colorway count: ${input.colorwayCount || "3"}`,
+    input.supportImageUrls?.length
+      ? `Supporting uploaded asset URLs for written reference: ${input.supportImageUrls.join(", ")}`
+      : "",
+    input.notes ? `Additional supporting notes:\n${input.notes.slice(0, 6000)}` : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  const result: any = await subscribeVisionWithRetry(
+    {
+      model: VISION_MODEL,
+      system_prompt: TECHPACK_SYSTEM_PROMPT,
+      prompt: `Create a complete, believable, internally consistent 7-page manufacturing tech pack from this uploaded garment image.\n\n${context}`,
+      image_url: input.imageUrl,
+    },
+    "techpack generation"
+  );
+
+  const data = result?.data ?? result;
+  const output: string = (data?.output ?? data?.response ?? data?.text ?? "").trim();
+  const parsed = output ? normalizeTechpackResult(output, input) : buildFallbackTechpack(input);
+  if (!parsed) {
+    console.error("[techpack] raw output:", output.slice(0, 2000));
+    return buildFallbackTechpack(input);
   }
   return parsed;
 }
@@ -920,7 +1576,7 @@ export interface TwoPieceFields {
 export async function extractTwoPieceFields(imageUrl: string): Promise<TwoPieceFields> {
   const result: any = await subscribeVisionWithRetry(
     {
-      model: "anthropic/claude-3.7-sonnet",
+      model: VISION_MODEL,
       system_prompt: TWO_PIECE_ANALYSIS_SYSTEM_PROMPT,
       prompt:
         "Analyze the two-piece coordinated set in this photograph using the four-line TOP / TOP_FEATURES / BOTTOM / BOTTOM_FEATURES format defined in your system prompt. Output exactly those four lines, nothing else.",
@@ -997,6 +1653,12 @@ export function buildTwoPiecePrompt(fields: TwoPieceFields): string {
       `studio background, soft diffused lighting, shadow character, camera angle, framing, and ` +
       `centered composition. Do NOT inherit garment-shape cues (silhouette, cut, fit, length) from ` +
       `the primary studio photograph. ` +
+      `BACKGROUND UNIFORMITY: the studio background must be rendered as one perfectly flat, ` +
+      `seamless solid color across the ENTIRE frame — from the top edge to the bottom edge and ` +
+      `from the left edge to the right edge. There must be no color patches, rectangular blocks, ` +
+      `banding, tiling artifacts, gradient shifts, lighter or darker zones, or mismatched regions ` +
+      `anywhere in the background. The background should read as a single continuous flat surface ` +
+      `with no visible seams or transitions. ` +
       `RENDER THE REPLACEMENT SET FRESH — do not copy the wrinkles, folds, creases, twists, ` +
       `asymmetries, or specific placement of whatever garment was originally in the primary ` +
       `photograph. Display both pieces in the canonical catalog layout for a coordinated set: the ` +
@@ -1092,6 +1754,80 @@ export interface AnalyzedModelPhoto {
   scene: string;
 }
 
+export const MODEL_PHOTO_ANALYSIS_FALLBACK: AnalyzedModelPhoto = {
+  currentGarment: "the currently visible clothing that conflicts with the replacement garment",
+  modelIdentity:
+    "the same model identity, face, hair, skin tone, expression, and body proportions visible in the primary studio photograph",
+  pose: "the same pose, stance, arm position, body angle, and camera angle visible in the primary studio photograph",
+  scene:
+    "the same studio background, lighting, shadows, accessories, and non-swapped wardrobe items visible in the primary studio photograph",
+};
+
+function cleanModelAnalysisValue(value: unknown): string {
+  return String(value || "")
+    .replace(/^["'`*_ \t-]+|["'`*_ \t-]+$/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\.$/, "");
+}
+
+function parseModelPhotoAnalysis(raw: string): AnalyzedModelPhoto {
+  const output = raw.trim();
+  let parsedJson: any = null;
+  try {
+    parsedJson = JSON.parse(extractJsonObject(output));
+  } catch {
+    parsedJson = null;
+  }
+
+  const fromJson = (keys: string[]) => {
+    if (!parsedJson || typeof parsedJson !== "object") return "";
+    for (const key of keys) {
+      const direct = parsedJson[key];
+      if (direct) return cleanModelAnalysisValue(direct);
+      const foundKey = Object.keys(parsedJson).find(
+        (candidate) =>
+          candidate.replace(/[\s_-]+/g, "").toLowerCase() ===
+          key.replace(/[\s_-]+/g, "").toLowerCase()
+      );
+      if (foundKey && parsedJson[foundKey]) return cleanModelAnalysisValue(parsedJson[foundKey]);
+    }
+    return "";
+  };
+
+  const grab = (labels: string[]): string => {
+    for (const label of labels) {
+      const flexible = label.replace(/[_\s]+/g, "[_\\s-]*");
+      const re = new RegExp(
+        `(?:^|\\n)\\s*(?:[-*•]\\s*)?(?:\\*\\*)?${flexible}(?:\\*\\*)?\\s*[:\\-–]\\s*([\\s\\S]+?)(?=\\n\\s*(?:[-*•]\\s*)?(?:\\*\\*)?(?:CURRENT[_\\s-]*GARMENT|MODEL[_\\s-]*IDENTITY|MODEL|IDENTITY|POSE|SCENE|BACKGROUND|LIGHTING)(?:\\*\\*)?\\s*[:\\-–]|$)`,
+        "i"
+      );
+      const match = output.match(re);
+      if (match?.[1]) return cleanModelAnalysisValue(match[1]);
+    }
+    return "";
+  };
+
+  const currentGarment =
+    fromJson(["currentGarment", "current_garment", "current garment", "currentOutfit"]) ||
+    grab(["CURRENT_GARMENT", "CURRENT GARMENT", "CURRENT OUTFIT", "GARMENT"]) ||
+    MODEL_PHOTO_ANALYSIS_FALLBACK.currentGarment;
+  const modelIdentity =
+    fromJson(["modelIdentity", "model_identity", "model identity", "identity", "model"]) ||
+    grab(["MODEL_IDENTITY", "MODEL IDENTITY", "IDENTITY", "MODEL"]) ||
+    MODEL_PHOTO_ANALYSIS_FALLBACK.modelIdentity;
+  const pose =
+    fromJson(["pose", "modelPose", "model_pose"]) ||
+    grab(["POSE", "MODEL POSE"]) ||
+    MODEL_PHOTO_ANALYSIS_FALLBACK.pose;
+  const scene =
+    fromJson(["scene", "background", "lighting", "environment"]) ||
+    grab(["SCENE", "BACKGROUND", "LIGHTING", "ENVIRONMENT"]) ||
+    MODEL_PHOTO_ANALYSIS_FALLBACK.scene;
+
+  return { currentGarment, modelIdentity, pose, scene };
+}
+
 export type GarmentFitAdjustment =
   | "fitted"
   | "true-to-reference"
@@ -1123,9 +1859,9 @@ export interface GarmentAdjustments {
   length?: GarmentLengthAdjustment;
 }
 
-type SwapScope = "upper-body" | "lower-body" | "full-look";
+export type SwapScope = "upper-body" | "lower-body" | "full-look";
 
-function inferSwapScope(garment: string): SwapScope {
+export function inferSwapScope(garment: string): SwapScope {
   const text = garment.toLowerCase();
 
   const fullLookWords = [
@@ -1163,6 +1899,27 @@ function inferSwapScope(garment: string): SwapScope {
   if (lowerBodyWords.some((w) => text.includes(w))) return "lower-body";
 
   return "upper-body";
+}
+
+function buildProductLengthAuthorityClause(scope: SwapScope): string {
+  const poseGarmentFirewall =
+    " The selected model-pose image is not a garment reference. It controls only the model identity, body, pose, camera, framing, lighting, and background; ignore its existing clothing when deciding the new garment's category, silhouette, crop point, body length, sleeve length, hem position, neckline, waistband exposure, fabric, color, trim, print, and styling.";
+
+  if (scope === "lower-body") {
+    return (
+      ` Product length authority: the uploaded garment reference controls the bottom length, rise, inseam, hem position, leg opening, and fabric break. Do not inherit pant, skirt, or short length from the model pose photograph unless it is visible in the uploaded product.${poseGarmentFirewall}`
+    );
+  }
+
+  if (scope === "full-look") {
+    return (
+      ` Product length authority: the uploaded garment reference controls every hem and coverage point in the full look. Do not inherit the model pose photograph's existing top length, crop point, waistband exposure, dress length, pant length, or outfit proportions.${poseGarmentFirewall}`
+    );
+  }
+
+  return (
+    ` Product length authority: the uploaded garment reference controls the true body length, hem placement, sleeve length, and coverage of the new upper-body garment. Do not inherit, match, or average the current shirt, tank, sweater, or jacket length from the model pose photograph. If the model pose is wearing a cropped or at-waist top, ignore that old hem completely. If the uploaded jacket, cardigan, shirt, or sweater extends below the waistband, to the high hip, to the hip, or lower, render the new garment at that same longer coverage on the model. Do not crop jackets or tops for no reason, and do not expose the waistband unless the uploaded product is actually cropped.${poseGarmentFirewall}`
+  );
 }
 
 function buildGarmentAdjustmentClause(adjustments?: GarmentAdjustments): string {
@@ -1223,11 +1980,11 @@ function buildGarmentAdjustmentClause(adjustments?: GarmentAdjustments): string 
   } else if (length === "shorter") {
     clauses.push("Render the garment slightly shorter on the body than the raw reference impression, with hems, sleeves, or leg length landing a bit higher while still looking natural and proportional.");
   } else if (length === "longer") {
-    clauses.push("Render the garment slightly longer on the body than the raw reference impression, with hems, sleeves, or leg length landing a bit lower while still looking natural and proportional.");
+    clauses.push("Render the garment slightly longer on the body than the raw reference impression, with hems, sleeves, or leg length landing a bit lower while still looking natural and proportional. For jackets, tops, sweaters, and cardigans, make the body length visibly lower than the model pose photo's original top hem; do not stop at the old cropped-shirt length.");
   }
 
   if (clauses.length === 0) {
-    return " Match the garment's fit and length on-body as closely as possible to the uploaded reference impression, without drifting smaller, larger, shorter, or longer.";
+    return " Match the garment's fit and length on-body as closely as possible to the uploaded product reference, without drifting smaller, larger, shorter, or longer. Never use the model pose photo's existing shirt/top hem as the length guide for a new jacket, cardigan, shirt, sweater, or outerwear piece.";
   }
 
   return ` Fit adjustment: ${clauses.join(" ")}`;
@@ -1240,7 +1997,7 @@ function buildGarmentAdjustmentClause(adjustments?: GarmentAdjustments): string 
 export async function analyzeModelPhoto(imageUrl: string): Promise<AnalyzedModelPhoto> {
   const result: any = await subscribeVisionWithRetry(
     {
-      model: "anthropic/claude-3.7-sonnet",
+      model: VISION_MODEL,
       system_prompt: MODEL_PHOTO_ANALYSIS_PROMPT,
       prompt:
         "Analyze the model photograph using the four-line CURRENT_GARMENT / MODEL_IDENTITY / POSE / SCENE format defined in your system prompt. Output exactly those four lines, nothing else.",
@@ -1256,34 +2013,169 @@ export async function analyzeModelPhoto(imageUrl: string): Promise<AnalyzedModel
     throw new Error("Model photo analysis returned no text output.");
   }
 
-  const grab = (label: string): string => {
-    const re = new RegExp(`${label}:\\s*([\\s\\S]+?)\\s*(?:\\r?\\n(?=[A-Z_ ]+:)|$)`, "i");
-    const m = output.match(re);
-    return (m?.[1] || "").trim().replace(/\.$/, "");
-  };
+  const modelFields = parseModelPhotoAnalysis(output);
 
-  const currentGarment = grab("CURRENT_GARMENT");
-  const modelIdentity = grab("MODEL_IDENTITY");
-  const pose = grab("POSE");
-  const scene = grab("SCENE");
-
-  if (!currentGarment || !modelIdentity || !pose || !scene) {
-    console.error("[analyze-model] parse failed, raw output:", output.slice(0, 500));
-    throw new Error("Model photo analyzer returned an unparseable response.");
+  if (
+    Object.values(modelFields).some((value) =>
+      Object.values(MODEL_PHOTO_ANALYSIS_FALLBACK).includes(value)
+    )
+  ) {
+    console.warn("[analyze-model] used safe fallback fields for pose analysis:", output.slice(0, 500));
   }
 
-  console.log("[analyze-model] current:", currentGarment);
-  console.log("[analyze-model] identity:", modelIdentity);
-  console.log("[analyze-model] pose:", pose);
-  console.log("[analyze-model] scene:", scene);
+  console.log("[analyze-model] current:", modelFields.currentGarment);
+  console.log("[analyze-model] identity:", modelFields.modelIdentity);
+  console.log("[analyze-model] pose:", modelFields.pose);
+  console.log("[analyze-model] scene:", modelFields.scene);
 
-  return { currentGarment, modelIdentity, pose, scene };
+  return modelFields;
 }
 
 /**
- * Build the model-swap prompt. The primary photograph (image_urls[0]) is the
- * model pose we're editing; the attached reference (image_urls[1]) is the
- * user's garment photo. Content-descriptive language only — no "image 1/2".
+ * Build three differently-phrased model-swap prompts in the Image-A / Image-B
+ * structure that won David's earlier face-swap test. Image A is the model
+ * pose photograph (image_urls[0], the editing canvas); Image B is the user's
+ * garment reference (image_urls[1+], the source of the new clothing). All
+ * three follow the same four-part pattern: preserve A, extract B, integrate,
+ * quality + negatives — only the verbs and clause ordering vary, since
+ * Nano Banana 2.0 produces meaningfully different outputs from synonym swaps.
+ *
+ * @returns tuple of exactly three prompt strings; pass each to a parallel
+ *          /api/generate-model call so the user can pick the best of three.
+ */
+export function buildModelSwapPromptVariants(
+  newGarment: string,
+  newGarmentFeatures: string,
+  analyzedModel: AnalyzedModelPhoto,
+  adjustments?: GarmentAdjustments,
+  swapScopeOverride?: SwapScope
+): [string, string, string] {
+  const swapScope = swapScopeOverride ?? inferSwapScope(newGarment);
+  const adjustmentClause = buildGarmentAdjustmentClause(adjustments);
+  const lengthAuthorityClause = buildProductLengthAuthorityClause(swapScope);
+
+  // Scope clause — vary the verb across variants for prompt diversity but
+  // keep the underlying instruction identical.
+  const scopeClauseFor = (verb: "replace" | "transfer" | "integrate", ng: string): string =>
+    swapScope === "upper-body"
+      ? `${verb} only the upper-body garment area with the new ${ng}; preserve any visible skirt, pants, shorts, or other lower-body garment from Image A exactly as-is — same color, shape, hem, waistband, drape, and coverage; do not remove, crop out, fade out, or simplify the lower-body garment.`
+      : swapScope === "lower-body"
+      ? `${verb} only the lower-body garment area with the new ${ng}; preserve any visible top, jacket, sweater, blouse, shirt, or upper-body garment from Image A exactly as-is, and obey the specified leg silhouette exactly — preserve barrel curvature, wide-leg width, straight-leg vertical line, flare opening, taper, cuff, hem length, waistband rise, pocket placement, and fabric break without straightening, widening, or flattening.`
+      : `${verb} the full visible outfit with the new ${ng}, since it is a full-look garment.`;
+
+  // Anti-layering directive — shared across variants because the failure mode
+  // is so common (model hallucinates an inner cami when the upload has a
+  // high-low / shirttail hem). Phrased differently per variant so each prompt
+  // still feels distinct, but every variant carries the constraint.
+  const antiLayeringFor = (variant: "structure" | "surface" | "strict"): string => {
+    if (variant === "structure") {
+      return `treat any visible difference between front-hem height and back-hem height in Image B as the SAME garment's intentional high-low / shirttail / stepped hem geometry, not as a separate cami, undershirt, inner top, or layered piece — render the asymmetric hem on the model exactly as one continuous garment with a longer back panel, never split into two pieces;`;
+    }
+    if (variant === "surface") {
+      return `the upload in Image B is ONE garment — never invent a second garment, contrasting underlayer, or visible inner cami beneath it; if Image B shows a longer back hem peeking below a shorter front hem, that is part of the same garment's hem and must be preserved as one continuous piece on the model;`;
+    }
+    return `do not add any inner garment, cami, undershirt, layered piece, or contrasting underlayer beneath the rendered top, even if the back hem of Image B extends below the front hem — that asymmetry is the SAME garment's high-low construction, never two pieces;`;
+  };
+
+  // Variant 1 — STRUCTURE-FIRST. Front-loads silhouette, hem geometry, sleeve
+  // shape, body length. Use this when the garment has distinctive cut details
+  // (high-low hem, balloon sleeves, mock collar, asymmetric closures, etc.)
+  // that Nano Banana tends to flatten or simplify.
+  const renderV1 = (ng: string, nf: string, cg: string, mi: string, ps: string, sc: string): string => {
+    const featureClause = nf
+      ? `preserve the garment's exact construction from Image B, including: ${nf};`
+      : "preserve every structural detail of the garment from Image B exactly;";
+    return [
+      `Use Image A as the base image and keep the model's body, face, identity (${mi}), pose (${ps}), hair, expression, lighting, shadows, camera angle, depth of field, and background (${sc}) completely unchanged;`,
+      `take the ${ng} from Image B and apply it onto the model — ${scopeClauseFor("replace", ng)} remove only the portion of ${cg} that conflicts with the new ${ng}, and carefully match lighting direction, fabric drape, body contour, perspective, and shadow behavior so everything blends naturally;`,
+      `STRUCTURE PRIORITY: render the garment with the EXACT silhouette and construction visible in Image B — body length, hem geometry (preserve any high-low, shirttail, stepped, or asymmetric hem with the back panel longer than the front exactly as shown), sleeve length and volume, cuff shape, neckline depth and shape, collar height, waistband, drape, and overall body fit;`,
+      featureClause,
+      antiLayeringFor("structure"),
+      `render the garment as a worn garment on this specific model and pose with natural drape, fit, volume, and contour responding to the body and scene, not a static copy of the flat-lay shape from Image B;`,
+      lengthAuthorityClause.trim(),
+      adjustmentClause.trim(),
+      `remove all neck labels, brand tags, size tags, care labels, and sewn-in woven tags from the rendered garment;`,
+      `Image A is the lighting and exposure authority — match its background brightness, backdrop tonal value, facial exposure, facial brightness, and face lighting pattern exactly; do not darken, mute, gray, warm, or cool the scene relative to Image A;`,
+      `output a photorealistic 4K editorial fashion catalog image in 2:3 aspect ratio with anatomically correct proportions, clean garment edges, and high-detail textures.`,
+      `Negative prompt: no face alteration, no body reshape, no pose drift, no garment-shape drift, no flattened high-low hem, no straightened shirttail hem, no separate inner garment, no layered cami, no contrasting underlayer, no straightening of barrel or flared pants, no widening of skinny pants, no cropped jacket unless the uploaded jacket is cropped, no matching the old top length.`,
+    ]
+      .filter(Boolean)
+      .join(" ");
+  };
+
+  // Variant 2 — SURFACE-FIRST. Front-loads color, pattern fidelity, trim
+  // placement, hardware position, fabric texture. Use this when the garment
+  // has a distinctive print, hardware, or trim that tends to drift or get
+  // mirrored / relocated by the model.
+  const renderV2 = (ng: string, nf: string, cg: string, mi: string, ps: string, sc: string): string => {
+    const featureClause = nf
+      ? `keep every surface detail from Image B intact, including: ${nf};`
+      : "keep every visible surface detail from Image B intact;";
+    return [
+      `Build the final image from Image A as the foundation, preserving every visual element exactly as shown — ${mi}, pose (${ps}), scene (${sc}), face, hair, posture, lighting setup, shadows, camera perspective, and depth of field, plus the rest of the visible outfit aside from the swap area;`,
+      `transfer the ${ng} from Image B onto the subject in Image A — ${scopeClauseFor("transfer", ng)} remove from the current look only the portion of ${cg} that the new ${ng} replaces, and adapt the garment to Image A's lighting intensity, body geometry, perspective, and shadow placement for seamless realism;`,
+      `SURFACE PRIORITY: the garment must match Image B's color exactly (every hue and saturation), the print pattern (every motif placement, density, and orientation), all trim and tape placement, hardware positions on the wearer-correct side (zippers, buttons, snaps, drawstrings), hem stitching color and width, and the precise fabric texture and sheen visible in Image B; do not mirror left/right artwork, do not relocate sleeve or chest details to the visible side just to make them readable;`,
+      featureClause,
+      antiLayeringFor("surface"),
+      `the garment must read as a worn garment on this model in this pose, not a flat-lay copy — re-render natural drape, fabric tension, and contour while preserving every visible design detail;`,
+      lengthAuthorityClause.trim(),
+      adjustmentClause.trim(),
+      `remove all neck labels, brand tags, size tags, care labels, and sewn-in woven tags from the rendered garment;`,
+      `Image A is the exposure and color authority — match its background tone, facial exposure, and overall scene mood exactly; do not shift any of these;`,
+      `produce an ultra-realistic 4K image in 2:3 format with accurate facial scaling, natural blending, and high-detail textures with no visible seams, distortion, or compositing artifacts.`,
+      `Negative prompt: no color drift, no pattern simplification, no missing trims, no relocated hardware, no mirrored print, no recolor, no texture blending, no exposure shift, no background change, no separate inner garment, no layered cami, no contrasting underlayer.`,
+    ]
+      .filter(Boolean)
+      .join(" ");
+  };
+
+  // Variant 3 — STRICT / ANTI-FAILURE. Front-loads explicit do-nots. Use this
+  // as the safety-net variant — it leans heavily on negatives so it's the
+  // most likely to catch failure modes the other two variants miss.
+  const renderV3 = (ng: string, nf: string, cg: string, mi: string, ps: string, sc: string): string => {
+    const featureClause = nf
+      ? `preserve every detail of the garment from Image B including: ${nf};`
+      : "preserve every visible detail of the garment from Image B;";
+    return [
+      `Take Image A and preserve everything exactly as it is — ${mi}, pose (${ps}), scene (${sc}), face, hair, posture, lighting, shadows, camera angle, and the rest of the visible outfit aside from the swap area;`,
+      `extract the ${ng} from Image B and integrate it onto the model — ${scopeClauseFor("integrate", ng)} remove only the portion of ${cg} that the new garment replaces, and ensure consistent lighting, skin-tone interaction, perspective, and depth across the new garment;`,
+      `CRITICAL DO-NOTS: (1) ${antiLayeringFor("strict").replace(/^[a-z]/, (c) => c.toUpperCase())} (2) do not split the garment from Image B into multiple pieces, even if the hem is asymmetric. (3) Do not change garment color, pattern, hardware position, trim placement, neckline, sleeve shape, or hem geometry away from Image B. (4) Do not change the model's face, body, pose, hair, expression, or proportions. (5) Do not change the background, lighting, exposure, or camera perspective. (6) Do not invent text, logos, or branding not present in Image B.`,
+      featureClause,
+      `the result must look like a single authentic fashion catalog photograph of this model in this pose, wearing the new ${ng} as ONE continuous garment with correct silhouette, drape, hem geometry, sleeve length, and trim placement — not a flat-lay reproduction and not split into multiple pieces;`,
+      lengthAuthorityClause.trim(),
+      adjustmentClause.trim(),
+      `remove all neck labels, brand tags, size tags, care labels, and sewn-in woven tags from the rendered garment;`,
+      `Image A controls the exposure and color tone — preserve its background brightness, face lighting, and overall scene mood; do not shift any of these;`,
+      `deliver a 4K photorealistic image in 2:3 aspect ratio with realistic anatomical proportions, clean compositing, and detailed garment textures throughout, with no warping, scaling errors, or edit artifacts.`,
+      `Negative prompt: no face alteration, no body reshape, no exposure shift, no background change, no garment-shape drift, no separate inner garment, no layered cami, no undershirt, no contrasting underlayer, no split-into-two-pieces, no flattened high-low hem, no mirrored hardware, no relocated trim, no straightened barrel pants, no widened skinny pants, no cropped jacket unless the uploaded jacket is cropped.`,
+    ]
+      .filter(Boolean)
+      .join(" ");
+  };
+
+  // Sanitize per-variant. Each template has its own descriptor footprint, so
+  // we compute it independently for each render function before substituting.
+  const sanitizeFor = (
+    render: (ng: string, nf: string, cg: string, mi: string, ps: string, sc: string) => string
+  ): string => {
+    const used = descriptorsInTemplate(render("", "", "", "", "", ""));
+    return render(
+      sanitizeAnalyzerText(newGarment, used),
+      sanitizeAnalyzerText(newGarmentFeatures, used),
+      sanitizeAnalyzerText(analyzedModel.currentGarment, used),
+      sanitizeAnalyzerText(analyzedModel.modelIdentity, used),
+      sanitizeAnalyzerText(analyzedModel.pose, used),
+      sanitizeAnalyzerText(analyzedModel.scene, used)
+    );
+  };
+
+  return [sanitizeFor(renderV1), sanitizeFor(renderV2), sanitizeFor(renderV3)];
+}
+
+/**
+ * Build the model-swap prompt. Returns the first of three Image-A / Image-B
+ * variants — kept as a single-prompt API for batch generation, quality-control
+ * repairs, and complete-photoshoot-set flows that don't need multi-option.
  *
  * @param newGarment  noun phrase for the replacement garment (from analyzing the user's upload)
  * @param newGarmentFeatures  comma-separated visible details of the replacement garment
@@ -1293,97 +2185,141 @@ export function buildModelSwapPrompt(
   newGarment: string,
   newGarmentFeatures: string,
   analyzedModel: AnalyzedModelPhoto,
-  adjustments?: GarmentAdjustments
+  adjustments?: GarmentAdjustments,
+  swapScopeOverride?: SwapScope
 ): string {
+  return buildModelSwapPromptVariants(
+    newGarment,
+    newGarmentFeatures,
+    analyzedModel,
+    adjustments,
+    swapScopeOverride
+  )[0];
+}
+
+/**
+ * Build three differently-phrased composition-first beta prompts. Same
+ * structural identity as buildModelStudioBetaPrompt — input role lock,
+ * photorealistic shooting setup, layout authority — but each variant
+ * emphasizes a different concern (structure / surface / strict negatives)
+ * so the trio gives meaningfully different outputs in Studio 2 just like
+ * in Studio 1.
+ */
+export function buildModelStudioBetaPromptVariants(
+  newGarment: string,
+  newGarmentFeatures: string,
+  analyzedModel: AnalyzedModelPhoto,
+  adjustments?: GarmentAdjustments
+): [string, string, string] {
   const swapScope = inferSwapScope(newGarment);
-  // Inner renderer — introspect the template text once, then render again
-  // with sanitized analyzer output.
-  const render = (
-    ng: string,
-    nf: string,
-    cg: string,
-    mi: string,
-    ps: string,
-    sc: string
-  ): string => {
-    // Feature clause, attached as a standalone sentence so the preservation
-    // list stays flat and comma-separated (winning-prompt pattern).
-    const featureClause = nf
-      ? ` Keep all garment details from the reference photograph identical, including: ${nf}.`
-      : "";
-    const adjustmentClause = buildGarmentAdjustmentClause(adjustments);
-    const scopeClause =
-      swapScope === "upper-body"
-        ? ` Replace only the upper-body garment area with the new ${ng}. Preserve any visible skirt, pants, shorts, or other lower-body garment from the primary studio photograph exactly as-is — same color, shape, hem, waistband, drape, and coverage. Do not remove, crop out, fade out, or simplify the lower-body garment.`
-        : swapScope === "lower-body"
-        ? ` Replace only the lower-body garment area with the new ${ng}. Preserve any visible top, jacket, sweater, blouse, shirt, or other upper-body garment from the primary studio photograph exactly as-is — same color, neckline, sleeve shape, hem, drape, and coverage. Do not remove, crop out, fade out, or simplify the upper-body garment. Pants shape is critical: preserve or obey the specified leg silhouette exactly, including barrel curvature, wide-leg width, straight-leg vertical line, flare opening, taper, cuff, hem length, waistband rise, pocket placement, and fabric break.`
-        : ` Replace the full visible outfit with the new ${ng}, since it is a full-look garment.`;
-    return (
-      // Opening — "extract X and apply onto Y" was the shared framing in the
-      // two winning prompts from David's six-prompt Model Studio test (#2 and
-      // #4). The losing prompts used "swap", "transfer", or "replace X in
-      // image 2 with Y", which read as weaker instructions to Nano Banana.
-      `Fashion catalog garment-swap edit on a human model. Extract the ${ng} from the attached ` +
-      `reference photograph and apply it onto the model in the primary studio photograph, ` +
-      `replacing only the garment area that conflicts with the new ${ng} while preserving the rest of the outfit unless explicitly instructed otherwise. Remove from the current look only the portion of ${cg} that must be replaced by the new ${ng}. ` +
-      // Preservation — flat comma-separated list. The winning prompts enumerated
-      // every preserved attribute (face / proportions / pose / hair / expression
-      // / lighting / shadows / camera angle / background / non-swapped garment)
-      // in one sentence rather than semicolon-grouping them.
-      `Preserve the model's exact face, facial features, expression, and physical attributes — ` +
-      `${mi} — along with the exact pose (${ps}), camera perspective, lighting direction, ` +
-      `shadows, and the rest of the scene (${sc}) unchanged.` +
-      `${scopeClause}` +
-      ` The primary studio photograph is the exposure and lighting authority: match the exact ` +
-      `background color, background brightness, backdrop tonal value, facial exposure, facial ` +
-      `brightness, and face lighting pattern from the primary studio photograph exactly. Do not ` +
-      `darken, mute, gray down, warm up, cool down, or otherwise shift the backdrop or the model's ` +
-      `face relative to the primary studio photograph. Keep the face at the same exposure level and ` +
-      `keep the background at the same perceived brightness and color tone as the reference pose image.` +
-      `${featureClause} ` +
-      // Realistic-garment-behavior clause — both winners closed with a sentence
-      // describing natural draping / structure / contour, and both explicitly
-      // said "do not copy the flat-lay shape".
-      `Ensure realistic garment behavior on the body: natural drape, fit, volume, and contour ` +
-      `that respond to the model's pose and the scene's lighting. Do not copy the static flat-lay ` +
-      `shape of the garment from the reference — re-render it as a worn garment on this specific ` +
-      `model in this specific pose, while preserving every visible design detail (color, pattern, ` +
-      `neckline, hem, sleeve length, hardware, trim) exactly.` +
-      `${adjustmentClause} ` +
-      // Neck-label removal (baked in as default per earlier request).
-      `REMOVE ALL NECK LABELS, BRAND TAGS, SIZE TAGS, CARE LABELS, AND SEWN-IN WOVEN TAGS from the ` +
-      `rendered garment — the inside of the neckline, collar band, and any other typical label ` +
-      `location must be clean and empty with no tag, label, patch, or printed text of any kind ` +
-      `showing. ` +
-      // Closing statement + explicit negative-prompt epilogue (shared by every
-      // test prompt; keeping it for parity).
-      `The result must look like a single authentic fashion catalog photograph of this model, ` +
-      `taken in this exact pose and scene, wearing the new ${ng}. Hyper-realistic 4K ` +
-      `e-commerce fashion photography, editorial catalog quality. ` +
-      `Negative prompt: no face alteration, no body reshaping, no recolor, no texture blending, ` +
-      `no distortion, no pants-shape drift, no straightening barrel pants, no widening skinny pants, no flattening flare hems, no background change, no darker face, no dimmer background, no exposure shift.`
-    );
+  const adjustmentClause = buildGarmentAdjustmentClause(adjustments);
+  const lengthAuthorityClause = buildProductLengthAuthorityClause(swapScope);
+  const clean = (value: string) => sanitizeAnalyzerText(value, new Set());
+  const cleanGarment = clean(newGarment);
+  const cleanFeatures = clean(newGarmentFeatures);
+  const cleanPose = clean(analyzedModel.pose);
+  const cleanScene = clean(analyzedModel.scene);
+  const featureClause = cleanFeatures
+    ? `Preserve all garment details from the attached product image exactly: ${cleanFeatures}.`
+    : "Preserve every visible garment detail from the attached product image exactly.";
+  const scopeClause =
+    swapScope === "upper-body"
+      ? "Apply the product only to the upper-body garment area and preserve any visible lower-body styling from the layout reference unless it conflicts with the garment."
+      : swapScope === "lower-body"
+      ? "Apply the product only to the lower-body garment area and preserve any visible upper-body styling from the layout reference unless it conflicts with the garment."
+      : "Apply the product as the full visible outfit because the source garment is a full-look or coordinated garment.";
+
+  // Anti-layering clause — same insight as the classic variants: high-low /
+  // shirttail hems are ONE garment, not two. Phrased differently per variant.
+  const antiLayeringFor = (variant: "structure" | "surface" | "strict"): string => {
+    if (variant === "structure") {
+      return "Treat any visible difference between front-hem and back-hem heights in the product image as the SAME garment's high-low / shirttail / stepped hem geometry, not as a separate cami, undershirt, inner top, or layered piece. Render the asymmetric hem as one continuous garment with a longer back panel.";
+    }
+    if (variant === "surface") {
+      return "The uploaded product is ONE garment — never invent a second garment, contrasting underlayer, or visible inner cami beneath it. Any longer back hem visible in the product image is part of the same garment's hem, not a separate inner layer.";
+    }
+    return "Do not add any inner garment, cami, undershirt, layered piece, or contrasting underlayer beneath the rendered top, even if the product back hem extends below the front hem — that asymmetry is the SAME garment's high-low construction, never two pieces.";
   };
 
-  // Descriptor-discipline pass: scan the template once, then sanitize every
-  // dynamic slot in priority order. newGarment + newGarmentFeatures describe
-  // the replacement garment (most load-bearing); the four analyzedModel fields
-  // describe static elements of the source photograph.
-  const used = descriptorsInTemplate(render("", "", "", "", "", ""));
-  const cleanNewGarment = sanitizeAnalyzerText(newGarment, used);
-  const cleanNewFeatures = sanitizeAnalyzerText(newGarmentFeatures, used);
-  const cleanCurrent = sanitizeAnalyzerText(analyzedModel.currentGarment, used);
-  const cleanIdentity = sanitizeAnalyzerText(analyzedModel.modelIdentity, used);
-  const cleanPose = sanitizeAnalyzerText(analyzedModel.pose, used);
-  const cleanScene = sanitizeAnalyzerText(analyzedModel.scene, used);
-  return render(
-    cleanNewGarment,
-    cleanNewFeatures,
-    cleanCurrent,
-    cleanIdentity,
-    cleanPose,
-    cleanScene
-  );
+  // Variant 1 — STRUCTURE-FIRST. Emphasizes silhouette / hem / construction.
+  const v1 = [
+    "Create a studio fashion image by editing the first image, which is the selected human model pose and the only layout/composition canvas.",
+    "Input image role lock: the first image is the model pose canvas and controls the model, face, body, pose, camera angle, framing, background, lighting, spacing, margins, scale, and panel layout. Every additional uploaded image is a garment reference only. Never use the garment reference photo as the final layout.",
+    "The final output must be the selected human model wearing the uploaded garment. Match the structure of the first model-pose image, including the number of panels, framing, spacing, margins, scale, camera distance, and overall grid arrangement.",
+    `STRUCTURE PRIORITY: render the garment with the EXACT silhouette and construction visible in the product image — body length, hem geometry (preserve any high-low, shirttail, stepped, or asymmetric hem with the back panel longer than the front exactly as shown), sleeve length and volume, cuff shape, neckline depth and shape, collar height, waistband, drape, and overall body fit. The garment must read as a worn ${cleanGarment}, not a flat-lay copy.`,
+    antiLayeringFor("structure"),
+    "Photorealistic shooting setup: Sony A7 IV, 50mm to 85mm commercial lookbook perspective, f/4 to f/5.6, sharp full-body clarity, minimal background blur, real fashion brand lookbook photography, RAW image feel, natural skin texture with visible pores and fine details, soft realistic hair strands, natural catchlights, clean polished but not over-retouched.",
+    "Model direction: preserve the selected reference model identity, face, hair color, hairstyle, hair length, skin tone, body proportions, and natural commercial makeup from the layout reference.",
+    featureClause,
+    lengthAuthorityClause,
+    `${scopeClause} No additional styling that distracts from the product.`,
+    "Background and lighting: warm beige seamless studio background matching the reference tone, soft even commercial lighting, no harsh shadows, only subtle grounding shadow.",
+    `Preserve from the first model-pose image where applicable: ${cleanPose}, ${cleanScene}, and the same camera perspective.`,
+    adjustmentClause,
+    "Negative prompt: no flat lay, no hanger, no mannequin, no separate inner garment, no layered cami, no contrasting underlayer, no flattened high-low hem, no straightened shirttail, no garment-shape drift, no model identity distortion, no background change.",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  // Variant 2 — SURFACE-FIRST. Emphasizes color / pattern / trim placement.
+  const v2 = [
+    "Create a studio fashion image by editing the first image, which is the selected human model pose and the only layout/composition canvas.",
+    "Input image role lock: the first image controls the model, pose, camera angle, framing, background, lighting, spacing, scale, and panel layout. Every additional uploaded image is a garment reference only. Never output the garment by itself, a flat lay, a hanger photo, a mannequin photo, or a product-only ecommerce image.",
+    "Match the structure of the first model-pose image — number of panels, framing, spacing, margins, scale, camera distance, grid arrangement.",
+    `SURFACE PRIORITY: the garment must match the product image's color exactly (every hue and saturation), the print pattern (every motif placement, density, and orientation), all trim and tape placement, hardware positions on the wearer-correct side (zippers, buttons, snaps, drawstrings), hem stitching color and width, and the precise fabric texture and sheen visible in the product image. Do not mirror left/right artwork. Do not relocate sleeve or chest details to the visible side just to make them readable. Render as a worn ${cleanGarment}.`,
+    antiLayeringFor("surface"),
+    "Photorealistic shooting setup: Sony A7 IV, 50mm to 85mm commercial lookbook perspective, f/4 to f/5.6, sharp full-body clarity, minimal background blur, RAW image feel, natural skin texture, soft realistic hair strands, natural catchlights.",
+    "Model direction: preserve the selected reference model identity, face, hair, skin tone, body proportions, and natural commercial makeup from the layout reference.",
+    featureClause,
+    lengthAuthorityClause,
+    `${scopeClause} Do not alter, simplify, recolor, redesign, or reinterpret the garment.`,
+    "Background and lighting: warm beige seamless studio background, soft even commercial lighting, subtle grounding shadow only.",
+    `Preserve from the first model-pose image where applicable: ${cleanPose}, ${cleanScene}, and the same camera perspective.`,
+    adjustmentClause,
+    "Negative prompt: no color drift, no pattern simplification, no missing trims, no relocated hardware, no mirrored print, no separate inner garment, no layered cami, no contrasting underlayer, no flat lay, no hanger, no mannequin, no model identity distortion, no background change.",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  // Variant 3 — STRICT / ANTI-FAILURE. Heavy negatives, the safety-net variant.
+  const v3 = [
+    "Create a studio fashion image by editing the first image, which is the selected human model pose and the only layout/composition canvas.",
+    "Input image role lock: the first image is the model pose canvas — model, pose, camera angle, framing, background, lighting, spacing, scale, and panel layout all come from it. The garment reference is a garment source only.",
+    "Match the structure of the first model-pose image exactly — number of panels, framing, spacing, scale, camera distance.",
+    `CRITICAL DO-NOTS: (1) ${antiLayeringFor("strict")} (2) Do not split the garment from the product image into multiple pieces, even if its hem is asymmetric. (3) Do not change garment color, pattern, hardware position, trim placement, neckline, sleeve shape, or hem geometry away from the product image. (4) Do not change the model's face, body, pose, hair, expression, or proportions. (5) Do not change the background, lighting, exposure, or camera perspective. (6) Do not invent text, logos, or branding not present in the product image. (7) Never output the garment by itself, a flat lay, a hanger photo, a mannequin photo, or a product-only ecommerce image.`,
+    `The garment must be a worn ${cleanGarment} on this model in this pose, ONE continuous garment with correct silhouette and trim placement.`,
+    "Photorealistic shooting setup: Sony A7 IV, 50mm to 85mm commercial lookbook perspective, f/4 to f/5.6, RAW image feel, natural skin texture, fine details.",
+    "Model direction: preserve the selected reference model identity, face, hair, skin tone, body proportions, and natural commercial makeup.",
+    featureClause,
+    lengthAuthorityClause,
+    scopeClause,
+    "Background and lighting: warm beige seamless studio background, soft even commercial lighting.",
+    `Preserve from the first model-pose image where applicable: ${cleanPose}, ${cleanScene}.`,
+    adjustmentClause,
+    "Negative prompt: no flat lay, no hanger, no mannequin, no torso form, no isolated garment, no garment redesign, no color change, no missing trims, no wrong patches, no separate inner garment, no layered cami, no undershirt, no contrasting underlayer, no split-into-two-pieces, no flattened high-low hem, no mirrored hardware, no relocated trim, no model identity distortion, no background change.",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  return [v1, v2, v3];
+}
+
+/**
+ * Build the composition-first beta prompt. Returns variants[0] so single-prompt
+ * call sites (batch / QC / photoshoot single-variant flow) keep working.
+ */
+export function buildModelStudioBetaPrompt(
+  newGarment: string,
+  newGarmentFeatures: string,
+  analyzedModel: AnalyzedModelPhoto,
+  adjustments?: GarmentAdjustments
+): string {
+  return buildModelStudioBetaPromptVariants(
+    newGarment,
+    newGarmentFeatures,
+    analyzedModel,
+    adjustments
+  )[0];
 }
 
 /**
@@ -1393,92 +2329,123 @@ export function buildModelSwapPrompt(
  * just one piece, so we explicitly scope the removal to all visible current
  * clothing rather than only the analyzer's currentGarment noun phrase.
  */
+/**
+ * Two-piece variant of buildModelSwapPromptVariants. Returns three prompts
+ * for a coordinated set (top + bottom) using the same Image-A / Image-B
+ * structure as the single-garment variants. The full outfit is replaced.
+ */
+export function buildModelSwapTwoPiecePromptVariants(
+  fields: TwoPieceFields,
+  analyzedModel: AnalyzedModelPhoto,
+  adjustments?: GarmentAdjustments
+): [string, string, string] {
+  const adjustmentClause = buildGarmentAdjustmentClause(adjustments);
+  const lengthAuthorityClause = buildProductLengthAuthorityClause("full-look");
+
+  // Variant 1 — STRUCTURE-FIRST. Front-loads the silhouette / construction
+  // of both pieces so distinctive cuts and hem geometry survive the swap.
+  const renderV1 = (
+    t: string, tf: string, b: string, bf: string, cg: string, mi: string, ps: string, sc: string
+  ): string => {
+    const topClause = tf ? `top construction: ${tf};` : "";
+    const bottomClause = bf ? `bottom construction: ${bf};` : "";
+    return [
+      `Use Image A as the base image and keep the model's body, face, identity (${mi}), pose (${ps}), hair, expression, lighting, shadows, camera angle, depth of field, and background (${sc}) completely unchanged;`,
+      `take the coordinated two-piece set from Image B — a ${t} worn together with a matching ${b} — and apply both pieces onto the model in Image A, completely removing the entire currently-worn outfit including the ${cg} and every other visible clothing item, while carefully matching lighting direction, fabric drape, body contour, perspective, and shadow behavior so everything blends naturally;`,
+      `STRUCTURE PRIORITY: render each piece with the EXACT silhouette and construction visible in Image B — for the top: body length, hem geometry (preserve any high-low, shirttail, stepped, or asymmetric hem exactly), sleeve length and volume, neckline, collar height; for the bottom: rise, leg shape, hem position, waistband construction, pocket placement;`,
+      `${topClause} ${bottomClause}`,
+      `render both pieces as a single unified coordinated outfit — same color family, same fabric family, same trim language — sitting together naturally with the top's hem layering over or tucking into the bottom's waistband as appropriate; not flat-lay copies but worn garments on this specific model and pose;`,
+      lengthAuthorityClause.trim(),
+      adjustmentClause.trim(),
+      `remove all neck labels, brand tags, size tags, care labels, and sewn-in woven tags from both top and bottom — neckline, collar band, waistband, and every other typical label location must be clean;`,
+      `Image A is the lighting and exposure authority — match its background brightness, backdrop tonal value, facial exposure, facial brightness, and face lighting pattern exactly;`,
+      `output a photorealistic 4K editorial fashion catalog image in 2:3 aspect ratio with anatomically correct proportions, clean garment edges, and high-detail textures.`,
+      `Negative prompt: no face alteration, no body reshape, no garment-shape drift, no flattened high-low hem, no straightened shirttail, no recolor, no texture blending, no exposure shift, no background change, no cropped top unless the uploaded top is cropped, no matching the old top length.`,
+    ]
+      .filter(Boolean)
+      .join(" ");
+  };
+
+  // Variant 2 — SURFACE-FIRST. Front-loads color/print/trim coordination so
+  // the two pieces read as a single designed set rather than two unrelated
+  // garments.
+  const renderV2 = (
+    t: string, tf: string, b: string, bf: string, cg: string, mi: string, ps: string, sc: string
+  ): string => {
+    const topClause = tf ? `top surface: ${tf};` : "";
+    const bottomClause = bf ? `bottom surface: ${bf};` : "";
+    return [
+      `Build the final image from Image A as the foundation, preserving every visual element exactly as shown — ${mi}, pose (${ps}), scene (${sc}), face, hair, posture, lighting setup, shadows, camera perspective, and depth of field;`,
+      `transfer the coordinated set from Image B — a ${t} paired with a ${b} — onto the subject in Image A, completely replacing the model's current outfit including the ${cg}, and adapting both pieces to Image A's lighting intensity, body geometry, perspective, and shadow placement for seamless realism;`,
+      `SURFACE PRIORITY: both pieces must match Image B's colors exactly (every hue and saturation across top and bottom), the print pattern continuity (motif placement, density, scale matching between top and bottom), all trim and tape placement, hardware positions on the wearer-correct side, hem stitching, and the fabric texture / sheen of each piece; do not mirror left/right artwork, do not relocate sleeve or chest details to the visible side, do not let the two pieces drift into different color families;`,
+      `${topClause} ${bottomClause}`,
+      `the two pieces must read as one designed coordinated outfit (shared color family, fabric family, and trim language), worn naturally on the model with realistic drape, fit, and layering behavior, not as two unrelated garments and not as flat-lay copies;`,
+      lengthAuthorityClause.trim(),
+      adjustmentClause.trim(),
+      `remove all neck labels, brand tags, size tags, care labels, and sewn-in woven tags from both pieces;`,
+      `Image A is the exposure and color authority — match its background tone, facial exposure, and overall scene mood exactly; do not shift any of these;`,
+      `produce an ultra-realistic 4K image in 2:3 format with accurate facial scaling, natural blending, and high-detail textures with no visible seams, distortion, or compositing artifacts.`,
+      `Negative prompt: no color drift between top and bottom, no pattern simplification, no missing trims, no relocated hardware, no mirrored print, no recolor, no texture blending, no exposure shift, no background change.`,
+    ]
+      .filter(Boolean)
+      .join(" ");
+  };
+
+  // Variant 3 — STRICT / ANTI-FAILURE. Heavy negatives; the safety-net variant.
+  const renderV3 = (
+    t: string, tf: string, b: string, bf: string, cg: string, mi: string, ps: string, sc: string
+  ): string => {
+    const topClause = tf ? `top: ${tf};` : "";
+    const bottomClause = bf ? `bottom: ${bf};` : "";
+    return [
+      `Take Image A and preserve everything exactly as it is — ${mi}, pose (${ps}), scene (${sc}), face, hair, posture, lighting, shadows, and camera angle;`,
+      `extract the coordinated set from Image B (a ${t} and a matching ${b}) and integrate both pieces onto the model, fully replacing the model's existing outfit including the ${cg}, while ensuring consistent lighting, skin-tone interaction, perspective, and depth across the new garments;`,
+      `CRITICAL DO-NOTS: (1) Do not invent a third garment, undershirt, or layered piece — Image B contains exactly two pieces (a top and a bottom). (2) Do not split either piece into multiple pieces, even if its hem is asymmetric. (3) Do not change either piece's color, pattern, hardware, trim, neckline, sleeve shape, hem geometry, or rise from Image B. (4) Do not change the model's face, body, pose, hair, or proportions. (5) Do not change the background, lighting, exposure, or camera perspective. (6) Do not invent text or logos.`,
+      `${topClause} ${bottomClause}`,
+      `the result must look like a single authentic fashion catalog photograph of this model in this pose, wearing the new coordinated set as TWO pieces (one top, one bottom) with correct silhouettes, drape, hems, sleeve length, and trim placement, not flat-lay reproductions and not split into more than two pieces;`,
+      lengthAuthorityClause.trim(),
+      adjustmentClause.trim(),
+      `remove all neck labels, brand tags, size tags, care labels, and sewn-in woven tags from both pieces;`,
+      `Image A controls the exposure and color tone — preserve its background brightness, face lighting, and overall scene mood;`,
+      `deliver a 4K photorealistic image in 2:3 aspect ratio with realistic anatomical proportions, clean compositing, and detailed textures throughout, with no warping, scaling errors, or edit artifacts.`,
+      `Negative prompt: no face alteration, no body reshape, no exposure shift, no background change, no garment-shape drift, no third garment invented, no extra layered piece, no split-into-three-pieces, no flattened high-low hem, no mirrored hardware, no relocated trim.`,
+    ]
+      .filter(Boolean)
+      .join(" ");
+  };
+
+  const sanitizeFor = (
+    render: (
+      t: string, tf: string, b: string, bf: string, cg: string, mi: string, ps: string, sc: string
+    ) => string
+  ): string => {
+    const used = descriptorsInTemplate(render("", "", "", "", "", "", "", ""));
+    return render(
+      sanitizeAnalyzerText(fields.top, used),
+      sanitizeAnalyzerText(fields.topFeatures, used),
+      sanitizeAnalyzerText(fields.bottom, used),
+      sanitizeAnalyzerText(fields.bottomFeatures, used),
+      sanitizeAnalyzerText(analyzedModel.currentGarment, used),
+      sanitizeAnalyzerText(analyzedModel.modelIdentity, used),
+      sanitizeAnalyzerText(analyzedModel.pose, used),
+      sanitizeAnalyzerText(analyzedModel.scene, used)
+    );
+  };
+
+  return [sanitizeFor(renderV1), sanitizeFor(renderV2), sanitizeFor(renderV3)];
+}
+
+/**
+ * Two-piece coordinated set variant of buildModelSwapPrompt. Returns the first
+ * Image-A / Image-B variant — kept as a single-prompt API for batch / QC /
+ * photoshoot-set flows.
+ */
 export function buildModelSwapTwoPiecePrompt(
   fields: TwoPieceFields,
   analyzedModel: AnalyzedModelPhoto,
   adjustments?: GarmentAdjustments
 ): string {
-  const render = (
-    t: string,
-    tf: string,
-    b: string,
-    bf: string,
-    cg: string,
-    mi: string,
-    ps: string,
-    sc: string
-  ): string => {
-    const topClause = tf
-      ? ` Keep all top details from the reference photograph identical, including: ${tf}.`
-      : "";
-    const bottomClause = bf
-      ? ` Keep all bottom details from the reference photograph identical, including: ${bf}.`
-      : "";
-    const adjustmentClause = buildGarmentAdjustmentClause(adjustments);
-    return (
-      // Same "extract and apply" framing as the single-garment winning pattern,
-      // adapted for a coordinated set (both pieces extracted together).
-      `Fashion catalog outfit-swap edit on a human model. Extract the coordinated two-piece set ` +
-      `from the attached reference photograph — a ${t} worn together with a matching ${b} — and ` +
-      `apply it onto the model in the primary studio photograph, completely removing the model's ` +
-      `entire currently-worn outfit (including the ${cg} and every other visible clothing item). ` +
-      // Flat comma-separated preservation list.
-      `Preserve the model's exact face, facial features, expression, and physical attributes — ` +
-      `${mi} — along with the exact pose (${ps}), camera perspective, lighting direction, ` +
-      `shadows, and the rest of the scene (${sc}) unchanged.` +
-      ` The primary studio photograph is the exposure and lighting authority: match the exact ` +
-      `background color, background brightness, backdrop tonal value, facial exposure, facial ` +
-      `brightness, and face lighting pattern from the primary studio photograph exactly. Do not ` +
-      `darken, mute, gray down, warm up, cool down, or otherwise shift the backdrop or the model's ` +
-      `face relative to the primary studio photograph. Keep the face at the same exposure level and ` +
-      `keep the background at the same perceived brightness and color tone as the reference pose image.` +
-      `${topClause}${bottomClause} ` +
-      // Coordination statement — two pieces must read as one designed set.
-      `Render both pieces as a single unified coordinated outfit — they share the same color ` +
-      `family, fabric family, and trim language; they must look like two pieces of the same ` +
-      `designed set, not two unrelated garments. ` +
-      // Realistic-garment-behavior clause.
-      `Ensure realistic garment behavior on the body: each piece drapes, fits, and contours ` +
-      `naturally to the model's pose and the scene's lighting. The top and bottom sit together ` +
-      `as a worn outfit — the top's hem layering correctly over or tucked into the bottom's ` +
-      `waistband in whatever arrangement is natural for this pairing. Do not copy the static ` +
-      `flat-lay shape of either piece from the reference — re-render them as worn garments on ` +
-      `this specific model in this specific pose, while preserving every visible design detail ` +
-      `(color, pattern, neckline, hem, sleeve length, hardware, trim) exactly.` +
-      `${adjustmentClause} ` +
-      // Neck-label removal (baked in as default).
-      `REMOVE ALL NECK LABELS, BRAND TAGS, SIZE TAGS, CARE LABELS, AND SEWN-IN WOVEN TAGS from ` +
-      `both the top and the bottom — the inside of the neckline, collar band, waistband, and any ` +
-      `other typical label location must be clean and empty with no tag, label, patch, or printed ` +
-      `text of any kind showing. ` +
-      // Closing + explicit negative-prompt epilogue.
-      `The result must look like a single authentic fashion catalog photograph of this model, ` +
-      `taken in this exact pose and scene, wearing the new coordinated set. Hyper-realistic 4K ` +
-      `e-commerce fashion photography, editorial catalog quality. ` +
-      `Negative prompt: no face alteration, no body reshaping, no recolor, no texture blending, ` +
-      `no distortion, no background change, no darker face, no dimmer background, no exposure shift.`
-    );
-  };
-
-  const used = descriptorsInTemplate(render("", "", "", "", "", "", "", ""));
-  const cleanTop = sanitizeAnalyzerText(fields.top, used);
-  const cleanTopFeatures = sanitizeAnalyzerText(fields.topFeatures, used);
-  const cleanBottom = sanitizeAnalyzerText(fields.bottom, used);
-  const cleanBottomFeatures = sanitizeAnalyzerText(fields.bottomFeatures, used);
-  const cleanCurrent = sanitizeAnalyzerText(analyzedModel.currentGarment, used);
-  const cleanIdentity = sanitizeAnalyzerText(analyzedModel.modelIdentity, used);
-  const cleanPose = sanitizeAnalyzerText(analyzedModel.pose, used);
-  const cleanScene = sanitizeAnalyzerText(analyzedModel.scene, used);
-  return render(
-    cleanTop,
-    cleanTopFeatures,
-    cleanBottom,
-    cleanBottomFeatures,
-    cleanCurrent,
-    cleanIdentity,
-    cleanPose,
-    cleanScene
-  );
+  return buildModelSwapTwoPiecePromptVariants(fields, analyzedModel, adjustments)[0];
 }
 
 export type OverlayMode = "none" | "name" | "number" | "both";
@@ -1508,13 +2475,20 @@ export interface GenerateParams {
   /**
    * Optional. URL of the style-reference image — this becomes image_urls[0],
    * the canvas that Nano Banana edits. If omitted, the server auto-picks
-   * public/style-reference-2.png for pants and public/style-reference.png
+   * public/product-shots/style-reference-2.png for pants and public/product-shots/style-reference.png
    * for everything else.
    */
   referenceImageUrl?: string | null;
   aspectRatio?: string;     // "auto" | "1:1" | etc.
   resolution?: string;      // "1K" | "2K" | "4K"
   format?: "png" | "jpeg";
+  /**
+   * Optional deterministic post-generation export size. This keeps model
+   * generation high quality, then shrinks photo files without AI reprocessing.
+   * `undefined` uses the app default for Nano Banana 4K 2:3 outputs.
+   * `null` disables post-resizing.
+   */
+  outputSize?: { width: number; height: number } | null;
   numImages?: number;
   overlay?: OverlayOptions;
   /**
@@ -1572,19 +2546,106 @@ export interface GenerationResult {
   cost?: number;
 }
 
+function defaultOutputSize(params: GenerateParams, resolution: string) {
+  if (
+    params.outputSize === undefined &&
+    params.modelId === "nano-banana" &&
+    resolution === "4K" &&
+    (params.aspectRatio === "2:3" || !params.aspectRatio)
+  ) {
+    return { width: 2000, height: 3000 };
+  }
+  return params.outputSize ?? null;
+}
+
+async function resizeGeneratedImages(
+  images: GenerationResult["images"],
+  size: { width: number; height: number } | null
+): Promise<GenerationResult["images"]> {
+  if (!size) return images;
+
+  return Promise.all(
+    images.map(async (image, index) => {
+      const source = await fetch(image.url);
+      if (!source.ok) {
+        throw new Error(`Could not fetch generated image for resizing (HTTP ${source.status})`);
+      }
+      const input = Buffer.from(await source.arrayBuffer());
+      const output = await sharp(input)
+        .resize(size.width, size.height, {
+          fit: "cover",
+          position: "center",
+          withoutEnlargement: false,
+        })
+        .png({
+          compressionLevel: 9,
+          adaptiveFiltering: true,
+          palette: false,
+        })
+        .toBuffer();
+      const blobPart = output.buffer.slice(
+        output.byteOffset,
+        output.byteOffset + output.byteLength
+      ) as ArrayBuffer;
+      const url = await uploadToFal(
+        new Blob([blobPart], { type: "image/png" }),
+        `davidani-${size.width}x${size.height}-${index + 1}.png`
+      );
+      return {
+        ...image,
+        url,
+        width: size.width,
+        height: size.height,
+        content_type: "image/png",
+      };
+    })
+  );
+}
+
 /** Upload a Blob/File to fal.ai storage and return its public URL. */
 export async function uploadToFal(file: File | Blob, filename = "upload.png"): Promise<string> {
   ensureConfigured();
   const fileWithName = file instanceof File ? file : new File([file], filename);
+  const maxAttempts = 4;
+  let lastMessage = "Upload failed";
+
+  const isTransientUploadError = (message: string) =>
+    /fetch failed|network|timeout|timed out|econnreset|econnrefused|socket|temporar|5\d\d|rate limit|too many requests/i.test(
+      message
+    );
+
   try {
-    const url = await fal.storage.upload(fileWithName);
-    return url;
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      try {
+        const url = await fal.storage.upload(fileWithName);
+        return url;
+      } catch (err: any) {
+        const detail =
+          err?.body?.detail ||
+          err?.body?.error ||
+          err?.message ||
+          "Upload failed";
+        lastMessage = String(detail);
+
+        if (!isTransientUploadError(lastMessage) || attempt === maxAttempts) {
+          throw err;
+        }
+
+        const delayMs = 800 * attempt ** 2;
+        console.warn(
+          `[fal-upload] transient upload failure on attempt ${attempt}/${maxAttempts}; retrying in ${delayMs}ms:`,
+          lastMessage
+        );
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+      }
+    }
+    throw new Error(lastMessage);
   } catch (err: any) {
     const detail =
       err?.body?.detail ||
       err?.body?.error ||
       err?.message ||
-      "Upload failed";
+      lastMessage;
     const message = String(detail);
 
     if (/exhausted balance|top up your balance|user is locked/i.test(message)) {
@@ -1595,6 +2656,12 @@ export async function uploadToFal(file: File | Blob, filename = "upload.png"): P
 
     if (/forbidden/i.test(message)) {
       throw new Error("fal.ai upload was forbidden. Check that FAL_KEY is valid and allowed to use storage uploads.");
+    }
+
+    if (isTransientUploadError(message)) {
+      throw new Error(
+        "fal.ai upload failed after several retries because the storage service or network connection was temporarily unavailable. Please try again in a moment."
+      );
     }
 
     throw new Error(`fal.ai upload failed: ${message}`);
@@ -1609,11 +2676,10 @@ export async function uploadToFal(file: File | Blob, filename = "upload.png"): P
  * blacks, crunchy fabric texture, shifted skin gamma, and a dated SD-era
  * aesthetic. It has been removed entirely.
  *
- * The app now returns whatever Nano Banana (or Seedream / GPT Image)
- * produces natively — nothing is re-diffused, re-sharpened, recolored,
- * or otherwise retouched post-generation. If we ever re-introduce
- * upscaling, use a deterministic non-diffusion upscaler (e.g. aura-sr,
- * Real-ESRGAN) and wire it behind an explicit opt-in.
+ * The app now avoids AI post-processing. For Nano Banana 4K 2:3 results, we
+ * may perform a deterministic Sharp resize to a smaller PNG export
+ * (2000x3000) to reduce file size. Nothing is re-diffused, re-sharpened,
+ * recolored, or otherwise retouched by another model.
  */
 
 export async function generate(params: GenerateParams): Promise<GenerationResult> {
@@ -1622,8 +2688,8 @@ export async function generate(params: GenerateParams): Promise<GenerationResult
 
   // Resolve the style-reference image (image 2). If the caller provided an
   // explicit URL, use it as-is. Otherwise auto-pick based on the inferred
-  // garment category so pants default to style-reference-2.png and everything
-  // else defaults to style-reference.png.
+  // garment category so pants default to product-shots/style-reference-2.png
+  // and everything else defaults to product-shots/style-reference.png.
   const category = inferGarmentCategory(params.prompt);
   let referenceUrl: string | null = params.referenceImageUrl || null;
   if (!referenceUrl && params.useDefaultReference !== false) {
@@ -1649,11 +2715,12 @@ export async function generate(params: GenerateParams): Promise<GenerationResult
   const allImageUrls = referenceUrl
     ? [referenceUrl, ...params.imageUrls]
     : [...params.imageUrls];
+  const generatorImageUrls = await prepareGeneratorImageUrls(allImageUrls);
 
   console.log(
     `[generate] category=${category} productImages=${params.imageUrls.length} ` +
       `referenceSource=${params.referenceImageUrl ? "user-override" : referenceUrl ? `default-${category}` : "none"} ` +
-      `totalImages=${allImageUrls.length}`
+      `totalImages=${generatorImageUrls.length}`
   );
 
   // Build model-specific input payload. No STRICT_PRESERVATION_PREFIX — the
@@ -1670,6 +2737,7 @@ export async function generate(params: GenerateParams): Promise<GenerationResult
   // GPT Image: map to "quality".
   const resolution = params.resolution || "1K";
   const resMultiplier = resolution === "4K" ? 2 : resolution === "2K" ? 1.5 : 1;
+  const outputSize = defaultOutputSize(params, resolution);
 
   // kie.ai branch — short-circuit the fal.ai payload build and dispatcher.
   // Nano Banana 2 is served via kie.ai's async task API rather than fal's
@@ -1678,21 +2746,23 @@ export async function generate(params: GenerateParams): Promise<GenerationResult
     const { generateViaKie } = await import("./kie");
     const kieResult = await generateViaKie({
       prompt: finalPrompt,
-      imageUrls: allImageUrls,
+      imageUrls: generatorImageUrls,
       numImages: params.numImages,
       aspectRatio: params.aspectRatio,
       format: params.format,
+      resolution,
       model: model.endpoint, // e.g. "nano-banana-2"
     });
+    const images = await resizeGeneratedImages(kieResult.images, outputSize);
     return {
-      images: kieResult.images,
+      images,
       requestId: kieResult.taskIds[0],
       modelId: params.modelId,
     };
   }
 
   if (model.inputShape === "image_urls") {
-    input.image_urls = allImageUrls;
+    input.image_urls = generatorImageUrls;
     if (params.numImages) input.num_images = params.numImages;
     if (params.aspectRatio && params.aspectRatio !== "auto") input.aspect_ratio = params.aspectRatio;
     if (params.format) input.output_format = params.format;
@@ -1700,7 +2770,7 @@ export async function generate(params: GenerateParams): Promise<GenerationResult
     // endpoint silently ignores it and always outputs ~1024px. We now
     // deliver 2K/4K via a post-processing upscale pass (see below).
   } else if (model.inputShape === "image_urls_seedream") {
-    input.image_urls = allImageUrls;
+    input.image_urls = generatorImageUrls;
     if (params.numImages) input.num_images = params.numImages;
     const baseSizeMap: Record<string, { width: number; height: number }> = {
       "1:1": { width: 2048, height: 2048 },
@@ -1718,7 +2788,7 @@ export async function generate(params: GenerateParams): Promise<GenerationResult
       };
     }
   } else if (model.inputShape === "gpt") {
-    input.image_urls = allImageUrls;
+    input.image_urls = generatorImageUrls;
     if (params.numImages) input.num_images = params.numImages;
     input.openai_api_key = process.env.OPENAI_API_KEY ?? "";
     // GPT Image uses a "quality" enum rather than a pixel resolution.
@@ -1739,11 +2809,10 @@ export async function generate(params: GenerateParams): Promise<GenerationResult
     content_type: img.content_type,
   }));
 
-  // No post-processing. Native model output is returned as-is — see the
-  // long comment above the deleted upscaleImage() helper for background.
+  const resizedImages = await resizeGeneratedImages(images, outputSize);
 
   return {
-    images,
+    images: resizedImages,
     requestId: result?.requestId,
     modelId: params.modelId,
   };

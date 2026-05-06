@@ -1,17 +1,31 @@
 import { NextResponse } from "next/server";
 import { generate, type OverlayOptions } from "@/lib/fal";
 import { MODELS, type ModelId } from "@/lib/models";
-import { getPosePublicPath, type PresetView } from "@/lib/models-registry";
+import { getPosePublicPath, getPoseUrl, type PresetView } from "@/lib/models-registry";
 
 export const runtime = "nodejs";
-export const maxDuration = 300;
+export const maxDuration = 800;
 
-function absoluteUrl(req: Request, publicPath: string): string {
-  const proto = req.headers.get("x-forwarded-proto") || "https";
-  const host = req.headers.get("x-forwarded-host") || req.headers.get("host");
-  if (!host) throw new Error("Unable to resolve public asset host");
-  return new URL(encodeURI(publicPath), `${proto}://${host}`).toString();
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
+
+async function resolvePoseUrl(
+  req: Request,
+  modelId: string,
+  poseId: string,
+  view: PresetView,
+  poseVariantIndex: number
+): Promise<string> {
+  if (process.env.VERCEL) {
+    const publicPath = getPosePublicPath(modelId, poseId, view, poseVariantIndex);
+    return new URL(publicPath, req.url).toString();
+  }
+  return getPoseUrl(modelId, poseId, view, poseVariantIndex);
+}
+
+const MODEL_POSE_GARMENT_FIREWALL =
+  "Final garment-source firewall: the model pose/canvas image is only the body, pose, camera, framing, lighting, and background reference. The uploaded garment image or images are the only source of truth for the replacement garment. Do not copy, average, or be influenced by the canvas image's existing clothing length, cropped hem, tucked styling, waistband exposure, sleeve length, neckline, silhouette, fabric, color, trims, or outfit proportions. If the canvas model is wearing a cropped garment but the uploaded garment is longer, render the uploaded garment longer exactly as indicated by the product reference.";
 
 /**
  * POST /api/generate-model
@@ -25,6 +39,8 @@ function absoluteUrl(req: Request, publicPath: string): string {
  * canvas comes from. We pass the pose URL as `referenceImageUrl` (which
  * generate() places at image_urls[0], i.e. the canvas) and the user's garment
  * photo in `imageUrls` (which lands in image_urls[1..], i.e. the reference).
+ * Quality-control repairs can override the canvas with the selected generated
+ * result image so the edit actually happens to that exact result.
  *
  * Body: {
  *   modelId,         // image model ID (e.g. "nano-banana")
@@ -45,11 +61,14 @@ export async function POST(req: Request) {
       prompt,
       garmentImageUrls,
       view,
+      canvasImageUrl,
       aspectRatio,
       resolution,
       format,
       numImages,
       overlay,
+      poseVariantIndex,
+      preserveSecondaryReferences,
     } = body as {
       modelId: ModelId;
       humanModelId: string;
@@ -57,12 +76,19 @@ export async function POST(req: Request) {
       prompt: string;
       garmentImageUrls: string[];
       view?: PresetView;
+      canvasImageUrl?: string;
       aspectRatio?: string;
       resolution?: string;
       format?: "png" | "jpeg";
       numImages?: number;
       overlay?: OverlayOptions;
+      poseVariantIndex?: number;
+      preserveSecondaryReferences?: boolean;
     };
+    const safePoseVariantIndex =
+      typeof poseVariantIndex === "number" && Number.isFinite(poseVariantIndex)
+        ? Math.max(0, Math.min(8, Math.floor(poseVariantIndex)))
+        : 0;
 
     if (!modelId || !MODELS[modelId]) {
       return NextResponse.json({ ok: false, error: "Invalid modelId" }, { status: 400 });
@@ -83,20 +109,69 @@ export async function POST(req: Request) {
       );
     }
 
-    const poseUrl = absoluteUrl(req, getPosePublicPath(humanModelId, poseId, view || "front"));
+    const poseUrl = await resolvePoseUrl(
+      req,
+      humanModelId,
+      poseId,
+      view || "front",
+      safePoseVariantIndex
+    );
 
-    const result = await generate({
-      modelId,
-      prompt,
-      imageUrls: garmentImageUrls,
-      // The pose is the canvas — generate() puts this at image_urls[0].
-      referenceImageUrl: poseUrl,
-      aspectRatio,
-      resolution,
-      format,
-      numImages: numImages ?? 1,
-      overlay,
-    });
+    const canvasUrl =
+      typeof canvasImageUrl === "string" && canvasImageUrl.trim()
+        ? canvasImageUrl.trim()
+        : poseUrl;
+
+    let result;
+    try {
+      result = await generate({
+        modelId,
+        prompt: `${prompt} ${MODEL_POSE_GARMENT_FIREWALL}`,
+        imageUrls: garmentImageUrls,
+        // Normal run: pose is the canvas. QC repair: selected result is the canvas.
+        referenceImageUrl: canvasUrl,
+        aspectRatio,
+        resolution,
+        format,
+        numImages: numImages ?? 1,
+        overlay,
+      });
+    } catch (err: any) {
+      const message = String(err?.message || err || "");
+      const isReferenceProcessingError =
+        /unprocessable|invalid image|image model could not process|validation|422/i.test(message);
+      const canRetryWithPrimaryReference =
+        !preserveSecondaryReferences && garmentImageUrls.length > 1 && isReferenceProcessingError;
+
+      if (!isReferenceProcessingError) throw err;
+
+      if (canRetryWithPrimaryReference) {
+        console.warn(
+          "[generate-model] generator rejected multi-reference payload; retrying with primary garment reference only:",
+          message
+        );
+      } else {
+        console.warn(
+          "[generate-model] generator rejected reference image; waiting briefly and retrying once:",
+          message
+        );
+        await wait(2500);
+      }
+      result = await generate({
+        modelId,
+        prompt:
+          canRetryWithPrimaryReference
+            ? `${prompt} ${MODEL_POSE_GARMENT_FIREWALL} Use the remaining product reference as the sole garment source of truth. Do not invent missing details from removed secondary references.`
+            : `${prompt} ${MODEL_POSE_GARMENT_FIREWALL}`,
+        imageUrls: canRetryWithPrimaryReference ? [garmentImageUrls[0]] : garmentImageUrls,
+        referenceImageUrl: canvasUrl,
+        aspectRatio,
+        resolution,
+        format,
+        numImages: numImages ?? 1,
+        overlay,
+      });
+    }
 
     return NextResponse.json({ ok: true, ...result, poseUrl });
   } catch (err: any) {

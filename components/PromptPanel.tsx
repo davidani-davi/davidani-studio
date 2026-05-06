@@ -1,9 +1,19 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import type {
   GarmentFitAdjustment,
   GarmentLengthAdjustment,
 } from "@/lib/fal";
+
+// Approximate end-to-end timing for the Studio 1 trio run, used to drive the
+// status-chip ETA. Vision pass ~6s; three NB calls in parallel ~20s, plus
+// first-time pose photo uploads ≈ 30-40s total. Erring slightly long is
+// better than short — a chip that stays at "Finishing up…" briefly is fine,
+// but a chip that hits zero too early feels broken.
+const TRIO_TOTAL_ESTIMATE_MS = 35_000;
+const SINGLE_TOTAL_ESTIMATE_MS = 22_000;
+const ANALYZER_ESTIMATE_MS = 6_000;
 
 export interface BatchProgress {
   /** Total images in the batch (i.e. how many were selected at kick-off). */
@@ -22,6 +32,8 @@ export interface AnalysisReview {
   updatedAt: number;
   edited?: boolean;
 }
+
+export type ProductShotMode = "single-front" | "single-back" | "front-back-contract";
 
 interface Props {
   prompt: string;
@@ -60,6 +72,25 @@ interface Props {
   pantsAdjustments?: boolean;
   analysisReview?: AnalysisReview | null;
   onAnalysisReviewChange?: (review: AnalysisReview) => void;
+  /**
+   * Swap-area control. "auto" defers to the analyzer's inferred scope
+   * (current default); the three explicit values force that scope and skip
+   * the inference. Surfacing this prevents the silent failure where
+   * inferSwapScope("…romper romper") quietly upgrades to full-outfit
+   * replacement without the user realizing.
+   */
+  swapScopeChoice?: "auto" | "upper-body" | "lower-body" | "full-look";
+  onSwapScopeChoiceChange?: (
+    choice: "auto" | "upper-body" | "lower-body" | "full-look"
+  ) => void;
+  /** Latest inferred scope from the analyzer — shown as the auto fallback hint. */
+  inferredScope?: "upper-body" | "lower-body" | "full-look";
+  hideTwoPieceToggle?: boolean;
+  hideVariantControl?: boolean;
+  generateLabel?: string;
+  productShotMode?: ProductShotMode;
+  onProductShotModeChange?: (mode: ProductShotMode) => void;
+  productShotModeDisabled?: Partial<Record<ProductShotMode, boolean>>;
 }
 
 const GENERAL_FIT_OPTIONS: { value: GarmentFitAdjustment; label: string }[] = [
@@ -137,6 +168,7 @@ const Spinner = ({ className = "h-4 w-4" }: { className?: string }) => (
 /* ---------- Component ---------- */
 
 export default function PromptPanel(p: Props) {
+  const [advancedOpen, setAdvancedOpen] = useState(false);
   const hasPrompt = p.prompt.trim().length > 0;
   const chars = p.prompt.length;
   const words = p.prompt.trim() ? p.prompt.trim().split(/\s+/).length : 0;
@@ -153,6 +185,52 @@ export default function PromptPanel(p: Props) {
     ? "ready"
     : "idle";
 
+  // Live ETA — when analyzing or generating, run a wall-clock timer and show
+  // remaining seconds. Implementation uses a ref for the start timestamp so
+  // re-renders triggered by parent state changes don't reset the timer; the
+  // tick state is what drives re-renders during the run.
+  const isTicking = status === "analyzing" || status === "generating";
+  const startRef = useRef<number | null>(null);
+  const [tickNow, setTickNow] = useState<number>(() => Date.now());
+
+  useEffect(() => {
+    if (!isTicking) {
+      startRef.current = null;
+      return;
+    }
+    startRef.current = Date.now();
+    setTickNow(Date.now());
+    const interval = window.setInterval(() => {
+      setTickNow(Date.now());
+    }, 500);
+    return () => window.clearInterval(interval);
+  }, [isTicking, status]);
+
+  const elapsedMs =
+    isTicking && startRef.current !== null ? tickNow - startRef.current : 0;
+  const totalEstimateMs =
+    status === "analyzing"
+      ? ANALYZER_ESTIMATE_MS
+      : status === "generating"
+      ? TRIO_TOTAL_ESTIMATE_MS
+      : SINGLE_TOTAL_ESTIMATE_MS;
+  const remainingSeconds = Math.max(
+    0,
+    Math.ceil((totalEstimateMs - elapsedMs) / 1000)
+  );
+  // Once the countdown reaches 0, display a static "Finishing up…" label
+  // rather than counting overrun seconds upward. Counting up makes users
+  // feel the system is broken; a stuck label is calmer.
+  const etaText =
+    remainingSeconds > 0 ? `~${remainingSeconds}s left` : "Finishing up…";
+
+  const stageText: Record<typeof status, string> = {
+    idle: "Waiting for photo",
+    analyzing: "Reading your garment",
+    ready: "Prompt ready",
+    generating: "Painting variants",
+  };
+
   const statusChip = batchActive
     ? {
         text: `Batch ${p.batchProgress!.done} / ${p.batchProgress!.total}${
@@ -163,42 +241,58 @@ export default function PromptPanel(p: Props) {
       }
     : {
         idle: {
-          text: "Waiting for photo",
+          text: stageText.idle,
           dot: "bg-neutral-300",
           className: "bg-neutral-100 text-neutral-500",
         },
         analyzing: {
-          text: "Analyzing",
+          text: `${stageText.analyzing} · ${etaText}`,
           dot: "bg-amber-400 animate-pulse",
           className: "bg-amber-50 text-amber-700",
         },
         ready: {
-          text: "Prompt ready",
+          text: stageText.ready,
           dot: "bg-emerald-500",
           className: "bg-emerald-50 text-emerald-700",
         },
         generating: {
-          text: "Generating",
+          text: `${stageText.generating} · ${etaText}`,
           dot: "bg-brand-500 animate-pulse",
           className: "bg-brand-50 text-brand-700",
         },
       }[status];
   const fitOptions = p.pantsAdjustments ? PANTS_FIT_OPTIONS : GENERAL_FIT_OPTIONS;
   const lengthOptions = p.pantsAdjustments ? PANTS_LENGTH_OPTIONS : GENERAL_LENGTH_OPTIONS;
+  const productShotOptions: Array<{ value: ProductShotMode; label: string; hint: string }> = [
+    {
+      value: "single-front",
+      label: "Generate Single Front",
+      hint: "One garment reference, front product shot.",
+    },
+    {
+      value: "single-back",
+      label: "Generate Single Back",
+      hint: "One garment reference, back product shot.",
+    },
+    {
+      value: "front-back-contract",
+      label: "Generate Using Front + Back References",
+      hint: "Two garment references define one SKU contract.",
+    },
+  ];
 
   return (
     <section className="flex min-w-0 flex-1 flex-col border-b border-neutral-200 bg-white lg:border-b-0 lg:border-r">
       {/* ========== HEADER ========== */}
       <div className="flex items-center justify-between border-b border-neutral-200 px-6 py-4">
         <div>
-          <h2 className="text-sm font-semibold text-neutral-900">Brief</h2>
+          <h2 className="text-sm font-semibold text-neutral-900">Shot Setup</h2>
           <p className="text-[11px] text-neutral-500">
-            Claude analyzes your photo, shows an editable review, then drafts
-            the generation prompt from that review.
+            Upload, confirm fit, then generate a launch-ready model image.
           </p>
         </div>
         <span
-          className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider ${statusChip.className}`}
+          className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold tabular-nums ${statusChip.className}`}
         >
           <span className={`h-1.5 w-1.5 rounded-full ${statusChip.dot}`} />
           {statusChip.text}
@@ -210,14 +304,54 @@ export default function PromptPanel(p: Props) {
           was folded into Generate, but the two-piece-set routing decision
           still has to live somewhere the user can reach it before clicking
           Generate. Keep it slim so the textarea below stays the focal point. */}
-      <div className="border-b border-neutral-100 px-6 py-2.5">
+      {!p.hideTwoPieceToggle && (
+      <div className="border-b border-neutral-100 px-6 py-3">
+        {p.productShotMode && p.onProductShotModeChange && (
+          <div className="mb-3 rounded-xl bg-neutral-50 px-4 py-3">
+            <div className="mb-2 text-[11px] font-semibold text-neutral-700">
+              Product shot workflow
+            </div>
+            <div className="grid gap-2 lg:grid-cols-3">
+              {productShotOptions.map((option) => {
+                const active = p.productShotMode === option.value;
+                const disabled =
+                  !!p.productShotModeDisabled?.[option.value] || p.analyzing || p.loading;
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => p.onProductShotModeChange?.(option.value)}
+                    disabled={disabled}
+                    title={option.hint}
+                    className={`rounded-lg border px-3 py-2 text-left transition disabled:cursor-not-allowed disabled:opacity-45 ${
+                      active
+                        ? "border-neutral-900 bg-neutral-900 text-white"
+                        : "border-neutral-200 bg-white text-neutral-700 hover:border-neutral-400 hover:bg-neutral-50"
+                    }`}
+                  >
+                    <span className="block text-[11px] font-semibold leading-tight">
+                      {option.label}
+                    </span>
+                    <span
+                      className={`mt-1 block text-[10px] leading-snug ${
+                        active ? "text-white/70" : "text-neutral-500"
+                      }`}
+                    >
+                      {option.hint}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
         <label
-          className={`flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1 text-[11px] transition ${
+          className={`inline-flex cursor-pointer items-center gap-2 rounded-full border px-3 py-2 text-xs transition ${
             p.twoPiece
-              ? "bg-brand-50 text-brand-700"
-              : "text-neutral-600 hover:bg-neutral-50"
+              ? "border-brand-200 bg-brand-50 text-brand-700"
+              : "border-neutral-200 bg-neutral-50 text-neutral-600 hover:bg-neutral-100"
           }`}
-          title="Check this when the reference photo shows a matching top + bottom coordinated outfit."
+          title="Check this only when you uploaded TWO separate images — one for the top and one for the bottom — that are meant to be worn together. Single-image rompers, dresses, and jumpsuits do NOT need this checked."
         >
           <input
             type="checkbox"
@@ -226,19 +360,110 @@ export default function PromptPanel(p: Props) {
             disabled={p.analyzing || p.loading}
             className="h-3.5 w-3.5 shrink-0 rounded border-neutral-300 text-brand-600 focus:ring-brand-400 disabled:opacity-50"
           />
-          <span className="font-medium">Reference is a 2-piece set</span>
+          <span className="font-medium">Coordinated 2-piece set</span>
           <span className="text-[10px] text-neutral-500">
-            (matching top + bottom)
+            (separate top + bottom upload)
           </span>
         </label>
+        {p.onSwapScopeChoiceChange && !p.twoPiece && (() => {
+          const choice = p.swapScopeChoice ?? "auto";
+          const inferred = p.inferredScope;
+          const scopeLabel: Record<
+            "upper-body" | "lower-body" | "full-look",
+            string
+          > = {
+            "upper-body": "Top only",
+            "lower-body": "Bottom only",
+            "full-look": "Full outfit",
+          };
+          const resolved: "upper-body" | "lower-body" | "full-look" | null =
+            choice === "auto" ? inferred ?? null : choice;
+          const swapOptions: Array<{
+            value: "auto" | "upper-body" | "lower-body" | "full-look";
+            label: string;
+          }> = [
+            { value: "auto", label: "Auto" },
+            { value: "upper-body", label: "Top only" },
+            { value: "lower-body", label: "Bottom only" },
+            { value: "full-look", label: "Full outfit" },
+          ];
+          return (
+            <div className="mt-3 rounded-xl bg-neutral-50 px-4 py-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="text-[11px] font-semibold text-neutral-700">
+                  Swap area
+                </div>
+                {resolved && (
+                  <span
+                    className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold ${
+                      resolved === "full-look"
+                        ? "bg-amber-100 text-amber-800"
+                        : "bg-neutral-200 text-neutral-700"
+                    }`}
+                    title={
+                      resolved === "full-look"
+                        ? "Will replace BOTH the top and the bottom on the model."
+                        : resolved === "upper-body"
+                        ? "Will replace only the top — model's pants/skirt are preserved."
+                        : "Will replace only the bottom — model's top is preserved."
+                    }
+                  >
+                    Will replace: {scopeLabel[resolved].toLowerCase()}
+                  </span>
+                )}
+              </div>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {swapOptions.map((option) => {
+                  const active = choice === option.value;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => p.onSwapScopeChoiceChange?.(option.value)}
+                      disabled={p.analyzing || p.loading}
+                      className={`rounded-full border px-3 py-1.5 text-[11px] font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                        active
+                          ? "border-neutral-900 bg-neutral-900 text-white"
+                          : "border-neutral-200 bg-white text-neutral-600 hover:border-neutral-400 hover:bg-neutral-50"
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
+              {choice === "auto" && inferred && (
+                <p className="mt-1.5 text-[10.5px] text-neutral-500">
+                  Auto detected{" "}
+                  <span className="font-semibold text-neutral-700">
+                    {scopeLabel[inferred].toLowerCase()}
+                  </span>
+                  {inferred === "full-look" && (
+                    <>
+                      {" "}— if your upload is a top, switch to{" "}
+                      <span className="font-semibold">Top only</span> to keep the
+                      model&apos;s pants.
+                    </>
+                  )}
+                </p>
+              )}
+              {choice !== "auto" && (
+                <p className="mt-1.5 text-[10.5px] text-neutral-500">
+                  Override active. Click <span className="font-semibold">Auto</span> to
+                  let the analyzer decide.
+                </p>
+              )}
+            </div>
+          );
+        })()}
         {(p.onFitAdjustmentChange || p.onLengthAdjustmentChange) && (
-          <div className="model-direction-panel mt-2.5 flex flex-wrap gap-4 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2.5">
+          <div className="model-direction-panel mt-3 grid gap-3 rounded-xl bg-neutral-50 px-4 py-3 lg:grid-cols-2">
             {p.onFitAdjustmentChange && (
               <div className="min-w-[220px] flex-1">
-                <div className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
+                <div className="mb-1 text-[11px] font-semibold text-neutral-700">
                   {p.pantsAdjustments ? "Pants fit" : "Fit"}
                 </div>
-                <div className="flex flex-wrap gap-1.5">
+                <div className="flex flex-wrap gap-2">
                   {fitOptions.map((option) => {
                     const active = (p.fitAdjustment ?? "true-to-reference") === option.value;
                     return (
@@ -262,7 +487,7 @@ export default function PromptPanel(p: Props) {
             )}
             {p.onLengthAdjustmentChange && (
               <div className="min-w-[260px] flex-1">
-                <div className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
+                <div className="mb-1 text-[11px] font-semibold text-neutral-700">
                   {p.pantsAdjustments ? "Pants length" : "Length"}
                 </div>
                 <div className="flex flex-wrap gap-1.5">
@@ -288,24 +513,21 @@ export default function PromptPanel(p: Props) {
                 </div>
               </div>
             )}
-            <p className="basis-full text-[10px] leading-relaxed text-neutral-500">
-              {p.pantsAdjustments
-                ? "Pants controls override the leg shape and hem length while preserving the uploaded garment's fabric, construction, pockets, stitching, and hardware."
-                : "Fit and length guide how the garment sits on the model while preserving the uploaded garment's fabric, construction, trims, stitching, and hardware."}
-            </p>
           </div>
         )}
       </div>
+      )}
 
       {/* ========== ANALYSIS REVIEW ========== */}
       <div className="border-b border-neutral-100 px-6 py-3">
         <div className="mb-2 flex items-center justify-between gap-3">
           <div>
-            <div className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
+            <div className="text-[11px] font-semibold text-neutral-700">
               Analysis Review
             </div>
             <div className="text-[11px] text-neutral-500">
-              Edit what the AI detected before Generate.
+              Edit if the detected garment looks wrong — the description drives
+              the swap. Re-analyze to refresh.
             </div>
           </div>
           {p.onAnalyze && (
@@ -326,9 +548,9 @@ export default function PromptPanel(p: Props) {
         </div>
 
         {p.analysisReview && p.onAnalysisReviewChange ? (
-          <div className="grid gap-2 rounded-xl border border-neutral-200 bg-neutral-50 p-3">
+          <div className="grid gap-2 rounded-xl bg-neutral-50 p-3">
             <label className="block">
-              <span className="mb-1 block text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
+              <span className="mb-1 block text-[11px] font-semibold text-neutral-700">
                 Detected garment
               </span>
               <input
@@ -344,7 +566,7 @@ export default function PromptPanel(p: Props) {
               />
             </label>
             <label className="block">
-              <span className="mb-1 block text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
+              <span className="mb-1 block text-[11px] font-semibold text-neutral-700">
                 Visible details
               </span>
               <textarea
@@ -361,30 +583,49 @@ export default function PromptPanel(p: Props) {
               />
             </label>
           </div>
-        ) : (
-          <div className="rounded-xl border border-dashed border-neutral-200 bg-neutral-50 px-3 py-2.5 text-[11px] text-neutral-500">
-            Run Analyze to preview the garment read. Generate can still analyze automatically.
-          </div>
-        )}
+        ) : null}
       </div>
 
-      {/* ========== PROMPT TEXTAREA ========== */}
-      <div className="relative flex min-h-0 flex-1 flex-col">
-        <textarea
-          value={p.prompt}
-          onChange={(e) => p.onPromptChange(e.target.value)}
-          placeholder="Your brief will appear here after Analyze — or write your own. The generator will preserve your product and restyle the background, lighting, and framing."
-          className="prompt-mono min-h-0 flex-1 resize-none px-6 py-5 text-[13px] leading-relaxed outline-none placeholder:text-neutral-400"
-        />
+      {/* ========== ADVANCED PROMPT ========== */}
+      <div className="border-b border-neutral-100 px-6 py-3">
+        <button
+          type="button"
+          onClick={() => setAdvancedOpen((open) => !open)}
+          className="flex w-full items-center justify-between rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2 text-left transition hover:bg-neutral-100"
+        >
+          <span>
+            <span className="block text-[11px] font-semibold text-neutral-700">
+              Advanced Prompt
+            </span>
+            <span className="mt-0.5 block text-[11px] text-neutral-500">
+              {hasPrompt ? `${words} words` : "Auto-generated"}
+            </span>
+          </span>
+          <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-neutral-600">
+            {advancedOpen ? "Hide" : "Show"}
+          </span>
+        </button>
 
-        {/* Tiny counter bottom-right */}
-        <div className="pointer-events-none absolute bottom-3 right-6 rounded-full bg-white/80 px-2 py-0.5 text-[10px] font-mono text-neutral-400 backdrop-blur">
-          {words} words · {chars} chars
-        </div>
+        {advancedOpen && (
+          <div className="relative mt-3 overflow-hidden rounded-xl border border-neutral-200 bg-white">
+            <textarea
+              value={p.prompt}
+              onChange={(e) => p.onPromptChange(e.target.value)}
+              placeholder="Your brief will appear here after Analyze. Most users can leave this alone."
+              rows={8}
+              className="prompt-mono w-full resize-y px-4 py-3 text-[12px] leading-relaxed outline-none placeholder:text-neutral-400"
+            />
+            <div className="pointer-events-none absolute bottom-2 right-3 rounded-full bg-white/80 px-2 py-0.5 text-[10px] font-mono text-neutral-400 backdrop-blur">
+              {words} words · {chars} chars
+            </div>
+          </div>
+        )}
+
       </div>
 
       {/* ========== ACTION BAR ========== */}
-      <div className="flex items-center justify-between gap-3 border-t border-neutral-200 bg-neutral-50 px-6 py-4">
+      <div className="prompt-action-bar flex items-center justify-between gap-3 border-t border-neutral-200 bg-neutral-50 px-6 py-4">
+        {!p.hideVariantControl && (
         <label className="flex items-center gap-2 text-xs text-neutral-600">
           <span className="font-medium">Variants</span>
           <div className="flex overflow-hidden rounded-lg border border-neutral-200 bg-white">
@@ -407,6 +648,7 @@ export default function PromptPanel(p: Props) {
             })}
           </div>
         </label>
+        )}
 
         <div className="flex items-center gap-2">
           {/* Batch — only rendered if the parent wired it up. Batch already
@@ -423,7 +665,7 @@ export default function PromptPanel(p: Props) {
                   ? "Analyze + generate one output per selected image"
                   : "Select 2 or more images to enable"
               }
-              className={`group relative inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed ${
+              className={`group relative inline-flex items-center gap-2 rounded-xl border px-4 py-3 text-sm font-semibold transition disabled:cursor-not-allowed ${
                 !p.canBatch || p.loading || p.analyzing || batchActive
                   ? "border-neutral-200 bg-neutral-100 text-neutral-400"
                   : "border-brand-300 bg-white text-brand-700 hover:bg-brand-50 hover:shadow-sm active:scale-[0.98]"
@@ -457,7 +699,7 @@ export default function PromptPanel(p: Props) {
           <button
             onClick={p.onGenerate}
             disabled={p.disabled || p.loading || p.analyzing || batchActive}
-            className={`group relative inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold shadow-sm transition disabled:cursor-not-allowed ${
+            className={`group relative inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold shadow-sm transition disabled:cursor-not-allowed ${
               p.disabled || p.loading || p.analyzing || batchActive
                 ? "bg-neutral-300 text-neutral-500"
                 : "bg-gradient-to-b from-neutral-800 to-neutral-950 text-white hover:from-neutral-700 hover:to-neutral-900 hover:shadow-md active:scale-[0.98]"
@@ -476,7 +718,7 @@ export default function PromptPanel(p: Props) {
             ) : (
               <>
                 {IconWand}
-                <span>Generate</span>
+                <span>{p.generateLabel || "Generate"}</span>
                 <span className="ml-1 rounded bg-white/10 px-1.5 py-0.5 text-[10px] font-mono text-white/70">
                   ⌘↵
                 </span>

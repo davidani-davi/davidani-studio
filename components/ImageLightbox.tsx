@@ -13,19 +13,60 @@ import { useEffect } from "react";
  *   - X button closes
  *   - clicks on the image itself do NOT close (so users can zoom-pan)
  *   - locks body scroll while open so the page behind doesn't drift
+ *   - when `images` + `currentIndex` + `onIndexChange` are passed, ←/→ arrow
+ *     keys (and on-screen prev/next buttons) navigate within the array
+ *     without closing the overlay. Used by the Studio 1 multi-option grid
+ *     to flip between Variant A / B / C in expanded view.
  */
 interface Props {
   src: string | null;
   onClose: () => void;
   /** Optional alt text for accessibility. */
   alt?: string;
+  /**
+   * Optional gallery navigation. Pass the full array of URLs and the index of
+   * the currently-visible one; the lightbox will wire ←/→ arrow keys + prev /
+   * next buttons that call onIndexChange with the new index. If omitted, the
+   * lightbox is single-image only.
+   */
+  images?: string[];
+  currentIndex?: number;
+  onIndexChange?: (nextIndex: number) => void;
+  /** Optional per-index labels (e.g. "Variant A"). Shown as a chip. */
+  labels?: string[];
 }
 
-export default function ImageLightbox({ src, onClose, alt = "Preview" }: Props) {
+export default function ImageLightbox({
+  src,
+  onClose,
+  alt = "Preview",
+  images,
+  currentIndex,
+  onIndexChange,
+  labels,
+}: Props) {
+  const navigable =
+    !!images &&
+    images.length > 1 &&
+    typeof currentIndex === "number" &&
+    typeof onIndexChange === "function";
+
   useEffect(() => {
     if (!src) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        onClose();
+        return;
+      }
+      if (!navigable) return;
+      const last = images!.length - 1;
+      if (e.key === "ArrowRight") {
+        e.preventDefault();
+        onIndexChange!(currentIndex! >= last ? 0 : currentIndex! + 1);
+      } else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        onIndexChange!(currentIndex! <= 0 ? last : currentIndex! - 1);
+      }
     };
     window.addEventListener("keydown", onKey);
     const prevOverflow = document.body.style.overflow;
@@ -34,9 +75,12 @@ export default function ImageLightbox({ src, onClose, alt = "Preview" }: Props) 
       window.removeEventListener("keydown", onKey);
       document.body.style.overflow = prevOverflow;
     };
-  }, [src, onClose]);
+  }, [src, onClose, navigable, images, currentIndex, onIndexChange]);
 
   if (!src) return null;
+
+  const currentLabel =
+    navigable && labels && typeof currentIndex === "number" ? labels[currentIndex] : null;
 
   return (
     <div
@@ -54,6 +98,33 @@ export default function ImageLightbox({ src, onClose, alt = "Preview" }: Props) 
         ×
       </button>
 
+      {navigable && (
+        <>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              const last = images!.length - 1;
+              onIndexChange!(currentIndex! <= 0 ? last : currentIndex! - 1);
+            }}
+            aria-label="Previous variant"
+            className="absolute left-5 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-2xl text-white transition hover:bg-white/20"
+          >
+            ‹
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              const last = images!.length - 1;
+              onIndexChange!(currentIndex! >= last ? 0 : currentIndex! + 1);
+            }}
+            aria-label="Next variant"
+            className="absolute right-5 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-2xl text-white transition hover:bg-white/20"
+          >
+            ›
+          </button>
+        </>
+      )}
+
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={src}
@@ -61,9 +132,18 @@ export default function ImageLightbox({ src, onClose, alt = "Preview" }: Props) 
         onClick={(e) => e.stopPropagation()}
         className="max-h-[calc(100vh-7rem)] max-w-full cursor-default rounded-lg object-contain shadow-2xl"
       />
-      <span className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-medium uppercase tracking-wider text-white/80">
-        Press Esc or click outside to close
-      </span>
+      <div className="flex items-center gap-2">
+        {currentLabel && (
+          <span className="rounded-full bg-white/15 px-3 py-1 text-[11px] font-semibold text-white">
+            {currentLabel}
+          </span>
+        )}
+        <span className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-medium text-white/80">
+          {navigable
+            ? `← / → to switch · ${currentIndex! + 1} of ${images!.length} · Esc to close`
+            : "Esc or click outside to close"}
+        </span>
+      </div>
     </div>
   );
 }

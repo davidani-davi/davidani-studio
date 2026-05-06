@@ -18,6 +18,8 @@ export async function POST(req: Request) {
       format,
       numImages,
       overlay,
+      outputSize,
+      useDefaultReference,
     } = body as {
       modelId: ModelId;
       prompt: string;
@@ -28,6 +30,8 @@ export async function POST(req: Request) {
       format?: "png" | "jpeg";
       numImages?: number;
       overlay?: OverlayOptions;
+      outputSize?: { width: number; height: number } | null;
+      useDefaultReference?: boolean;
     };
 
     if (!modelId || !MODELS[modelId]) {
@@ -50,6 +54,8 @@ export async function POST(req: Request) {
       format,
       numImages: numImages ?? 1,
       overlay,
+      outputSize,
+      useDefaultReference,
     });
 
     return NextResponse.json({ ok: true, ...result });

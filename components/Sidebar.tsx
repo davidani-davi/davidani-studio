@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { ASPECT_RATIOS, FORMATS, MODELS, RESOLUTIONS, type ModelId } from "@/lib/models";
 import type { OverlayPlacement } from "@/lib/fal";
+import type { ProductShotReference } from "@/lib/product-shot-references";
 import type { UploadedImage } from "./types";
 import ImageLightbox, { ZoomButton } from "./ImageLightbox";
 
@@ -16,9 +17,11 @@ interface Props {
   format: "png" | "jpeg";
   onFormatChange: (v: "png" | "jpeg") => void;
   uploads: UploadedImage[];
-  selectedUrls: string[];
-  onToggleSelect: (url: string) => void;
-  onAddFiles: (files: FileList) => void;
+  frontIntakeUrl: string | null;
+  backIntakeUrl: string | null;
+  onSetFrontIntake: (url: string | null) => void;
+  onSetBackIntake: (url: string | null) => void;
+  onAddFiles: (files: FileList, preferredSlot?: "front" | "back") => void;
   onRemoveUpload: (url: string) => void;
 
   backgroundColor: string;
@@ -39,11 +42,14 @@ interface Props {
   fontSize: number;
   onFontSizeChange: (v: number) => void;
 
-  /* Style reference (image 2) — defaults to public/style-reference.png on the
-     server unless the user supplies a replacement URL. */
+  /* Style reference (image 2) — Image Studio only. Product shot presets come
+     from public/product-shots unless the user supplies a replacement URL. */
   referenceImageUrl: string | null;
   /** Static preview path shown when no custom reference has been uploaded. */
   defaultReferencePreview: string;
+  productShotReferences: ProductShotReference[];
+  selectedProductShotPath: string;
+  onProductShotSelect: (path: string) => void;
   onReferenceReplace: (file: File) => void;
   onReferenceReset: () => void;
   referenceUploading: boolean;
@@ -179,12 +185,12 @@ export default function Sidebar(p: Props) {
   const [draggingUploads, setDraggingUploads] = useState(false);
   const [draggingReference, setDraggingReference] = useState(false);
 
-  const selectedCount = p.selectedUrls.length;
   const uploadCount = p.uploads.length;
+  const intakeCount = Number(!!p.frontIntakeUrl) + Number(!!p.backIntakeUrl);
   const refHint =
     uploadCount === 0
       ? "Upload to start"
-      : `${selectedCount} of ${uploadCount} selected`;
+      : `${intakeCount} slot${intakeCount === 1 ? "" : "s"} set`;
 
   const hasCustomReference = !!p.referenceImageUrl;
   const referencePreviewSrc = p.referenceImageUrl || p.defaultReferencePreview;
@@ -197,6 +203,13 @@ export default function Sidebar(p: Props) {
     e.preventDefault();
     setDraggingUploads(false);
     if (e.dataTransfer.files.length) p.onAddFiles(e.dataTransfer.files);
+  }
+
+  function handleIntakeDrop(e: React.DragEvent, slot: "front" | "back") {
+    e.preventDefault();
+    e.stopPropagation();
+    setDraggingUploads(false);
+    if (e.dataTransfer.files.length) p.onAddFiles(e.dataTransfer.files, slot);
   }
 
   function handleReferenceDrop(e: React.DragEvent) {
@@ -231,86 +244,107 @@ export default function Sidebar(p: Props) {
       >
         <SectionHeader icon={IconCamera} title="Product intake" hint={refHint} />
 
-        <div className={uploadCount === 0 ? "grid gap-2" : "grid grid-cols-3 gap-2"}>
-          {/* + add button */}
-          <label
-            className={`group flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed text-center transition hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600 ${
-              draggingUploads
-                ? "border-brand-500 bg-brand-50 text-brand-700"
-                : "border-neutral-300 bg-neutral-50 text-neutral-400"
-            } ${uploadCount === 0 ? "min-h-[164px] px-4 py-6" : "aspect-square"}`}
-          >
-            <svg viewBox="0 0 20 20" fill="currentColor" className={uploadCount === 0 ? "mb-2 h-6 w-6" : "h-4 w-4"}>
-              <path d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" />
-            </svg>
-            {uploadCount === 0 && (
-              <>
-                <span className="text-sm font-semibold text-neutral-800">Drop product photo</span>
-                <span className="mt-1 max-w-[230px] text-[11px] leading-relaxed text-neutral-500">
-                  Upload one style, or select multiple images for batch cleanup.
-                </span>
-              </>
-            )}
-            <input
-              type="file"
-              accept="image/*"
-              multiple
-              className="hidden"
-              onChange={(e) => {
-                if (e.target.files?.length) p.onAddFiles(e.target.files);
-                e.currentTarget.value = "";
-              }}
-            />
-          </label>
-
-          {p.uploads.map((u) => {
-            const selected = p.selectedUrls.includes(u.url);
-            return (
-              <div
-                key={u.url}
-                className={`group relative aspect-square overflow-hidden rounded-lg border ${
-                  selected
-                    ? "border-brand-500 ring-2 ring-brand-200"
-                    : "border-neutral-200"
-                }`}
-              >
-                <button
-                  onClick={() => p.onToggleSelect(u.url)}
-                  className="absolute inset-0 block"
-                  title={selected ? "Deselect" : "Use as reference"}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={u.url}
-                    alt={u.name}
-                    className="h-full w-full object-cover"
-                  />
-                  {selected && (
-                    <span className="pointer-events-none absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-brand-600 text-[9px] font-bold text-white">
-                      ✓
-                    </span>
-                  )}
-                </button>
-                <button
-                  onClick={() => p.onRemoveUpload(u.url)}
-                  className="absolute left-1 top-1 hidden rounded-full bg-black/70 px-1 text-[10px] text-white group-hover:block"
-                  title="Remove"
-                >
-                  ×
-                </button>
-                <ZoomButton
-                  onClick={() => setPreviewSrc(u.url)}
-                  title="Preview at full size"
-                  className="absolute bottom-1 right-1 opacity-0 group-hover:opacity-100"
-                />
+        <div className="grid gap-2">
+          {[
+            {
+              key: "front" as const,
+              title: "Front Product Image",
+              status: "Required",
+              cta: "Upload front",
+              help: "Main product reference for front shots and contract mode.",
+              url: p.frontIntakeUrl,
+              onClear: p.onRemoveUpload,
+            },
+            {
+              key: "back" as const,
+              title: "Back Product Image",
+              status: "Optional",
+              cta: "Upload back",
+              help: "Improves back accuracy when artwork or construction is hidden.",
+              url: p.backIntakeUrl,
+              onClear: p.onRemoveUpload,
+            },
+          ].map((slot) => (
+            <div
+              key={slot.key}
+              className="rounded-xl border border-neutral-200 bg-neutral-50 p-2"
+            >
+              <div className="mb-2 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-neutral-500">
+                <span>{slot.title}</span>
+                <span>{slot.status}</span>
               </div>
-            );
-          })}
+              {slot.url ? (
+                <div
+                  onDragOver={(e) => {
+                    if (!hasImageFiles(e)) return;
+                    e.preventDefault();
+                  }}
+                  onDrop={(e) => handleIntakeDrop(e, slot.key)}
+                  className="group relative aspect-[4/3] overflow-hidden rounded-lg border border-brand-200 bg-white"
+                >
+                  <button
+                    type="button"
+                    onClick={() => setPreviewSrc(slot.url)}
+                    className="absolute inset-0"
+                    title={`Preview ${slot.title.toLowerCase()}`}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={slot.url} alt={slot.title} className="h-full w-full object-cover" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => slot.url && slot.onClear(slot.url)}
+                    className="absolute left-2 top-2 rounded-full bg-black/70 px-2 py-0.5 text-[10px] font-semibold text-white opacity-0 transition group-hover:opacity-100"
+                    title={`Clear ${slot.title.toLowerCase()}`}
+                  >
+                    Remove
+                  </button>
+                  <ZoomButton
+                    onClick={() => setPreviewSrc(slot.url)}
+                    title="Preview at full size"
+                    className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100"
+                  />
+                </div>
+              ) : (
+                <label
+                  onDragOver={(e) => {
+                    if (!hasImageFiles(e)) return;
+                    e.preventDefault();
+                  }}
+                  onDrop={(e) => handleIntakeDrop(e, slot.key)}
+                  className={`flex min-h-[112px] cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed text-center transition hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600 ${
+                    draggingUploads
+                      ? "border-brand-500 bg-brand-50 text-brand-700"
+                      : "border-neutral-300 bg-white text-neutral-400"
+                  }`}
+                >
+                  <svg viewBox="0 0 20 20" fill="currentColor" className="mb-2 h-5 w-5">
+                    <path d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" />
+                  </svg>
+                  <span className="text-xs font-semibold text-neutral-800">
+                    {slot.cta}
+                  </span>
+                  <span className="mt-1 max-w-[220px] text-[10px] leading-relaxed text-neutral-500">
+                    {slot.help}
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      if (e.target.files?.length) p.onAddFiles(e.target.files, slot.key);
+                      e.currentTarget.value = "";
+                    }}
+                  />
+                </label>
+              )}
+            </div>
+          ))}
         </div>
 
         <div className="mt-3 grid grid-cols-3 gap-1.5 text-center text-[10px] font-medium text-neutral-500">
           <span className="rounded-full bg-neutral-50 px-2 py-1">1. Upload</span>
-          <span className="rounded-full bg-neutral-50 px-2 py-1">2. Style</span>
+          <span className="rounded-full bg-neutral-50 px-2 py-1">2. Front/back</span>
           <span className="rounded-full bg-neutral-50 px-2 py-1">3. Export</span>
         </div>
       </section>
@@ -407,6 +441,40 @@ export default function Sidebar(p: Props) {
           </div>
         </div>
         </div>
+        {p.productShotReferences.length > 0 && (
+          <div className="mt-3">
+            <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
+              Product shot presets
+            </p>
+            <div className="grid grid-cols-4 gap-1.5">
+              {p.productShotReferences.map((ref) => {
+                const selected =
+                  !hasCustomReference && p.selectedProductShotPath === ref.path;
+                return (
+                  <button
+                    key={ref.id}
+                    type="button"
+                    onClick={() => p.onProductShotSelect(ref.path)}
+                    title={ref.label}
+                    className={`group relative aspect-square overflow-hidden rounded-md border bg-white transition ${
+                      selected
+                        ? "border-brand-500 ring-2 ring-brand-100"
+                        : "border-neutral-200 hover:border-neutral-400"
+                    }`}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={ref.path} alt={ref.label} className="h-full w-full object-cover" />
+                    {selected && (
+                      <span className="pointer-events-none absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-brand-600 text-[9px] font-bold text-white">
+                        ✓
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </section>
 
       {/* ========== BACKGROUND ========== */}
@@ -667,14 +735,19 @@ export default function Sidebar(p: Props) {
               <div className="grid grid-cols-2 overflow-hidden rounded-lg border border-neutral-200">
                 {FORMATS.map((f) => {
                   const active = p.format === f.value;
+                  const disabled = p.modelId === "nano-banana" && f.value === "jpeg";
                   return (
                     <button
                       key={f.value}
+                      disabled={disabled}
+                      title={disabled ? "Nano Banana only supports PNG output in this app." : undefined}
                       onClick={() =>
                         p.onFormatChange(f.value as "png" | "jpeg")
                       }
                       className={`border-r border-neutral-200 px-2 py-1.5 text-xs font-medium last:border-r-0 transition ${
-                        active
+                        disabled
+                          ? "cursor-not-allowed bg-neutral-50 text-neutral-300"
+                          : active
                           ? "bg-neutral-900 text-white"
                           : "bg-white text-neutral-600 hover:bg-neutral-50"
                       }`}

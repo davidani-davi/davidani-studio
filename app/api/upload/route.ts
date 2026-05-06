@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { uploadToFal } from "@/lib/fal";
 
 export const runtime = "nodejs";
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 export async function POST(req: Request) {
   try {
@@ -12,12 +12,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: "No files provided." }, { status: 400 });
     }
 
-    const uploads: { name: string; url: string }[] = [];
-    for (const entry of files) {
-      if (!(entry instanceof File)) continue;
-      const url = await uploadToFal(entry, entry.name || "upload.png");
-      uploads.push({ name: entry.name, url });
-    }
+    const uploads = await Promise.all(
+      files
+        .filter((entry): entry is File => entry instanceof File)
+        .map((entry) =>
+          uploadToFal(entry, entry.name || "upload.png").then((url) => ({
+            name: entry.name,
+            url,
+          }))
+        )
+    );
 
     return NextResponse.json({ ok: true, uploads });
   } catch (err: any) {

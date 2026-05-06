@@ -1,15 +1,31 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Sidebar from "@/components/Sidebar";
-import PromptPanel, { type BatchProgress } from "@/components/PromptPanel";
+import PromptPanel, { type BatchProgress, type ProductShotMode } from "@/components/PromptPanel";
 import OutputPanel from "@/components/OutputPanel";
 import StudioHeader from "@/components/StudioHeader";
 import type { HistoryItem, UploadedImage } from "@/components/types";
 import type { ModelId } from "@/lib/models";
 import type { OverlayMode, OverlayPlacement } from "@/lib/fal";
+import { PRODUCT_SHOT_REFERENCES } from "@/lib/product-shot-references";
 import { resizeIfNeeded } from "@/lib/image-resize";
 import { optimizePromptForModel } from "@/lib/prompt-strategy";
+import {
+  addFeedbackMemory,
+  buildFeedbackNote,
+  feedbackMemorySuffix,
+  loadFeedbackMemoryFromCloud,
+  syncFeedbackMemoryToCloud,
+  type FeedbackIssueKey,
+} from "@/lib/feedback-memory";
+import { startStudioJob } from "@/components/studio-job-store";
+import {
+  clearCloudHistory,
+  loadCloudHistory,
+  mergeHistoryItems,
+  syncCloudHistory,
+} from "@/lib/client-cloud-history";
 
 function deriveOverlayMode(showName: boolean, showNumber: boolean): OverlayMode {
   if (showName && showNumber) return "both";
@@ -19,6 +35,57 @@ function deriveOverlayMode(showName: boolean, showNumber: boolean): OverlayMode 
 }
 
 const HISTORY_KEY = "davidani_history_v1";
+const CURRENT_ID_KEY = "davidani_image_current_run_v1";
+const IMAGE_JOBS_KEY = "davidani_image_jobs_v1";
+const USER_ID_KEY = "davidani_user_id_v1";
+const IMAGE_STUDIO_VERSION = "1.7";
+const IMAGE_STUDIO_OUTPUT_SIZE = { width: 2000, height: 3000 } as const;
+
+function productShotViewDirective(mode: ProductShotMode, target?: "front" | "back"): string {
+  const view =
+    target ?? (mode === "single-back" ? "back" : "front");
+  const viewText =
+    view === "back"
+      ? "Generate a BACK product shot only. The final image must show the garment back side facing the camera, not the front side and not a rotated front product shot. Show back hem shape, back seams, back pockets, back graphics, rear closures, yoke, quilting, hood, collar back, sleeve backs, and any rear construction visible or inferable from the uploaded product reference. If the uploaded reference shows rear artwork or a rear graphic, that artwork is back artwork and must remain on the back of the garment. Do not add a front neckline, front chest layout, front placket, front pockets, or front-facing garment structure unless it is actually visible on the uploaded back reference."
+      : "Generate a FRONT product shot only. Show the front-facing side of the garment, including front neckline, placket, front pockets, front graphics, closures, front hem shape, sleeve fronts, waistband, and all front construction visible in the uploaded product reference.";
+  const contractText =
+    mode === "front-back-contract"
+      ? " Use the selected front and back garment references together as one structural SKU contract. The first selected image is the front truth and the second selected image is the back truth. Preserve proportions, high-low hems, sleeve structure, silhouette, fabric behavior, drape, embroidery or graphic placements, pocket placement, trims, and construction consistency from both references."
+      : " Use the single uploaded garment reference as the product source of truth. If the requested side is not fully visible, infer the hidden side conservatively from the visible garment construction without changing the product category, length, silhouette, fabric, color, or trims.";
+  return ` Product shot side directive: ${viewText}${contractText} Output one clean 2000x3000 vertical product-shot image, not a collage and not a side-by-side layout.`;
+}
+
+function buildBackProductPrompt(analyzedPrompt: string): string {
+  return [
+    "Create a clean ecommerce BACK product shot from the uploaded back-facing garment photo.",
+    "Use the uploaded back product image itself as the structural source of truth. Preserve the rear orientation exactly: the back body panel faces the camera, sleeves extend from the back view, rear collar/neck seam stays rear-facing, and rear graphics or sleeve graphics stay in their original back-side positions.",
+    "Do not use any front-facing product-shot template, front sweatshirt neckline, front chest composition, front pockets, front placket, front drawstrings, or front-facing garment structure. Do not turn the garment around.",
+    "Clean up the photo into a production-ready studio product image: remove phone/photo environment cues, center the garment, straighten the hanger/garment axis if needed, smooth wrinkles lightly, preserve fabric texture and construction, and keep realistic shadows on a clean neutral studio background.",
+    "Output one vertical 2000x3000 product image, not a collage and not a side-by-side layout.",
+    `Analyzer product context from this upload: ${analyzedPrompt}`,
+  ].join(" ");
+}
+
+function buildV17Prompt(analyzedPrompt: string): string {
+  return [
+    "Use the clean studio style reference/base image as the base image and keep the clean studio background, lighting, and camera angle unchanged.",
+    "Replace the garment with the exact apparel product from the uploaded product reference image while strictly preserving its original garment category, silhouette, volume, proportions, construction, fabric texture, print, trims, pockets, closures, waistband or neckline, sleeve or leg shape, hems, and material behavior.",
+    "Do not convert the uploaded product into pants unless the uploaded product is actually pants. If the uploaded product is a jacket, hoodie, cardigan, top, dress, skirt, set, or outerwear piece, keep that exact product category.",
+    "Restyle the garment into a professionally styled Zara-inspired flat lay/product image by centering it precisely, straightening the main garment axis, balancing sleeves, legs, panels, hems, waistbands, necklines, or openings according to the actual garment type, and creating subtle symmetry without changing the product identity.",
+    "Apply light tension to smooth wrinkles while keeping natural fabric character, ensure hems and openings are intentionally positioned, and create controlled, realistic folds.",
+    "Maintain realistic shadows and crisp edges, output a 4K 2:3 product image.",
+    `Analyzer product context from this upload: ${analyzedPrompt}`,
+  ].join(" ");
+}
+
+interface ImageJob {
+  id: string;
+  status: "analyzing" | "generating" | "done" | "failed";
+  label: string;
+  startedAt: number;
+  updatedAt: number;
+  error?: string;
+}
 
 /**
  * Fetch a JSON endpoint and return the parsed body. If the response body is
@@ -49,13 +116,75 @@ async function fetchJson(label: string, input: string, init?: RequestInit): Prom
   return data;
 }
 
+function readHistory(): HistoryItem[] {
+  try {
+    return JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function persistHistoryItem(item: HistoryItem): HistoryItem[] {
+  const existing = readHistory().filter((run) => run.id !== item.id);
+  const next = [item, ...existing].slice(0, 50);
+  try {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
+  } catch {
+    /* ignore */
+  }
+  return next;
+}
+
+function readImageJobs(): ImageJob[] {
+  try {
+    const jobs = JSON.parse(localStorage.getItem(IMAGE_JOBS_KEY) || "[]") as ImageJob[];
+    return jobs.filter((job) => Date.now() - job.updatedAt < 1000 * 60 * 60 * 6);
+  } catch {
+    return [];
+  }
+}
+
+function writeImageJob(job: ImageJob) {
+  try {
+    const jobs = readImageJobs().filter((item) => item.id !== job.id);
+    localStorage.setItem(IMAGE_JOBS_KEY, JSON.stringify([job, ...jobs].slice(0, 20)));
+  } catch {
+    /* ignore */
+  }
+}
+
+function updateImageJob(id: string, patch: Partial<ImageJob>) {
+  const existing =
+    readImageJobs().find((job) => job.id === id) || {
+      id,
+      status: "generating",
+      label: "Image Studio generation",
+      startedAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+  writeImageJob({ ...existing, ...patch, updatedAt: Date.now() });
+}
+
+function getOrCreateUserId(): string {
+  try {
+    const existing = localStorage.getItem(USER_ID_KEY);
+    if (existing) return existing;
+    const id = `user_${(crypto.randomUUID?.() || String(Date.now())).replace(/-/g, "")}`;
+    localStorage.setItem(USER_ID_KEY, id);
+    return id;
+  } catch {
+    return "anonymous";
+  }
+}
+
 export default function StudioPage() {
   // Controls
-  const [modelId, setModelId] = useState<ModelId>("gpt-image");
+  const [modelId, setModelId] = useState<ModelId>("nano-banana");
   const [aspect, setAspect] = useState<string>("2:3");
-  const [resolution, setResolution] = useState<string>("2K");
+  const [resolution, setResolution] = useState<string>("4K");
   const [format, setFormat] = useState<"png" | "jpeg">("png");
   const [numImages, setNumImages] = useState<number>(1);
+  const [productShotMode, setProductShotMode] = useState<ProductShotMode>("single-front");
 
   // Background color (sent to analyzer → becomes the studio backdrop)
   const [backgroundColor, setBackgroundColor] = useState<string>("#edeeee");
@@ -73,10 +202,15 @@ export default function StudioPage() {
   // Upload state
   const [uploads, setUploads] = useState<UploadedImage[]>([]);
   const [selected, setSelected] = useState<string[]>([]);
+  const [frontIntakeUrl, setFrontIntakeUrl] = useState<string | null>(null);
+  const [backIntakeUrl, setBackIntakeUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
 
-  // Style reference (image 2). null → server picks the default from
-  // public/style-reference.png (or style-reference-2.png for pants).
+  // Style reference (image 2). Image Studio presets live under
+  // public/product-shots; custom uploads override the selected preset.
+  const [selectedProductShotPath, setSelectedProductShotPath] = useState<string>(
+    PRODUCT_SHOT_REFERENCES[0]?.path ?? ""
+  );
   const [referenceImageUrl, setReferenceImageUrl] = useState<string | null>(null);
   const [referenceUploading, setReferenceUploading] = useState(false);
 
@@ -94,6 +228,10 @@ export default function StudioPage() {
   // History (client-only, localStorage)
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [currentId, setCurrentId] = useState<string | null>(null);
+  const [backgroundJobs, setBackgroundJobs] = useState<ImageJob[]>([]);
+  const [localHistoryHydrated, setLocalHistoryHydrated] = useState(false);
+  const [cloudHistoryHydrated, setCloudHistoryHydrated] = useState(false);
+  const lastSyncedHistoryRef = useRef("");
 
   // Batch state — non-null while a batch is in flight so the UI can show a
   // progress bar and disable the single-image actions. Goes back to null
@@ -103,15 +241,77 @@ export default function StudioPage() {
   // Load history on mount
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(HISTORY_KEY);
-      if (raw) {
-        const parsed: HistoryItem[] = JSON.parse(raw);
-        setHistory(parsed);
-        if (parsed[0]) setCurrentId(parsed[0].id);
+      const parsed = readHistory();
+      setHistory(parsed);
+      const savedCurrent = localStorage.getItem(CURRENT_ID_KEY);
+      if (savedCurrent && parsed.some((item) => item.id === savedCurrent)) {
+        setCurrentId(savedCurrent);
+      } else if (parsed[0]) {
+        setCurrentId(parsed[0].id);
       }
     } catch {
       /* ignore */
+    } finally {
+      setLocalHistoryHydrated(true);
     }
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    setCloudHistoryHydrated(false);
+
+    loadCloudHistory("image")
+      .then((cloudHistory) => {
+        if (cancelled || cloudHistory.length === 0) return;
+        setHistory((localHistory) => mergeHistoryItems(cloudHistory, localHistory));
+        setCurrentId((existing) => existing ?? cloudHistory[0]?.id ?? null);
+      })
+      .catch((err) => {
+        console.warn("[cloud-history] load failed:", err);
+      })
+      .finally(() => {
+        if (!cancelled) setCloudHistoryHydrated(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    const refresh = (event?: Event) => {
+      const detail = (event as CustomEvent | undefined)?.detail;
+      if (detail && detail.historyKey !== HISTORY_KEY) return;
+      const parsed = readHistory();
+      setHistory(parsed);
+      const nextCurrent = detail?.currentId || localStorage.getItem(CURRENT_ID_KEY);
+      if (nextCurrent && parsed.some((item) => item.id === nextCurrent)) {
+        setCurrentId(nextCurrent);
+      }
+    };
+    window.addEventListener("davidani:history-updated", refresh as EventListener);
+    window.addEventListener("storage", refresh);
+    return () => {
+      window.removeEventListener("davidani:history-updated", refresh as EventListener);
+      window.removeEventListener("storage", refresh);
+    };
+  }, []);
+
+  useEffect(() => {
+    const refresh = () => setBackgroundJobs(readImageJobs());
+    refresh();
+    const timer = window.setInterval(refresh, 1500);
+    window.addEventListener("focus", refresh);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", refresh);
+    };
+  }, []);
+
+  useEffect(() => {
+    loadFeedbackMemoryFromCloud("image").catch(() => {
+      /* local feedback memory still works */
+    });
   }, []);
 
   // Persist history
@@ -123,10 +323,29 @@ export default function StudioPage() {
     }
   }, [history]);
 
+  useEffect(() => {
+    if (!localHistoryHydrated || !cloudHistoryHydrated || history.length === 0) return;
+    const syncKey = JSON.stringify(history.slice(0, 50));
+    if (syncKey === lastSyncedHistoryRef.current) return;
+    const timer = window.setTimeout(() => {
+      syncCloudHistory("image", history)
+        .then(() => {
+          lastSyncedHistoryRef.current = syncKey;
+        })
+        .catch((err) => {
+          console.warn("[cloud-history] sync failed:", err);
+        });
+    }, 750);
+    return () => window.clearTimeout(timer);
+  }, [cloudHistoryHydrated, history, localHistoryHydrated]);
+
   const currentRun = useMemo(
     () => history.find((h) => h.id === currentId) ?? null,
     [history, currentId]
   );
+  const activeBackgroundJobCount = backgroundJobs.filter((job) =>
+    ["analyzing", "generating"].includes(job.status)
+  ).length;
 
   // URL → original upload filename, so OutputPanel can name downloads
   // after the source product photo (e.g. "blue-pants.jpg" → "blue-pants.png")
@@ -138,13 +357,11 @@ export default function StudioPage() {
     return map;
   }, [uploads]);
 
-  function toggleSelect(url: string) {
-    setSelected((s) => (s.includes(url) ? s.filter((u) => u !== url) : [...s, url]));
-  }
-
   function removeUpload(url: string) {
     setUploads((list) => list.filter((u) => u.url !== url));
     setSelected((s) => s.filter((u) => u !== url));
+    setFrontIntakeUrl((existing) => (existing === url ? null : existing));
+    setBackIntakeUrl((existing) => (existing === url ? null : existing));
   }
 
   async function replaceReferenceImage(file: File) {
@@ -174,7 +391,14 @@ export default function StudioPage() {
     setReferenceImageUrl(null);
   }
 
-  async function addFiles(files: FileList) {
+  function resolveSelectedReferenceUrl(): string | null {
+    if (referenceImageUrl) return referenceImageUrl;
+    if (!selectedProductShotPath) return null;
+    if (typeof window === "undefined") return selectedProductShotPath;
+    return new URL(selectedProductShotPath, window.location.origin).toString();
+  }
+
+  async function addFiles(files: FileList, preferredSlot?: "front" | "back") {
     setUploading(true);
     setError(null);
     try {
@@ -190,8 +414,18 @@ export default function StudioPage() {
       const added: UploadedImage[] = data.uploads;
       if (added.length > 0) {
         setUploads((list) => [...list, ...added]);
-        // auto-select newly uploaded
         setSelected((s) => [...s, ...added.map((a) => a.url)]);
+        const firstUrl = added[0]?.url ?? null;
+        const secondUrl = added[1]?.url ?? null;
+        if (preferredSlot === "front") {
+          setFrontIntakeUrl(firstUrl);
+        } else if (preferredSlot === "back") {
+          setBackIntakeUrl(firstUrl);
+        } else {
+          const frontWasEmpty = !frontIntakeUrl;
+          setFrontIntakeUrl((existing) => existing ?? firstUrl);
+          setBackIntakeUrl((existing) => existing ?? (frontWasEmpty ? secondUrl : firstUrl));
+        }
       }
     } catch (err: any) {
       setError(err.message || "Upload failed");
@@ -201,18 +435,31 @@ export default function StudioPage() {
   }
 
   async function analyzeProduct() {
-    if (selected.length === 0) return;
+    if (!frontIntakeUrl && !backIntakeUrl) return;
+    const selectedUrls =
+      productShotMode === "front-back-contract"
+        ? [frontIntakeUrl, backIntakeUrl].filter((url): url is string => !!url)
+        : [productShotMode === "single-back" ? backIntakeUrl || frontIntakeUrl : frontIntakeUrl || backIntakeUrl].filter(
+            (url): url is string => !!url
+          );
     setAnalyzing(true);
     setError(null);
     try {
-      // Analyze the first selected image — that's the product.
+      // One selected image = normal product reference. Two selected images =
+      // front/back contract for one SKU, matching Multi Model Studio's intake.
       const data = await fetchJson("Analyze", "/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageUrl: selected[0], backgroundColor, twoPiece }),
+        body: JSON.stringify({
+          imageUrl: selectedUrls[0],
+          imageUrls: selectedUrls,
+          backgroundColor,
+          twoPiece,
+        }),
       });
-      setPrompt(data.prompt);
-      return data.prompt as string;
+      const prompted = `${data.prompt}${productShotViewDirective(productShotMode)}`;
+      setPrompt(prompted);
+      return prompted;
     } catch (err: any) {
       setError(err.message || "Analysis failed");
       return null;
@@ -222,36 +469,243 @@ export default function StudioPage() {
   }
 
   async function runGeneration() {
-    if (selected.length === 0) return;
-
-    // Unified flow: ALWAYS analyze on every click, then generate.
-    //
-    // We used to only analyze when the textarea was empty, which meant
-    // toggling "2-piece set" or uploading new photos could silently reuse a
-    // stale prompt. The user explicitly asked for the atomic behaviour —
-    // every Generate click re-runs the analyzer so the prompt stays in sync
-    // with the current photo + toggle state. The textarea remains editable
-    // for debugging, but its content is overwritten on the next click.
-    const analyzed = await analyzeProduct();
-    if (!analyzed) return;
-    const activePrompt = analyzed.trim();
-    const promptUsed = optimizePromptForModel(modelId, activePrompt);
+    if (!frontIntakeUrl && !backIntakeUrl) return;
+    if (productShotMode === "front-back-contract" && (!frontIntakeUrl || !backIntakeUrl)) {
+      setError("Front + Back Contract Mode needs both intake slots: front and back.");
+      return;
+    }
+    const jobId = (crypto.randomUUID?.() || String(Date.now())).replace(/-/g, "");
+    const selectedUrls =
+      productShotMode === "front-back-contract"
+        ? [frontIntakeUrl!, backIntakeUrl!]
+        : [productShotMode === "single-back" ? backIntakeUrl || frontIntakeUrl : frontIntakeUrl || backIntakeUrl].filter(
+            (url): url is string => !!url
+          );
+    writeImageJob({
+      id: jobId,
+      status: "analyzing",
+      label: "Image Studio generation",
+      startedAt: Date.now(),
+      updatedAt: Date.now(),
+    });
+    setBackgroundJobs(readImageJobs());
 
     setLoading(true);
     setError(null);
+    startStudioJob(
+      {
+        id: jobId,
+        kind: "image",
+        label: "Image Studio generation",
+        historyKey: HISTORY_KEY,
+        currentIdKey: CURRENT_ID_KEY,
+      },
+      async ({ setStatus }) => {
+        try {
+          // Unified flow: every Generate click re-runs the analyzer so the prompt
+          // stays in sync with the current photo + toggle state.
+          setStatus("analyzing");
+          const analyzeData = await fetchJson("Analyze", "/api/analyze", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              imageUrl: selectedUrls[0],
+              imageUrls: selectedUrls,
+              backgroundColor,
+              twoPiece,
+            }),
+          });
+          const activePrompt = String(analyzeData.prompt || "").trim();
+          if (!activePrompt) throw new Error("Analyzer returned empty prompt");
+
+          const studioFeedbackMemory = feedbackMemorySuffix("image");
+          const promptWithSideDirective = `${activePrompt}${productShotViewDirective(productShotMode)}`;
+          setPrompt(promptWithSideDirective);
+
+          const singleBackMode = productShotMode === "single-back";
+          const promptWithMemory = `${promptWithSideDirective}${studioFeedbackMemory}`;
+          const v17Prompt = `${
+            singleBackMode ? buildBackProductPrompt(activePrompt) : buildV17Prompt(activePrompt)
+          }${productShotViewDirective(productShotMode)}${studioFeedbackMemory}`;
+          const oldPromptUsed = optimizePromptForModel(modelId, promptWithMemory);
+          const newPromptUsed = optimizePromptForModel(modelId, v17Prompt);
+
+          updateImageJob(jobId, { status: "generating" });
+          setBackgroundJobs(readImageJobs());
+          setStatus("generating");
+          const generationBase = {
+            modelId,
+            imageUrls: selectedUrls,
+            referenceImageUrl: singleBackMode ? null : resolveSelectedReferenceUrl(),
+            useDefaultReference: !singleBackMode,
+            aspectRatio: "2:3",
+            resolution: "4K",
+            format,
+            outputSize: IMAGE_STUDIO_OUTPUT_SIZE,
+            numImages: 1,
+            overlay: {
+              mode: deriveOverlayMode(showName, showNumber),
+              placement: overlayPlacement,
+              colorName,
+              styleNumber,
+              fontFamily,
+              fontSize,
+            },
+          };
+          const contractMode = productShotMode === "front-back-contract";
+          const frontContractPrompt = `${activePrompt}${productShotViewDirective(
+            productShotMode,
+            "front"
+          )}${studioFeedbackMemory}`;
+          const backContractPrompt = `${activePrompt}${productShotViewDirective(
+            productShotMode,
+            "back"
+          )}${studioFeedbackMemory}`;
+          const leftPrompt = contractMode ? frontContractPrompt : promptWithMemory;
+          const rightPrompt = contractMode ? backContractPrompt : v17Prompt;
+          const leftPromptUsed = optimizePromptForModel(modelId, leftPrompt);
+          const rightPromptUsed = optimizePromptForModel(modelId, rightPrompt);
+
+          const [leftData, rightData] = await Promise.all([
+            fetchJson("Generate Image A", "/api/generate", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                ...generationBase,
+                prompt: leftPrompt,
+              }),
+            }),
+            fetchJson("Generate Image B", "/api/generate", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                ...generationBase,
+                prompt: rightPrompt,
+              }),
+            }),
+          ]);
+
+          const leftUrl = leftData.images?.[0]?.url;
+          const rightUrl = rightData.images?.[0]?.url;
+          if (!leftUrl || !rightUrl) throw new Error("A/B generator did not return both images.");
+
+          const item: HistoryItem = {
+            id: jobId,
+            timestamp: Date.now(),
+            modelId,
+            prompt: contractMode
+              ? `Front product shot prompt:\n${leftPromptUsed}\n\nBack product shot prompt:\n${rightPromptUsed}`
+              : `Image A / current prompt:\n${oldPromptUsed}\n\nImage B / V1.7 prompt:\n${newPromptUsed}`,
+            imageUrls: [leftUrl, rightUrl],
+            referenceUrls: [...selectedUrls],
+            sourceImageUrls: [...selectedUrls],
+            aspect: "2:3",
+            resolution: "4K",
+            format,
+            styleNumber: styleNumber.trim() || undefined,
+            prompts: contractMode ? [leftPromptUsed, rightPromptUsed] : [oldPromptUsed, newPromptUsed],
+            viewLabels: contractMode
+              ? ["Front", "Back"]
+              : [productShotMode === "single-back" ? "Back A" : "Front A", productShotMode === "single-back" ? "Back B" : "Front B"],
+            abTest: {
+              version: "1.7",
+            },
+          };
+          setHistory((existing) => [item, ...existing.filter((run) => run.id !== item.id)].slice(0, 50));
+          setCurrentId(jobId);
+          localStorage.setItem(CURRENT_ID_KEY, jobId);
+          updateImageJob(jobId, { status: "done" });
+          setBackgroundJobs(readImageJobs());
+          return { historyItem: item };
+        } catch (err: any) {
+          const message = err.message || "Generation failed";
+          setError(message);
+          updateImageJob(jobId, { status: "failed", error: message });
+          setBackgroundJobs(readImageJobs());
+          throw err;
+        } finally {
+          setLoading(false);
+        }
+      }
+    );
+  }
+
+  async function uploadFeedbackMarkup(markupDataUrl: string): Promise<string | null> {
+    if (!markupDataUrl) return null;
+    const blob = await (await fetch(markupDataUrl)).blob();
+    const form = new FormData();
+    form.append("files", new File([blob], "feedback-markup.png", { type: "image/png" }));
+    const data = await fetchJson("Upload feedback markup", "/api/upload", {
+      method: "POST",
+      body: form,
+    });
+    return data.uploads?.[0]?.url || null;
+  }
+
+  async function runFeedbackRegeneration(params: {
+    sourceUrl: string | null;
+    resultUrl: string;
+    prompt: string;
+    feedback: string;
+    issueKeys?: FeedbackIssueKey[];
+    generationId?: string;
+    resultIndex?: number;
+    markupDataUrl?: string | null;
+  }) {
+    if (!params.sourceUrl || (!params.feedback.trim() && !params.issueKeys?.length)) return;
+    const jobId = (crypto.randomUUID?.() || String(Date.now())).replace(/-/g, "");
+    const sourceUrl = params.sourceUrl;
+    const issueKeys = params.issueKeys ?? [];
+    const note = buildFeedbackNote(issueKeys, params.feedback);
+    const memoryItem = addFeedbackMemory({
+      studio: "image",
+      generationId: params.generationId,
+      issueKeys,
+      note: params.feedback,
+      sourceUrl,
+      resultUrl: params.resultUrl,
+    });
+    syncFeedbackMemoryToCloud(memoryItem);
+    writeImageJob({
+      id: jobId,
+      status: "generating",
+      label: "Feedback regeneration",
+      startedAt: Date.now(),
+      updatedAt: Date.now(),
+    });
+    setBackgroundJobs(readImageJobs());
+    setLoading(true);
+    setError(null);
     try {
-      const data = await fetchJson("Generate", "/api/generate", {
+      const markupUrl = params.markupDataUrl
+        ? await uploadFeedbackMarkup(params.markupDataUrl)
+        : null;
+      const feedbackPrompt = [
+        params.prompt.trim(),
+        "COMPARE AND REGENERATE: use the original uploaded product reference as the source of truth and correct the previous generated result.",
+        `Designer feedback: ${note}`,
+        markupUrl
+          ? "A red-marked feedback image is attached after the product reference. The red marks show problem areas only; do not render red marks, lines, circles, or annotations in the final image."
+          : "",
+        "Regenerate the product photo with the same clean ecommerce styling, but fix the noted differences. Preserve correct garment identity, silhouette, fabric texture, trims, hardware, proportions, and color accuracy from the uploaded product reference.",
+        feedbackMemorySuffix("image"),
+      ]
+        .filter(Boolean)
+        .join(" ");
+
+      const data = await fetchJson("Generate feedback", "/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           modelId,
-          prompt: activePrompt,
-          imageUrls: selected,
-          referenceImageUrl,
-          aspectRatio: aspect,
-          resolution,
+          prompt: feedbackPrompt,
+          imageUrls: [sourceUrl, markupUrl].filter(Boolean),
+          referenceImageUrl: resolveSelectedReferenceUrl(),
+          aspectRatio: "2:3",
+          resolution: "4K",
           format,
-          numImages,
+          outputSize: IMAGE_STUDIO_OUTPUT_SIZE,
+          numImages: 1,
           overlay: {
             mode: deriveOverlayMode(showName, showNumber),
             placement: overlayPlacement,
@@ -262,23 +716,36 @@ export default function StudioPage() {
           },
         }),
       });
-
-      const id = (crypto.randomUUID?.() || String(Date.now())).replace(/-/g, "");
       const item: HistoryItem = {
-        id,
+        id: jobId,
         timestamp: Date.now(),
         modelId,
-        prompt: promptUsed,
+        prompt: optimizePromptForModel(modelId, feedbackPrompt),
         imageUrls: data.images.map((i: any) => i.url),
-        referenceUrls: [...selected],
-        aspect,
-        resolution,
+        referenceUrls: [sourceUrl],
+        sourceImageUrls: [sourceUrl],
+        aspect: "2:3",
+        resolution: "4K",
+        format,
         styleNumber: styleNumber.trim() || undefined,
+        feedbackNotes: [note],
+        feedbackMemory: [
+          {
+            issueKeys,
+            note: params.feedback.trim() || undefined,
+            createdAt: Date.now(),
+          },
+        ],
       };
-      setHistory((h) => [item, ...h]);
-      setCurrentId(id);
+      const nextHistory = persistHistoryItem(item);
+      setHistory(nextHistory);
+      setCurrentId(jobId);
+      updateImageJob(jobId, { status: "done" });
+      setBackgroundJobs(readImageJobs());
     } catch (err: any) {
-      setError(err.message || "Generation failed");
+      setError(err.message || "Feedback regeneration failed");
+      updateImageJob(jobId, { status: "failed", error: err.message || "Feedback regeneration failed" });
+      setBackgroundJobs(readImageJobs());
     } finally {
       setLoading(false);
     }
@@ -324,8 +791,9 @@ export default function StudioPage() {
       prompt: "", // will be set to the first successful prompt below
       imageUrls: [],
       referenceUrls: [],
-      aspect,
-      resolution,
+      aspect: "2:3",
+      resolution: "4K",
+      format,
       styleNumber: styleNumber.trim() || undefined,
       prompts: [],
       batch: true,
@@ -367,10 +835,11 @@ export default function StudioPage() {
             prompt: imagePrompt,
             // Batch mode: each input is its own generation — use only this URL.
             imageUrls: [sourceUrl],
-            referenceImageUrl,
-            aspectRatio: aspect,
-            resolution,
+            referenceImageUrl: resolveSelectedReferenceUrl(),
+            aspectRatio: "2:3",
+            resolution: "4K",
             format,
+            outputSize: IMAGE_STUDIO_OUTPUT_SIZE,
             // Always 1 variant per input in batch mode (see design decisions).
             numImages: 1,
             overlay: {
@@ -444,9 +913,13 @@ export default function StudioPage() {
         active="image"
         title="Image Studio"
         subtitle="Generate clean product photos from uploaded garments."
+        badge="V2.1"
         metrics={[
           { label: "Runs", value: history.length },
-          { label: "Active", value: loading ? 1 : 0 },
+          {
+            label: "Active",
+            value: loading ? 1 : 0,
+          },
         ]}
       />
 
@@ -454,7 +927,10 @@ export default function StudioPage() {
         <div className="image-studio-setup min-h-0">
           <Sidebar
             modelId={modelId}
-            onModelChange={setModelId}
+            onModelChange={(nextModelId) => {
+              setModelId(nextModelId);
+              if (nextModelId === "nano-banana") setFormat("png");
+            }}
             aspect={aspect}
             onAspectChange={setAspect}
             resolution={resolution}
@@ -462,8 +938,16 @@ export default function StudioPage() {
             format={format}
             onFormatChange={setFormat}
             uploads={uploads}
-            selectedUrls={selected}
-            onToggleSelect={toggleSelect}
+            frontIntakeUrl={frontIntakeUrl}
+            backIntakeUrl={backIntakeUrl}
+            onSetFrontIntake={(url) => {
+              setFrontIntakeUrl(url);
+              setPrompt("");
+            }}
+            onSetBackIntake={(url) => {
+              setBackIntakeUrl(url);
+              setPrompt("");
+            }}
             onAddFiles={addFiles}
             onRemoveUpload={removeUpload}
             backgroundColor={backgroundColor}
@@ -483,7 +967,13 @@ export default function StudioPage() {
             fontSize={fontSize}
             onFontSizeChange={setFontSize}
             referenceImageUrl={referenceImageUrl}
-            defaultReferencePreview="/style-reference.png"
+            defaultReferencePreview={selectedProductShotPath || PRODUCT_SHOT_REFERENCES[0]?.path || ""}
+            productShotReferences={PRODUCT_SHOT_REFERENCES}
+            selectedProductShotPath={selectedProductShotPath}
+            onProductShotSelect={(path) => {
+              setSelectedProductShotPath(path);
+              setReferenceImageUrl(null);
+            }}
             onReferenceReplace={replaceReferenceImage}
             onReferenceReset={resetReferenceImage}
             referenceUploading={referenceUploading}
@@ -494,17 +984,32 @@ export default function StudioPage() {
           <PromptPanel
             prompt={prompt}
             onPromptChange={setPrompt}
-            numImages={numImages}
-            onNumImagesChange={setNumImages}
+            numImages={2}
+            onNumImagesChange={() => setNumImages(2)}
             onGenerate={runGeneration}
             analyzing={analyzing}
             loading={loading || uploading}
-            disabled={selected.length === 0}
+            disabled={
+              (!frontIntakeUrl && !backIntakeUrl) ||
+              (productShotMode === "front-back-contract" && (!frontIntakeUrl || !backIntakeUrl))
+            }
             onBatchGenerate={runBatchGeneration}
             canBatch={selected.length >= 2}
             batchProgress={batchProgress}
             twoPiece={twoPiece}
             onTwoPieceChange={setTwoPiece}
+            productShotMode={productShotMode}
+            onProductShotModeChange={(mode) => {
+              setProductShotMode(mode);
+              setPrompt("");
+            }}
+            generateLabel={
+              productShotMode === "single-front"
+                ? "Generate Single Front"
+                : productShotMode === "single-back"
+                ? "Generate Single Back"
+                : "Generate Front + Back"
+            }
           />
           </div>
           <div className="image-studio-output min-h-0">
@@ -512,10 +1017,41 @@ export default function StudioPage() {
             current={currentRun}
             history={history}
             onSelectHistory={setCurrentId}
+            onFeedbackRegenerate={runFeedbackRegeneration}
+            onAbPreferenceSelect={async ({ generationId, selectedImage, promptUsed }) => {
+              await fetchJson("Save A/B preference", "/api/ab-events", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  user_id: getOrCreateUserId(),
+                  generation_id: generationId,
+                  selected_image: selectedImage,
+                  prompt_used: promptUsed,
+                  version: IMAGE_STUDIO_VERSION,
+                }),
+              });
+              setHistory((existing) =>
+                existing.map((item) =>
+                  item.id === generationId && item.abTest
+                    ? {
+                        ...item,
+                        abTest: {
+                          ...item.abTest,
+                          selectedImage,
+                        },
+                      }
+                    : item
+                )
+              );
+            }}
             uploadNames={uploadNames}
             onClearHistory={() => {
               setHistory([]);
               setCurrentId(null);
+              localStorage.removeItem(CURRENT_ID_KEY);
+              clearCloudHistory("image").catch((err) => {
+                console.warn("[cloud-history] clear failed:", err);
+              });
             }}
             // "Regenerate this" from a batch thumbnail: drop the prompt into
             // the PromptPanel, put the batch-slot's source image back into the
@@ -535,6 +1071,8 @@ export default function StudioPage() {
                     : [...list, { url: sourceUrl, name: "batch-source" }]
                 );
                 setSelected([sourceUrl]);
+                setFrontIntakeUrl(sourceUrl);
+                setBackIntakeUrl(null);
               }
               // No analyze-gate to clear anymore — unified Generate always
               // re-runs the analyzer itself. If the user clicks Generate after

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import StudioHeader from "@/components/StudioHeader";
 import ImageLightbox, { ZoomButton } from "@/components/ImageLightbox";
 import type { UploadedImage } from "@/components/types";
@@ -64,8 +64,34 @@ const IconCopy = (
   </svg>
 );
 
+type PromptTool = "recoloring" | "bestseller-remix";
+const PROMPT_STUDIO_IMPORT_KEY = "davidani:prompt-studio:import";
+
+const toolCopy: Record<
+  PromptTool,
+  { label: string; title: string; subtitle: string; placeholder: string; metricLabel: string }
+> = {
+  recoloring: {
+    label: "Recoloring",
+    title: "Recoloring",
+    subtitle: "Generates 10 newline-separated recoloring prompts for ChatGPT Image 2.0.",
+    placeholder:
+      "Upload a garment image, then generate recoloring prompts. The output appears here as plain text: 10 prompts, one per line.",
+    metricLabel: "lines",
+  },
+  "bestseller-remix": {
+    label: "Bestseller Remix",
+    title: "Bestseller Remix",
+    subtitle: "Generates 10 blank-line-separated product expansion prompts for new sellable SKUs.",
+    placeholder:
+      "Upload an apparel image, then generate bestseller remix prompts. The output appears here as plain text: 10 full-paragraph prompts, separated by one blank line.",
+    metricLabel: "prompts",
+  },
+};
+
 export default function PromptStudioClient() {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [activeTool, setActiveTool] = useState<PromptTool>("recoloring");
   const [uploads, setUploads] = useState<UploadedImage[]>([]);
   const [selectedUrl, setSelectedUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -77,11 +103,43 @@ export default function PromptStudioClient() {
   const [draggingUpload, setDraggingUpload] = useState(false);
   const [requestedColors, setRequestedColors] = useState("");
 
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(PROMPT_STUDIO_IMPORT_KEY);
+      if (!raw) return;
+      localStorage.removeItem(PROMPT_STUDIO_IMPORT_KEY);
+      const imported = JSON.parse(raw) as Partial<{
+        tool: PromptTool;
+        imageUrl: string;
+        title: string;
+      }>;
+      if (!imported.imageUrl) return;
+      const tool = imported.tool === "bestseller-remix" ? "bestseller-remix" : "recoloring";
+      const upload = {
+        url: imported.imageUrl,
+        name: imported.title || (tool === "bestseller-remix" ? "Bestseller remix source" : "Prompt source"),
+      };
+      setActiveTool(tool);
+      setUploads((list) =>
+        list.some((item) => item.url === upload.url) ? list : [upload, ...list]
+      );
+      setSelectedUrl(upload.url);
+      setPrompts("");
+    } catch {
+      /* ignore malformed imports */
+    }
+  }, []);
+
   const selectedUpload = useMemo(
     () => uploads.find((u) => u.url === selectedUrl) ?? null,
     [uploads, selectedUrl]
   );
-  const promptCount = prompts.trim() ? prompts.trim().split(/\r?\n/).length : 0;
+  const promptCount = prompts.trim()
+    ? activeTool === "bestseller-remix"
+      ? prompts.trim().split(/\n\s*\n/).filter(Boolean).length
+      : prompts.trim().split(/\r?\n/).filter(Boolean).length
+    : 0;
+  const activeCopy = toolCopy[activeTool];
 
   async function addFiles(files: FileList) {
     setUploading(true);
@@ -128,10 +186,18 @@ export default function PromptStudioClient() {
     setCopied(false);
     setError(null);
     try {
-      const data = await fetchJson("Generate recoloring prompts", "/api/prompt-studio/recoloring", {
+      const endpoint =
+        activeTool === "bestseller-remix"
+          ? "/api/prompt-studio/bestseller-remix"
+          : "/api/prompt-studio/recoloring";
+      const body =
+        activeTool === "bestseller-remix"
+          ? { imageUrl: selectedUrl }
+          : { imageUrl: selectedUrl, colors: requestedColors };
+      const data = await fetchJson("Generate prompts", endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageUrl: selectedUrl, colors: requestedColors }),
+        body: JSON.stringify(body),
       });
       setPrompts(data.prompts || "");
     } catch (err: any) {
@@ -280,37 +346,64 @@ export default function PromptStudioClient() {
               </h2>
             </div>
             <div className="flex overflow-hidden rounded-lg border border-neutral-200 bg-neutral-50">
-              <button
-                type="button"
-                className="flex-1 bg-neutral-900 px-3 py-2 text-xs font-semibold text-white"
-              >
-                Recoloring
-              </button>
+              {(Object.keys(toolCopy) as PromptTool[]).map((tool) => (
+                <button
+                  key={tool}
+                  type="button"
+                  onClick={() => {
+                    setActiveTool(tool);
+                    setPrompts("");
+                    setCopied(false);
+                  }}
+                  className={`flex-1 px-3 py-2 text-xs font-semibold transition ${
+                    activeTool === tool
+                      ? "bg-neutral-900 text-white"
+                      : "text-neutral-500 hover:bg-white hover:text-neutral-800"
+                  }`}
+                >
+                  {toolCopy[tool].label}
+                </button>
+              ))}
             </div>
 
-            <label className="mt-5 block text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
-              Requested colors
-            </label>
-            <textarea
-              value={requestedColors}
-              onChange={(e) => setRequestedColors(e.target.value)}
-              disabled={generating}
-              rows={3}
-              placeholder="maroon, black, yellow"
-              className="mt-2 w-full resize-none rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm outline-none transition placeholder:text-neutral-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 disabled:cursor-not-allowed disabled:bg-neutral-50 disabled:text-neutral-400"
-            />
-            <p className="mt-2 text-[11px] leading-relaxed text-neutral-500">
-              Each listed color gets one prompt. Any remaining prompts are chosen by AI.
-            </p>
+            {activeTool === "recoloring" ? (
+              <>
+                <label className="mt-5 block text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
+                  Requested colors
+                </label>
+                <textarea
+                  value={requestedColors}
+                  onChange={(e) => setRequestedColors(e.target.value)}
+                  disabled={generating}
+                  rows={3}
+                  placeholder="maroon, black, yellow"
+                  className="mt-2 w-full resize-none rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm outline-none transition placeholder:text-neutral-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 disabled:cursor-not-allowed disabled:bg-neutral-50 disabled:text-neutral-400"
+                />
+                <p className="mt-2 text-[11px] leading-relaxed text-neutral-500">
+                  Each listed color gets one prompt. Any remaining prompts are chosen by AI.
+                </p>
+              </>
+            ) : (
+              <div className="mt-5 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-3">
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
+                  Bestseller Remix
+                </p>
+                <p className="mt-1 text-[11px] leading-relaxed text-neutral-600">
+                  Upload one apparel image to receive 10 line-sheet-ready product mockup prompts:
+                  front/back composition, hero graphics, construction details, trims, fabric, fit,
+                  and wholesale appeal.
+                </p>
+              </div>
+            )}
           </section>
         </aside>
 
         <section className="flex min-w-0 flex-1 flex-col border-b border-neutral-200 bg-white lg:border-b-0 lg:border-r">
           <div className="flex items-center justify-between border-b border-neutral-200 px-6 py-4">
             <div>
-              <h1 className="text-sm font-semibold text-neutral-900">Recoloring</h1>
+              <h1 className="text-sm font-semibold text-neutral-900">{activeCopy.title}</h1>
               <p className="text-[11px] text-neutral-500">
-                Generates 10 newline-separated recoloring prompts for ChatGPT Image 2.0.
+                {activeCopy.subtitle}
               </p>
             </div>
             <span
@@ -339,11 +432,11 @@ export default function PromptStudioClient() {
             <textarea
               value={prompts}
               onChange={(e) => setPrompts(e.target.value)}
-              placeholder="Upload a garment image, then generate recoloring prompts. The output appears here as plain text: 10 prompts, one per line."
+              placeholder={activeCopy.placeholder}
               className="prompt-mono min-h-0 flex-1 resize-none px-6 py-5 text-[13px] leading-relaxed outline-none placeholder:text-neutral-400"
             />
             <div className="pointer-events-none absolute bottom-3 right-6 rounded-full bg-white/80 px-2 py-0.5 text-[10px] font-mono text-neutral-400 backdrop-blur">
-              {promptCount} lines
+              {promptCount} {activeCopy.metricLabel}
             </div>
           </div>
 

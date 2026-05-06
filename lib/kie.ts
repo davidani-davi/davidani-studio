@@ -36,8 +36,10 @@ export interface KieGenerateParams {
   numImages?: number;
   /** Aspect ratio (passes through as kie.ai's `aspect_ratio`). */
   aspectRatio?: string;
-  /** Output format — kie.ai accepts "png" | "jpeg". */
+  /** Output format. Nano Banana 2 currently accepts PNG here. */
   format?: "png" | "jpeg";
+  /** Output resolution — supported values mirror the studio selector. */
+  resolution?: string;
   /** kie.ai model identifier — defaults to "nano-banana-2". */
   model?: string;
 }
@@ -138,6 +140,12 @@ interface KieRecordInfo {
   failCode?: string | number;
 }
 
+function isTransientPollError(message: string): boolean {
+  return /fetch failed|network|timeout|timed out|econnreset|econnrefused|socket|temporar|5\d\d|gateway|rate limit|too many requests/i.test(
+    message
+  );
+}
+
 async function fetchRecord(key: string, taskId: string): Promise<KieRecordInfo> {
   const res = await fetch(
     `${KIE_BASE}/recordInfo?taskId=${encodeURIComponent(taskId)}`,
@@ -156,14 +164,46 @@ async function fetchRecord(key: string, taskId: string): Promise<KieRecordInfo> 
   return body.data as KieRecordInfo;
 }
 
-async function pollUntilDone(key: string, taskId: string): Promise<KieImage[]> {
+function maxPollWaitMsForResolution(resolution?: string): number {
+  if (resolution === "4K") return 12 * 60 * 1000;
+  if (resolution === "2K") return 8 * 60 * 1000;
+  return 5 * 60 * 1000;
+}
+
+async function pollUntilDone(
+  key: string,
+  taskId: string,
+  resolution?: string
+): Promise<KieImage[]> {
   const POLL_INTERVAL_MS = 3000;
-  const MAX_POLLS = 100; // ≈ 5 minutes
+  const maxWaitMs = maxPollWaitMsForResolution(resolution);
+  const maxPolls = Math.ceil(maxWaitMs / POLL_INTERVAL_MS);
+  const maxConsecutivePollErrors = 6;
   let waited = 0;
-  for (let i = 0; i < MAX_POLLS; i++) {
+  let consecutivePollErrors = 0;
+
+  for (let i = 0; i < maxPolls; i++) {
     await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
     waited += POLL_INTERVAL_MS;
-    const info = await fetchRecord(key, taskId);
+    let info: KieRecordInfo;
+    try {
+      info = await fetchRecord(key, taskId);
+      consecutivePollErrors = 0;
+    } catch (err: any) {
+      const message = String(err?.message || err || "");
+      if (
+        isTransientPollError(message) &&
+        consecutivePollErrors < maxConsecutivePollErrors
+      ) {
+        consecutivePollErrors += 1;
+        console.warn(
+          `[kie] transient recordInfo failure for task ${taskId}; continuing poll ` +
+            `${consecutivePollErrors}/${maxConsecutivePollErrors}: ${message}`
+        );
+        continue;
+      }
+      throw err;
+    }
     if (info.state === "fail") {
       throw new Error(
         `kie.ai task ${taskId} failed: ${info.failMsg || info.failCode || "unknown"}`
@@ -189,6 +229,46 @@ async function pollUntilDone(key: string, taskId: string): Promise<KieImage[]> {
   throw new Error(
     `kie.ai task ${taskId} timed out after ${Math.round(waited / 1000)}s`
   );
+}
+
+function isRetryableTaskExecutionError(message: string): boolean {
+  return /models task execute failed|task execute failed|temporar|timeout|timed out|overload|capacity|gateway|5\d\d|rate limit|too many requests/i.test(
+    message
+  );
+}
+
+async function runTaskWithRetry(params: {
+  key: string;
+  model: string;
+  input: Record<string, unknown>;
+  resolution?: string;
+}): Promise<{ taskId: string; images: KieImage[] }> {
+  const delays = [0, 3500, 9000];
+  let lastErr: unknown;
+
+  for (let attempt = 0; attempt < delays.length; attempt++) {
+    if (delays[attempt] > 0) await sleep(delays[attempt]);
+    const taskId = await createTask(params.key, params.model, params.input);
+    try {
+      const images = await pollUntilDone(params.key, taskId, params.resolution);
+      return { taskId, images };
+    } catch (err: any) {
+      lastErr = err;
+      const message = String(err?.message || err || "");
+      if (
+        attempt < delays.length - 1 &&
+        isRetryableTaskExecutionError(message)
+      ) {
+        console.warn(
+          `[kie] task ${taskId} failed transiently on attempt ${attempt + 1}; retrying with a new task: ${message}`
+        );
+        continue;
+      }
+      throw err;
+    }
+  }
+
+  throw lastErr instanceof Error ? lastErr : new Error(String(lastErr || "kie.ai task failed"));
 }
 
 /**
@@ -224,8 +304,15 @@ export async function generateViaKie(
   if (params.aspectRatio && params.aspectRatio !== "auto") {
     baseInput.aspect_ratio = params.aspectRatio;
   }
-  if (params.format) {
+  if (params.format === "png") {
     baseInput.output_format = params.format;
+  }
+  if (
+    params.resolution === "1K" ||
+    params.resolution === "2K" ||
+    params.resolution === "4K"
+  ) {
+    baseInput.resolution = params.resolution;
   }
 
   const n = Math.max(1, params.numImages ?? 1);
@@ -237,20 +324,20 @@ export async function generateViaKie(
     console.log(`[kie]   ${imageField}[${i}] = ${url}`);
   }
 
-  // Fan out N parallel task creations. If any single task errors, propagate
-  // the first failure — the caller's UI already handles generation errors.
-  const taskIds = await Promise.all(
-    Array.from({ length: n }, () => createTask(key, model, baseInput))
+  // Fan out N parallel task runs. Each task gets a small retry wrapper because
+  // KIE can occasionally return "Models task execute failed" for a healthy
+  // prompt/image pair under load.
+  const taskRuns = await Promise.all(
+    Array.from({ length: n }, () =>
+      runTaskWithRetry({ key, model, input: baseInput, resolution: params.resolution })
+    )
   );
+  const taskIds = taskRuns.map((run) => run.taskId);
   console.log(
     `[kie] created ${taskIds.length} task(s) on model=${model}: ${taskIds.join(", ")}`
   );
 
-  // Poll all tasks in parallel. Each task returns ≥1 image url (usually 1).
-  const perTaskImages = await Promise.all(
-    taskIds.map((id) => pollUntilDone(key, id))
-  );
-  const images = perTaskImages.flat();
+  const images = taskRuns.flatMap((run) => run.images);
 
   return { images, taskIds };
 }
