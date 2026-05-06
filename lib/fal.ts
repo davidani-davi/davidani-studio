@@ -641,16 +641,28 @@ export function buildTwoImagePrompt(garment: string, features: string): string {
       `Do not normalize, slim down, straighten, or otherwise alter the reference silhouette to ` +
       `match whatever garment was originally on the canvas. ` +
       `PRESERVE from the primary studio photograph (do not alter any of these): the clean solid ` +
-      `studio background, soft diffused lighting, shadow character, camera angle, framing, and ` +
-      `centered composition. Do NOT inherit garment-shape cues (silhouette, cut, fit, leg width, ` +
-      `torso fit, length) from the primary studio photograph — those come exclusively from the ` +
-      `reference photograph. ` +
+      `studio background color (match the exact neutral tone precisely — do not shift warmer, ` +
+      `cooler, brighter, or darker), soft diffused lighting, shadow character, camera angle, ` +
+      `camera distance, framing, and centered composition. Do NOT inherit garment-shape cues ` +
+      `(silhouette, cut, fit, leg width, torso fit, length) from the primary studio photograph — ` +
+      `those come exclusively from the reference photograph. ` +
       `BACKGROUND UNIFORMITY: the studio background must be rendered as one perfectly flat, ` +
       `seamless solid color across the ENTIRE frame — from the top edge to the bottom edge and ` +
       `from the left edge to the right edge. There must be no color patches, rectangular blocks, ` +
       `banding, tiling artifacts, gradient shifts, lighter or darker zones, or mismatched regions ` +
       `anywhere in the background. The background should read as a single continuous flat surface ` +
       `with no visible seams or transitions. ` +
+      `STUDIO COMPOSITION STANDARD: this is a locked visual requirement — every output must match ` +
+      `the primary studio photograph's composition exactly. Do not zoom in tighter or pull back ` +
+      `wider than the canvas. The garment must occupy the same proportional area of the frame as ` +
+      `it does in the primary studio photograph — do not scale up or scale down the subject. The ` +
+      `full garment must be visible from the top (collar, hang point, or shoulder line) to the ` +
+      `bottom hem — nothing cropped, nothing cut off at the edges. The garment is centered ` +
+      `horizontally with equal left and right margins, and positioned at the same vertical height ` +
+      `as the canvas. Camera is straight-on, perpendicular to the canvas plane — no tilt, no ` +
+      `perspective shift, no barrel distortion, no lens compression change. Every output must ` +
+      `feel as though it was photographed in the same studio session, at the same camera ` +
+      `position and focal length, as the primary studio photograph. ` +
       `RENDER THE REPLACEMENT GARMENT FRESH — do not copy the wrinkles, folds, creases, twists, ` +
       `asymmetries, or specific placement of whatever garment was originally in the primary ` +
       `photograph. The new ${g} must be perfectly symmetrical along the vertical centerline, ` +
@@ -1650,15 +1662,27 @@ export function buildTwoPiecePrompt(fields: TwoPieceFields): string {
       `If the reference top is oversized or cropped, render oversized or cropped. Do not normalize ` +
       `the reference silhouette to match whatever garment was originally on the canvas. ` +
       `PRESERVE from the primary studio photograph (do not alter any of these): the clean solid ` +
-      `studio background, soft diffused lighting, shadow character, camera angle, framing, and ` +
-      `centered composition. Do NOT inherit garment-shape cues (silhouette, cut, fit, length) from ` +
-      `the primary studio photograph. ` +
+      `studio background color (match the exact neutral tone precisely — do not shift warmer, ` +
+      `cooler, brighter, or darker), soft diffused lighting, shadow character, camera angle, ` +
+      `camera distance, framing, and centered composition. Do NOT inherit garment-shape cues ` +
+      `(silhouette, cut, fit, length) from the primary studio photograph. ` +
       `BACKGROUND UNIFORMITY: the studio background must be rendered as one perfectly flat, ` +
       `seamless solid color across the ENTIRE frame — from the top edge to the bottom edge and ` +
       `from the left edge to the right edge. There must be no color patches, rectangular blocks, ` +
       `banding, tiling artifacts, gradient shifts, lighter or darker zones, or mismatched regions ` +
       `anywhere in the background. The background should read as a single continuous flat surface ` +
       `with no visible seams or transitions. ` +
+      `STUDIO COMPOSITION STANDARD: this is a locked visual requirement — every output must match ` +
+      `the primary studio photograph's composition exactly. Do not zoom in tighter or pull back ` +
+      `wider than the canvas. Both the top and bottom pieces must occupy the same proportional ` +
+      `area of the frame as in the primary studio photograph — do not scale up or scale down. The ` +
+      `full set must be visible from the top (collar or shoulder line of the top piece) to the ` +
+      `bottom hem of the bottom piece — nothing cropped, nothing cut off. The set is centered ` +
+      `horizontally with equal left and right margins, and positioned at the same vertical height ` +
+      `as the canvas. Camera is straight-on, perpendicular to the canvas plane — no tilt, no ` +
+      `perspective shift, no barrel distortion, no lens compression change. Every output must ` +
+      `feel as though it was photographed in the same studio session, at the same camera ` +
+      `position and focal length, as the primary studio photograph. ` +
       `RENDER THE REPLACEMENT SET FRESH — do not copy the wrinkles, folds, creases, twists, ` +
       `asymmetries, or specific placement of whatever garment was originally in the primary ` +
       `photograph. Display both pieces in the canonical catalog layout for a coordinated set: the ` +
