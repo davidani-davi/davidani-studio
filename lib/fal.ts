@@ -641,17 +641,19 @@ export function buildTwoImagePrompt(garment: string, features: string): string {
       `Do not normalize, slim down, straighten, or otherwise alter the reference silhouette to ` +
       `match whatever garment was originally on the canvas. ` +
       `PRESERVE from the primary studio photograph (do not alter any of these): the clean solid ` +
-      `studio background color (match the exact neutral tone precisely — do not shift warmer, ` +
-      `cooler, brighter, or darker), soft diffused lighting, shadow character, camera angle, ` +
+      `studio background — the background must be rendered as a flat, solid, seamless color that ` +
+      `exactly matches hex #edeeee (a soft neutral cool-gray) — do not shift warmer, cooler, ` +
+      `brighter, or darker than #edeeee), soft diffused lighting, shadow character, camera angle, ` +
       `camera distance, framing, and centered composition. Do NOT inherit garment-shape cues ` +
       `(silhouette, cut, fit, leg width, torso fit, length) from the primary studio photograph — ` +
       `those come exclusively from the reference photograph. ` +
       `BACKGROUND UNIFORMITY: the studio background must be rendered as one perfectly flat, ` +
-      `seamless solid color across the ENTIRE frame — from the top edge to the bottom edge and ` +
-      `from the left edge to the right edge. There must be no color patches, rectangular blocks, ` +
-      `banding, tiling artifacts, gradient shifts, lighter or darker zones, or mismatched regions ` +
-      `anywhere in the background. The background should read as a single continuous flat surface ` +
-      `with no visible seams or transitions. ` +
+      `seamless solid color — hex #edeeee — across the ENTIRE frame, from the top edge to the ` +
+      `bottom edge and from the left edge to the right edge. There must be no color patches, ` +
+      `rectangular blocks, banding, tiling artifacts, gradient shifts, lighter or darker zones, ` +
+      `or mismatched regions anywhere in the background. Every pixel of the background must ` +
+      `match #edeeee; the background reads as a single continuous flat surface with no visible ` +
+      `seams or transitions. ` +
       `STUDIO COMPOSITION STANDARD: this is a locked visual requirement — every output must match ` +
       `the primary studio photograph's composition exactly. Do not zoom in tighter or pull back ` +
       `wider than the canvas. The garment must occupy the same proportional area of the frame as ` +
@@ -1662,16 +1664,18 @@ export function buildTwoPiecePrompt(fields: TwoPieceFields): string {
       `If the reference top is oversized or cropped, render oversized or cropped. Do not normalize ` +
       `the reference silhouette to match whatever garment was originally on the canvas. ` +
       `PRESERVE from the primary studio photograph (do not alter any of these): the clean solid ` +
-      `studio background color (match the exact neutral tone precisely — do not shift warmer, ` +
-      `cooler, brighter, or darker), soft diffused lighting, shadow character, camera angle, ` +
+      `studio background — the background must be rendered as a flat, solid, seamless color that ` +
+      `exactly matches hex #edeeee (a soft neutral cool-gray) — do not shift warmer, cooler, ` +
+      `brighter, or darker than #edeeee), soft diffused lighting, shadow character, camera angle, ` +
       `camera distance, framing, and centered composition. Do NOT inherit garment-shape cues ` +
       `(silhouette, cut, fit, length) from the primary studio photograph. ` +
       `BACKGROUND UNIFORMITY: the studio background must be rendered as one perfectly flat, ` +
-      `seamless solid color across the ENTIRE frame — from the top edge to the bottom edge and ` +
-      `from the left edge to the right edge. There must be no color patches, rectangular blocks, ` +
-      `banding, tiling artifacts, gradient shifts, lighter or darker zones, or mismatched regions ` +
-      `anywhere in the background. The background should read as a single continuous flat surface ` +
-      `with no visible seams or transitions. ` +
+      `seamless solid color — hex #edeeee — across the ENTIRE frame, from the top edge to the ` +
+      `bottom edge and from the left edge to the right edge. There must be no color patches, ` +
+      `rectangular blocks, banding, tiling artifacts, gradient shifts, lighter or darker zones, ` +
+      `or mismatched regions anywhere in the background. Every pixel of the background must ` +
+      `match #edeeee; the background reads as a single continuous flat surface with no visible ` +
+      `seams or transitions. ` +
       `STUDIO COMPOSITION STANDARD: this is a locked visual requirement — every output must match ` +
       `the primary studio photograph's composition exactly. Do not zoom in tighter or pull back ` +
       `wider than the canvas. Both the top and bottom pieces must occupy the same proportional ` +
