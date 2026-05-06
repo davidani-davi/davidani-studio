@@ -2577,7 +2577,7 @@ function defaultOutputSize(params: GenerateParams, resolution: string) {
     resolution === "4K" &&
     (params.aspectRatio === "2:3" || !params.aspectRatio)
   ) {
-    return { width: 2000, height: 3000 };
+    return { width: 2160, height: 2700 };
   }
   return params.outputSize ?? null;
 }
@@ -2702,7 +2702,7 @@ export async function uploadToFal(file: File | Blob, filename = "upload.png"): P
  *
  * The app now avoids AI post-processing. For Nano Banana 4K 2:3 results, we
  * may perform a deterministic Sharp resize to a smaller PNG export
- * (2000x3000) to reduce file size. Nothing is re-diffused, re-sharpened,
+ * (2160x2700) to reduce file size. Nothing is re-diffused, re-sharpened,
  * recolored, or otherwise retouched by another model.
  */
 

@@ -39,7 +39,7 @@ const CURRENT_ID_KEY = "davidani_image_current_run_v1";
 const IMAGE_JOBS_KEY = "davidani_image_jobs_v1";
 const USER_ID_KEY = "davidani_user_id_v1";
 const IMAGE_STUDIO_VERSION = "1.7";
-const IMAGE_STUDIO_OUTPUT_SIZE = { width: 2000, height: 3000 } as const;
+const IMAGE_STUDIO_OUTPUT_SIZE = { width: 2160, height: 2700 } as const;
 
 function productShotViewDirective(mode: ProductShotMode, target?: "front" | "back"): string {
   const view =
@@ -52,7 +52,7 @@ function productShotViewDirective(mode: ProductShotMode, target?: "front" | "bac
     mode === "front-back-contract"
       ? " Use the selected front and back garment references together as one structural SKU contract. The first selected image is the front truth and the second selected image is the back truth. Preserve proportions, high-low hems, sleeve structure, silhouette, fabric behavior, drape, embroidery or graphic placements, pocket placement, trims, and construction consistency from both references."
       : " Use the single uploaded garment reference as the product source of truth. If the requested side is not fully visible, infer the hidden side conservatively from the visible garment construction without changing the product category, length, silhouette, fabric, color, or trims.";
-  return ` Product shot side directive: ${viewText}${contractText} Output one clean 2000x3000 vertical product-shot image, not a collage and not a side-by-side layout.`;
+  return ` Product shot side directive: ${viewText}${contractText} Output one clean 2160x2700 vertical product-shot image, not a collage and not a side-by-side layout.`;
 }
 
 function buildBackProductPrompt(analyzedPrompt: string): string {
@@ -61,7 +61,7 @@ function buildBackProductPrompt(analyzedPrompt: string): string {
     "Use the uploaded back product image itself as the structural source of truth. Preserve the rear orientation exactly: the back body panel faces the camera, sleeves extend from the back view, rear collar/neck seam stays rear-facing, and rear graphics or sleeve graphics stay in their original back-side positions.",
     "Do not use any front-facing product-shot template, front sweatshirt neckline, front chest composition, front pockets, front placket, front drawstrings, or front-facing garment structure. Do not turn the garment around.",
     "Clean up the photo into a production-ready studio product image: remove phone/photo environment cues, center the garment, straighten the hanger/garment axis if needed, smooth wrinkles lightly, preserve fabric texture and construction, and keep realistic shadows on a clean neutral studio background.",
-    "Output one vertical 2000x3000 product image, not a collage and not a side-by-side layout.",
+    "Output one vertical 2160x2700 product image, not a collage and not a side-by-side layout.",
     `Analyzer product context from this upload: ${analyzedPrompt}`,
   ].join(" ");
 }
