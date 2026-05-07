@@ -26,13 +26,6 @@ function ensureConfigured() {
  */
 const VISION_MODEL = "anthropic/claude-haiku-4.5";
 
-// Maps fal.ai model IDs to Anthropic API model IDs for direct calls.
-const ANTHROPIC_MODEL_MAP: Record<string, string> = {
-  "anthropic/claude-haiku-4.5": "claude-haiku-4-5-20251001",
-  "anthropic/claude-3.7-sonnet": "claude-3-7-sonnet-20250219",
-  "anthropic/claude-3.5-sonnet": "claude-3-5-sonnet-20241022",
-};
-
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -52,114 +45,13 @@ function isRetryableVisionError(err: unknown): boolean {
   );
 }
 
-/**
- * Calls Anthropic's Messages API directly using fetch — no SDK dependency.
- * Enables prompt caching on the system prompt, which saves ~70% of input
- * token cost and shaves ~400ms off cold analyses by skipping fal.ai's proxy.
- *
- * Falls back automatically to fal.ai if ANTHROPIC_API_KEY is not set.
- */
-async function callAnthropicVisionDirect(
-  input: Record<string, unknown>,
-  label: string
-): Promise<any> {
-  const apiKey = process.env.ANTHROPIC_API_KEY!;
-  const modelId =
-    ANTHROPIC_MODEL_MAP[String(input.model || "")] || "claude-haiku-4-5-20251001";
-  const systemText = String(input.system_prompt || "");
-  const userText = String(input.prompt || "");
-
-  // Collect image URLs in order — single image_url takes precedence, then image_urls array.
-  const imageUrls: string[] = [];
-  if (input.image_url && typeof input.image_url === "string") {
-    imageUrls.push(input.image_url);
-  } else if (Array.isArray(input.image_urls)) {
-    imageUrls.push(...(input.image_urls as string[]));
-  }
-
-  const imageBlocks = imageUrls.map((url) => ({
-    type: "image" as const,
-    source: { type: "url" as const, url },
-  }));
-
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-      "anthropic-beta": "prompt-caching-2024-07-31",
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({
-      model: modelId,
-      max_tokens: 2048,
-      system: [
-        // cache_control marks this large system prompt for KV caching (5 min TTL).
-        // Repeated calls within that window skip reprocessing it, saving ~400ms each.
-        { type: "text", text: systemText, cache_control: { type: "ephemeral" } },
-      ],
-      messages: [
-        {
-          role: "user",
-          content: [...imageBlocks, { type: "text", text: userText }],
-        },
-      ],
-    }),
-  });
-
-  if (!res.ok) {
-    const errText = await res.text().catch(() => `HTTP ${res.status}`);
-    throw new Error(`Anthropic API ${res.status}: ${errText.slice(0, 300)}`);
-  }
-
-  const data = await res.json();
-  const text = (data.content as any[])
-    .filter((b) => b.type === "text")
-    .map((b) => String(b.text || ""))
-    .join("");
-
-  if (data.usage) {
-    console.log(
-      `[${label}] anthropic usage: input=${data.usage.input_tokens} ` +
-        `cache_read=${data.usage.cache_read_input_tokens ?? 0} ` +
-        `cache_write=${data.usage.cache_creation_input_tokens ?? 0} ` +
-        `output=${data.usage.output_tokens}`
-    );
-  }
-
-  return { data: { output: text } };
-}
-
 async function subscribeVisionWithRetry(
   input: Record<string, unknown>,
   label: string
 ): Promise<any> {
+  ensureConfigured();
   const delays = [0, 700, 1600];
   let lastErr: unknown;
-
-  // Direct Anthropic path — faster and supports prompt caching.
-  // Activated by adding ANTHROPIC_API_KEY to your environment.
-  // Remove the key to revert to the fal.ai proxy path below.
-  if (process.env.ANTHROPIC_API_KEY) {
-    for (let attempt = 0; attempt < delays.length; attempt++) {
-      if (delays[attempt] > 0) await sleep(delays[attempt]);
-      try {
-        return await callAnthropicVisionDirect(input, label);
-      } catch (err) {
-        lastErr = err;
-        if (!isRetryableVisionError(err) || attempt === delays.length - 1) break;
-        console.warn(
-          `[${label}] transient Anthropic error on attempt ${attempt + 1}, retrying:`,
-          err
-        );
-      }
-    }
-    const finalMessage = (lastErr as any)?.message || String(lastErr) || "unknown error";
-    throw new Error(`${label} failed: ${finalMessage}`);
-  }
-
-  // Fallback: fal.ai/any-llm/vision proxy (original behavior when no ANTHROPIC_API_KEY).
-  ensureConfigured();
 
   for (let attempt = 0; attempt < delays.length; attempt++) {
     if (delays[attempt] > 0) await sleep(delays[attempt]);

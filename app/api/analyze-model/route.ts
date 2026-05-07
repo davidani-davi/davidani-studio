@@ -63,99 +63,13 @@ function isRetryableVisionError(err: unknown): boolean {
   );
 }
 
-const ANTHROPIC_MODEL_MAP: Record<string, string> = {
-  "anthropic/claude-haiku-4.5": "claude-haiku-4-5-20251001",
-  "anthropic/claude-3.7-sonnet": "claude-3-7-sonnet-20250219",
-};
-
-async function callAnthropicVisionDirect(
-  input: Record<string, unknown>,
-  label: string
-): Promise<any> {
-  const apiKey = process.env.ANTHROPIC_API_KEY!;
-  const modelId =
-    ANTHROPIC_MODEL_MAP[String(input.model || "")] || "claude-haiku-4-5-20251001";
-  const systemText = String(input.system_prompt || "");
-  const userText = String(input.prompt || "");
-
-  const imageUrls: string[] = [];
-  if (input.image_url && typeof input.image_url === "string") {
-    imageUrls.push(input.image_url);
-  } else if (Array.isArray(input.image_urls)) {
-    imageUrls.push(...(input.image_urls as string[]));
-  }
-
-  const imageBlocks = imageUrls.map((url) => ({
-    type: "image" as const,
-    source: { type: "url" as const, url },
-  }));
-
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-      "anthropic-beta": "prompt-caching-2024-07-31",
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({
-      model: modelId,
-      max_tokens: 2048,
-      system: [{ type: "text", text: systemText, cache_control: { type: "ephemeral" } }],
-      messages: [{ role: "user", content: [...imageBlocks, { type: "text", text: userText }] }],
-    }),
-  });
-
-  if (!res.ok) {
-    const errText = await res.text().catch(() => `HTTP ${res.status}`);
-    throw new Error(`Anthropic API ${res.status}: ${errText.slice(0, 300)}`);
-  }
-
-  const data = await res.json();
-  const text = (data.content as any[])
-    .filter((b) => b.type === "text")
-    .map((b) => String(b.text || ""))
-    .join("");
-
-  if (data.usage) {
-    console.log(
-      `[${label}] anthropic usage: input=${data.usage.input_tokens} ` +
-        `cache_read=${data.usage.cache_read_input_tokens ?? 0} ` +
-        `output=${data.usage.output_tokens}`
-    );
-  }
-
-  return { data: { output: text } };
-}
-
 async function subscribeVisionWithRetry(
   input: Record<string, unknown>,
   label: string
 ): Promise<any> {
+  ensureFalConfigured();
   const delays = [0, 900, 2200];
   let lastErr: unknown;
-
-  // Direct Anthropic path — remove ANTHROPIC_API_KEY to revert to fal.ai proxy.
-  if (process.env.ANTHROPIC_API_KEY) {
-    for (let attempt = 0; attempt < delays.length; attempt++) {
-      if (delays[attempt] > 0) await sleep(delays[attempt]);
-      try {
-        return await callAnthropicVisionDirect(input, label);
-      } catch (err) {
-        lastErr = err;
-        if (!isRetryableVisionError(err) || attempt === delays.length - 1) break;
-        console.warn(
-          `[${label}] transient Anthropic error on attempt ${attempt + 1}, retrying:`,
-          err
-        );
-      }
-    }
-    const finalMessage = (lastErr as any)?.message || String(lastErr) || "unknown error";
-    throw new Error(`${label} failed: ${finalMessage}`);
-  }
-
-  // Fallback: fal.ai proxy (original behavior when no ANTHROPIC_API_KEY).
-  ensureFalConfigured();
 
   for (let attempt = 0; attempt < delays.length; attempt++) {
     if (delays[attempt] > 0) await sleep(delays[attempt]);
