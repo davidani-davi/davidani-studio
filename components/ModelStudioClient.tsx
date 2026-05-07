@@ -537,6 +537,16 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
     }
   }, [history, historyKey]);
 
+  // Auto-select the most recent run when currentId is null but history has
+  // items. This handles page-reload scenarios where the currentIdKey localStorage
+  // was stale or missing — the user should always see SOMETHING in the output
+  // panel, not a blank "No runs yet" when they have prior runs in history.
+  useEffect(() => {
+    if (currentId !== null) return;
+    if (history.length === 0) return;
+    setCurrentId(history[0].id);
+  }, [currentId, history]);
+
   useEffect(() => {
     if (!localHistoryHydrated || !cloudHistoryHydrated || history.length === 0) return;
     const syncKey = JSON.stringify(history.slice(0, 50));
