@@ -27,7 +27,7 @@ import {
   syncFeedbackMemoryToCloud,
   type FeedbackIssueKey,
 } from "@/lib/feedback-memory";
-import { startStudioJob } from "@/components/studio-job-store";
+import { startStudioJob, updateStudioJob, readStudioJobs } from "@/components/studio-job-store";
 import {
   clearCloudHistory,
   loadCloudHistory,
@@ -439,6 +439,23 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
   const [localHistoryHydrated, setLocalHistoryHydrated] = useState(false);
   const [cloudHistoryHydrated, setCloudHistoryHydrated] = useState(false);
   const lastSyncedHistoryRef = useRef("");
+
+  /* ---------- Stale job cleanup — mark any job stuck in an active state for
+     more than 20 minutes as failed. This prevents the "Active N" counter from
+     accumulating across page refreshes when jobs were killed mid-flight. ---- */
+  useEffect(() => {
+    const STALE_MS = 20 * 60 * 1000;
+    const now = Date.now();
+    readStudioJobs()
+      .filter(
+        (job) =>
+          ["queued", "analyzing", "generating", "saving"].includes(job.status) &&
+          now - job.updatedAt > STALE_MS
+      )
+      .forEach((job) =>
+        updateStudioJob(job.id, { status: "failed", error: "Job timed out (stale on reload)" })
+      );
+  }, []); // run once on mount
 
   /* ---------- Persist / load history ---------- */
   useEffect(() => {
@@ -1060,6 +1077,32 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
     const hasBackReference = typeof backGarmentUrl === "string" && backGarmentUrl.trim().length > 0;
     setLoading(true);
     setError(null);
+
+    // Register the run in the output panel immediately — before the async job
+    // starts — so the user sees "Run #xxxx" right away instead of "No runs yet"
+    // throughout the entire analysis + generation phase.
+    const seedItem: HistoryItem = {
+      id,
+      timestamp: Date.now(),
+      modelId,
+      prompt: "",
+      imageUrls: [],
+      referenceUrls: [frontGarmentUrl, backGarmentUrl].filter(Boolean) as string[],
+      sourceImageUrls: [frontGarmentUrl, backGarmentUrl].filter(Boolean) as string[],
+      aspect,
+      resolution,
+      format,
+      styleNumber: styleNumber.trim() || undefined,
+      humanModelId,
+      poseId,
+      view: "front",
+      prompts: [],
+      viewLabels: [...MULTI_MODEL_VIEWS],
+    };
+    setHistory((existing) => [seedItem, ...existing.filter((run) => run.id !== id)].slice(0, 50));
+    setCurrentId(id);
+    localStorage.setItem(currentIdKey, id);
+
     startStudioJob(
       {
         id,
@@ -1071,27 +1114,6 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
       async ({ setStatus }) => {
         try {
           setStatus("analyzing");
-          const seedItem: HistoryItem = {
-            id,
-            timestamp: Date.now(),
-            modelId,
-            prompt: "",
-            imageUrls: [],
-            referenceUrls: [frontGarmentUrl, backGarmentUrl].filter(Boolean) as string[],
-            sourceImageUrls: [frontGarmentUrl, backGarmentUrl].filter(Boolean) as string[],
-            aspect,
-            resolution,
-            format,
-            styleNumber: styleNumber.trim() || undefined,
-            humanModelId,
-            poseId,
-            view: "front",
-            prompts: [],
-            viewLabels: [...MULTI_MODEL_VIEWS],
-          };
-          setHistory((existing) => [seedItem, ...existing.filter((run) => run.id !== id)].slice(0, 50));
-          setCurrentId(id);
-          localStorage.setItem(currentIdKey, id);
 
           const overlay = {
             mode: deriveOverlayMode(showName, showNumber),
@@ -1302,7 +1324,6 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
                   format,
                   numImages: 1,
                   overlay,
-                  outputSize: { width: 2000, height: 3000 },
                   poseVariantIndex: multiModelPoseVariantIndex(targetView),
                   preserveSecondaryReferences: hasBackReference,
                   prompt: optimizedPrompt,
@@ -1355,11 +1376,11 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
             }
           };
 
-          // Multi-view generation is slower, but running all long image jobs
-          // concurrently has been the main cause of provider-side 300s
-          // timeouts. Keep this sequential so each completed view is saved
-          // predictably and the user can retry only the slots that fail.
-          await worker();
+          // Run 2 workers in parallel: each grabs the next available view slot
+          // sequentially (nextViewIndex is shared). This cuts wall-clock time
+          // roughly in half vs fully sequential without triggering the
+          // provider-side timeouts that occurred when all 4 ran at once.
+          await Promise.all([worker(), worker()]);
 
           const imageUrls = slotUrls.filter((url): url is string => typeof url === "string");
           if (imageUrls.length === 0) {
