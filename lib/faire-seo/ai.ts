@@ -11,7 +11,13 @@ import {
 
 const VISION_MODEL = "anthropic/claude-haiku-4.5";
 const ANTHROPIC_MODEL_ID = "claude-haiku-4-5-20251001";
-const imageAnalysisCache = new Map<string, ExtractedField[]>();
+
+export interface OptimizeFaireListingOutput {
+  fields: ExtractedField[];
+  result: FaireSeoResult;
+}
+
+const optimizeCache = new Map<string, OptimizeFaireListingOutput>();
 
 let configured = false;
 
@@ -113,52 +119,14 @@ function normalizeExtractedFields(rawFields: any[]): ExtractedField[] {
   });
 }
 
-export async function extractFaireListingFields(
-  assets: FaireUploadedAsset[],
-  schema: FaireSchemaField[]
-): Promise<ExtractedField[]> {
-  const cacheKey = assets
-    .map((asset) => `${asset.hash}:${asset.role}`)
-    .sort()
-    .join("|");
-  if (cacheKey && imageAnalysisCache.has(cacheKey)) {
-    return imageAnalysisCache.get(cacheKey)!;
-  }
-
-  const prompt = `Analyze these Davi&Dani Faire listing screenshots and product images.
-
-The workflow is specifically for wholesale apparel listings on Faire. Think like a boutique buyer, Faire merchandising expert, and wholesale fashion operator.
-
-Extract only what is visible or strongly inferable. Never present unknown information as confirmed. If uncertain, prefill the best guess and mark needs_confirmation. If unknown, leave value blank and mark missing.
-
-Uploaded assets:
-${assets.map((asset, index) => `${index + 1}. ${asset.name} (${asset.role})`).join("\n")}
-
-Current configurable Faire product-detail schema:
-${JSON.stringify(sortedVisibleSchema(schema), null, 2)}
-
-Return strict JSON only:
-{
-  "fields": [
-    {
-      "id": "one of these exact ids: ${CORE_EXTRACTION_FIELDS.map((field) => field.id).join(", ")}",
-      "value": "string",
-      "confidence": "high | medium | needs_confirmation | missing",
-      "source": "screenshot | image | inferred | missing",
-      "notes": "short note when useful"
-    }
-  ]
-}`;
-
-  const output = await runVision(
-    prompt,
-    assets.map((asset) => asset.url),
-    "You are a precise Faire wholesale fashion listing extraction engine for Davi&Dani. You extract screenshot text and visual apparel attributes conservatively, with confidence labels."
-  );
-  const parsed = JSON.parse(extractJson(output));
-  const fields = normalizeExtractedFields(parsed.fields);
-  if (cacheKey) imageAnalysisCache.set(cacheKey, fields);
-  return fields;
+function slimSchema(schema: FaireSchemaField[]) {
+  return sortedVisibleSchema(schema).map((field) => {
+    const slim: Record<string, unknown> = { id: field.id, label: field.label, type: field.type };
+    if (field.options?.length) slim.options = field.options;
+    if (field.maxSelections) slim.maxSelections = field.maxSelections;
+    if (field.required) slim.required = true;
+    return slim;
+  });
 }
 
 function value(fields: ExtractedField[], id: string) {
@@ -219,102 +187,107 @@ function normalizeResult(raw: any, fields: ExtractedField[]): FaireSeoResult {
   };
 }
 
-export async function generateFaireSeoResult(input: {
+export async function optimizeFaireListing(input: {
   assets: FaireUploadedAsset[];
   schema: FaireSchemaField[];
-  extractedFields: ExtractedField[];
+  seedFields?: ExtractedField[];
   tone?: string;
   trendKeywords?: string;
-}): Promise<FaireSeoResult> {
-  const schema = sortedVisibleSchema(input.schema);
-  const prompt = `Generate a production-ready Faire SEO optimization package for a Davi&Dani wholesale apparel listing.
+  forcePlus?: boolean;
+}): Promise<OptimizeFaireListingOutput> {
+  const seed = Array.isArray(input.seedFields) ? input.seedFields : [];
+  const forcePlus = Boolean(input.forcePlus);
+  const cacheKey = [
+    input.assets.map((a) => `${a.hash}:${a.role}`).sort().join("|"),
+    seed.map((f) => `${f.id}=${f.value}`).sort().join("|"),
+    (input.tone || "").trim(),
+    (input.trendKeywords || "").trim(),
+    forcePlus ? "force-plus" : "",
+  ].join("§");
+  if (cacheKey && optimizeCache.has(cacheKey)) return optimizeCache.get(cacheKey)!;
 
-This is not a generic SEO tool. Think like:
-- a boutique buyer choosing inventory
-- a Faire merchandising expert improving discoverability
-- a wholesale fashion operator preserving SKU reorder behavior
+  const schema = slimSchema(input.schema);
+  const seedSummary = seed
+    .filter((f) => f.value?.trim())
+    .map((f) => `${f.id}: ${f.value}`)
+    .join("\n") || "(none — derive everything from the images)";
 
-Hard rules:
-- Always keep SKU/style number at the beginning of the title.
-- Regular title format: "DJ30632 - Textured Plaid Double Breasted Statement Coat"
-- Plus title format: "PJ30632 - PLUS Textured Plaid Double Breasted Statement Coat"
-- If plus SKU exists, generate plus version automatically.
-- Do not make plus sound utilitarian or basic.
-- Replace internal/manufacturer wording with buyer-searchable fashion language.
-- Target about 35-60 characters after SKU when possible.
-- Description is for boutique buyers, not consumers.
-- Description must have 3 paragraphs, then "Features:", "Perfect For:", "Fabric:", "Model:" sections.
-- Fabric must use confirmed composition or "Needs confirmation".
-- If model size says Small, even plus copy must say "Model is wearing size Small".
-- Product details must use ONLY valid options from the schema below. If no accurate option exists, leave blank.
-- Avoid over-tagging. Accuracy beats metadata stuffing.
-- If Friday Faire Insider trending keywords are provided, consider them as directional SEO context. Use only keywords that honestly fit the garment, buyer intent, fabric/print/silhouette, seasonality, and boutique positioning. Never force irrelevant trends into copy.
-- Image order should prioritize safest broadest seller, strongest conversion, alternate colorway, full body, detail, side/back, lifestyle.
-- Final output must be clean enough to paste directly into Faire.
+  const prompt = `Produce a Davi&Dani Faire wholesale listing optimization for the uploaded screenshots/product images.
 
-Requested tone/regeneration mode: ${input.tone || "balanced Faire SEO + boutique merchandising"}
+Step 1 — extract these field ids from the images: ${CORE_EXTRACTION_FIELDS.map((f) => f.id).join(", ")}.
+Treat seed values below as authoritative when present; only fill what's missing or confirmable from images.
 
-Friday Faire Insider trending keyword reference:
-${input.trendKeywords?.trim() || "None provided."}
+Seed values (from Faire URL import, when present):
+${seedSummary}
 
-Editable extracted fields:
-${JSON.stringify(input.extractedFields, null, 2)}
+Step 2 — write the optimized listing. Hard rules:
+- SKU at start of title. Regular: "DJ30632 - Textured Plaid Double Breasted Statement Coat". Plus: "PJ30632 - PLUS Textured Plaid Double Breasted Statement Coat".
+- If plus SKU exists, generate plus copy too. Plus must not sound utilitarian.${
+    forcePlus
+      ? `
+- FORCE PLUS MODE: ON. You MUST generate plus copy for this listing. Derive the plus SKU by replacing the first letter "D" of the regular SKU with "P" (e.g. DJ30632 → PJ30632, DET58026 → PET58026, DWT50172 → PWT50172). Set plusStyleNumber, plusOptimizedTitle, and plusOptimizedDescription accordingly. The plus copy must be buyer-aspirational, never utilitarian.`
+      : ""
+  }
+- Replace manufacturer wording with buyer-searchable fashion language. ~35-60 chars after SKU.
+- Description = 3 paragraphs for boutique buyers, then "Features:", "Perfect For:", "Fabric:", "Model:" sections.
+- Fabric: confirmed composition or "Needs confirmation". Model size carries through to plus copy verbatim.
+- metadataSelections must use only valid options from the schema. If nothing fits, leave blank.
+- Trending keywords are directional only — use only ones that honestly fit. Never force.
+- Image order: safest broad seller → strong conversion → alt colorway → full body → detail → side/back → lifestyle.
+- Output must be paste-ready into Faire.
 
-Valid Faire schema:
-${JSON.stringify(schema, null, 2)}
+Tone: ${input.tone || "balanced Faire SEO + boutique merchandising"}
+Trending keyword reference: ${input.trendKeywords?.trim() || "None"}
+Assets: ${input.assets.map((a, i) => `${i + 1}. ${a.name} (${a.role})`).join("; ")}
 
-Uploaded asset names and roles:
-${input.assets.map((asset, index) => `${index + 1}. ${asset.name} (${asset.role})`).join("\n")}
+Schema:
+${JSON.stringify(schema)}
 
-Return strict JSON only:
+Return strict JSON only with this exact shape:
 {
+  "fields": [{ "id": "<core field id>", "value": "string", "confidence": "high|medium|needs_confirmation|missing", "source": "screenshot|image|inferred|missing", "notes": "" }],
   "listingId": "string",
   "styleNumber": "string",
   "plusStyleNumber": "string",
   "originalTitle": "string",
   "originalDescription": "string",
-  "optimizedFields": { "shortFieldId": "optimized editable value" },
+  "optimizedFields": { "<shortFieldId>": "string" },
   "optimizedTitle": "string",
   "plusOptimizedTitle": "string",
   "optimizedDescription": "string",
   "plusOptimizedDescription": "string",
-  "metadataSelections": { "schemaFieldId": "string | string[] | boolean | number" },
-  "seoKeywordStrategy": ["keyword phrase"],
-  "productDetailRecommendations": ["recommendation or blank rationale"],
+  "metadataSelections": { "<schemaFieldId>": "string|string[]|boolean|number" },
+  "seoKeywordStrategy": ["keyword"],
+  "productDetailRecommendations": ["recommendation"],
   "imageOrder": ["1. image name - reason"],
-  "beforeScore": {
-    "titleSeo": 0,
-    "keywordCoverage": 0,
-    "retailerClarity": 0,
-    "metadataQuality": 0,
-    "boutiquePositioning": 0,
-    "descriptionStrength": 0,
-    "imageReadiness": 0,
-    "plusSizeOptimization": 0,
-    "overallFaireOptimization": 0
-  },
-  "afterScore": {
-    "titleSeo": 0,
-    "keywordCoverage": 0,
-    "retailerClarity": 0,
-    "metadataQuality": 0,
-    "boutiquePositioning": 0,
-    "descriptionStrength": 0,
-    "imageReadiness": 0,
-    "plusSizeOptimization": 0,
-    "overallFaireOptimization": 0
-  },
-  "scoreRationale": ["what changed and why it matters"],
-  "finalCopySheet": "clean paste-ready text with regular and plus sections when applicable"
+  "beforeScore": { "titleSeo":0,"keywordCoverage":0,"retailerClarity":0,"metadataQuality":0,"boutiquePositioning":0,"descriptionStrength":0,"imageReadiness":0,"plusSizeOptimization":0,"overallFaireOptimization":0 },
+  "afterScore": { "titleSeo":0,"keywordCoverage":0,"retailerClarity":0,"metadataQuality":0,"boutiquePositioning":0,"descriptionStrength":0,"imageReadiness":0,"plusSizeOptimization":0,"overallFaireOptimization":0 },
+  "scoreRationale": ["what changed and why"],
+  "finalCopySheet": "paste-ready text"
 }`;
 
   const output = await runVision(
     prompt,
-    input.assets.map((asset) => asset.url).slice(0, 12),
-    "You are a Davi&Dani Faire merchandising assistant. You produce accurate, paste-ready wholesale listing SEO copy and schema-valid Faire metadata."
+    input.assets.map((a) => a.url).slice(0, 12),
+    "You are a Davi&Dani Faire merchandising assistant. You extract listing attributes from images and produce paste-ready, schema-valid Faire SEO copy in a single JSON response."
   );
   const parsed = JSON.parse(extractJson(output));
-  return normalizeResult(parsed, input.extractedFields);
+  const fields = normalizeExtractedFields(parsed.fields);
+  const merged = mergeSeed(fields, seed);
+  const result = normalizeResult(parsed, merged);
+  const out: OptimizeFaireListingOutput = { fields: merged, result };
+  if (cacheKey) optimizeCache.set(cacheKey, out);
+  return out;
+}
+
+function mergeSeed(extracted: ExtractedField[], seed: ExtractedField[]): ExtractedField[] {
+  if (!seed.length) return extracted;
+  const seedById = new Map(seed.map((f) => [f.id, f]));
+  return extracted.map((field) => {
+    const s = seedById.get(field.id);
+    if (s?.value?.trim() && s.confidence === "high") return s;
+    return field;
+  });
 }
 
 export async function inferFaireSchemaUpdates(

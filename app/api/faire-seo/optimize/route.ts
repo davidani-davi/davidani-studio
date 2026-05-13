@@ -1,4 +1,4 @@
-import { generateFaireSeoResult } from "@/lib/faire-seo/ai";
+import { optimizeFaireListing } from "@/lib/faire-seo/ai";
 import {
   DEFAULT_FAIRE_SCHEMA,
   type ExtractedField,
@@ -23,27 +23,29 @@ export async function POST(req: Request) {
           const body = (await req.json()) as {
             assets?: FaireUploadedAsset[];
             schema?: FaireSchemaField[];
-            extractedFields?: ExtractedField[];
+            seedFields?: ExtractedField[];
             tone?: string;
             trendKeywords?: string;
+            forcePlus?: boolean;
           };
           const assets = Array.isArray(body.assets) ? body.assets : [];
-          const extractedFields = Array.isArray(body.extractedFields) ? body.extractedFields : [];
           if (!assets.length) throw new Error("At least one uploaded image is required.");
-          if (!extractedFields.length) throw new Error("Run extraction review before generation.");
 
-          controller.enqueue(encoder.encode(streamEvent({ type: "progress", message: "Building Faire SEO title and buyer-facing copy" })));
-          const result = await generateFaireSeoResult({
+          controller.enqueue(
+            encoder.encode(streamEvent({ type: "progress", message: "Analyzing images and writing optimized Faire listing" }))
+          );
+          const { fields, result } = await optimizeFaireListing({
             assets,
-            extractedFields,
             schema: Array.isArray(body.schema) && body.schema.length ? body.schema : DEFAULT_FAIRE_SCHEMA,
+            seedFields: Array.isArray(body.seedFields) ? body.seedFields : [],
             tone: body.tone,
             trendKeywords: body.trendKeywords,
+            forcePlus: Boolean(body.forcePlus),
           });
-          controller.enqueue(encoder.encode(streamEvent({ type: "complete", result })));
+          controller.enqueue(encoder.encode(streamEvent({ type: "complete", fields, result })));
         } catch (err: any) {
           controller.enqueue(
-            encoder.encode(streamEvent({ type: "error", error: err?.message || "Generation failed" }))
+            encoder.encode(streamEvent({ type: "error", error: err?.message || "Optimization failed" }))
           );
         } finally {
           controller.close();

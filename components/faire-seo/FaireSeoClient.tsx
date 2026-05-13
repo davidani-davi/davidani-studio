@@ -4,6 +4,12 @@ import { useEffect, useRef, useState } from "react";
 import StudioHeader from "@/components/StudioHeader";
 import { resizeIfNeeded } from "@/lib/image-resize";
 import {
+  estimateRunMs,
+  formatRemaining,
+  getSampleCount,
+  recordRunTiming,
+} from "@/lib/faire-seo/timing";
+import {
   CORE_EXTRACTION_FIELDS,
   DEFAULT_FAIRE_SCHEMA,
   emptyScore,
@@ -259,6 +265,21 @@ export default function FaireSeoClient() {
   const [trendKeywords, setTrendKeywords] = useState("");
   const [faireUrl, setFaireUrl] = useState("");
   const [importingUrl, setImportingUrl] = useState(false);
+  const [runStartedAt, setRunStartedAt] = useState<number | null>(null);
+  const [now, setNow] = useState(() => Date.now());
+  const [estimateMs, setEstimateMs] = useState<number>(30_000);
+  const [sampleCount, setSampleCount] = useState(0);
+
+  useEffect(() => {
+    setEstimateMs(estimateRunMs());
+    setSampleCount(getSampleCount());
+  }, []);
+
+  useEffect(() => {
+    if (runStartedAt === null) return;
+    const id = window.setInterval(() => setNow(Date.now()), 500);
+    return () => window.clearInterval(id);
+  }, [runStartedAt]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -272,34 +293,26 @@ export default function FaireSeoClient() {
     setWorking(true);
     setError(null);
     setStatus("Analyzing images and Faire screenshot...");
+    const startedAt = Date.now();
+    setRunStartedAt(startedAt);
+    setNow(startedAt);
 
     try {
       const seedFields = fields;
-      const extraction = await readNdjson<{ type: "complete"; fields: ExtractedField[] }>(
-        "Faire extraction",
-        "/api/faire-seo/extract",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ assets: nextAssets, schema }),
-        },
-        setStatus
-      );
-      if (runId !== runIdRef.current) return;
-      const mergedFields = mergeExtractedFields(extraction.fields, seedFields);
-      setFields(mergedFields);
-      setStatus("Writing optimized Faire listing...");
-
-      const generation = await readNdjson<{ type: "complete"; result: FaireSeoResult }>(
-        "Faire generation",
-        "/api/faire-seo/generate",
+      const optimization = await readNdjson<{
+        type: "complete";
+        fields: ExtractedField[];
+        result: FaireSeoResult;
+      }>(
+        "Faire optimization",
+        "/api/faire-seo/optimize",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             assets: nextAssets,
             schema,
-            extractedFields: mergedFields,
+            seedFields,
             tone: "fast automatic Faire SEO optimization",
             trendKeywords,
           }),
@@ -308,17 +321,26 @@ export default function FaireSeoClient() {
       );
       if (runId !== runIdRef.current) return;
 
-      const next = { ...generation.result, extractedFields: mergedFields };
+      const mergedFields = mergeExtractedFields(optimization.fields, seedFields);
+      setFields(mergedFields);
+      const next = { ...optimization.result, extractedFields: mergedFields };
       setResult(next);
       persistSession(next);
-      setStatus("Optimized Faire listing ready.");
+      const elapsed = Date.now() - startedAt;
+      recordRunTiming(elapsed);
+      setEstimateMs(estimateRunMs());
+      setSampleCount(getSampleCount());
+      setStatus(`Optimized Faire listing ready in ${Math.round(elapsed / 1000)}s.`);
     } catch (err: any) {
       if (runId === runIdRef.current) {
         setError(err?.message || "Faire SEO optimization failed.");
         setStatus("Upload images and try again.");
       }
     } finally {
-      if (runId === runIdRef.current) setWorking(false);
+      if (runId === runIdRef.current) {
+        setWorking(false);
+        setRunStartedAt(null);
+      }
     }
   }
 
@@ -543,6 +565,12 @@ export default function FaireSeoClient() {
               Paste a public Faire preview link, or upload screenshots and product images. When the set is ready,
               generate the optimized listing.
             </p>
+            <a
+              href="/faire-seo/batch"
+              className="mt-3 inline-block rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-xs font-semibold text-neutral-900 hover:bg-neutral-50"
+            >
+              Batch mode (paste many URLs) →
+            </a>
             <div className="mt-5 rounded-lg border border-neutral-200 bg-neutral-50 p-3">
               <label className="text-xs font-bold uppercase text-neutral-500" htmlFor="faire-product-url">
                 Faire product preview link
@@ -582,6 +610,22 @@ export default function FaireSeoClient() {
               {working ? "Generating..." : "Generate Optimized Listing"}
             </button>
             <p className="mt-3 text-sm font-semibold text-neutral-800">{status}</p>
+            {working && runStartedAt !== null ? (
+              <p className="mt-1 text-xs text-neutral-500">
+                {(() => {
+                  const elapsed = now - runStartedAt;
+                  const remaining = estimateMs - elapsed;
+                  const elapsedSec = Math.max(0, Math.round(elapsed / 1000));
+                  if (sampleCount === 0) {
+                    return `Elapsed ${elapsedSec}s — learning your typical run time...`;
+                  }
+                  if (remaining > 0) {
+                    return `ETA ${formatRemaining(remaining)} (elapsed ${elapsedSec}s, from last ${Math.min(sampleCount, 15)} runs)`;
+                  }
+                  return `Elapsed ${elapsedSec}s — running longer than usual, hang tight.`;
+                })()}
+              </p>
+            ) : null}
             {error ? <p className="mt-2 text-sm font-semibold text-red-700">{error}</p> : null}
           </div>
 
