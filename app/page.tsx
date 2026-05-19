@@ -38,7 +38,7 @@ const HISTORY_KEY = "davidani_history_v1";
 const CURRENT_ID_KEY = "davidani_image_current_run_v1";
 const IMAGE_JOBS_KEY = "davidani_image_jobs_v1";
 const USER_ID_KEY = "davidani_user_id_v1";
-const IMAGE_STUDIO_VERSION = "2.2";
+const IMAGE_STUDIO_VERSION = "2.3";
 const IMAGE_STUDIO_OUTPUT_SIZE = { width: 2160, height: 2700 } as const;
 
 function productShotViewDirective(mode: ProductShotMode, target?: "front" | "back"): string {
@@ -224,6 +224,16 @@ export default function StudioPage() {
   // reference photo alone isn't reliably auto-classifiable), and when true we
   // route Analyze through the four-field coordinated-set analyzer in lib/fal.
   const [twoPiece, setTwoPiece] = useState<boolean>(false);
+  // Image Studio's analyze route only handles single-image two-piece extraction
+  // (one photo of the full coordinated outfit). The "two separate photos"
+  // variant from Single Model Studio isn't supported here, so we expose just
+  // two radio options. State shape is kept identical to Model Studio for
+  // consistency.
+  type GarmentMode = "single" | "set-single-image" | "set-separate-images";
+  const garmentMode: GarmentMode = twoPiece ? "set-single-image" : "single";
+  function handleGarmentModeChange(mode: GarmentMode) {
+    setTwoPiece(mode === "set-single-image");
+  }
 
   // History (client-only, localStorage)
   const [history, setHistory] = useState<HistoryItem[]>([]);
@@ -913,7 +923,7 @@ export default function StudioPage() {
         active="image"
         title="Image Studio"
         subtitle="Generate clean product photos from uploaded garments."
-        badge="V2.2"
+        badge="V2.3"
         metrics={[
           { label: "Runs", value: history.length },
           {
@@ -998,6 +1008,9 @@ export default function StudioPage() {
             batchProgress={batchProgress}
             twoPiece={twoPiece}
             onTwoPieceChange={setTwoPiece}
+            garmentMode={garmentMode}
+            onGarmentModeChange={handleGarmentModeChange}
+            garmentModeOptions={["single", "set-single-image"]}
             productShotMode={productShotMode}
             onProductShotModeChange={(mode) => {
               setProductShotMode(mode);

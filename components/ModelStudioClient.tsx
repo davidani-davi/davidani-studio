@@ -417,6 +417,22 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
      + buildModelSwapTwoPiecePrompt so the model's entire outfit (not just a
      single garment) is swapped for a matching top + bottom set. */
   const [twoPiece, setTwoPiece] = useState<boolean>(false);
+  /* When twoPiece is on, this picks which extractor the backend should use:
+     "two-images" expects separate top + bottom uploads (the original behavior);
+     "single-image" expects ONE photo containing both pieces (full-body / flat-lay)
+     and routes through extractTwoPieceFields(garmentUrls[0]) server-side. The
+     backend already branches on URL count, so this state primarily drives the
+     UI hint + how many URLs we send. */
+  const [coordinatedSetMode, setCoordinatedSetMode] = useState<
+    "single-image" | "two-images"
+  >("two-images");
+
+  type GarmentMode = "single" | "set-single-image" | "set-separate-images";
+  const garmentMode: GarmentMode = !twoPiece
+    ? "single"
+    : coordinatedSetMode === "single-image"
+    ? "set-single-image"
+    : "set-separate-images";
 
   /* ---------- Swap area override ----------
      "auto" lets inferSwapScope decide based on the analyzer's noun phrase
@@ -672,6 +688,22 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
 
   function handleTwoPieceChange(value: boolean) {
     setTwoPiece(value);
+    if (!value) setCoordinatedSetMode("two-images");
+    setPrompt("");
+    setAnalysisReview(null);
+  }
+
+  function handleGarmentModeChange(mode: GarmentMode) {
+    if (mode === "single") {
+      setTwoPiece(false);
+      setCoordinatedSetMode("two-images");
+    } else if (mode === "set-single-image") {
+      setTwoPiece(true);
+      setCoordinatedSetMode("single-image");
+    } else {
+      setTwoPiece(true);
+      setCoordinatedSetMode("two-images");
+    }
     setPrompt("");
     setAnalysisReview(null);
   }
@@ -854,7 +886,11 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
               poseId,
               view,
               garmentImageUrl: garmentUrls[0],
-              garmentImageUrls: twoPiece ? garmentUrls.slice(0, 2) : garmentUrls,
+              garmentImageUrls: twoPiece
+                ? coordinatedSetMode === "single-image"
+                  ? garmentUrls.slice(0, 1)
+                  : garmentUrls.slice(0, 2)
+                : garmentUrls,
               twoPiece,
               promptMode,
               garmentOverride: reviewOverride,
@@ -1141,38 +1177,29 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
           > = ["queued", "queued", "queued", "queued"];
           const slotErrors: string[] = [];
           const baseReferences = [frontGarmentUrl, backGarmentUrl].filter(Boolean) as string[];
-          const multiModelGarmentRefs = hasBackReference
+          const isCoordinatedSet = garmentMode === "set-single-image";
+          const multiModelGarmentRefs = isCoordinatedSet
+            ? [frontGarmentUrl]
+            : hasBackReference
             ? [frontGarmentUrl, backGarmentUrl]
             : [frontGarmentUrl];
-          const [frontGarmentIdentityData, backGarmentIdentityData] = await Promise.all([
-            fetchJson("Analyze shared multi model front garment", "/api/analyze-model", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                modelId: humanModelId,
-                poseId,
-                view: "front",
-                garmentImageUrl: frontGarmentUrl,
-                garmentImageUrls: [frontGarmentUrl],
-                twoPiece: false,
-                promptMode: "classic",
-                swapScopeOverride: swapScopeChoice === "auto" ? undefined : swapScopeChoice,
-                adjustments: {
-                  fit: fitAdjustment,
-                  length: lengthAdjustment,
-                },
-              }),
-            }),
-            hasBackReference
-              ? fetchJson("Analyze shared multi model back garment", "/api/analyze-model", {
+          // Coordinated-set mode skips the shared single-garment identity
+          // pre-pass — the server re-extracts top+bottom on each per-view call
+          // because the route currently has no two-piece override hook. The
+          // 4x vision cost is acceptable for the use case and keeps each view
+          // self-consistent.
+          const [frontGarmentIdentityData, backGarmentIdentityData] = isCoordinatedSet
+            ? [null, null]
+            : await Promise.all([
+                fetchJson("Analyze shared multi model front garment", "/api/analyze-model", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({
                     modelId: humanModelId,
                     poseId,
-                    view: "back",
-                    garmentImageUrl: backGarmentUrl,
-                    garmentImageUrls: [backGarmentUrl],
+                    view: "front",
+                    garmentImageUrl: frontGarmentUrl,
+                    garmentImageUrls: [frontGarmentUrl],
                     twoPiece: false,
                     promptMode: "classic",
                     swapScopeOverride: swapScopeChoice === "auto" ? undefined : swapScopeChoice,
@@ -1181,17 +1208,40 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
                       length: lengthAdjustment,
                     },
                   }),
-                })
-              : Promise.resolve(null),
-          ]);
-          const sharedGarmentOverride = mergeMultiModelGarmentIdentity(
-            frontGarmentIdentityData,
-            backGarmentIdentityData
-          );
-          const consistencySuffix = buildMultiModelConsistencySuffix(
-            sharedGarmentOverride.garment,
-            sharedGarmentOverride.features
-          );
+                }),
+                hasBackReference
+                  ? fetchJson("Analyze shared multi model back garment", "/api/analyze-model", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        modelId: humanModelId,
+                        poseId,
+                        view: "back",
+                        garmentImageUrl: backGarmentUrl,
+                        garmentImageUrls: [backGarmentUrl],
+                        twoPiece: false,
+                        promptMode: "classic",
+                        swapScopeOverride: swapScopeChoice === "auto" ? undefined : swapScopeChoice,
+                        adjustments: {
+                          fit: fitAdjustment,
+                          length: lengthAdjustment,
+                        },
+                      }),
+                    })
+                  : Promise.resolve(null),
+              ]);
+          const sharedGarmentOverride = isCoordinatedSet
+            ? null
+            : mergeMultiModelGarmentIdentity(
+                frontGarmentIdentityData,
+                backGarmentIdentityData
+              );
+          const consistencySuffix = isCoordinatedSet
+            ? ""
+            : buildMultiModelConsistencySuffix(
+                sharedGarmentOverride!.garment,
+                sharedGarmentOverride!.features
+              );
 
           const buildPartialItem = (): HistoryItem => {
             const imageUrls: string[] = [];
@@ -1289,11 +1339,11 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
                   view: targetView,
                   garmentImageUrl: frontGarmentUrl,
                   garmentImageUrls: multiModelGarmentRefs,
-                  twoPiece: false,
+                  twoPiece: isCoordinatedSet,
                   // Multi Model Studio intentionally uses the Single Model
                   // Studio prompt structure, but calls it once per view.
 	                  promptMode: "classic",
-	                  garmentOverride: sharedGarmentOverride,
+	                  garmentOverride: isCoordinatedSet ? undefined : sharedGarmentOverride,
 	                  swapScopeOverride: swapScopeChoice === "auto" ? undefined : swapScopeChoice,
 	                  adjustments: {
                     fit: fitAdjustment,
@@ -1435,7 +1485,10 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
     const humanModelId = run.humanModelId;
     const poseId = run.poseId;
     const hasBackReference = typeof backGarmentUrl === "string" && backGarmentUrl.trim().length > 0;
-    const multiModelGarmentRefs = hasBackReference
+    const isCoordinatedSet = garmentMode === "set-single-image";
+    const multiModelGarmentRefs = isCoordinatedSet
+      ? [frontGarmentUrl]
+      : hasBackReference
       ? [frontGarmentUrl, backGarmentUrl]
       : [frontGarmentUrl];
     const overlay = {
@@ -1471,7 +1524,9 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
         const failures: Array<{ view: MultiModelView; error: string }> = [];
         try {
           setStatus("analyzing");
-          const [frontGarmentIdentityData, backGarmentIdentityData] = await Promise.all([
+          const [frontGarmentIdentityData, backGarmentIdentityData] = isCoordinatedSet
+            ? [null, null]
+            : await Promise.all([
             fetchJson("Analyze shared multi model front garment", "/api/analyze-model", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -1511,14 +1566,18 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
                 })
               : Promise.resolve(null),
           ]);
-          const sharedGarmentOverride = mergeMultiModelGarmentIdentity(
-            frontGarmentIdentityData,
-            backGarmentIdentityData
-          );
-          const consistencySuffix = buildMultiModelConsistencySuffix(
-            sharedGarmentOverride.garment,
-            sharedGarmentOverride.features
-          );
+          const sharedGarmentOverride = isCoordinatedSet
+            ? null
+            : mergeMultiModelGarmentIdentity(
+                frontGarmentIdentityData,
+                backGarmentIdentityData
+              );
+          const consistencySuffix = isCoordinatedSet
+            ? ""
+            : buildMultiModelConsistencySuffix(
+                sharedGarmentOverride!.garment,
+                sharedGarmentOverride!.features
+              );
 
           for (const targetView of targetViews) {
             let lastError = "";
@@ -1539,9 +1598,9 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
                     view: targetView,
                     garmentImageUrl: frontGarmentUrl,
                     garmentImageUrls: multiModelGarmentRefs,
-                    twoPiece: false,
+                    twoPiece: isCoordinatedSet,
                     promptMode: "classic",
-                    garmentOverride: sharedGarmentOverride,
+                    garmentOverride: isCoordinatedSet ? undefined : sharedGarmentOverride,
                     swapScopeOverride: swapScopeChoice === "auto" ? undefined : swapScopeChoice,
                     adjustments: {
                       fit: fitAdjustment,
@@ -1683,7 +1742,11 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
             poseId: selectedPoseId,
             view: selectedView,
             garmentImageUrl: sourceUrl,
-            garmentImageUrls: twoPiece ? selected.slice(0, 2) : [sourceUrl],
+            garmentImageUrls: twoPiece
+              ? coordinatedSetMode === "single-image"
+                ? selected.slice(0, 1)
+                : selected.slice(0, 2)
+              : [sourceUrl],
             twoPiece,
             promptMode,
             swapScopeOverride: swapScopeChoice === "auto" ? undefined : swapScopeChoice,
@@ -2588,8 +2651,15 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
             onBatchGenerate={beta ? undefined : runBatchGeneration}
             canBatch={!beta && canAnalyze && selected.length >= 2}
             batchProgress={batchProgress}
-            twoPiece={beta ? false : twoPiece}
-            onTwoPieceChange={beta ? () => undefined : handleTwoPieceChange}
+            twoPiece={twoPiece}
+            onTwoPieceChange={handleTwoPieceChange}
+            garmentMode={garmentMode}
+            onGarmentModeChange={handleGarmentModeChange}
+            garmentModeOptions={
+              beta
+                ? ["single", "set-single-image"]
+                : ["single", "set-single-image", "set-separate-images"]
+            }
             fitAdjustment={fitAdjustment}
             onFitAdjustmentChange={handleFitAdjustmentChange}
             lengthAdjustment={lengthAdjustment}
@@ -2605,7 +2675,7 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
               setPrompt("");
             }}
             inferredScope={inferredScope}
-            hideTwoPieceToggle={beta}
+            hideTwoPieceToggle={false}
             hideVariantControl={beta}
             generateLabel={beta ? "Generate 4 views" : undefined}
           />

@@ -26,7 +26,7 @@ export default function StudioHeader({
   eyebrow = "Davi & Dani",
   title = "Photo Studio",
   subtitle,
-  badge = "V2.2",
+  badge = "V2.3",
   metrics = [],
   action,
 }: Props) {

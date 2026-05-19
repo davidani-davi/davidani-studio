@@ -65,6 +65,24 @@ interface Props {
    */
   twoPiece: boolean;
   onTwoPieceChange: (v: boolean) => void;
+  /**
+   * Optional 3-way garment-mode control. When provided, replaces the legacy
+   * `Coordinated 2-piece set` checkbox with a 3-button radio:
+   *   - single                → one garment, one image
+   *   - set-single-image      → coordinated top + bottom shown in ONE photo
+   *                             (full-body shot, flat-lay, styled outfit)
+   *   - set-separate-images   → coordinated set uploaded as two photos
+   * The backend distinguishes single-vs-separate by the number of garment URLs
+   * sent; the radio choice both labels the UI and clamps the uploaded URL
+   * slice in the parent.
+   * If not passed, the legacy checkbox is rendered for backwards compat.
+   */
+  garmentMode?: "single" | "set-single-image" | "set-separate-images";
+  onGarmentModeChange?: (
+    mode: "single" | "set-single-image" | "set-separate-images"
+  ) => void;
+  /** Restricts which radio options render. Defaults to all three. */
+  garmentModeOptions?: Array<"single" | "set-single-image" | "set-separate-images">;
   fitAdjustment?: GarmentFitAdjustment;
   onFitAdjustmentChange?: (v: GarmentFitAdjustment) => void;
   lengthAdjustment?: GarmentLengthAdjustment;
@@ -345,6 +363,61 @@ export default function PromptPanel(p: Props) {
             </div>
           </div>
         )}
+        {p.garmentMode && p.onGarmentModeChange ? (
+          (() => {
+            const allOptions: Array<{
+              value: "single" | "set-single-image" | "set-separate-images";
+              label: string;
+              hint: string;
+            }> = [
+              {
+                value: "single",
+                label: "Single garment",
+                hint: "Swap one piece (top OR bottom OR full-look item like a dress).",
+              },
+              {
+                value: "set-single-image",
+                label: "Coordinated set · 1 photo",
+                hint: "Upload ONE photo that shows the full coordinated outfit — model shot or flat-lay. The analyzer separates top and bottom for you.",
+              },
+              {
+                value: "set-separate-images",
+                label: "Coordinated set · 2 photos",
+                hint: "Upload TWO separate photos — one of the top, one of the bottom — that are meant to be worn together.",
+              },
+            ];
+            const allowed = p.garmentModeOptions;
+            const options = allowed
+              ? allOptions.filter((o) => allowed.includes(o.value))
+              : allOptions;
+            const active = p.garmentMode!;
+            return (
+              <div role="radiogroup" aria-label="Garment mode" className="flex flex-wrap gap-2">
+                {options.map((option) => {
+                  const isActive = active === option.value;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      role="radio"
+                      aria-checked={isActive}
+                      onClick={() => p.onGarmentModeChange?.(option.value)}
+                      disabled={p.analyzing || p.loading}
+                      title={option.hint}
+                      className={`rounded-full border px-3 py-1.5 text-[11px] font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                        isActive
+                          ? "border-brand-300 bg-brand-50 text-brand-700"
+                          : "border-neutral-200 bg-white text-neutral-600 hover:border-neutral-400 hover:bg-neutral-50"
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
+            );
+          })()
+        ) : (
         <label
           className={`inline-flex cursor-pointer items-center gap-2 rounded-full border px-3 py-2 text-xs transition ${
             p.twoPiece
@@ -365,6 +438,7 @@ export default function PromptPanel(p: Props) {
             (separate top + bottom upload)
           </span>
         </label>
+        )}
         {p.onSwapScopeChoiceChange && !p.twoPiece && (() => {
           const choice = p.swapScopeChoice ?? "auto";
           const inferred = p.inferredScope;

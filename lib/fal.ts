@@ -1579,6 +1579,22 @@ export function buildTwoPiecePrompt(fields: TwoPieceFields): string {
       `perspective shift, no barrel distortion, no lens compression change. Every output must ` +
       `feel as though it was photographed in the same studio session, at the same camera ` +
       `position and focal length, as the primary studio photograph. ` +
+      `COLOR AUTHORITY: match the exact hues and saturation visible in the attached reference ` +
+      `photograph for both pieces. Do not desaturate, mute, dust, or shift colors toward ` +
+      `catalog-neutral, sage, mauve, dusty, or earth-tone palettes. If a color reads as vivid lime ` +
+      `green or coral pink in the reference, render it as vivid lime green or coral pink — do not ` +
+      `approximate to a darker, browner, or grayer version. Preserve color temperature and chroma. ` +
+      `PATTERN CONTINUITY: if the top and bottom share a gradient, stripe, ombré, tie-dye, dip-dye, ` +
+      `print, or all-over pattern in the reference, render them as a single continuous design — ` +
+      `not as two independent patterns. Preserve the exact number, order, position, and proportional ` +
+      `thickness of every color band or stripe. If the gradient has three bands (e.g. ` +
+      `green→pink→green), render three bands — do not collapse to a two-band ombré. ` +
+      `EMBELLISHMENT FIDELITY: any rhinestones, sequins, beads, studs, crystals, paillettes, glitter, ` +
+      `foil, embroidery, appliqué, or applied surface decoration visible in the reference must be ` +
+      `rendered explicitly — same density, same scatter pattern, same scale, same sparkle/reflectivity, ` +
+      `same placement across both pieces. Do not omit, smooth over, flatten, or fabric-substitute ` +
+      `these embellishments. Do not convert a rhinestone-studded knit into a plain knit, velvet, or ` +
+      `velour surface; preserve the original fabric body AND the surface embellishment. ` +
       `RENDER THE REPLACEMENT SET FRESH — do not copy the wrinkles, folds, creases, twists, ` +
       `asymmetries, or specific placement of whatever garment was originally in the primary ` +
       `photograph. Display both pieces in the canonical catalog layout for a coordinated set: the ` +
@@ -2254,6 +2270,31 @@ export function buildModelStudioBetaPrompt(
  * for a coordinated set (top + bottom) using the same Image-A / Image-B
  * structure as the single-garment variants. The full outfit is replaced.
  */
+/* ----- Color / pattern / embellishment authority clauses -----
+   Added after a coordinated-set test (rhinestone-studded watermelon-gradient
+   set on a knit) where nano-banana drifted to velvet, desaturated the bright
+   green/coral toward dusty sage/mauve, lost the rhinestones, and collapsed
+   a 3-band vertical gradient (green→pink→green) into a 2-band ombré. The
+   three failure modes — fabric drift, color desaturation, pattern
+   discontinuity across pieces — each need an explicit authority clause
+   because the existing template only has SILHOUETTE AUTHORITY. */
+const COLOR_AUTHORITY_CLAUSE =
+  "COLOR AUTHORITY: match the exact hues and saturation visible in Image B for both pieces. " +
+  "Do not desaturate, mute, dust, or shift colors toward catalog-neutral, sage, mauve, dusty, or earth-tone palettes. " +
+  "If a color reads as vivid lime green or coral pink in Image B, render it as vivid lime green or coral pink — do not approximate to a darker, browner, or grayer version. " +
+  "Preserve color temperature and chroma; the rendered garments must read as the same exact dye lot as Image B.";
+
+const PATTERN_CONTINUITY_CLAUSE =
+  "PATTERN CONTINUITY: if the top and bottom share a gradient, stripe, ombré, tie-dye, dip-dye, print, or all-over pattern in Image B, render them as a single continuous design across the worn outfit — not as two independent patterns. " +
+  "Preserve the exact number, order, position, and proportional thickness of every color band or stripe. " +
+  "If the gradient has three bands (e.g. green→pink→green), render three bands — do not collapse to a two-band ombré. " +
+  "If the top and bottom together form one continuous gradient when worn, the bottom must pick up where the top's hem leaves off in color and direction.";
+
+const EMBELLISHMENT_FIDELITY_CLAUSE =
+  "EMBELLISHMENT FIDELITY: any rhinestones, sequins, beads, studs, crystals, paillettes, glitter, foil, embroidery, appliqué, or applied surface decoration visible in Image B must be rendered explicitly on the final garment — same density, same scatter pattern, same scale, same sparkle/reflectivity, same placement across both pieces. " +
+  "Do not omit, smooth over, flatten, or fabric-substitute these embellishments. " +
+  "Do not convert a rhinestone-studded knit into a plain knit, velvet, or velour surface; preserve the original fabric body AND the surface embellishment.";
+
 export function buildModelSwapTwoPiecePromptVariants(
   fields: TwoPieceFields,
   analyzedModel: AnalyzedModelPhoto,
@@ -2275,12 +2316,15 @@ export function buildModelSwapTwoPiecePromptVariants(
       `STRUCTURE PRIORITY: render each piece with the EXACT silhouette and construction visible in Image B — for the top: body length, hem geometry (preserve any high-low, shirttail, stepped, or asymmetric hem exactly), sleeve length and volume, neckline, collar height; for the bottom: rise, leg shape, hem position, waistband construction, pocket placement;`,
       `${topClause} ${bottomClause}`,
       `render both pieces as a single unified coordinated outfit — same color family, same fabric family, same trim language — sitting together naturally with the top's hem layering over or tucking into the bottom's waistband as appropriate; not flat-lay copies but worn garments on this specific model and pose;`,
+      COLOR_AUTHORITY_CLAUSE,
+      PATTERN_CONTINUITY_CLAUSE,
+      EMBELLISHMENT_FIDELITY_CLAUSE,
       lengthAuthorityClause.trim(),
       adjustmentClause.trim(),
       `remove all neck labels, brand tags, size tags, care labels, and sewn-in woven tags from both top and bottom — neckline, collar band, waistband, and every other typical label location must be clean;`,
       `Image A is the lighting and exposure authority — match its background brightness, backdrop tonal value, facial exposure, facial brightness, and face lighting pattern exactly;`,
       `output a photorealistic 4K editorial fashion catalog image in 2:3 aspect ratio with anatomically correct proportions, clean garment edges, and high-detail textures.`,
-      `Negative prompt: no face alteration, no body reshape, no garment-shape drift, no flattened high-low hem, no straightened shirttail, no recolor, no texture blending, no exposure shift, no background change, no cropped top unless the uploaded top is cropped, no matching the old top length.`,
+      `Negative prompt: no face alteration, no body reshape, no garment-shape drift, no flattened high-low hem, no straightened shirttail, no recolor, no desaturation, no color shift toward neutral or earth tones, no fabric substitution, no smoothed-over embellishments, no missing rhinestones or sequins, no collapsed gradient bands, no texture blending, no exposure shift, no background change, no cropped top unless the uploaded top is cropped, no matching the old top length.`,
     ]
       .filter(Boolean)
       .join(" ");
@@ -2300,12 +2344,15 @@ export function buildModelSwapTwoPiecePromptVariants(
       `SURFACE PRIORITY: both pieces must match Image B's colors exactly (every hue and saturation across top and bottom), the print pattern continuity (motif placement, density, scale matching between top and bottom), all trim and tape placement, hardware positions on the wearer-correct side, hem stitching, and the fabric texture / sheen of each piece; do not mirror left/right artwork, do not relocate sleeve or chest details to the visible side, do not let the two pieces drift into different color families;`,
       `${topClause} ${bottomClause}`,
       `the two pieces must read as one designed coordinated outfit (shared color family, fabric family, and trim language), worn naturally on the model with realistic drape, fit, and layering behavior, not as two unrelated garments and not as flat-lay copies;`,
+      COLOR_AUTHORITY_CLAUSE,
+      PATTERN_CONTINUITY_CLAUSE,
+      EMBELLISHMENT_FIDELITY_CLAUSE,
       lengthAuthorityClause.trim(),
       adjustmentClause.trim(),
       `remove all neck labels, brand tags, size tags, care labels, and sewn-in woven tags from both pieces;`,
-      `Image A is the exposure and color authority — match its background tone, facial exposure, and overall scene mood exactly; do not shift any of these;`,
+      `Image A is the exposure and color authority for the scene's lighting only — match its background tone, facial exposure, and overall scene mood; the garments themselves take their color from Image B per COLOR AUTHORITY above;`,
       `produce an ultra-realistic 4K image in 2:3 format with accurate facial scaling, natural blending, and high-detail textures with no visible seams, distortion, or compositing artifacts.`,
-      `Negative prompt: no color drift between top and bottom, no pattern simplification, no missing trims, no relocated hardware, no mirrored print, no recolor, no texture blending, no exposure shift, no background change.`,
+      `Negative prompt: no color drift between top and bottom, no desaturation, no shift toward dusty / sage / mauve / earth tones, no fabric substitution (no velvet for knit, no smooth for textured), no missing rhinestones or sequins, no flattened gradient, no collapsed multi-band pattern, no pattern simplification, no missing trims, no relocated hardware, no mirrored print, no recolor, no texture blending, no exposure shift, no background change.`,
     ]
       .filter(Boolean)
       .join(" ");
@@ -2323,12 +2370,15 @@ export function buildModelSwapTwoPiecePromptVariants(
       `CRITICAL DO-NOTS: (1) Do not invent a third garment, undershirt, or layered piece — Image B contains exactly two pieces (a top and a bottom). (2) Do not split either piece into multiple pieces, even if its hem is asymmetric. (3) Do not change either piece's color, pattern, hardware, trim, neckline, sleeve shape, hem geometry, or rise from Image B. (4) Do not change the model's face, body, pose, hair, or proportions. (5) Do not change the background, lighting, exposure, or camera perspective. (6) Do not invent text or logos.`,
       `${topClause} ${bottomClause}`,
       `the result must look like a single authentic fashion catalog photograph of this model in this pose, wearing the new coordinated set as TWO pieces (one top, one bottom) with correct silhouettes, drape, hems, sleeve length, and trim placement, not flat-lay reproductions and not split into more than two pieces;`,
+      COLOR_AUTHORITY_CLAUSE,
+      PATTERN_CONTINUITY_CLAUSE,
+      EMBELLISHMENT_FIDELITY_CLAUSE,
       lengthAuthorityClause.trim(),
       adjustmentClause.trim(),
       `remove all neck labels, brand tags, size tags, care labels, and sewn-in woven tags from both pieces;`,
-      `Image A controls the exposure and color tone — preserve its background brightness, face lighting, and overall scene mood;`,
+      `Image A controls the SCENE'S exposure and lighting only — preserve its background brightness, face lighting, and overall scene mood; the GARMENT colors and surface come exclusively from Image B per the authority clauses above;`,
       `deliver a 4K photorealistic image in 2:3 aspect ratio with realistic anatomical proportions, clean compositing, and detailed textures throughout, with no warping, scaling errors, or edit artifacts.`,
-      `Negative prompt: no face alteration, no body reshape, no exposure shift, no background change, no garment-shape drift, no third garment invented, no extra layered piece, no split-into-three-pieces, no flattened high-low hem, no mirrored hardware, no relocated trim.`,
+      `Negative prompt: no face alteration, no body reshape, no exposure shift, no background change, no garment-shape drift, no third garment invented, no extra layered piece, no split-into-three-pieces, no flattened high-low hem, no mirrored hardware, no relocated trim, no desaturated colors, no shift to dusty / sage / mauve / earth tones, no velvet substitution, no smoothed embellishments, no missing rhinestones, no collapsed gradient bands.`,
     ]
       .filter(Boolean)
       .join(" ");
