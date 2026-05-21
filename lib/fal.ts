@@ -2467,6 +2467,13 @@ export interface GenerateParams {
    * approved image only, so they can opt out.
    */
   useDefaultReference?: boolean;
+  /**
+   * Playground mode: sandboxed, no injected defaults. Skips the default
+   * style-reference image AND the garment-edit prompt prefix that Image
+   * Studio applies via optimizePromptForModel. The user's prompt and image
+   * URLs are passed through verbatim — nothing leaks in from other modules.
+   */
+  raw?: boolean;
 }
 
 const PLACEMENT_TO_ENGLISH: Record<OverlayPlacement, string> = {
@@ -2655,7 +2662,7 @@ export async function generate(params: GenerateParams): Promise<GenerationResult
   // and everything else defaults to product-shots/style-reference.png.
   const category = inferGarmentCategory(params.prompt);
   let referenceUrl: string | null = params.referenceImageUrl || null;
-  if (!referenceUrl && params.useDefaultReference !== false) {
+  if (!referenceUrl && params.useDefaultReference !== false && !params.raw) {
     try {
       referenceUrl = await getStyleReferenceUrl(category);
     } catch (err) {
@@ -2689,8 +2696,10 @@ export async function generate(params: GenerateParams): Promise<GenerationResult
   // Build model-specific input payload. No STRICT_PRESERVATION_PREFIX — the
   // new two-image template (built by buildTwoImagePrompt) is self-sufficient
   // and Gemini-based edit models respond badly to stacked preservation-speak.
-  const overlayInstruction = buildOverlayInstruction(params.overlay);
-  const modelOptimizedPrompt = optimizePromptForModel(params.modelId, params.prompt);
+  const overlayInstruction = params.raw ? "" : buildOverlayInstruction(params.overlay);
+  const modelOptimizedPrompt = params.raw
+    ? params.prompt
+    : optimizePromptForModel(params.modelId, params.prompt);
   const finalPrompt = modelOptimizedPrompt + overlayInstruction;
   let input: Record<string, unknown> = { prompt: finalPrompt };
 

@@ -20,6 +20,7 @@ export async function POST(req: Request) {
       numImages,
       overlay,
       useDefaultReference,
+      raw,
     } = body as {
       modelId: ModelId;
       prompt: string;
@@ -31,6 +32,7 @@ export async function POST(req: Request) {
       numImages?: number;
       overlay?: OverlayOptions;
       useDefaultReference?: boolean;
+      raw?: boolean;
     };
 
     if (!modelId || !MODELS[modelId]) {
@@ -56,6 +58,7 @@ export async function POST(req: Request) {
       // Always locked server-side — client value is intentionally ignored.
       outputSize: IMAGE_STUDIO_OUTPUT_SIZE,
       useDefaultReference,
+      raw,
     });
 
     return NextResponse.json({ ok: true, ...result });

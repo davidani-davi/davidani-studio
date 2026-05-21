@@ -11,6 +11,7 @@ import Link from "next/link";
 
 export type StudioTab =
   | "image"
+  | "playground"
   | "model"
   | "model-beta"
   | "prompt"
@@ -33,6 +34,7 @@ export default function TopTabs({ active }: Props) {
     { id: "faire-seo", label: "Faire SEO", href: "/faire-seo" },
     { id: "inspiration", label: "Inspiration", href: "/inspiration" },
     { id: "library", label: "Library", href: "/library" },
+    { id: "playground", label: "Image Playground", href: "/image-playground" },
   ];
 
   return (
