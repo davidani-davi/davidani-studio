@@ -38,6 +38,52 @@ function extractJson(raw: string): string {
   return raw.trim();
 }
 
+// Repairs JSON that was truncated mid-output by max_tokens.
+// Walks the string, tracks string/escape state and brace/bracket nesting,
+// then closes any open string and remaining containers.
+function repairTruncatedJson(input: string): string {
+  let s = input.trim();
+  // Strip trailing comma + whitespace before we close containers.
+  s = s.replace(/,\s*$/, "");
+
+  const stack: string[] = [];
+  let inString = false;
+  let escape = false;
+
+  for (let i = 0; i < s.length; i++) {
+    const ch = s[i];
+    if (inString) {
+      if (escape) escape = false;
+      else if (ch === "\\") escape = true;
+      else if (ch === '"') inString = false;
+      continue;
+    }
+    if (ch === '"') inString = true;
+    else if (ch === "{") stack.push("}");
+    else if (ch === "[") stack.push("]");
+    else if (ch === "}" || ch === "]") stack.pop();
+  }
+
+  if (inString) s += '"';
+  // Remove trailing comma that may now be exposed at the end of an array/object.
+  s = s.replace(/,\s*$/, "");
+  while (stack.length) s += stack.pop();
+  return s;
+}
+
+function parseLlmJson(raw: string): any {
+  const extracted = extractJson(raw);
+  try {
+    return JSON.parse(extracted);
+  } catch (err) {
+    try {
+      return JSON.parse(repairTruncatedJson(extracted));
+    } catch {
+      throw err;
+    }
+  }
+}
+
 async function runVision(prompt: string, imageUrls: string[], systemPrompt: string) {
   // Direct Anthropic path — remove ANTHROPIC_API_KEY to revert to fal.ai proxy.
   if (process.env.ANTHROPIC_API_KEY) {
@@ -55,7 +101,7 @@ async function runVision(prompt: string, imageUrls: string[], systemPrompt: stri
       },
       body: JSON.stringify({
         model: ANTHROPIC_MODEL_ID,
-        max_tokens: 4096,
+        max_tokens: 8192,
         system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
         messages: [{ role: "user", content: [...imageBlocks, { type: "text", text: prompt }] }],
       }),
@@ -271,7 +317,7 @@ Return strict JSON only with this exact shape:
     input.assets.map((a) => a.url).slice(0, 12),
     "You are a Davi&Dani Faire merchandising assistant. You extract listing attributes from images and produce paste-ready, schema-valid Faire SEO copy in a single JSON response."
   );
-  const parsed = JSON.parse(extractJson(output));
+  const parsed = parseLlmJson(output);
   const fields = normalizeExtractedFields(parsed.fields);
   const merged = mergeSeed(fields, seed);
   const result = normalizeResult(parsed, merged);
@@ -324,6 +370,6 @@ Only include fields/options visible in screenshots or already present in the sch
     assets.map((asset) => asset.url),
     "You are a conservative schema-sync assistant for Faire product detail fields. You only extract visible field structures and options."
   );
-  const parsed = JSON.parse(extractJson(output));
+  const parsed = parseLlmJson(output);
   return Array.isArray(parsed.fields) ? parsed.fields : currentSchema;
 }
