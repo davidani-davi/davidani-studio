@@ -481,7 +481,7 @@ git commit -m "feat(cad): wire CAD Extractor tab and route page"
 ```tsx
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import StudioHeader from "@/components/StudioHeader";
 import ImageLightbox, { ZoomButton } from "@/components/ImageLightbox";
 import type { UploadedImage } from "@/components/types";
@@ -548,33 +548,28 @@ export default function CadExtractorClient() {
   const activeMode = useMemo(() => MODE_OPTIONS.find((m) => m.id === mode)!, [mode]);
   const isSpec = mode === "spec";
 
-  // Persist + restore the reference library (matches Playground behavior).
-  if (typeof window !== "undefined" && refs.length === 0) {
-    // lazy one-time hydrate guard handled below via ref
-  }
-  const hydratedRef = useRef(false);
-  if (typeof window !== "undefined" && !hydratedRef.current) {
-    hydratedRef.current = true;
+  // Hydrate the reference library from localStorage on mount, then persist it
+  // whenever it changes — mirrors ImagePlaygroundClient (SSR-safe: the read
+  // happens in an effect, never during render).
+  useEffect(() => {
     try {
       const r = localStorage.getItem(REFS_KEY);
       if (r) {
         const parsed = JSON.parse(r) as UploadedImage[];
-        if (Array.isArray(parsed) && parsed.length) {
-          setRefs(parsed);
-        }
+        if (Array.isArray(parsed)) setRefs(parsed);
       }
     } catch {
       /* ignore */
     }
-  }
+  }, []);
 
-  function persistRefs(next: UploadedImage[]) {
+  useEffect(() => {
     try {
-      localStorage.setItem(REFS_KEY, JSON.stringify(next));
+      localStorage.setItem(REFS_KEY, JSON.stringify(refs));
     } catch {
       /* ignore */
     }
-  }
+  }, [refs]);
 
   async function addFiles(files: FileList) {
     setUploading(true);
@@ -586,11 +581,7 @@ export default function CadExtractorClient() {
       const data = await fetchJson("Upload", "/api/upload", { method: "POST", body: form });
       const added: UploadedImage[] = data.uploads ?? [];
       if (!added.length) throw new Error("Upload returned no URLs");
-      setRefs((list) => {
-        const next = [...added, ...list];
-        persistRefs(next);
-        return next;
-      });
+      setRefs((list) => [...added, ...list]);
       setSelectedRefUrls((cur) => Array.from(new Set([...added.map((u) => u.url), ...cur])));
     } catch (e: any) {
       setError(e?.message || "Upload failed");
@@ -604,11 +595,7 @@ export default function CadExtractorClient() {
   }
 
   function removeRef(url: string) {
-    setRefs((list) => {
-      const next = list.filter((r) => r.url !== url);
-      persistRefs(next);
-      return next;
-    });
+    setRefs((list) => list.filter((r) => r.url !== url));
     setSelectedRefUrls((cur) => cur.filter((u) => u !== url));
   }
 
