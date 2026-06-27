@@ -4,6 +4,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { MODELS, type ModelId } from "./models";
 import { optimizePromptForModel } from "./prompt-strategy";
+import type { CadSpec } from "./cad-prompts";
+import { CAD_SPEC_SYSTEM_PROMPT, CAD_SPEC_USER_PROMPT } from "./cad-prompts";
 
 let configured = false;
 function ensureConfigured() {
@@ -910,6 +912,76 @@ Return strict JSON only:
     throw new Error("Inspiration tag generator returned no usable tags.");
   }
   return parsed;
+}
+
+/**
+ * Textile CAD spec analysis. Inspects a garment photograph and returns the
+ * production spec of the UNDERLYING flat print (repeat type, color count,
+ * palette, motifs, technique). Uses the shared vision model. Analyzes the
+ * primary (first) image; the array signature keeps room for future
+ * multi-image merge.
+ */
+export async function analyzeTextileSpec(imageUrls: string[]): Promise<CadSpec> {
+  const primary = imageUrls.find((url) => !!url);
+  if (!primary) throw new Error("At least one image is required for spec analysis.");
+
+  const result: any = await subscribeVisionWithRetry(
+    {
+      model: VISION_MODEL,
+      system_prompt: CAD_SPEC_SYSTEM_PROMPT,
+      prompt: CAD_SPEC_USER_PROMPT,
+      image_url: primary,
+    },
+    "textile spec analysis"
+  );
+
+  const data = result?.data ?? result;
+  const output: string = (data?.output ?? data?.response ?? data?.text ?? "").trim();
+  if (!output) {
+    console.error("[cad-spec] full response:", JSON.stringify(data).slice(0, 1000));
+    throw new Error("Spec analyzer returned no text output.");
+  }
+
+  let parsed: any;
+  try {
+    parsed = JSON.parse(extractJsonObject(output));
+  } catch {
+    console.error("[cad-spec] raw output:", output.slice(0, 1000));
+    throw new Error("Spec analyzer returned unparseable JSON.");
+  }
+
+  const palette = Array.isArray(parsed.palette)
+    ? parsed.palette
+        .map((c: any) => ({
+          hex: String(c?.hex || "").trim(),
+          name: String(c?.name || "").trim(),
+        }))
+        .filter((c: any) => c.hex)
+        .slice(0, 12)
+    : [];
+  const motifs = Array.isArray(parsed.motifs)
+    ? parsed.motifs
+        .map((m: any) => ({
+          name: String(m?.name || "").trim(),
+          count: String(m?.count || "").trim(),
+        }))
+        .filter((m: any) => m.name)
+        .slice(0, 24)
+    : [];
+  const technique = Array.isArray(parsed.technique)
+    ? parsed.technique.map((t: any) => String(t || "").trim()).filter(Boolean).slice(0, 12)
+    : [];
+
+  return {
+    repeatType: String(parsed.repeatType || "unknown").trim(),
+    directional: String(parsed.directional || "unknown").trim(),
+    colorCount: Number.isFinite(Number(parsed.colorCount)) ? Number(parsed.colorCount) : palette.length,
+    palette,
+    motifs,
+    repeatDimensions: String(parsed.repeatDimensions || "unknown").trim(),
+    technique,
+    notes: String(parsed.notes || "").trim(),
+  };
 }
 
 export interface TechpackTable {
@@ -2050,7 +2122,7 @@ export function buildModelSwapPromptVariants(
     return [
       `Build the final image from Image A as the foundation, preserving every visual element exactly as shown — ${mi}, pose (${ps}), scene (${sc}), face, hair, posture, lighting setup, shadows, camera perspective, and depth of field, plus the rest of the visible outfit aside from the swap area;`,
       `transfer the ${ng} from Image B onto the subject in Image A — ${scopeClauseFor("transfer", ng)} remove from the current look only the portion of ${cg} that the new ${ng} replaces, and adapt the garment to Image A's lighting intensity, body geometry, perspective, and shadow placement for seamless realism;`,
-      `SURFACE PRIORITY: the garment must match Image B's color exactly (every hue and saturation), the print pattern (every motif placement, density, and orientation), all trim and tape placement, hardware positions on the wearer-correct side (zippers, buttons, snaps, drawstrings), hem stitching color and width, and the precise fabric texture and sheen visible in Image B; do not mirror left/right artwork, do not relocate sleeve or chest details to the visible side just to make them readable;`,
+      `SURFACE PRIORITY: the garment must match Image B's color exactly (every hue and saturation), the print pattern (every motif placement, density, and orientation), all trim and tape placement, hardware positions on the wearer-correct side (zippers, buttons, snaps, drawstrings), hem stitching color and width, and the precise fabric texture and sheen visible in Image B; do not mirror left/right artwork, do not relocate sleeve or chest details to the visible side just to make them readable; SCATTERED PATCH FIDELITY: if Image B shows multiple patches or motifs of similar size scattered all over the garment, reproduce ALL of them at their original relative sizes — do NOT scale up any single patch and do NOT merge multiple scattered patches into one oversized center graphic;`,
       featureClause,
       antiLayeringFor("surface"),
       `the garment must read as a worn garment on this model in this pose, not a flat-lay copy — re-render natural drape, fabric tension, and contour while preserving every visible design detail;`,
@@ -2192,7 +2264,7 @@ export function buildModelStudioBetaPromptVariants(
     "Background and lighting: warm beige seamless studio background matching the reference tone, soft even commercial lighting, no harsh shadows, only subtle grounding shadow.",
     `Preserve from the first model-pose image where applicable: ${cleanPose}, ${cleanScene}, and the same camera perspective.`,
     adjustmentClause,
-    "Negative prompt: no flat lay, no hanger, no mannequin, no separate inner garment, no layered cami, no contrasting underlayer, no flattened high-low hem, no straightened shirttail, no garment-shape drift, no model identity distortion, no background change.",
+    "Negative prompt: no flat lay, no hanger, no mannequin, no separate inner garment, no layered cami, no contrasting underlayer, no flattened high-low hem, no straightened shirttail, no garment-shape drift, no model identity distortion, no background change, no patch consolidation, no oversized single center graphic when reference shows multiple equal-sized scattered patches.",
   ]
     .filter(Boolean)
     .join(" ");
@@ -2202,7 +2274,7 @@ export function buildModelStudioBetaPromptVariants(
     "Create a studio fashion image by editing the first image, which is the selected human model pose and the only layout/composition canvas.",
     "Input image role lock: the first image controls the model, pose, camera angle, framing, background, lighting, spacing, scale, and panel layout. Every additional uploaded image is a garment reference only. Never output the garment by itself, a flat lay, a hanger photo, a mannequin photo, or a product-only ecommerce image.",
     "Match the structure of the first model-pose image — number of panels, framing, spacing, margins, scale, camera distance, grid arrangement.",
-    `SURFACE PRIORITY: the garment must match the product image's color exactly (every hue and saturation), the print pattern (every motif placement, density, and orientation), all trim and tape placement, hardware positions on the wearer-correct side (zippers, buttons, snaps, drawstrings), hem stitching color and width, and the precise fabric texture and sheen visible in the product image. Do not mirror left/right artwork. Do not relocate sleeve or chest details to the visible side just to make them readable. Render as a worn ${cleanGarment}.`,
+    `SURFACE PRIORITY: the garment must match the product image's color exactly (every hue and saturation), the print pattern (every motif placement, density, and orientation), all trim and tape placement, hardware positions on the wearer-correct side (zippers, buttons, snaps, drawstrings), hem stitching color and width, and the precise fabric texture and sheen visible in the product image. Do not mirror left/right artwork. Do not relocate sleeve or chest details to the visible side just to make them readable. SCATTERED PATCH / ALL-OVER PATTERN FIDELITY: if the product image shows multiple patches, appliqués, or motifs of similar size distributed all over the garment (chest, torso, sleeves), reproduce ALL of them at their original relative sizes and spatial positions — do NOT scale up any single patch to make it larger, and do NOT consolidate multiple scattered patches into one dominant oversized center-chest graphic. Maintain the same approximate patch count and scatter density as the reference. Render as a worn ${cleanGarment}.`,
     antiLayeringFor("surface"),
     "Photorealistic shooting setup: Sony A7 IV, 50mm to 85mm commercial lookbook perspective, f/4 to f/5.6, sharp full-body clarity, minimal background blur, RAW image feel, natural skin texture, soft realistic hair strands, natural catchlights.",
     "Model direction: preserve the selected reference model identity, face, hair, skin tone, body proportions, and natural commercial makeup from the layout reference.",
@@ -2212,7 +2284,7 @@ export function buildModelStudioBetaPromptVariants(
     "Background and lighting: warm beige seamless studio background, soft even commercial lighting, subtle grounding shadow only.",
     `Preserve from the first model-pose image where applicable: ${cleanPose}, ${cleanScene}, and the same camera perspective.`,
     adjustmentClause,
-    "Negative prompt: no color drift, no pattern simplification, no missing trims, no relocated hardware, no mirrored print, no separate inner garment, no layered cami, no contrasting underlayer, no flat lay, no hanger, no mannequin, no model identity distortion, no background change.",
+    "Negative prompt: no color drift, no pattern simplification, no missing trims, no relocated hardware, no mirrored print, no separate inner garment, no layered cami, no contrasting underlayer, no flat lay, no hanger, no mannequin, no model identity distortion, no background change, no patch consolidation, no single oversized center graphic when reference shows multiple equal-sized scattered patches.",
   ]
     .filter(Boolean)
     .join(" ");
@@ -2232,7 +2304,7 @@ export function buildModelStudioBetaPromptVariants(
     "Background and lighting: warm beige seamless studio background, soft even commercial lighting.",
     `Preserve from the first model-pose image where applicable: ${cleanPose}, ${cleanScene}.`,
     adjustmentClause,
-    "Negative prompt: no flat lay, no hanger, no mannequin, no torso form, no isolated garment, no garment redesign, no color change, no missing trims, no wrong patches, no separate inner garment, no layered cami, no undershirt, no contrasting underlayer, no split-into-two-pieces, no flattened high-low hem, no mirrored hardware, no relocated trim, no model identity distortion, no background change.",
+    "Negative prompt: no flat lay, no hanger, no mannequin, no torso form, no isolated garment, no garment redesign, no color change, no missing trims, no wrong patches, no separate inner garment, no layered cami, no undershirt, no contrasting underlayer, no split-into-two-pieces, no flattened high-low hem, no mirrored hardware, no relocated trim, no model identity distortion, no background change, no patch consolidation, no single oversized center graphic when reference has multiple equal-sized scattered patches.",
   ]
     .filter(Boolean)
     .join(" ");
