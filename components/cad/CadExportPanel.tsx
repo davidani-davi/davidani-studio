@@ -96,6 +96,15 @@ export default function CadExportPanel({ imageUrl, scale, spec }: Props) {
         <p className="text-[11px] text-amber-700">No scale set — the export won't carry a physical print size. Measure above to add it.</p>
       ) : null}
 
+      {scale &&
+      spec?.repeatType &&
+      !["full repeat", "all-over", "unknown"].includes(spec.repeatType.toLowerCase()) ? (
+        <p className="text-[11px] text-amber-700">
+          Repeat type "{spec.repeatType}" is not a simple square repeat — the true vertical repeat may differ from
+          the {scale.repeatCm.toFixed(1)} cm measured here. Confirm the vertical repeat before sending to print.
+        </p>
+      ) : null}
+
       <button
         type="button"
         onClick={exportFiles}

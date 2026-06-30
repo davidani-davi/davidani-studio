@@ -68,6 +68,14 @@ export default function CadExtractorClient() {
   const [spec, setSpec] = useState<CadSpec | null>(null);
   const [scale, setScale] = useState<{ repeatCm: number; dpi: number } | null>(null);
   const [colorway, setColorway] = useState<CadSpec | null>(null);
+
+  // Scale is measured on the garment photo, not the result tile. Reset it only
+  // when the primary selected photo changes — NOT on re-roll (which regenerates
+  // the tile from the same photo), so the user keeps their measurement.
+  const primaryRef = selectedRefUrls[0];
+  useEffect(() => {
+    setScale(null);
+  }, [primaryRef]);
   const [previewIdx, setPreviewIdx] = useState<number | null>(null);
   const [refPreviewSrc, setRefPreviewSrc] = useState<string | null>(null);
 
@@ -159,7 +167,6 @@ export default function CadExtractorClient() {
     setRunning(true);
     setResultUrls([]);
     setSpec(null);
-    setScale(null);
     try {
       if (isSpec) {
         const data = await fetchJson("Spec analysis", "/api/cad-spec", {
