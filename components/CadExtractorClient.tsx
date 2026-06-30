@@ -67,6 +67,7 @@ export default function CadExtractorClient() {
   const [resultUrls, setResultUrls] = useState<string[]>([]);
   const [spec, setSpec] = useState<CadSpec | null>(null);
   const [scale, setScale] = useState<{ repeatCm: number; dpi: number } | null>(null);
+  const [cleaning, setCleaning] = useState(false);
   const [colorway, setColorway] = useState<CadSpec | null>(null);
 
   // Scale is measured on the garment photo, not the result tile. Reset it only
@@ -197,6 +198,26 @@ export default function CadExtractorClient() {
       setError(e?.message || "Run failed");
     } finally {
       setRunning(false);
+    }
+  }
+
+  async function cleanup() {
+    if (!resultUrls.length) return;
+    setError(null);
+    setCleaning(true);
+    try {
+      const data = await fetchJson("Cleanup", "/api/cad-cleanup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageUrl: resultUrls[0], modelId }),
+      });
+      const urls: string[] = data.images?.map((i: any) => i.url).filter(Boolean) ?? [];
+      if (!urls.length) throw new Error("Cleanup returned no image");
+      setResultUrls([urls[0]]);
+    } catch (e: any) {
+      setError(e?.message || "Cleanup failed");
+    } finally {
+      setCleaning(false);
     }
   }
 
@@ -474,7 +495,7 @@ export default function CadExtractorClient() {
                     <p className="text-[11px] text-neutral-400">Select a garment photo to measure scale.</p>
                   )}
                 </div>
-                <CadTilingPreview imageUrl={resultUrls[0]} onReroll={run} rerolling={running} />
+                <CadTilingPreview imageUrl={resultUrls[0]} onReroll={run} rerolling={running} onCleanup={cleanup} cleaning={cleaning} />
                 <CadExportPanel imageUrl={resultUrls[0]} scale={scale} spec={colorway} />
               </div>
             ) : null}
