@@ -47,7 +47,9 @@ function hasImageFiles(e: React.DragEvent): boolean {
 export default function CadExtractorClient() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [mode, setMode] = useState<ModeId>("flat");
-  const [modelId, setModelId] = useState<ModelId>("seedream-4");
+  // Nano Banana 2 recovers clean flat CAD artwork; Seedream 4.5 tends to render
+  // a "photo of draped fabric" and hallucinate motifs (smoke-tested 2026-06-30).
+  const [modelId, setModelId] = useState<ModelId>("nano-banana");
   const [resolution, setResolution] = useState<string>("2K");
   const [notes, setNotes] = useState<string>("");
 
