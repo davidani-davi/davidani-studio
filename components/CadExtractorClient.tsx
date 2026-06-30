@@ -7,6 +7,9 @@ import type { UploadedImage } from "@/components/types";
 import { MODELS, type ModelId, RESOLUTIONS } from "@/lib/models";
 import { resizeIfNeeded } from "@/lib/image-resize";
 import type { CadMode, CadSpec } from "@/lib/cad-prompts";
+import CadScaleMeasure from "@/components/cad/CadScaleMeasure";
+import CadTilingPreview from "@/components/cad/CadTilingPreview";
+import CadExportPanel from "@/components/cad/CadExportPanel";
 
 const REFS_KEY = "davidani_cad_refs_v1";
 
@@ -63,11 +66,46 @@ export default function CadExtractorClient() {
 
   const [resultUrls, setResultUrls] = useState<string[]>([]);
   const [spec, setSpec] = useState<CadSpec | null>(null);
+  const [scale, setScale] = useState<{ repeatCm: number; dpi: number } | null>(null);
+  const [colorway, setColorway] = useState<CadSpec | null>(null);
+
+  // Scale is measured on the garment photo, not the result tile. Reset it only
+  // when the primary selected photo changes — NOT on re-roll (which regenerates
+  // the tile from the same photo), so the user keeps their measurement.
+  const primaryRef = selectedRefUrls[0];
+  useEffect(() => {
+    setScale(null);
+  }, [primaryRef]);
   const [previewIdx, setPreviewIdx] = useState<number | null>(null);
   const [refPreviewSrc, setRefPreviewSrc] = useState<string | null>(null);
 
   const activeMode = useMemo(() => MODE_OPTIONS.find((m) => m.id === mode)!, [mode]);
   const isSpec = mode === "spec";
+
+  useEffect(() => {
+    if (mode === "spec") return;
+    if (!resultUrls.length || !selectedRefUrls.length) {
+      setColorway(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await fetchJson("Colorway", "/api/cad-spec", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ imageUrls: selectedRefUrls }),
+        });
+        if (!cancelled) setColorway(data.spec as CadSpec);
+      } catch {
+        if (!cancelled) setColorway(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resultUrls, selectedRefUrls, mode]);
 
   // Hydrate the reference library from localStorage on mount, then persist it
   // whenever it changes — mirrors ImagePlaygroundClient (SSR-safe: the read
@@ -424,6 +462,22 @@ export default function CadExtractorClient() {
                 {running ? "Extracting…" : "Run extraction to see artwork"}
               </div>
             )}
+            {!isSpec && resultUrls.length ? (
+              <div className="space-y-5 border-t border-neutral-200 pt-4">
+                <div>
+                  <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-neutral-700">
+                    Scale (measure on the garment photo)
+                  </h3>
+                  {selectedRefUrls.length ? (
+                    <CadScaleMeasure imageUrl={selectedRefUrls[0]} onChange={setScale} />
+                  ) : (
+                    <p className="text-[11px] text-neutral-400">Select a garment photo to measure scale.</p>
+                  )}
+                </div>
+                <CadTilingPreview imageUrl={resultUrls[0]} onReroll={run} rerolling={running} />
+                <CadExportPanel imageUrl={resultUrls[0]} scale={scale} spec={colorway} />
+              </div>
+            ) : null}
           </div>
         </aside>
       </div>
