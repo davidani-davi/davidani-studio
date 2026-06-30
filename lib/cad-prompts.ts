@@ -97,3 +97,20 @@ Rules:
 
 export const CAD_SPEC_USER_PROMPT =
   "Analyze the underlying textile print in this garment photograph and return the production spec as strict JSON per your system instructions. Output JSON only.";
+
+// One-click "Clean up (AI)" pass. The input is a tile that has already been
+// offset by half (so its outer edges are continuous and any seam now runs as a
+// faint cross through the exact center). This pass scrubs residual garment
+// construction the first recovery left behind — hem/stitch lines, panel and
+// inseam seams, creases, fold shadows, gathers — plus that center crosshair,
+// healing the printed artwork over all of them. It must NOT touch the outer
+// edges (they are already tileable).
+export const CAD_CLEANUP_PROMPT = [
+  "You are an expert textile CAD engineer cleaning up a flat 2D textile print that was recovered from a photograph of a finished garment. The print is good but still contains RESIDUAL GARMENT CONSTRUCTION that must be removed.",
+  "Remove every remaining trace of garment construction anywhere in the image: faint hem lines, stitch lines, top-stitching, cover-stitch and overlock rows, panel seams, inseams, side seams, waistband and hem-band lines, creases, fold shadows, drape shading, gathers, pleats, and puckers. None of these belong in a flat mill print.",
+  "There is also a faint cross-shaped seam through the EXACT CENTER of the image — one horizontal line across the middle and one vertical line down the middle. Repair it as well.",
+  "For every line, seam, crease, gather, and the center cross: reconstruct the continuous printed artwork over it using ONLY the surrounding print, so the motifs, colors, opacity, fade, texture, and spacing continue naturally with no visible interruption.",
+  "Preserve the print exactly otherwise: do not restyle, recolor, sharpen, simplify, brighten, increase contrast, or invent new motifs. Keep every printed flower, leaf, and shape, its color, and its washed/distressed character unchanged.",
+  "CRITICAL: do NOT modify the outer edges of the image. The four edges are already perfectly continuous and tileable — leave a margin near every edge untouched so the result still tiles seamlessly.",
+  "Output flat 2D artwork only: a square composition that fills the entire frame edge to edge, high resolution, production-ready CAD. No garment, no mannequin, no folds, no perspective, no shadows, no background, no border. Artwork only.",
+].join(" ");
