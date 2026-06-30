@@ -18,7 +18,8 @@ export type StudioTab =
   | "techpack"
   | "faire-seo"
   | "inspiration"
-  | "library";
+  | "library"
+  | "cad";
 
 interface Props {
   active: StudioTab;
@@ -35,6 +36,7 @@ export default function TopTabs({ active }: Props) {
     { id: "inspiration", label: "Inspiration", href: "/inspiration" },
     { id: "library", label: "Library", href: "/library" },
     { id: "playground", label: "Image Playground", href: "/image-playground" },
+    { id: "cad", label: "CAD Extractor", href: "/cad-extractor" },
   ];
 
   return (
