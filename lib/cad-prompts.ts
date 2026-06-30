@@ -6,9 +6,11 @@
 // distorted projection of a flat 2D textile print. The job is to REVERSE every
 // post-design transformation (body warp, drape, wrinkles, seams, pockets,
 // lighting, perspective, lens distortion) and RECOVER the original artwork.
-// Never design, restyle, modernize, or "improve". Preserve every motif,
+// Never design, restyle, modernize, or "improve". Preserve every PRINTED motif,
 // distress mark, color, opacity, placement, rotation, scale, and intentional
-// imperfection. The output must read as textile artwork, never as a garment.
+// imperfection — but remove physically applied embellishments (appliqués,
+// lace/crochet patches, embroidery, beading) since those are not part of the
+// mill print. The output must read as flat textile artwork, never as a garment.
 
 export type CadMode = "flat" | "seamless";
 
@@ -38,9 +40,10 @@ const RECOVERY_CORE = [
   "You are an expert textile CAD engineer recovering the original digital print artwork from a photograph of a finished garment.",
   "Treat the photograph as a distorted projection of a flat 2D textile print. Mathematically and visually reverse every transformation applied after the artwork left the designer: pattern warp from body shape, fabric drape, wrinkles, stretch, compression, construction seams, pockets, waistbands, elastic, gathering, drawstrings, stitching, washing, fading caused by photography, lighting, shadows, highlights, camera perspective, lens distortion, and cropping.",
   "Completely remove every garment-specific element: construction seams, top stitching, cover stitching, overlock stitching, elastic casing, waistbands, hem bands, drawstrings, buttons, snaps, zippers, pockets, pleats, gathering, panel breaks, necklines, sleeves, cuffs, yokes, side seams, fabric folds, wrinkles, body shape, shadows, lighting gradients, and perspective. Nothing from the garment may remain.",
-  "Preserve EXACTLY, do not clean or stylize: every illustration, icon, motif, brush stroke, distress mark, ink texture, halftone, color, opacity, fade, placement, rotation, scale, spacing, overlap, and intentional imperfection. If something is intentionally distressed, washed, cracked, or aged, keep it exactly — do not sharpen, simplify, or restore it.",
-  "Preserve exact color relationships. Do NOT increase saturation or contrast, adjust hue, normalize colors, change brightness, or white-balance. Match the original textile artwork's colors.",
-  "Reconstruct artwork hidden beneath pockets, seams, elastic, waistbands, gathering, or folded fabric using ONLY the surrounding artwork, so the continuation looks perfectly natural with no visible interruption. Motifs cut off by seams, pockets, or folds must continue and reconnect naturally. Never invent unrelated motifs; when uncertain, preserve rather than invent.",
+  "Preserve EXACTLY, do not clean or stylize: every PRINTED illustration, icon, motif, brush stroke, distress mark, ink texture, halftone, color, opacity, fade, placement, rotation, scale, spacing, overlap, and intentional imperfection. If something is intentionally distressed, washed, cracked, or aged, keep it exactly — do not sharpen, simplify, or restore it.",
+  "Critical distinction — printed artwork vs. applied embellishment: only the flat MILL-PRINTED design is the textile artwork. Physical embellishments added during garment construction are NOT part of the print and must be completely removed: lace, crochet, eyelet, and embroidered appliqués and patches (e.g. flower, daisy, butterfly, star, or animal patches), embroidery, beading, sequins, rhinestones, studs, grommets, screen-printed or heat-pressed patches, trims, bows, ribbons, ric-rac, and labels. These sit ON TOP of the fabric in a different material or texture (often raised, openwork, or a contrasting solid color like cream lace). Treat each one as an occluder: delete it and reconstruct the continuous base print underneath it using ONLY the surrounding printed artwork. Do NOT reproduce, tile, or repeat any appliqué or embellishment anywhere in the output.",
+  "Preserve exact color relationships of the print. Do NOT increase saturation or contrast, adjust hue, normalize colors, change brightness, or white-balance. Match the original textile artwork's colors.",
+  "Reconstruct print hidden beneath pockets, seams, elastic, waistbands, gathering, folded fabric, or any removed appliqué/embellishment using ONLY the surrounding printed artwork, so the continuation looks perfectly natural with no visible interruption. Printed motifs cut off by seams, pockets, or folds must continue and reconnect naturally. Never invent unrelated motifs; when uncertain, preserve the printed artwork rather than invent.",
   "Output flat 2D artwork only: a square composition, high resolution, production-ready CAD. No garment, no mannequin, no folds, no perspective, no shadows, no background. Artwork only — it must look like the original digital textile file the brand sent to the fabric mill, with no evidence it came from a photograph.",
 ].join(" ");
 
