@@ -7,11 +7,13 @@ interface Props {
   imageUrl: string;
   onReroll: () => void;
   rerolling: boolean;
+  onCleanup: () => void;
+  cleaning: boolean;
 }
 
 type Score = { value: number } | "unavailable" | null;
 
-export default function CadTilingPreview({ imageUrl, onReroll, rerolling }: Props) {
+export default function CadTilingPreview({ imageUrl, onReroll, rerolling, onCleanup, cleaning }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [score, setScore] = useState<Score>(null);
 
@@ -89,14 +91,24 @@ export default function CadTilingPreview({ imageUrl, onReroll, rerolling }: Prop
         ) : null}
       </div>
       <canvas ref={canvasRef} className="block w-full rounded-lg border border-neutral-200" />
-      <button
-        type="button"
-        onClick={onReroll}
-        disabled={rerolling}
-        className="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-xs font-semibold text-neutral-700 transition hover:border-brand-400 hover:bg-brand-50 disabled:opacity-60"
-      >
-        {rerolling ? "Re-rolling…" : "Re-roll for tighter seam"}
-      </button>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={onReroll}
+          disabled={rerolling || cleaning}
+          className="flex-1 rounded-lg border border-neutral-300 bg-white px-3 py-2 text-xs font-semibold text-neutral-700 transition hover:border-brand-400 hover:bg-brand-50 disabled:opacity-60"
+        >
+          {rerolling ? "Re-rolling…" : "Re-roll for tighter seam"}
+        </button>
+        <button
+          type="button"
+          onClick={onCleanup}
+          disabled={rerolling || cleaning}
+          className="flex-1 rounded-lg border border-neutral-300 bg-white px-3 py-2 text-xs font-semibold text-neutral-700 transition hover:border-brand-400 hover:bg-brand-50 disabled:opacity-60"
+        >
+          {cleaning ? "Cleaning…" : "Clean up (AI)"}
+        </button>
+      </div>
     </div>
   );
 }
