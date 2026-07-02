@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { ASPECT_RATIOS, FORMATS, MODELS, RESOLUTIONS, type ModelId } from "@/lib/models";
 import type { OverlayPlacement } from "@/lib/fal";
 import type { UploadedImage } from "./types";
@@ -38,9 +38,10 @@ interface Props {
   selectedView: PresetView;
   onViewChange: (view: PresetView) => void;
   modelsLoading: boolean;
-  /* User-added model add/delete */
-  onModelsRefresh: () => Promise<void>;
-  onModelAdded: (id: string) => Promise<void>;
+  /* User-added model add/delete.
+     onModelAdded resolves true once the new model is visible in the list
+     (and selected), false if the post-save refresh polls exhausted first. */
+  onModelAdded: (id: string) => Promise<boolean>;
   onModelDeleted: (id: string) => void;
 
   /* Text overlay (same as Image Studio) */
@@ -182,9 +183,15 @@ export default function ModelSidebar(p: Props) {
   }>({});
   const [addModelBusy, setAddModelBusy] = useState(false);
   const [addModelError, setAddModelError] = useState<string | null>(null);
+  // Synchronous re-entrancy guards. The buttons' `disabled` attribute lags a
+  // render, so a fast double-click could otherwise fire two POSTs/DELETEs.
+  const submitInFlight = useRef(false);
+  const deleteInFlight = useRef(false);
 
   async function submitNewModel() {
+    if (submitInFlight.current || addModelBusy) return;
     if (!newModelName.trim() || !newModelFiles.front) return;
+    submitInFlight.current = true;
     setAddModelBusy(true);
     setAddModelError(null);
     try {
@@ -200,19 +207,33 @@ export default function ModelSidebar(p: Props) {
       // The blob index that /api/models reads from can lag briefly after a
       // write, so onModelAdded polls until the new model shows up (rather
       // than a single refresh that may silently miss it) before selecting it.
-      await p.onModelAdded(data.model.id);
-      setAddingModel(false);
-      setNewModelName("");
-      setNewModelFiles({});
+      const appeared = await p.onModelAdded(data.model.id);
+      if (appeared) {
+        setAddingModel(false);
+        setNewModelName("");
+        setNewModelFiles({});
+      } else {
+        // The save itself succeeded but the list index hasn't caught up yet.
+        // Keep the form open with a notice (not stuck busy), and clear the
+        // inputs so a reflexive re-submit can't create a duplicate model.
+        setNewModelName("");
+        setNewModelFiles({});
+        setAddModelError(
+          "Model saved, but the list is still refreshing — it will appear shortly. Refresh the page if it doesn't."
+        );
+      }
     } catch (err: any) {
       setAddModelError(err.message || "Failed to add model");
     } finally {
+      submitInFlight.current = false;
       setAddModelBusy(false);
     }
   }
 
   async function deleteUserModel(id: string, name: string) {
+    if (deleteInFlight.current) return;
     if (!confirm(`Delete model "${name}"? This removes it for the whole team.`)) return;
+    deleteInFlight.current = true;
     try {
       const res = await fetch(`/api/user-models?id=${id}`, { method: "DELETE" });
       const data = await res.json();
@@ -223,6 +244,8 @@ export default function ModelSidebar(p: Props) {
       p.onModelDeleted(id);
     } catch (err: any) {
       setAddModelError(err.message || "Delete failed");
+    } finally {
+      deleteInFlight.current = false;
     }
   }
 

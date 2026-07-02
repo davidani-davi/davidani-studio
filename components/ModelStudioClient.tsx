@@ -410,11 +410,6 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
     return null;
   }
 
-  async function refreshHumanModels() {
-    const models = await fetchModelsOnce();
-    if (models) setHumanModels(models);
-  }
-
   // After a successful add, poll until the new model id shows up (or we run
   // out of attempts), then select it. Never leaves the UI looking like the
   // save was ignored. Returns the last-seen models array so the caller can
@@ -437,13 +432,19 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
     return last;
   }
 
-  async function handleModelAdded(id: string) {
+  // Returns true when the new model was found (and selected) after polling.
+  // Returns false when the polls exhaust without the id appearing — the
+  // caller surfaces that to the user rather than us selecting a phantom id
+  // that isn't in the picker yet.
+  async function handleModelAdded(id: string): Promise<boolean> {
     const models = await refreshUntilModelPresent(id);
-    setSelectedHumanModelId(id);
     const m = models?.find((hm) => hm.id === id);
-    setSelectedPoseId(m?.poses[0]?.id ?? null);
+    if (!m) return false;
+    setSelectedHumanModelId(id);
+    setSelectedPoseId(m.poses[0]?.id ?? null);
     setPrompt("");
     setAnalysisReview(null);
+    return true;
   }
 
   // Optimistic local removal — instant, and avoids the read-after-write lag
@@ -2691,7 +2692,6 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
             humanModels={humanModels}
             selectedHumanModelId={selectedHumanModelId}
             onHumanModelChange={handleHumanModelChange}
-            onModelsRefresh={refreshHumanModels}
             onModelAdded={handleModelAdded}
             onModelDeleted={handleModelDeleted}
             selectedPoseId={selectedPoseId}
