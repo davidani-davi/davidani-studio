@@ -76,6 +76,11 @@ async function writeLocalJson<T>(store: string, value: T): Promise<void> {
   await fs.writeFile(store, JSON.stringify(value, null, 2));
 }
 
+// Lenient read: used by the two list*() functions, which are GETs that
+// should degrade gracefully (e.g. show an empty list) rather than fail the
+// page. NEVER use this as the basis for a mutation — a transient read error
+// here silently returns `fallback`, and a mutation that writes that back
+// would wipe the real index.
 async function readBlobJson<T>(key: string, localStore: string, fallback: T): Promise<T> {
   if (!canUseBlob()) return readLocalJson(localStore, fallback);
   try {
@@ -91,21 +96,65 @@ async function readBlobJson<T>(key: string, localStore: string, fallback: T): Pr
   }
 }
 
+// Strict read: used by every mutation (save/delete). It distinguishes
+// "the index legitimately doesn't exist yet" (list() succeeds, no matching
+// blob found → return `fallback`, this is a fresh store) from "the read
+// itself failed" (list()/fetch threw, or the response wasn't ok → throw).
+// Swallowing the latter and returning `fallback` would make a
+// read-modify-write mutation write an EMPTY index over the real one.
+// With no BLOB token (local dev), this is equivalent to the lenient local
+// read — there's no shared store to clobber.
+async function readBlobJsonStrict<T>(key: string, localStore: string, fallback: T): Promise<T> {
+  if (!canUseBlob()) return readLocalJson(localStore, fallback);
+
+  let found: Awaited<ReturnType<typeof list>>;
+  try {
+    found = await list({ prefix: key, limit: 1 });
+  } catch (err) {
+    throw new Error(
+      `[user-assets] Could not read the shared index (${key}) — save/delete aborted to avoid clobbering it: ${err}`
+    );
+  }
+
+  const blob = found.blobs.find((item) => item.pathname === key) ?? found.blobs[0];
+  if (!blob) return fallback; // index legitimately absent — fresh store
+
+  let res: Response;
+  try {
+    res = await fetch(blob.url, { cache: "no-store" });
+  } catch (err) {
+    throw new Error(
+      `[user-assets] Could not read the shared index (${key}) — save/delete aborted to avoid clobbering it: ${err}`
+    );
+  }
+  if (!res.ok) {
+    throw new Error(
+      `[user-assets] Could not read the shared index (${key}, status ${res.status}) — save/delete aborted to avoid clobbering it`
+    );
+  }
+
+  try {
+    return (await res.json()) as T;
+  } catch (err) {
+    throw new Error(
+      `[user-assets] Shared index (${key}) returned invalid JSON — save/delete aborted to avoid clobbering it: ${err}`
+    );
+  }
+}
+
 async function writeBlobJson<T>(key: string, localStore: string, value: T): Promise<void> {
   if (!canUseBlob()) {
     await writeLocalJson(localStore, value);
     return;
   }
-  try {
-    await put(key, JSON.stringify(value, null, 2), {
-      access: "public",
-      contentType: "application/json",
-      allowOverwrite: true,
-    });
-  } catch (err) {
-    console.warn(`[user-assets] blob write failed for ${key}, using local fallback:`, err);
-    await writeLocalJson(localStore, value);
-  }
+  // No local-disk fallback here: serverless disk is ephemeral and evaporates
+  // on cold start, so a "successful" fallback write would just look
+  // successful while silently losing the data. Let the caller see the error.
+  await put(key, JSON.stringify(value, null, 2), {
+    access: "public",
+    contentType: "application/json",
+    allowOverwrite: true,
+  });
 }
 
 // ---------- image byte storage ----------
@@ -152,13 +201,29 @@ export async function saveUserReference(file: File, label: string): Promise<User
   const id = makeAssetId(label);
   const imageUrl = await storeImage(`user-references/${id}.${fileExt(file)}`, file);
   const entry: UserReference = { id, label: label.trim(), imageUrl, createdAt: nowIso() };
-  const references = [...(await listUserReferences()), entry];
-  await writeBlobJson(REF_INDEX_KEY, LOCAL_REF_STORE, { references });
+  // Union merge: re-read the index (strict — throws rather than silently
+  // treating a read error as empty) right before writing, then merge the new
+  // entry into it by id (new entry wins on collision, everything else
+  // survives). This is not a full fix for the lost-update race: the re-read
+  // itself can still be served a stale snapshot within the blob CDN's ~5s
+  // staleness window, so two saves landing inside that window can still
+  // race each other. It does guarantee this save never reverts the index to
+  // an older snapshot than the one it started from.
+  const index = await readBlobJsonStrict<ReferenceIndex>(REF_INDEX_KEY, LOCAL_REF_STORE, {
+    references: [],
+  });
+  const existing = Array.isArray(index.references) ? index.references : [];
+  const merged = new Map(existing.map((r) => [r.id, r] as const));
+  merged.set(entry.id, entry);
+  await writeBlobJson(REF_INDEX_KEY, LOCAL_REF_STORE, { references: Array.from(merged.values()) });
   return entry;
 }
 
 export async function deleteUserReference(id: string): Promise<void> {
-  const references = await listUserReferences();
+  const index = await readBlobJsonStrict<ReferenceIndex>(REF_INDEX_KEY, LOCAL_REF_STORE, {
+    references: [],
+  });
+  const references = Array.isArray(index.references) ? index.references : [];
   const target = references.find((r) => r.id === id);
   await writeBlobJson(REF_INDEX_KEY, LOCAL_REF_STORE, {
     references: references.filter((r) => r.id !== id),
@@ -197,13 +262,23 @@ export async function saveUserModel(
     throw err;
   }
   const entry: UserModel = { id, name: name.trim(), createdAt: nowIso(), views };
-  const models = [...(await listUserModels()), entry];
-  await writeBlobJson(MODEL_INDEX_KEY, LOCAL_MODEL_STORE, { models });
+  // Union merge — see the comment in saveUserReference for the rationale and
+  // the residual race window this does (and doesn't) close.
+  const index = await readBlobJsonStrict<ModelIndex>(MODEL_INDEX_KEY, LOCAL_MODEL_STORE, {
+    models: [],
+  });
+  const existing = Array.isArray(index.models) ? index.models : [];
+  const merged = new Map(existing.map((m) => [m.id, m] as const));
+  merged.set(entry.id, entry);
+  await writeBlobJson(MODEL_INDEX_KEY, LOCAL_MODEL_STORE, { models: Array.from(merged.values()) });
   return entry;
 }
 
 export async function deleteUserModel(id: string): Promise<void> {
-  const models = await listUserModels();
+  const index = await readBlobJsonStrict<ModelIndex>(MODEL_INDEX_KEY, LOCAL_MODEL_STORE, {
+    models: [],
+  });
+  const models = Array.isArray(index.models) ? index.models : [];
   const target = models.find((m) => m.id === id);
   await writeBlobJson(MODEL_INDEX_KEY, LOCAL_MODEL_STORE, {
     models: models.filter((m) => m.id !== id),

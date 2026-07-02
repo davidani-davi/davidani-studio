@@ -197,9 +197,25 @@ export default function ModelSidebar(p: Props) {
     try {
       const form = new FormData();
       form.append("name", newModelName.trim());
+      const resized: File[] = [];
       for (const view of ["front", "side", "back", "full"] as const) {
         const file = newModelFiles[view];
-        if (file) form.append(view, await resizeIfNeeded(file));
+        if (!file) continue;
+        // Up to 4 photos ride in one multipart body, which must stay under
+        // Vercel's 4.5 MB request-body cap. resizeIfNeeded's default 3 MB
+        // skip threshold lets four ~2.5 MB photos add up to ~10 MB
+        // untouched, so this form asks for a much tighter 1 MB threshold to
+        // keep the aggregate safely under the limit.
+        const out = await resizeIfNeeded(file, { skipIfBytesUnder: 1024 * 1024 });
+        resized.push(out);
+        form.append(view, out);
+      }
+      const totalBytes = resized.reduce((sum, f) => sum + f.size, 0);
+      const MAX_AGGREGATE_BYTES = 4 * 1024 * 1024; // headroom under Vercel's 4.5 MB cap
+      if (totalBytes > MAX_AGGREGATE_BYTES) {
+        throw new Error(
+          `These photos total ${(totalBytes / (1024 * 1024)).toFixed(1)} MB after compression, which is too large to upload. Try fewer or smaller photos.`
+        );
       }
       const res = await fetch("/api/user-models", { method: "POST", body: form });
       const data = await res.json();
