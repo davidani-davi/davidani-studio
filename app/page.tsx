@@ -217,6 +217,22 @@ export default function StudioPage() {
   );
   const [referenceImageUrl, setReferenceImageUrl] = useState<string | null>(null);
   const [referenceUploading, setReferenceUploading] = useState(false);
+  const [userReferences, setUserReferences] = useState<
+    { id: string; label: string; imageUrl: string }[]
+  >([]);
+  const [referenceSaving, setReferenceSaving] = useState(false);
+  // Bytes of the last successfully uploaded custom reference — needed to save
+  // it as a preset (the fal URL from /api/upload isn't guaranteed permanent).
+  const lastReferenceFileRef = useRef<File | null>(null);
+
+  useEffect(() => {
+    fetch("/api/user-references")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.ok) setUserReferences(d.references);
+      })
+      .catch(() => {});
+  }, []);
 
   // Prompt & generation
   const [prompt, setPrompt] = useState<string>("");
@@ -385,6 +401,7 @@ export default function StudioPage() {
       // Shrink oversized phone photos client-side — Vercel's serverless
       // functions reject bodies larger than 4.5 MB.
       const resized = await resizeIfNeeded(file);
+      lastReferenceFileRef.current = resized;
       const form = new FormData();
       form.append("files", resized);
       const data = await fetchJson("Upload reference", "/api/upload", {
@@ -403,6 +420,50 @@ export default function StudioPage() {
 
   function resetReferenceImage() {
     setReferenceImageUrl(null);
+  }
+
+  async function saveReferenceAsPreset(label: string) {
+    const file = lastReferenceFileRef.current;
+    if (!file) return;
+    setReferenceSaving(true);
+    setError(null);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      form.append("label", label);
+      const data = await fetchJson("Save reference preset", "/api/user-references", {
+        method: "POST",
+        body: form,
+      });
+      const saved = data.reference as { id: string; label: string; imageUrl: string };
+      setUserReferences((existing) => [...existing, saved]);
+      // Select the saved preset and clear the one-off override so the grid
+      // checkmark reflects reality.
+      setSelectedProductShotPath(saved.imageUrl);
+      setReferenceImageUrl(null);
+      lastReferenceFileRef.current = null;
+    } catch (err: any) {
+      setError(err.message || "Saving preset failed");
+    } finally {
+      setReferenceSaving(false);
+    }
+  }
+
+  async function deleteReferencePreset(id: string) {
+    try {
+      await fetchJson("Delete reference preset", `/api/user-references?id=${id}`, {
+        method: "DELETE",
+      });
+      // Compute the fallback selection outside the setState updater — updaters
+      // must stay pure (StrictMode invokes them twice).
+      const removed = userReferences.find((r) => r.id === id);
+      if (removed && selectedProductShotPath === removed.imageUrl) {
+        setSelectedProductShotPath(PRODUCT_SHOT_REFERENCES[0]?.path ?? "");
+      }
+      setUserReferences((existing) => existing.filter((r) => r.id !== id));
+    } catch (err: any) {
+      setError(err.message || "Deleting preset failed");
+    }
   }
 
   function resolveSelectedReferenceUrl(): string | null {
@@ -982,7 +1043,19 @@ export default function StudioPage() {
             onFontSizeChange={setFontSize}
             referenceImageUrl={referenceImageUrl}
             defaultReferencePreview={selectedProductShotPath || PRODUCT_SHOT_REFERENCES[0]?.path || ""}
-            productShotReferences={PRODUCT_SHOT_REFERENCES}
+            productShotReferences={[
+              ...PRODUCT_SHOT_REFERENCES,
+              ...userReferences.map((r) => ({
+                id: r.id,
+                label: r.label,
+                path: r.imageUrl,
+                userAdded: true as const,
+              })),
+            ]}
+            canSaveReference={Boolean(referenceImageUrl && lastReferenceFileRef.current)}
+            referenceSaving={referenceSaving}
+            onReferenceSave={saveReferenceAsPreset}
+            onPresetDelete={deleteReferencePreset}
             selectedProductShotPath={selectedProductShotPath}
             onProductShotSelect={(path) => {
               setSelectedProductShotPath(path);
