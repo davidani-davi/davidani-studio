@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { generate, type OverlayOptions } from "@/lib/fal";
 import { MODELS, type ModelId } from "@/lib/models";
 import { getPosePublicPath, getPoseUrl, type PresetView } from "@/lib/models-registry";
+import { findUserModelViewUrl } from "@/lib/user-assets";
 
 export const runtime = "nodejs";
 export const maxDuration = 800;
@@ -17,6 +18,12 @@ async function resolvePoseUrl(
   view: PresetView,
   poseVariantIndex: number
 ): Promise<string> {
+  // User-added models store absolute Blob URLs (dev: /user-assets/ paths) —
+  // resolve those directly; built-in models fall through to the registry.
+  const userUrl = await findUserModelViewUrl(modelId, view);
+  if (userUrl) {
+    return userUrl.startsWith("http") ? userUrl : new URL(userUrl, req.url).toString();
+  }
   if (process.env.VERCEL) {
     const publicPath = getPosePublicPath(modelId, poseId, view, poseVariantIndex);
     return new URL(publicPath, req.url).toString();

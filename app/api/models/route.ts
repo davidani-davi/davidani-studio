@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { listHumanModels } from "@/lib/models-registry";
+import { listAllHumanModels } from "@/lib/models-registry";
 
 export const runtime = "nodejs";
 
@@ -13,7 +13,7 @@ export const runtime = "nodejs";
  */
 export async function GET() {
   try {
-    const models = listHumanModels();
+    const models = await listAllHumanModels();
     return NextResponse.json({ ok: true, models });
   } catch (err: any) {
     console.error("[api/models] error:", err);

@@ -12,6 +12,7 @@ import {
   type SwapScope,
 } from "@/lib/fal";
 import { getPosePublicPath, getPoseUrl, type PresetView } from "@/lib/models-registry";
+import { findUserModelViewUrl } from "@/lib/user-assets";
 import { fal } from "@fal-ai/client";
 
 export const runtime = "nodejs";
@@ -38,6 +39,12 @@ async function resolvePoseUrl(
   view: PresetView,
   poseVariantIndex: number
 ): Promise<string> {
+  // User-added models store absolute Blob URLs (dev: /user-assets/ paths) —
+  // resolve those directly; built-in models fall through to the registry.
+  const userUrl = await findUserModelViewUrl(modelId, view);
+  if (userUrl) {
+    return userUrl.startsWith("http") ? userUrl : new URL(userUrl, req.url).toString();
+  }
   if (process.env.VERCEL) {
     const publicPath = getPosePublicPath(modelId, poseId, view, poseVariantIndex);
     return new URL(publicPath, req.url).toString();
@@ -124,6 +131,7 @@ FEATURES: <comma-separated noun phrases enumerating clearly visible structural d
 RULES:
 - NEVER invent text, letters, numbers, logos, brand names, or made-up words.
 - NEVER describe individual motifs inside a print/pattern. Name the pattern TYPE only (e.g. "scattered oval patch design", "all-over floral print", "plaid"). However, you MUST describe the COVERAGE and PLACEMENT of every graphic or pattern — state exactly which areas it covers: e.g. "all-over scattered patches covering the full chest, torso, and both sleeves", "graphic on left chest panel only", "patch on right sleeve only", "patches on both sleeves with a clean chest panel". Coverage and placement are required even when motif detail is omitted.
+- ALL-OVER PATCH COUNT RULE: If the garment features multiple individual patches, appliqués, or motifs of visually similar size scattered across the body (e.g. 4–6 oval patches spread over the chest, torso, and sleeves), you MUST describe them as a group using plural language and state their approximate count. NEVER describe an all-over multi-patch design using singular language like "a patch on the chest" or "oval graphic on center chest" — that falsely implies one dominant patch and will cause the generator to produce a single oversized chest graphic. Instead write: "approximately [N] similarly-sized oval patches scattered all over the chest, torso, and both sleeves with no single patch larger than the others." If one patch IS genuinely larger than the rest, note that explicitly; if they are visually equal in size, you must say so.
 - Use only real, common English words.
 - Describe only the garment itself. Ignore background, hanger, or mannequin.
 - PANTS SHAPE AUDIT: If the garment has two leg openings, a waistband, and no neckline, it is a bottom. Never call pants a top. Pay special attention to the outer leg line: rounded outward curve + tapered ankle = barrel; consistent width = wide-leg or straight-leg; widening below knee = flare or bootcut; close fit through ankle = skinny or slim; roomy thigh narrowing to ankle = tapered or jogger.
@@ -132,6 +140,7 @@ RULES:
 - HEM GEOMETRY AUDIT: For tops, jackets, cardigans, sweaters, shirts, blouses, hoodies, pullovers, and outerwear, examine whether the front hem and back hem land at the same height. If the back panel is visibly longer than the front (a longer back hem peeks out below the front hem on a hanger or flat-lay), say so explicitly in both GARMENT and FEATURES using one of these terms: "high-low hem", "shirttail hem", "stepped hem", "extended back hem", or "asymmetric hem with longer back panel". Treat the longer back panel as part of the SAME garment.
 - LAYERING DISAMBIGUATION: Do not describe any visible inner-fabric portion as an "undershirt", "cami", "inner top", "second layer", "underlayer", "layered piece", "two-piece", or any phrase that implies more than one garment, UNLESS the photograph clearly shows two physically separate garments hanging together. A longer back hem peeking below a shorter front hem on the same hanger is ONE garment with an asymmetric hem — never two garments. A contrasting band visible at a hem is part of the garment's own construction (color-block, banded hem, raw edge), not a second garment.
 - ONE GARMENT DEFAULT: If only one garment is hanging in the photograph, both GARMENT and FEATURES must describe ONE garment. Never split a single hanging garment into "top + cami", "shirt + inner tank", or any layered description.
+- FRONT PANEL ONLY RULE: If this photograph shows BOTH the front AND back of the garment side by side (for example: a flat-lay with front-left/back-right, a product composite with two panels, or a catalog image showing two views together), you MUST describe ONLY the front panel in your GARMENT and FEATURES output. Front-facing features are on the chest, front torso, and the outer/front side of sleeves. Back-panel graphics, back embroidery, center-back prints, back-only patches, and back-only text are NOT front-facing features and must NEVER appear in your GARMENT or FEATURES output when this image is being analyzed as a front-panel reference. To identify the front panel: look for a button placket, chest pocket, front zip, front yoke, front-facing collar/lapel, or brand label on the chest — those features mark the front. If uncertain which panel is front, describe only the panel without large back graphics.
 - Output exactly two lines: GARMENT: and FEATURES:, nothing else.`;
 
   const result: any = await subscribeVisionWithRetry(
