@@ -39,7 +39,11 @@ const CURRENT_ID_KEY = "davidani_image_current_run_v1";
 const IMAGE_JOBS_KEY = "davidani_image_jobs_v1";
 const USER_ID_KEY = "davidani_user_id_v1";
 const IMAGE_STUDIO_VERSION = "2.3";
-const IMAGE_STUDIO_OUTPUT_SIZE = { width: 2160, height: 2700 } as const;
+// 2:3 portrait — must match aspectRatio "2:3" sent at generation time and the
+// server-side lock in lib/output-sizes.ts (the server ignores this client value,
+// but keeping them equal avoids confusion). A mismatched ratio causes the
+// cover-resize in lib/fal.ts to crop the image (cut-off head/feet).
+const IMAGE_STUDIO_OUTPUT_SIZE = { width: 2160, height: 3240 } as const;
 
 function productShotViewDirective(mode: ProductShotMode, target?: "front" | "back"): string {
   const view =
