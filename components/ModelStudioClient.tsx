@@ -392,8 +392,71 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
   const [uploading, setUploading] = useState(false);
 
   /* ---------- Human model catalog ---------- */
-  const [humanModels] = useState<HumanModel[]>(initialHumanModels);
+  const [humanModels, setHumanModels] = useState<HumanModel[]>(initialHumanModels);
   const [modelsLoading] = useState(false);
+
+  // The blob index that backs /api/models can lag ~5s after a write, so a
+  // plain refresh right after POST/DELETE can silently no-op. Poll briefly
+  // for the expected state before giving up and settling on whatever the
+  // last fetch returned.
+  async function fetchModelsOnce(): Promise<HumanModel[] | null> {
+    try {
+      const res = await fetch("/api/models", { cache: "no-store" });
+      const data = await res.json();
+      if (data?.ok && Array.isArray(data.models)) return data.models as HumanModel[];
+    } catch (err) {
+      console.warn("[model-studio] models refresh failed:", err);
+    }
+    return null;
+  }
+
+  async function refreshHumanModels() {
+    const models = await fetchModelsOnce();
+    if (models) setHumanModels(models);
+  }
+
+  // After a successful add, poll until the new model id shows up (or we run
+  // out of attempts), then select it. Never leaves the UI looking like the
+  // save was ignored. Returns the last-seen models array so the caller can
+  // select against fresh data instead of a stale `humanModels` closure.
+  async function refreshUntilModelPresent(
+    id: string,
+    attempts = 5,
+    delayMs = 1500
+  ): Promise<HumanModel[] | null> {
+    let last: HumanModel[] | null = null;
+    for (let i = 0; i < attempts; i++) {
+      const models = await fetchModelsOnce();
+      if (models) {
+        last = models;
+        setHumanModels(models);
+        if (models.some((m) => m.id === id)) break;
+      }
+      if (i < attempts - 1) await new Promise((r) => setTimeout(r, delayMs));
+    }
+    return last;
+  }
+
+  async function handleModelAdded(id: string) {
+    const models = await refreshUntilModelPresent(id);
+    setSelectedHumanModelId(id);
+    const m = models?.find((hm) => hm.id === id);
+    setSelectedPoseId(m?.poses[0]?.id ?? null);
+    setPrompt("");
+    setAnalysisReview(null);
+  }
+
+  // Optimistic local removal — instant, and avoids the read-after-write lag
+  // re-introducing a just-deleted model into the picker. A later natural
+  // refresh (e.g. the next add) reconciles against the blob index once it
+  // has caught up.
+  function handleModelDeleted(id: string) {
+    setHumanModels((prev) => prev.filter((m) => m.id !== id));
+    if (selectedHumanModelId === id) {
+      const fallback = humanModels.find((m) => m.id !== id);
+      if (fallback) handleHumanModelChange(fallback.id);
+    }
+  }
   const [selectedHumanModelId, setSelectedHumanModelId] = useState<string | null>(
     initialHumanModels[0]?.id ?? null
   );
@@ -2628,6 +2691,9 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
             humanModels={humanModels}
             selectedHumanModelId={selectedHumanModelId}
             onHumanModelChange={handleHumanModelChange}
+            onModelsRefresh={refreshHumanModels}
+            onModelAdded={handleModelAdded}
+            onModelDeleted={handleModelDeleted}
             selectedPoseId={selectedPoseId}
             onPoseChange={handlePoseChange}
             selectedView={selectedView}

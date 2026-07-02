@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ASPECT_RATIOS, FORMATS, MODELS, RESOLUTIONS, type ModelId } from "@/lib/models";
 import type { OverlayPlacement } from "@/lib/fal";
 import type { UploadedImage } from "./types";
+import { resizeIfNeeded } from "@/lib/image-resize";
 // NOTE: `import type` is required — models-registry imports node:fs, which
 // must never end up in the client bundle. Type-only imports are erased at
 // compile time.
@@ -37,6 +38,10 @@ interface Props {
   selectedView: PresetView;
   onViewChange: (view: PresetView) => void;
   modelsLoading: boolean;
+  /* User-added model add/delete */
+  onModelsRefresh: () => Promise<void>;
+  onModelAdded: (id: string) => Promise<void>;
+  onModelDeleted: (id: string) => void;
 
   /* Text overlay (same as Image Studio) */
   colorName: string;
@@ -165,6 +170,61 @@ export default function ModelSidebar(p: Props) {
   const [outputOpen, setOutputOpen] = useState(false);
   const [previewSrc, setPreviewSrc] = useState<string | null>(null);
   const [draggingUploads, setDraggingUploads] = useState(false);
+
+  /* ---------- Add / delete user models ---------- */
+  const [addingModel, setAddingModel] = useState(false);
+  const [newModelName, setNewModelName] = useState("");
+  const [newModelFiles, setNewModelFiles] = useState<{
+    front?: File;
+    side?: File;
+    back?: File;
+    full?: File;
+  }>({});
+  const [addModelBusy, setAddModelBusy] = useState(false);
+  const [addModelError, setAddModelError] = useState<string | null>(null);
+
+  async function submitNewModel() {
+    if (!newModelName.trim() || !newModelFiles.front) return;
+    setAddModelBusy(true);
+    setAddModelError(null);
+    try {
+      const form = new FormData();
+      form.append("name", newModelName.trim());
+      for (const view of ["front", "side", "back", "full"] as const) {
+        const file = newModelFiles[view];
+        if (file) form.append(view, await resizeIfNeeded(file));
+      }
+      const res = await fetch("/api/user-models", { method: "POST", body: form });
+      const data = await res.json();
+      if (!data?.ok) throw new Error(data?.error || "Failed to add model");
+      // The blob index that /api/models reads from can lag briefly after a
+      // write, so onModelAdded polls until the new model shows up (rather
+      // than a single refresh that may silently miss it) before selecting it.
+      await p.onModelAdded(data.model.id);
+      setAddingModel(false);
+      setNewModelName("");
+      setNewModelFiles({});
+    } catch (err: any) {
+      setAddModelError(err.message || "Failed to add model");
+    } finally {
+      setAddModelBusy(false);
+    }
+  }
+
+  async function deleteUserModel(id: string, name: string) {
+    if (!confirm(`Delete model "${name}"? This removes it for the whole team.`)) return;
+    try {
+      const res = await fetch(`/api/user-models?id=${id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!data?.ok) throw new Error(data?.error || "Delete failed");
+      // Optimistic local removal — instant, and immune to the blob index's
+      // read-after-write lag (a plain refresh right after delete could still
+      // show the just-deleted model). Parent also handles selection fallback.
+      p.onModelDeleted(id);
+    } catch (err: any) {
+      setAddModelError(err.message || "Delete failed");
+    }
+  }
 
   const selectedCount = p.selectedUrls.length;
   const uploadCount = p.uploads.length;
@@ -417,10 +477,18 @@ export default function ModelSidebar(p: Props) {
                       // readable.
                       const label = m.name.replace(family, "").trim() || m.name;
                       return (
-                        <button
+                        <div
                           key={m.id}
+                          role="button"
+                          tabIndex={0}
                           onClick={() => p.onHumanModelChange(m.id)}
-                          className={`group flex min-h-[60px] items-center gap-2 rounded-lg border p-2 text-left transition ${
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              p.onHumanModelChange(m.id);
+                            }
+                          }}
+                          className={`group relative flex min-h-[60px] cursor-pointer items-center gap-2 rounded-lg border p-2 text-left transition ${
                             active
                               ? "border-brand-500 bg-brand-50 text-brand-700 shadow-sm"
                               : "border-neutral-200 bg-white text-neutral-700 hover:border-neutral-400 hover:bg-neutral-50"
@@ -444,7 +512,20 @@ export default function ModelSidebar(p: Props) {
                               {label}
                             </span>
                           </span>
-                        </button>
+                          {m.userAdded && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                void deleteUserModel(m.id, m.name);
+                              }}
+                              title="Delete model"
+                              className="absolute right-1 top-1 hidden h-4 w-4 items-center justify-center rounded-full bg-neutral-800/70 text-[9px] font-bold text-white group-hover:flex"
+                            >
+                              ×
+                            </button>
+                          )}
+                        </div>
                       );
                     })}
                   </div>
@@ -453,6 +534,64 @@ export default function ModelSidebar(p: Props) {
             });
           })()}
         </div>
+
+        {!addingModel ? (
+          <button
+            type="button"
+            onClick={() => setAddingModel(true)}
+            className="mt-2 w-full rounded-lg border border-dashed border-neutral-300 bg-white px-2 py-2.5 text-[11px] font-medium text-neutral-500 transition hover:border-brand-400 hover:text-brand-600"
+          >
+            + Add model
+          </button>
+        ) : (
+          <div className="mt-2 space-y-2 rounded-lg border border-neutral-200 bg-neutral-50 p-3">
+            <input
+              type="text"
+              value={newModelName}
+              onChange={(e) => setNewModelName(e.target.value)}
+              placeholder="Model name"
+              className="w-full rounded-md border border-neutral-200 bg-white px-2 py-1.5 text-[11px] focus:border-brand-400 focus:outline-none"
+            />
+            {(["front", "side", "back", "full"] as const).map((view) => (
+              <label key={view} className="flex items-center gap-2 text-[11px] text-neutral-600">
+                <span className="w-10 capitalize">
+                  {view}
+                  {view === "front" ? " *" : ""}
+                </span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    setNewModelFiles((existing) => ({ ...existing, [view]: file }));
+                  }}
+                  className="flex-1 text-[10px]"
+                />
+              </label>
+            ))}
+            {addModelError && <p className="text-[10px] text-red-600">{addModelError}</p>}
+            <div className="flex gap-1.5">
+              <button
+                type="button"
+                onClick={() => void submitNewModel()}
+                disabled={addModelBusy || !newModelName.trim() || !newModelFiles.front}
+                className="flex-1 rounded-md border border-brand-300 bg-brand-50 px-2 py-1.5 text-[11px] font-medium text-brand-700 hover:bg-brand-100 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {addModelBusy ? "Saving…" : "Save model"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setAddingModel(false);
+                  setAddModelError(null);
+                }}
+                className="rounded-md border border-neutral-200 bg-white px-2 py-1.5 text-[11px] text-neutral-600 hover:bg-neutral-50"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
 
         {selectedModel?.id.startsWith("pants") && (
           <p className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] leading-relaxed text-amber-800">
