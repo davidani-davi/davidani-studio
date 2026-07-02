@@ -96,11 +96,16 @@ async function writeBlobJson<T>(key: string, localStore: string, value: T): Prom
     await writeLocalJson(localStore, value);
     return;
   }
-  await put(key, JSON.stringify(value, null, 2), {
-    access: "public",
-    contentType: "application/json",
-    allowOverwrite: true,
-  });
+  try {
+    await put(key, JSON.stringify(value, null, 2), {
+      access: "public",
+      contentType: "application/json",
+      allowOverwrite: true,
+    });
+  } catch (err) {
+    console.warn(`[user-assets] blob write failed for ${key}, using local fallback:`, err);
+    await writeLocalJson(localStore, value);
+  }
 }
 
 // ---------- image byte storage ----------
@@ -179,10 +184,17 @@ export async function saveUserModel(
 ): Promise<UserModel> {
   const id = makeAssetId(name);
   const views: UserModel["views"] = { front: "" };
-  for (const view of MODEL_VIEWS) {
-    const file = files[view];
-    if (!file) continue;
-    views[view] = await storeImage(`user-models/${id}/${view}.${fileExt(file)}`, file);
+  try {
+    for (const view of MODEL_VIEWS) {
+      const file = files[view];
+      if (!file) continue;
+      views[view] = await storeImage(`user-models/${id}/${view}.${fileExt(file)}`, file);
+    }
+  } catch (err) {
+    for (const url of Object.values(views)) {
+      if (url) await removeImage(url);
+    }
+    throw err;
   }
   const entry: UserModel = { id, name: name.trim(), createdAt: nowIso(), views };
   const models = [...(await listUserModels()), entry];
