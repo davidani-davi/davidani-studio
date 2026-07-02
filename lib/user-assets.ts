@@ -76,6 +76,16 @@ async function writeLocalJson<T>(store: string, value: T): Promise<void> {
   await fs.writeFile(store, JSON.stringify(value, null, 2));
 }
 
+// Blob public URLs are served through Vercel's CDN with a long max-age, and
+// overwrite invalidation is not reliable across regions — a serverless
+// function's regional edge can keep serving a stale index for hours. A
+// unique query param changes the CDN cache key, forcing an origin read.
+// Required for correctness: mutations union-merge against this read, so a
+// stale index here can drop or resurrect entries.
+function cacheBusted(url: string): string {
+  return `${url}${url.includes("?") ? "&" : "?"}nocache=${Date.now().toString(36)}`;
+}
+
 // Lenient read: used by the two list*() functions, which are GETs that
 // should degrade gracefully (e.g. show an empty list) rather than fail the
 // page. NEVER use this as the basis for a mutation — a transient read error
@@ -87,7 +97,7 @@ async function readBlobJson<T>(key: string, localStore: string, fallback: T): Pr
     const found = await list({ prefix: key, limit: 1 });
     const blob = found.blobs.find((item) => item.pathname === key) ?? found.blobs[0];
     if (!blob) return fallback;
-    const res = await fetch(blob.url, { cache: "no-store" });
+    const res = await fetch(cacheBusted(blob.url), { cache: "no-store" });
     if (!res.ok) return fallback;
     return (await res.json()) as T;
   } catch (err) {
@@ -121,7 +131,7 @@ async function readBlobJsonStrict<T>(key: string, localStore: string, fallback: 
 
   let res: Response;
   try {
-    res = await fetch(blob.url, { cache: "no-store" });
+    res = await fetch(cacheBusted(blob.url), { cache: "no-store" });
   } catch (err) {
     throw new Error(
       `[user-assets] Could not read the shared index (${key}) — save/delete aborted to avoid clobbering it: ${err}`
@@ -154,6 +164,9 @@ async function writeBlobJson<T>(key: string, localStore: string, value: T): Prom
     access: "public",
     contentType: "application/json",
     allowOverwrite: true,
+    // Keep CDN staleness for anyone fetching the raw URL bounded to a
+    // minute; our own reads bypass the cache entirely via cacheBusted().
+    cacheControlMaxAge: 60,
   });
 }
 
