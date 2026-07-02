@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import ModelSidebar from "@/components/ModelSidebar";
 import PromptPanel, {
   type AnalysisReview,
@@ -1121,12 +1122,16 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
     const frontGarmentUrl = garmentUrls[0];
     const backGarmentUrl = garmentUrls[1];
     const hasBackReference = typeof backGarmentUrl === "string" && backGarmentUrl.trim().length > 0;
-    setLoading(true);
-    setError(null);
 
     // Register the run in the output panel immediately — before the async job
     // starts — so the user sees "Run #xxxx" right away instead of "No runs yet"
     // throughout the entire analysis + generation phase.
+    const seedMultiModelViews = MULTI_MODEL_VIEWS.reduce<
+      NonNullable<HistoryItem["multiModelViews"]>
+    >((acc, view) => {
+      acc[view] = { status: "queued" };
+      return acc;
+    }, {});
     const seedItem: HistoryItem = {
       id,
       timestamp: Date.now(),
@@ -1144,9 +1149,18 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
       view: "front",
       prompts: [],
       viewLabels: [...MULTI_MODEL_VIEWS],
+      multiModelViews: seedMultiModelViews,
     };
-    setHistory((existing) => [seedItem, ...existing.filter((run) => run.id !== id)].slice(0, 50));
-    setCurrentId(id);
+    // flushSync forces React to synchronously commit the seed item to the DOM
+    // before startStudioJob fires — React 18 automatic batching otherwise
+    // defers the paint until after the job's first history-updated event,
+    // losing the seed item and leaving the panel stuck on "No runs yet".
+    flushSync(() => {
+      setHistory((existing) => [seedItem, ...existing.filter((run) => run.id !== id)].slice(0, 50));
+      setCurrentId(id);
+      setLoading(true);
+      setError(null);
+    });
     localStorage.setItem(currentIdKey, id);
 
     startStudioJob(
