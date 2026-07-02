@@ -387,6 +387,16 @@ export function listHumanModels(): HumanModel[] {
 }
 
 /**
+ * True when modelId is one of the built-in filesystem/static models. Cheap
+ * (fs scan only) — used by the analyze/generate hot path to skip the Vercel
+ * Blob user-model lookup entirely for built-in models, which would otherwise
+ * cost a network round-trip on every request.
+ */
+export function isKnownHumanModel(modelId: string): boolean {
+  return listHumanModels().some((m) => m.id === modelId);
+}
+
+/**
  * Resolve a model + preset pair to a fal.ai-hosted URL. Uploads the local file
  * to fal storage the first time it's requested and caches the URL afterwards.
  */

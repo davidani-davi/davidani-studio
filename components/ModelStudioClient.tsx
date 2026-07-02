@@ -87,6 +87,11 @@ type QualityControlAction =
   | "restore-proportion";
 type PhotoshootView = "front" | "side" | "back" | "full";
 const MULTI_MODEL_VIEWS: PresetView[] = ["front", "side", "back", "full"];
+// How many views generate concurrently in a Multi Model run. 2 halves the
+// wall-clock vs sequential without the provider timeouts seen at 4-at-once
+// on the old backend; bump to 4 and compare the [timing] console logs to
+// re-test on the current backend.
+const MULTI_MODEL_WORKERS = 2;
 
 function multiModelPoseVariantIndex(view: PresetView): number {
   // The primary Kylie back canvas is an over-shoulder pose that exposes the
@@ -1033,8 +1038,8 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
             );
             // Seed an in-flight HistoryItem with empty imageUrls so OutputPanel
             // can render skeleton placeholders for the three pending variants
-            // immediately. Each variant's URL fills in as its API call resolves
-            // (parallel, but each ~10-15s — visible "filling in" feedback).
+            // immediately. All three variants generate in parallel; each slot's
+            // URL fills in as its own API call resolves.
             const seedItem: HistoryItem = {
               id,
               timestamp: Date.now(),
@@ -1064,8 +1069,13 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
             // pose for models/views that only have one or two references.
             const slotUrls: (string | null)[] = [null, null, null];
             const slotPoseUrls: (string | null)[] = [null, null, null];
-            for (let idx = 0; idx < optimizedTrio.length; idx += 1) {
-              const variantPrompt = optimizedTrio[idx];
+            // All three variants run concurrently — the backend creates one
+            // async task per variant, so serializing them only stacked their
+            // wall-clock times (~3x slower). Slot writes are index-scoped and
+            // setHistory uses functional updates, so concurrent completion is
+            // safe; the picker stays positional regardless of finish order.
+            const trioStartedAt = performance.now();
+            const generateVariant = async (variantPrompt: string, idx: number) => {
               let lastError = "";
               for (let attempt = 0; attempt < 3; attempt += 1) {
                 try {
@@ -1088,6 +1098,9 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
                     slotUrls[idx] = url;
                     if (typeof response.poseUrl === "string") slotPoseUrls[idx] = response.poseUrl;
                     if (!poseUrl && response.poseUrl) poseUrl = response.poseUrl;
+                    console.info(
+                      `[timing] trio variant ${idx} done in ${Math.round(performance.now() - trioStartedAt)}ms (attempt ${attempt + 1})`
+                    );
                     // Update the seeded HistoryItem incrementally so the
                     // skeleton card for this slot turns into a real image.
                     setHistory((existing) =>
@@ -1103,7 +1116,7 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
                       )
                     );
                     lastError = "";
-                    break;
+                    return;
                   }
                 } catch (variantErr) {
                   lastError =
@@ -1119,7 +1132,11 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
                   }
                 }
               }
-            }
+            };
+            await Promise.all(optimizedTrio.map(generateVariant));
+            console.info(
+              `[timing] trio total ${Math.round(performance.now() - trioStartedAt)}ms`
+            );
             const collectedUrls = slotUrls.filter(
               (url): url is string => typeof url === "string"
             );
@@ -1482,16 +1499,21 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
           };
 
           const failures: Array<{ view: (typeof MULTI_MODEL_VIEWS)[number]; error: string }> = [];
+          const multiRunStartedAt = performance.now();
           let nextViewIndex = 0;
           const worker = async () => {
             while (nextViewIndex < MULTI_MODEL_VIEWS.length) {
               const idx = nextViewIndex;
               nextViewIndex += 1;
               const targetView = MULTI_MODEL_VIEWS[idx];
+              const viewStartedAt = performance.now();
               let lastError = "";
               for (let attempt = 0; attempt < 3; attempt += 1) {
                 try {
                   await generateOneView(targetView, idx, resolution);
+                  console.info(
+                    `[timing] multi-model view ${targetView} done in ${Math.round(performance.now() - viewStartedAt)}ms (attempt ${attempt + 1}, ${Math.round(performance.now() - multiRunStartedAt)}ms into run)`
+                  );
                   lastError = "";
                   break;
                 } catch (err: any) {
@@ -1514,11 +1536,17 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
             }
           };
 
-          // Run 2 workers in parallel: each grabs the next available view slot
-          // sequentially (nextViewIndex is shared). This cuts wall-clock time
-          // roughly in half vs fully sequential without triggering the
-          // provider-side timeouts that occurred when all 4 ran at once.
-          await Promise.all([worker(), worker()]);
+          // Run MULTI_MODEL_WORKERS workers in parallel: each grabs the next
+          // available view slot sequentially (nextViewIndex is shared). 2 was
+          // chosen because all-4-at-once triggered provider-side timeouts on
+          // the old fal backend; the [timing] console logs exist to measure
+          // whether the current backend tolerates a higher worker count.
+          await Promise.all(
+            Array.from({ length: MULTI_MODEL_WORKERS }, () => worker())
+          );
+          console.info(
+            `[timing] multi-model run total ${Math.round(performance.now() - multiRunStartedAt)}ms (${MULTI_MODEL_WORKERS} workers, ${resolution})`
+          );
 
           const imageUrls = slotUrls.filter((url): url is string => typeof url === "string");
           if (imageUrls.length === 0) {
