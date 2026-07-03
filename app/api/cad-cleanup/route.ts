@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
 import { generate } from "@/lib/fal";
 import { MODELS, type ModelId } from "@/lib/models";
-import { CAD_STUDIO_OUTPUT_SIZE } from "@/lib/output-sizes";
 import { CAD_CLEANUP_PROMPT } from "@/lib/cad-prompts";
 
 export const runtime = "nodejs";
-export const maxDuration = 300;
+export const maxDuration = 800;
 
 export async function POST(req: Request) {
   try {
@@ -32,7 +31,8 @@ export async function POST(req: Request) {
       resolution: "2K",
       format: "png",
       numImages: 1,
-      outputSize: CAD_STUDIO_OUTPUT_SIZE,
+      // Native output, same rationale as /api/cad-extract.
+      outputSize: null,
     });
 
     return NextResponse.json({ ok: true, ...result });

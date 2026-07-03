@@ -38,6 +38,10 @@ interface QueueItem {
 
 type JobConfig = Pick<QueueItem, "mode" | "modelId" | "resolution" | "notes" | "imageUrls">;
 
+// How many queued CAD jobs run concurrently. Bump alongside the [timing]
+// console logs to re-test tolerance; drop back to 1 for strictly sequential.
+const CAD_QUEUE_WORKERS = 2;
+
 function newQueueId(): string {
   return typeof crypto !== "undefined" && "randomUUID" in crypto
     ? crypto.randomUUID()
@@ -291,19 +295,39 @@ export default function CadExtractorClient() {
     queueRunningRef.current = true;
     setQueueRunning(true);
     setError(null);
-    try {
-      // Sequential on purpose: parallel CAD generations trip provider timeouts.
+    // Jobs are claimed via this synchronous Set, not queue state — React
+    // state (and queueRef, which trails it by a render) updates too late to
+    // stop two workers from grabbing the same job.
+    const claimed = new Set<string>();
+    const queueStartedAt = performance.now();
+    const worker = async () => {
       for (;;) {
-        const next = queueRef.current.find((it) => it.status === "queued");
+        const next = queueRef.current.find(
+          (it) => it.status === "queued" && !claimed.has(it.id)
+        );
         if (!next) break;
+        claimed.add(next.id);
         updateQueueItem(next.id, { status: "running" });
+        const jobStartedAt = performance.now();
         try {
           const out = await executeJob(next);
+          console.info(
+            `[timing] cad queue job (${next.mode}/${next.modelId}) done in ${Math.round(performance.now() - jobStartedAt)}ms`
+          );
           updateQueueItem(next.id, { status: "done", resultUrls: out.resultUrls, spec: out.spec });
         } catch (e: any) {
           updateQueueItem(next.id, { status: "failed", error: e?.message || "Run failed" });
         }
       }
+    };
+    try {
+      // CAD_QUEUE_WORKERS jobs run concurrently. The old sequential-on-purpose
+      // comment dated from provider timeouts on the previous fal backend; the
+      // [timing] logs above exist to verify the current backends tolerate it.
+      await Promise.all(Array.from({ length: CAD_QUEUE_WORKERS }, () => worker()));
+      console.info(
+        `[timing] cad queue total ${Math.round(performance.now() - queueStartedAt)}ms (${CAD_QUEUE_WORKERS} workers)`
+      );
     } finally {
       queueRunningRef.current = false;
       setQueueRunning(false);

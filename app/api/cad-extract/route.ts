@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
 import { generate } from "@/lib/fal";
 import { MODELS, type ModelId } from "@/lib/models";
-import { CAD_STUDIO_OUTPUT_SIZE } from "@/lib/output-sizes";
 import { buildCadPrompt, type CadMode } from "@/lib/cad-prompts";
 
 export const runtime = "nodejs";
-export const maxDuration = 300;
+export const maxDuration = 800;
 
 export async function POST(req: Request) {
   try {
@@ -45,8 +44,12 @@ export async function POST(req: Request) {
       resolution: resolution ?? "2K",
       format: format ?? "png",
       numImages: numImages ?? 1,
-      // Square lock — clients never override.
-      outputSize: CAD_STUDIO_OUTPUT_SIZE,
+      // No server-side resize: the sharp crop-to-2048 + JPEG re-encode +
+      // re-upload round-trip added seconds per run and silently converted the
+      // requested PNG into JPEG q92 — a quality loss for print masters. The
+      // export route reads actual pixel dimensions and produces the final
+      // print PNG itself, so native model output is returned directly.
+      outputSize: null,
     });
 
     return NextResponse.json({ ok: true, ...result });
