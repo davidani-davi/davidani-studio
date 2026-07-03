@@ -21,6 +21,29 @@ const MODE_OPTIONS: { id: ModeId; label: string; blurb: string }[] = [
   { id: "spec", label: "Spec Analysis", blurb: "Text spec: repeat type, colors, motifs, technique." },
 ];
 
+type QueueStatus = "queued" | "running" | "done" | "failed";
+
+interface QueueItem {
+  id: string;
+  imageUrls: string[];
+  mode: ModeId;
+  modelId: ModelId;
+  resolution: string;
+  notes: string;
+  status: QueueStatus;
+  resultUrls: string[];
+  spec: CadSpec | null;
+  error?: string;
+}
+
+type JobConfig = Pick<QueueItem, "mode" | "modelId" | "resolution" | "notes" | "imageUrls">;
+
+function newQueueId(): string {
+  return typeof crypto !== "undefined" && "randomUUID" in crypto
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
 async function fetchJson(label: string, input: string, init?: RequestInit): Promise<any> {
   const res = await fetch(input, init);
   const raw = await res.text();
@@ -50,9 +73,10 @@ function hasImageFiles(e: React.DragEvent): boolean {
 export default function CadExtractorClient() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [mode, setMode] = useState<ModeId>("flat");
-  // Nano Banana 2 recovers clean flat CAD artwork; Seedream 4.5 tends to render
-  // a "photo of draped fabric" and hallucinate motifs (smoke-tested 2026-06-30).
-  const [modelId, setModelId] = useState<ModelId>("nano-banana");
+  // GPT Image 2 is the only model that obeys the re-synthesis prompt and drops
+  // the garment's construction; Nano Banana and Seedream copy pockets/waistband/
+  // seams from the photo no matter what the prompt says (bake-off 2026-07-01).
+  const [modelId, setModelId] = useState<ModelId>("gpt-image");
   const [resolution, setResolution] = useState<string>("2K");
   const [notes, setNotes] = useState<string>("");
 
@@ -69,6 +93,16 @@ export default function CadExtractorClient() {
   const [scale, setScale] = useState<{ repeatCm: number; dpi: number } | null>(null);
   const [cleaning, setCleaning] = useState(false);
   const [colorway, setColorway] = useState<CadSpec | null>(null);
+
+  const [queue, setQueue] = useState<QueueItem[]>([]);
+  const [queueRunning, setQueueRunning] = useState(false);
+  // The queue runner loops across awaits, so it reads the latest queue from a
+  // ref mirror instead of a stale closure snapshot.
+  const queueRef = useRef<QueueItem[]>([]);
+  useEffect(() => {
+    queueRef.current = queue;
+  }, [queue]);
+  const queueRunningRef = useRef(false);
 
   // Scale is measured on the garment photo, not the result tile. Reset it only
   // when the primary selected photo changes — NOT on re-roll (which regenerates
@@ -159,6 +193,33 @@ export default function CadExtractorClient() {
     setSelectedRefUrls((cur) => cur.filter((u) => u !== url));
   }
 
+  async function executeJob(job: JobConfig): Promise<{ resultUrls: string[]; spec: CadSpec | null }> {
+    if (job.mode === "spec") {
+      const data = await fetchJson("Spec analysis", "/api/cad-spec", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageUrls: job.imageUrls }),
+      });
+      return { resultUrls: [], spec: data.spec as CadSpec };
+    }
+    const data = await fetchJson("CAD extract", "/api/cad-extract", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        modelId: job.modelId,
+        mode: job.mode,
+        imageUrls: job.imageUrls,
+        notes: job.notes,
+        resolution: job.resolution,
+        format: "png",
+        numImages: 1,
+      }),
+    });
+    const urls: string[] = data.images?.map((i: any) => i.url).filter(Boolean) ?? [];
+    if (!urls.length) throw new Error("No artwork returned");
+    return { resultUrls: urls, spec: null };
+  }
+
   async function run() {
     if (!selectedRefUrls.length) {
       setError("Select at least one garment photo");
@@ -169,35 +230,83 @@ export default function CadExtractorClient() {
     setResultUrls([]);
     setSpec(null);
     try {
-      if (isSpec) {
-        const data = await fetchJson("Spec analysis", "/api/cad-spec", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ imageUrls: selectedRefUrls }),
-        });
-        setSpec(data.spec as CadSpec);
-      } else {
-        const data = await fetchJson("CAD extract", "/api/cad-extract", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            modelId,
-            mode,
-            imageUrls: selectedRefUrls,
-            notes,
-            resolution,
-            format: "png",
-            numImages: 1,
-          }),
-        });
-        const urls: string[] = data.images?.map((i: any) => i.url).filter(Boolean) ?? [];
-        if (!urls.length) throw new Error("No artwork returned");
-        setResultUrls(urls);
-      }
+      const out = await executeJob({ mode, modelId, resolution, notes, imageUrls: selectedRefUrls });
+      setResultUrls(out.resultUrls);
+      setSpec(out.spec);
     } catch (e: any) {
       setError(e?.message || "Run failed");
     } finally {
       setRunning(false);
+    }
+  }
+
+  function updateQueueItem(id: string, patch: Partial<QueueItem>) {
+    setQueue((q) => q.map((it) => (it.id === id ? { ...it, ...patch } : it)));
+  }
+
+  function addToQueue() {
+    if (!selectedRefUrls.length) {
+      setError("Select at least one garment photo");
+      return;
+    }
+    const item: QueueItem = {
+      id: newQueueId(),
+      imageUrls: [...selectedRefUrls],
+      mode,
+      modelId,
+      resolution,
+      notes,
+      status: "queued",
+      resultUrls: [],
+      spec: null,
+    };
+    setQueue((q) => [...q, item]);
+    // Clear the workspace so the next garment can be composed immediately.
+    setSelectedRefUrls([]);
+    setNotes("");
+    setError(null);
+  }
+
+  function removeQueueItem(id: string) {
+    setQueue((q) => q.filter((it) => it.id !== id));
+  }
+
+  function clearFinishedQueueItems() {
+    setQueue((q) => q.filter((it) => it.status === "queued" || it.status === "running"));
+  }
+
+  function viewQueueItem(item: QueueItem) {
+    setMode(item.mode);
+    setModelId(item.modelId);
+    setResolution(item.resolution);
+    setNotes(item.notes);
+    setSelectedRefUrls([...item.imageUrls]);
+    setResultUrls([...item.resultUrls]);
+    setSpec(item.spec);
+    setError(item.status === "failed" ? item.error ?? "Run failed" : null);
+  }
+
+  async function runQueue() {
+    if (queueRunningRef.current) return;
+    queueRunningRef.current = true;
+    setQueueRunning(true);
+    setError(null);
+    try {
+      // Sequential on purpose: parallel CAD generations trip provider timeouts.
+      for (;;) {
+        const next = queueRef.current.find((it) => it.status === "queued");
+        if (!next) break;
+        updateQueueItem(next.id, { status: "running" });
+        try {
+          const out = await executeJob(next);
+          updateQueueItem(next.id, { status: "done", resultUrls: out.resultUrls, spec: out.spec });
+        } catch (e: any) {
+          updateQueueItem(next.id, { status: "failed", error: e?.message || "Run failed" });
+        }
+      }
+    } finally {
+      queueRunningRef.current = false;
+      setQueueRunning(false);
     }
   }
 
@@ -221,15 +330,40 @@ export default function CadExtractorClient() {
     }
   }
 
+  const pendingCount = queue.filter((it) => it.status === "queued").length;
+  const runningCount = queue.filter((it) => it.status === "running").length;
+  const finishedCount = queue.filter((it) => it.status === "done" || it.status === "failed").length;
+
   return (
-    <main className="flex min-h-screen flex-col bg-neutral-50 lg:h-screen">
+    <main
+      className="flex min-h-screen flex-col bg-neutral-50 lg:h-screen"
+      onDragEnter={(e) => {
+        if (!hasImageFiles(e)) return;
+        e.preventDefault();
+        setDragging(true);
+      }}
+      onDragOver={(e) => {
+        if (!hasImageFiles(e)) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "copy";
+      }}
+      onDragLeave={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDragging(false);
+      }}
+      onDrop={(e) => {
+        e.preventDefault();
+        setDragging(false);
+        if (e.dataTransfer.files.length) addFiles(e.dataTransfer.files);
+      }}
+    >
       <StudioHeader
         active="cad"
         title="CAD Pattern Extractor"
         subtitle="Recover production-ready textile CAD artwork from garment photos."
         metrics={[
           { label: "Refs", value: selectedRefUrls.length },
-          { label: "Active", value: running ? 1 : 0 },
+          { label: "Queue", value: pendingCount + runningCount },
+          { label: "Active", value: (running ? 1 : 0) + runningCount },
         ]}
       />
 
@@ -300,24 +434,6 @@ export default function CadExtractorClient() {
           ) : null}
 
           <section
-            onDragEnter={(e) => {
-              if (!hasImageFiles(e)) return;
-              e.preventDefault();
-              setDragging(true);
-            }}
-            onDragOver={(e) => {
-              if (!hasImageFiles(e)) return;
-              e.preventDefault();
-              e.dataTransfer.dropEffect = "copy";
-            }}
-            onDragLeave={(e) => {
-              if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDragging(false);
-            }}
-            onDrop={(e) => {
-              e.preventDefault();
-              setDragging(false);
-              if (e.dataTransfer.files.length) addFiles(e.dataTransfer.files);
-            }}
             className={`-m-2 rounded-lg p-2 transition ${dragging ? "bg-brand-50/70 ring-2 ring-brand-400" : ""}`}
           >
             <div className="mb-2 flex items-center justify-between">
@@ -420,6 +536,102 @@ export default function CadExtractorClient() {
                 Spec Analysis reads the primary selected photo and returns a textile production spec.
               </div>
             )}
+
+            {queue.length > 0 ? (
+              <div className="mt-4 flex max-h-72 shrink-0 flex-col">
+                <div className="mb-2 flex items-center justify-between">
+                  <h2 className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
+                    Queue · {queue.length}
+                  </h2>
+                  {finishedCount > 0 ? (
+                    <button
+                      type="button"
+                      onClick={clearFinishedQueueItems}
+                      className="text-[10px] font-semibold text-neutral-400 transition hover:text-neutral-700"
+                    >
+                      Clear finished
+                    </button>
+                  ) : null}
+                </div>
+                <ul className="min-h-0 space-y-2 overflow-y-auto pr-1">
+                  {queue.map((it) => (
+                    <li
+                      key={it.id}
+                      className={`flex items-center gap-3 rounded-lg border p-2 transition ${
+                        it.status === "running"
+                          ? "border-brand-400 bg-brand-50/40"
+                          : "border-neutral-200 bg-white hover:border-neutral-400"
+                      }`}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => viewQueueItem(it)}
+                        className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                        title="Load this run into the workspace"
+                      >
+                        <img
+                          src={it.imageUrls[0]}
+                          alt=""
+                          className="h-10 w-10 shrink-0 rounded-md border border-neutral-200 object-cover"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-xs font-medium text-neutral-800">
+                            {MODE_OPTIONS.find((m) => m.id === it.mode)?.label}
+                            {it.imageUrls.length > 1 ? ` · ${it.imageUrls.length} photos` : ""}
+                          </p>
+                          <p className="truncate text-[10px] text-neutral-500">
+                            {MODELS[it.modelId]?.label} · {it.resolution}
+                            {it.notes ? ` · ${it.notes}` : ""}
+                          </p>
+                          {it.status === "failed" && it.error ? (
+                            <p className="truncate text-[10px] text-red-600">{it.error}</p>
+                          ) : null}
+                        </div>
+                        {it.status === "done" && it.mode !== "spec" && it.resultUrls[0] ? (
+                          <img
+                            src={it.resultUrls[0]}
+                            alt="Result"
+                            className="h-10 w-10 shrink-0 rounded-md border border-emerald-300 object-cover"
+                          />
+                        ) : null}
+                      </button>
+                      {it.status === "queued" ? (
+                        <span className="shrink-0 rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-semibold text-neutral-500">
+                          Queued
+                        </span>
+                      ) : it.status === "running" ? (
+                        <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-semibold text-brand-700">
+                          <Spinner className="h-3 w-3" /> Running
+                        </span>
+                      ) : it.status === "failed" ? (
+                        <button
+                          type="button"
+                          onClick={() => updateQueueItem(it.id, { status: "queued", error: undefined })}
+                          className="shrink-0 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-700 transition hover:bg-red-200"
+                          title="Put this run back in the queue"
+                        >
+                          Retry
+                        </button>
+                      ) : it.mode === "spec" ? (
+                        <span className="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+                          Spec ready
+                        </span>
+                      ) : null}
+                      {it.status !== "running" ? (
+                        <button
+                          type="button"
+                          onClick={() => removeQueueItem(it.id)}
+                          className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs text-neutral-400 transition hover:bg-neutral-100 hover:text-red-600"
+                          title="Remove from queue"
+                        >
+                          ×
+                        </button>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
           </div>
 
           <div className="flex items-center justify-between gap-3 border-t border-neutral-200 bg-neutral-50 px-6 py-4">
@@ -428,22 +640,49 @@ export default function CadExtractorClient() {
                 ? `${selectedRefUrls.length} photo${selectedRefUrls.length === 1 ? "" : "s"} selected`
                 : "Select garment photos in the left rail"}
             </span>
-            <button
-              type="button"
-              onClick={run}
-              disabled={running || !selectedRefUrls.length}
-              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-b from-neutral-800 to-neutral-950 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:from-neutral-700 hover:to-neutral-900 hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-neutral-300 disabled:bg-none disabled:text-neutral-500"
-            >
-              {running ? (
-                <span className="inline-flex items-center gap-2">
-                  <Spinner /> {isSpec ? "Analyzing" : "Extracting"}
-                </span>
-              ) : isSpec ? (
-                "Analyze Spec"
-              ) : (
-                "Extract CAD"
-              )}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={addToQueue}
+                disabled={!selectedRefUrls.length}
+                className="rounded-xl border border-neutral-300 bg-white px-4 py-2.5 text-sm font-semibold text-neutral-700 shadow-sm transition hover:border-neutral-500 hover:bg-neutral-100 active:scale-[0.98] disabled:cursor-not-allowed disabled:border-neutral-200 disabled:text-neutral-400"
+                title="Snapshot the current photos + settings as a queued run"
+              >
+                Add to Queue
+              </button>
+              {pendingCount > 0 || queueRunning ? (
+                <button
+                  type="button"
+                  onClick={runQueue}
+                  disabled={running || queueRunning || !pendingCount}
+                  className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-b from-neutral-800 to-neutral-950 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:from-neutral-700 hover:to-neutral-900 hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-neutral-300 disabled:bg-none disabled:text-neutral-500"
+                >
+                  {queueRunning ? (
+                    <span className="inline-flex items-center gap-2">
+                      <Spinner /> {pendingCount + runningCount} left
+                    </span>
+                  ) : (
+                    `Run Queue (${pendingCount})`
+                  )}
+                </button>
+              ) : null}
+              <button
+                type="button"
+                onClick={run}
+                disabled={running || queueRunning || !selectedRefUrls.length}
+                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-b from-neutral-800 to-neutral-950 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:from-neutral-700 hover:to-neutral-900 hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-neutral-300 disabled:bg-none disabled:text-neutral-500"
+              >
+                {running ? (
+                  <span className="inline-flex items-center gap-2">
+                    <Spinner /> {isSpec ? "Analyzing" : "Extracting"}
+                  </span>
+                ) : isSpec ? (
+                  "Analyze Spec"
+                ) : (
+                  "Extract CAD"
+                )}
+              </button>
+            </div>
           </div>
         </section>
 
