@@ -38,9 +38,9 @@ interface QueueItem {
 
 type JobConfig = Pick<QueueItem, "mode" | "modelId" | "resolution" | "notes" | "imageUrls">;
 
-// How many queued CAD jobs run concurrently. Bump alongside the [timing]
-// console logs to re-test tolerance; drop back to 1 for strictly sequential.
-const CAD_QUEUE_WORKERS = 2;
+// How many queued CAD jobs run concurrently. If provider timeouts show up
+// in the [timing] console logs, drop back to 2 (or 1 for sequential).
+const CAD_QUEUE_WORKERS = 4;
 
 function newQueueId(): string {
   return typeof crypto !== "undefined" && "randomUUID" in crypto

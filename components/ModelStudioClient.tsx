@@ -87,11 +87,11 @@ type QualityControlAction =
   | "restore-proportion";
 type PhotoshootView = "front" | "side" | "back" | "full";
 const MULTI_MODEL_VIEWS: PresetView[] = ["front", "side", "back", "full"];
-// How many views generate concurrently in a Multi Model run. 2 halves the
-// wall-clock vs sequential without the provider timeouts seen at 4-at-once
-// on the old backend; bump to 4 and compare the [timing] console logs to
-// re-test on the current backend.
-const MULTI_MODEL_WORKERS = 2;
+// How many views generate concurrently in a Multi Model run. 4 = all views
+// at once; the old 4-at-once provider timeouts were on the previous fal
+// backend, and kie's async task API tolerates it. If timeout retries show
+// up in the [timing] console logs, drop back to 2.
+const MULTI_MODEL_WORKERS = 4;
 
 function multiModelPoseVariantIndex(view: PresetView): number {
   // The primary Kylie back canvas is an over-shoulder pose that exposes the
