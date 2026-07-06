@@ -650,6 +650,9 @@ export default function StudioPage() {
             resolution: "4K",
             format,
             outputSize: IMAGE_STUDIO_OUTPUT_SIZE,
+            // Show native model output immediately; the 2160x3240 final is
+            // produced by /api/finalize-image in the background below.
+            deferResize: true,
             numImages: 1,
             overlay: {
               mode: deriveOverlayMode(showName, showNumber),
@@ -719,12 +722,30 @@ export default function StudioPage() {
               version: "2.2",
             },
           };
+          // Native images render right away; the locked-size finals swap in
+          // silently once /api/finalize-image returns (fallback: keep native).
           setHistory((existing) => [item, ...existing.filter((run) => run.id !== item.id)].slice(0, 50));
           setCurrentId(jobId);
           localStorage.setItem(CURRENT_ID_KEY, jobId);
+          const finalize = (url: string) =>
+            fetchJson("Finalize image", "/api/finalize-image", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ imageUrl: url }),
+            })
+              .then((d) => (typeof d.url === "string" && d.url ? d.url : url))
+              .catch(() => url);
+          const [finalLeft, finalRight] = await Promise.all([
+            finalize(leftUrl),
+            finalize(rightUrl),
+          ]);
+          const finalItem: HistoryItem = { ...item, imageUrls: [finalLeft, finalRight] };
+          setHistory((existing) =>
+            existing.map((run) => (run.id === jobId ? finalItem : run))
+          );
           updateImageJob(jobId, { status: "done" });
           setBackgroundJobs(readImageJobs());
-          return { historyItem: item };
+          return { historyItem: finalItem };
         } catch (err: any) {
           const message = err.message || "Generation failed";
           setError(message);

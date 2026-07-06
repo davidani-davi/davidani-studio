@@ -2601,7 +2601,7 @@ function defaultOutputSize(params: GenerateParams, _resolution: string) {
   return params.outputSize ?? null;
 }
 
-async function resizeGeneratedImages(
+export async function resizeGeneratedImages(
   images: GenerationResult["images"],
   size: { width: number; height: number } | null
 ): Promise<GenerationResult["images"]> {
