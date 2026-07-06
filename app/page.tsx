@@ -244,6 +244,39 @@ export default function StudioPage() {
   // reference photo alone isn't reliably auto-classifiable), and when true we
   // route Analyze through the four-field coordinated-set analyzer in lib/fal.
   const [twoPiece, setTwoPiece] = useState<boolean>(false);
+
+  // Speculative analyze warmup: the analysis only depends on the intake
+  // photos + options, all known well before Generate is clicked. Firing the
+  // analyze endpoint here (debounced, fire-and-forget) populates the
+  // server-side vision cache while the user is still picking settings, so
+  // the Generate click's own analyze call returns near-instantly. The
+  // response is deliberately ignored — the cache is the delivery mechanism.
+  useEffect(() => {
+    if (!frontIntakeUrl && !backIntakeUrl) return;
+    const warmUrls =
+      productShotMode === "front-back-contract"
+        ? [frontIntakeUrl, backIntakeUrl].filter((url): url is string => !!url)
+        : [
+            productShotMode === "single-back"
+              ? backIntakeUrl || frontIntakeUrl
+              : frontIntakeUrl || backIntakeUrl,
+          ].filter((url): url is string => !!url);
+    if (!warmUrls.length) return;
+    const timer = setTimeout(() => {
+      fetch("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          imageUrl: warmUrls[0],
+          imageUrls: warmUrls,
+          backgroundColor,
+          twoPiece,
+        }),
+      }).catch(() => {});
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, [frontIntakeUrl, backIntakeUrl, productShotMode, backgroundColor, twoPiece]);
+
   // Image Studio's analyze route only handles single-image two-piece extraction
   // (one photo of the full coordinated outfit). The "two separate photos"
   // variant from Single Model Studio isn't supported here, so we expose just

@@ -698,6 +698,42 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
     return selected.filter(Boolean);
   }, [selected]);
 
+  // Speculative analyze warmup: fires the analyze endpoint (debounced,
+  // fire-and-forget) as soon as a garment + model + pose are selected, so
+  // the server-side vision cache (garment fields + pose analysis) is hot by
+  // the time Generate is clicked. Only inputs that change the cache keys are
+  // dependencies — prompt options/sliders assemble text without new vision
+  // calls, so tweaking them doesn't re-fire. The response is ignored.
+  useEffect(() => {
+    if (activeGarmentUrls.length === 0 || !selectedHumanModelId || !selectedPoseId) return;
+    const timer = setTimeout(() => {
+      fetch("/api/analyze-model", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          modelId: selectedHumanModelId,
+          poseId: selectedPoseId,
+          view: selectedView,
+          garmentImageUrl: activeGarmentUrls[0],
+          garmentImageUrls: twoPiece
+            ? coordinatedSetMode === "single-image"
+              ? activeGarmentUrls.slice(0, 1)
+              : activeGarmentUrls.slice(0, 2)
+            : activeGarmentUrls,
+          twoPiece,
+        }),
+      }).catch(() => {});
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, [
+    activeGarmentUrls,
+    selectedHumanModelId,
+    selectedPoseId,
+    selectedView,
+    twoPiece,
+    coordinatedSetMode,
+  ]);
+
   /* ---------- Handlers ---------- */
 
   function toggleSelect(url: string) {

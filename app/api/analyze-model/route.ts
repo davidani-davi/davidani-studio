@@ -13,6 +13,7 @@ import {
 } from "@/lib/fal";
 import { getPosePublicPath, getPoseUrl, isKnownHumanModel, type PresetView } from "@/lib/models-registry";
 import { findUserModelViewUrl } from "@/lib/user-assets";
+import { cachedVision } from "@/lib/vision-cache";
 import { fal } from "@fal-ai/client";
 
 export const runtime = "nodejs";
@@ -428,15 +429,25 @@ export async function POST(req: Request) {
     // When `twoPiece` is set, the garment-analyzer pass outputs four fields
     // (TOP / TOP_FEATURES / BOTTOM / BOTTOM_FEATURES) instead of two, and the
     // assembler swaps to the coordinated-set template.
+    // Both passes are cached (lib/vision-cache): garment analysis keys on the
+    // immutable garment URLs + mode, pose analysis on the pose URL. Repeat
+    // Generate clicks and Multi Model's 4 per-view calls hit the cache
+    // instead of re-running Haiku vision on unchanged images.
     const [garmentResult, modelResult] = await Promise.allSettled([
       twoPiece
         ? garmentUrls.length >= 2
-          ? extractTwoPieceFieldsFromSeparateImages(garmentUrls)
-          : extractTwoPieceFields(garmentUrls[0])
+          ? cachedVision("garment-two-sep", { garmentUrls }, () =>
+              extractTwoPieceFieldsFromSeparateImages(garmentUrls)
+            )
+          : cachedVision("garment-two", { url: garmentUrls[0] }, () =>
+              extractTwoPieceFields(garmentUrls[0])
+            )
         : singleGarmentOverride
         ? Promise.resolve(singleGarmentOverride)
-        : extractGarmentFields(garmentUrls[0]),
-      analyzeModelPhoto(poseUrl),
+        : cachedVision("garment-single", { url: garmentUrls[0] }, () =>
+            extractGarmentFields(garmentUrls[0])
+          ),
+      cachedVision("pose", { poseUrl }, () => analyzeModelPhoto(poseUrl)),
     ]);
     const modelFields =
       modelResult.status === "rejected"
