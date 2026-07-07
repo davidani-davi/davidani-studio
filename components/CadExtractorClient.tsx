@@ -61,6 +61,53 @@ async function fetchJson(label: string, input: string, init?: RequestInit): Prom
   return data;
 }
 
+const TASK_POLL_MS = 4000;
+const TASK_TIMEOUT_MS = 15 * 60 * 1000;
+// Transient poll failures (network blips, blob list lag right after submit)
+// are tolerated up to this many consecutive misses before giving up.
+const TASK_MAX_CONSECUTIVE_MISSES = 15;
+
+// Extraction/cleanup run as server-side tasks: POST returns { taskId } and the
+// multi-minute generation completes in the background. Holding one fetch open
+// for the whole run got killed by the browser at ~4-5 min ("Failed to fetch"),
+// losing paid, completed results.
+async function runCadTask(
+  label: string,
+  endpoint: string,
+  payload: unknown
+): Promise<{ url: string; width?: number; height?: number }[]> {
+  const submit = await fetchJson(label, endpoint, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const taskId: string = submit.taskId;
+  if (!taskId) throw new Error(`${label}: no task id returned`);
+
+  const startedAt = Date.now();
+  let misses = 0;
+  for (;;) {
+    await new Promise((r) => setTimeout(r, TASK_POLL_MS));
+    if (Date.now() - startedAt > TASK_TIMEOUT_MS) {
+      throw new Error(`${label}: timed out after ${Math.round(TASK_TIMEOUT_MS / 60000)} minutes`);
+    }
+    let data: any;
+    try {
+      data = await fetchJson(label, `${endpoint}?taskId=${encodeURIComponent(taskId)}`);
+      misses = 0;
+    } catch {
+      misses += 1;
+      if (misses >= TASK_MAX_CONSECUTIVE_MISSES) {
+        throw new Error(`${label}: lost contact with the server while polling`);
+      }
+      continue;
+    }
+    const task = data.task;
+    if (task?.status === "failed") throw new Error(`${label}: ${task.error || "Run failed"}`);
+    if (task?.status === "done") return task.images ?? [];
+  }
+}
+
 const Spinner = ({ className = "h-4 w-4" }: { className?: string }) => (
   <svg viewBox="0 0 24 24" className={`${className} animate-spin`}>
     <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity="0.25" strokeWidth="3" fill="none" />
@@ -206,20 +253,16 @@ export default function CadExtractorClient() {
       });
       return { resultUrls: [], spec: data.spec as CadSpec };
     }
-    const data = await fetchJson("CAD extract", "/api/cad-extract", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        modelId: job.modelId,
-        mode: job.mode,
-        imageUrls: job.imageUrls,
-        notes: job.notes,
-        resolution: job.resolution,
-        format: "png",
-        numImages: 1,
-      }),
+    const images = await runCadTask("CAD extract", "/api/cad-extract", {
+      modelId: job.modelId,
+      mode: job.mode,
+      imageUrls: job.imageUrls,
+      notes: job.notes,
+      resolution: job.resolution,
+      format: "png",
+      numImages: 1,
     });
-    const urls: string[] = data.images?.map((i: any) => i.url).filter(Boolean) ?? [];
+    const urls: string[] = images.map((i) => i.url).filter(Boolean);
     if (!urls.length) throw new Error("No artwork returned");
     return { resultUrls: urls, spec: null };
   }
@@ -339,12 +382,11 @@ export default function CadExtractorClient() {
     setError(null);
     setCleaning(true);
     try {
-      const data = await fetchJson("Cleanup", "/api/cad-cleanup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageUrl: resultUrls[0], modelId }),
+      const images = await runCadTask("Cleanup", "/api/cad-cleanup", {
+        imageUrl: resultUrls[0],
+        modelId,
       });
-      const urls: string[] = data.images?.map((i: any) => i.url).filter(Boolean) ?? [];
+      const urls: string[] = images.map((i) => i.url).filter(Boolean);
       if (!urls.length) throw new Error("Cleanup returned no image");
       setResultUrls([urls[0]]);
     } catch (e: any) {
