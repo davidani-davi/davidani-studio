@@ -34,6 +34,8 @@ interface QueueItem {
   resultUrls: string[];
   spec: CadSpec | null;
   error?: string;
+  startedAt?: number;
+  estimateMs?: number;
 }
 
 type JobConfig = Pick<QueueItem, "mode" | "modelId" | "resolution" | "notes" | "imageUrls">;
@@ -108,6 +110,115 @@ async function runCadTask(
   }
 }
 
+// ---- Run-duration estimates --------------------------------------------
+// The providers expose no true progress signal, so the progress bar tracks
+// elapsed time against a calibrated estimate: the median of the last few
+// real durations for the same mode/model/quality (persisted locally),
+// seeded with observed ballparks. It self-corrects after the first run.
+const DURATIONS_KEY = "davidani_cad_durations_v1";
+const DURATION_SAMPLES_KEPT = 8;
+const DEFAULT_ESTIMATE_MS: Record<string, number> = {
+  spec: 25_000,
+  "extract:gpt-image:1K": 90_000,
+  "extract:gpt-image:2K": 180_000,
+  "extract:gpt-image:4K": 420_000,
+  "extract:nano-banana:1K": 120_000,
+  "extract:nano-banana:2K": 300_000,
+  "extract:nano-banana:4K": 480_000,
+  "extract:seedream-4:1K": 60_000,
+  "extract:seedream-4:2K": 90_000,
+  "extract:seedream-4:4K": 120_000,
+};
+
+function durationKey(job: JobConfig): string {
+  return job.mode === "spec" ? "spec" : `extract:${job.modelId}:${job.resolution}`;
+}
+
+function readDurations(): Record<string, number[]> {
+  try {
+    const raw = localStorage.getItem(DURATIONS_KEY);
+    const parsed = raw ? JSON.parse(raw) : null;
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function estimateMsFor(job: JobConfig): number {
+  const key = durationKey(job);
+  const hist = readDurations()[key]?.filter((n) => Number.isFinite(n) && n > 0);
+  if (hist?.length) {
+    const sorted = [...hist].sort((a, b) => a - b);
+    return sorted[Math.floor(sorted.length / 2)];
+  }
+  return DEFAULT_ESTIMATE_MS[key] ?? 180_000;
+}
+
+function recordDuration(job: JobConfig, ms: number): void {
+  try {
+    const all = readDurations();
+    const key = durationKey(job);
+    all[key] = [...(all[key] ?? []), ms].slice(-DURATION_SAMPLES_KEPT);
+    localStorage.setItem(DURATIONS_KEY, JSON.stringify(all));
+  } catch {
+    // Estimation is a nicety; never let storage failures break a run.
+  }
+}
+
+function formatClock(ms: number): string {
+  const s = Math.max(0, Math.round(ms / 1000));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+}
+
+function CadProgressBar({
+  startedAt,
+  estimateMs,
+  label,
+  compact,
+}: {
+  startedAt: number;
+  estimateMs: number;
+  label?: string;
+  compact?: boolean;
+}) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 250);
+    return () => clearInterval(t);
+  }, []);
+  const elapsed = Math.max(0, now - startedAt);
+  // Ease-out toward an asymptote: ~82% at the estimate, ~97% at 2x. The bar
+  // is honest about estimate uncertainty — it never claims 100% before the
+  // result actually lands.
+  const pct = Math.min(0.98, 1 - Math.pow(2, (-elapsed / Math.max(1000, estimateMs)) * 2.5)) * 100;
+
+  const track = (
+    <div className={`relative w-full overflow-hidden rounded-full bg-neutral-200 ${compact ? "h-0.5" : "h-1"}`}>
+      <div
+        className="relative h-full overflow-hidden rounded-full bg-neutral-900 transition-[width] duration-500 ease-out motion-reduce:transition-none"
+        style={{ width: `${pct}%` }}
+      >
+        <div className="absolute inset-0 -translate-x-full animate-[shimmer_2.4s_ease-out_infinite] bg-gradient-to-r from-transparent via-white/25 to-transparent motion-reduce:hidden" />
+      </div>
+    </div>
+  );
+
+  if (compact) return track;
+  return (
+    <div className="w-full max-w-xs space-y-2">
+      <div className="flex items-baseline justify-between text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
+        <span>
+          {label ?? "Extracting"} · {Math.round(pct)}%
+        </span>
+        <span className="font-normal normal-case tracking-normal tabular-nums text-neutral-400">
+          {formatClock(elapsed)} / ~{formatClock(estimateMs)}
+        </span>
+      </div>
+      {track}
+    </div>
+  );
+}
+
 const Spinner = ({ className = "h-4 w-4" }: { className?: string }) => (
   <svg viewBox="0 0 24 24" className={`${className} animate-spin`}>
     <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity="0.25" strokeWidth="3" fill="none" />
@@ -137,6 +248,7 @@ export default function CadExtractorClient() {
   const [dragging, setDragging] = useState(false);
 
   const [running, setRunning] = useState(false);
+  const [runTiming, setRunTiming] = useState<{ startedAt: number; estimateMs: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const [resultUrls, setResultUrls] = useState<string[]>([]);
@@ -245,12 +357,14 @@ export default function CadExtractorClient() {
   }
 
   async function executeJob(job: JobConfig): Promise<{ resultUrls: string[]; spec: CadSpec | null }> {
+    const startedAt = Date.now();
     if (job.mode === "spec") {
       const data = await fetchJson("Spec analysis", "/api/cad-spec", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ imageUrls: job.imageUrls }),
       });
+      recordDuration(job, Date.now() - startedAt);
       return { resultUrls: [], spec: data.spec as CadSpec };
     }
     const images = await runCadTask("CAD extract", "/api/cad-extract", {
@@ -264,6 +378,7 @@ export default function CadExtractorClient() {
     });
     const urls: string[] = images.map((i) => i.url).filter(Boolean);
     if (!urls.length) throw new Error("No artwork returned");
+    recordDuration(job, Date.now() - startedAt);
     return { resultUrls: urls, spec: null };
   }
 
@@ -276,14 +391,17 @@ export default function CadExtractorClient() {
     setRunning(true);
     setResultUrls([]);
     setSpec(null);
+    const job: JobConfig = { mode, modelId, resolution, notes, imageUrls: selectedRefUrls };
+    setRunTiming({ startedAt: Date.now(), estimateMs: estimateMsFor(job) });
     try {
-      const out = await executeJob({ mode, modelId, resolution, notes, imageUrls: selectedRefUrls });
+      const out = await executeJob(job);
       setResultUrls(out.resultUrls);
       setSpec(out.spec);
     } catch (e: any) {
       setError(e?.message || "Run failed");
     } finally {
       setRunning(false);
+      setRunTiming(null);
     }
   }
 
@@ -350,7 +468,11 @@ export default function CadExtractorClient() {
         );
         if (!next) break;
         claimed.add(next.id);
-        updateQueueItem(next.id, { status: "running" });
+        updateQueueItem(next.id, {
+          status: "running",
+          startedAt: Date.now(),
+          estimateMs: estimateMsFor(next),
+        });
         const jobStartedAt = performance.now();
         try {
           const out = await executeJob(next);
@@ -652,6 +774,15 @@ export default function CadExtractorClient() {
                           {it.status === "failed" && it.error ? (
                             <p className="truncate text-[10px] text-red-600">{it.error}</p>
                           ) : null}
+                          {it.status === "running" && it.startedAt ? (
+                            <div className="mt-1.5 pr-1">
+                              <CadProgressBar
+                                compact
+                                startedAt={it.startedAt}
+                                estimateMs={it.estimateMs ?? 180_000}
+                              />
+                            </div>
+                          ) : null}
                         </div>
                         {it.status === "done" && it.mode !== "spec" && it.resultUrls[0] ? (
                           <img
@@ -765,9 +896,13 @@ export default function CadExtractorClient() {
             {isSpec ? (
               spec ? (
                 <SpecCard spec={spec} />
+              ) : running && runTiming ? (
+                <div className="flex h-40 items-center justify-center px-6">
+                  <CadProgressBar startedAt={runTiming.startedAt} estimateMs={runTiming.estimateMs} label="Analyzing" />
+                </div>
               ) : (
                 <div className="flex h-40 items-center justify-center text-xs text-neutral-400">
-                  {running ? "Analyzing…" : "Run Spec Analysis to see results"}
+                  Run Spec Analysis to see results
                 </div>
               )
             ) : resultUrls.length ? (
@@ -783,9 +918,13 @@ export default function CadExtractorClient() {
                   </button>
                 ))}
               </div>
+            ) : running && runTiming ? (
+              <div className="flex h-40 items-center justify-center px-6">
+                <CadProgressBar startedAt={runTiming.startedAt} estimateMs={runTiming.estimateMs} label="Extracting" />
+              </div>
             ) : (
               <div className="flex h-40 items-center justify-center text-xs text-neutral-400">
-                {running ? "Extracting…" : "Run extraction to see artwork"}
+                Run extraction to see artwork
               </div>
             )}
             {!isSpec && resultUrls.length ? (
