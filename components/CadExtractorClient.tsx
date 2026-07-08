@@ -285,6 +285,33 @@ export default function CadExtractorClient() {
     }
   }, []);
 
+  // Cross-app import: the pants cockpit links here with
+  // ?importUrl=http://localhost:8787/images/<style>.jpg. Vercel can't reach
+  // that origin but this browser can — fetch client-side and push through
+  // the normal upload path. The cockpit serves CORS for this origin.
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const importUrl = url.searchParams.get("importUrl");
+    if (!importUrl) return;
+    url.searchParams.delete("importUrl");
+    window.history.replaceState(null, "", url.toString());
+    (async () => {
+      try {
+        const res = await fetch(importUrl);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const blob = await res.blob();
+        if (!blob.type.startsWith("image/")) throw new Error("not an image");
+        const name = importUrl.split("/").pop() || "import.jpg";
+        const dt = new DataTransfer();
+        dt.items.add(new File([blob], name, { type: blob.type }));
+        await addFiles(dt.files);
+      } catch (e: any) {
+        setError(`Import failed: ${e?.message || e} — is the cockpit running?`);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     try {
       localStorage.setItem(REFS_KEY, JSON.stringify(refs));
