@@ -17,6 +17,7 @@ import type {
   OverlayPlacement,
 } from "@/lib/fal";
 import { resizeIfNeeded } from "@/lib/image-resize";
+import { uploadWithProgress } from "@/components/RunProgress";
 import type { ModelId } from "@/lib/models";
 import type { HumanModel, PresetView } from "@/lib/models-registry";
 import { optimizePromptForModel } from "@/lib/prompt-strategy";
@@ -395,6 +396,7 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
   const [uploads, setUploads] = useState<UploadedImage[]>([]);
   const [selected, setSelected] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [uploadFraction, setUploadFraction] = useState(0);
 
   /* ---------- Human model catalog ---------- */
   const [humanModels, setHumanModels] = useState<HumanModel[]>(initialHumanModels);
@@ -750,6 +752,7 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
 
   async function addFiles(files: FileList) {
     setUploading(true);
+    setUploadFraction(0);
     setError(null);
     try {
       const resized = await Promise.all(
@@ -757,7 +760,11 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
       );
       const form = new FormData();
       resized.forEach((f) => form.append("files", f));
-      const data = await fetchJson("Upload", "/api/upload", { method: "POST", body: form });
+      // Bytes-sent progress covers the browser -> server leg; hold at 90%
+      // until the server finishes forwarding to storage and responds.
+      const data = await uploadWithProgress("Upload", "/api/upload", form, (f) =>
+        setUploadFraction(f * 0.9)
+      );
       const added: UploadedImage[] = data.uploads;
       setUploads((list) => [...list, ...added]);
       setSelected(added.map((a) => a.url));
@@ -2752,6 +2759,8 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
             selectedUrls={selected}
             onToggleSelect={toggleSelect}
             onAddFiles={addFiles}
+            uploading={uploading}
+            uploadFraction={uploadFraction}
             onRemoveUpload={removeUpload}
             humanModels={humanModels}
             selectedHumanModelId={selectedHumanModelId}

@@ -10,6 +10,7 @@ import type { CadMode, CadSpec } from "@/lib/cad-prompts";
 import CadScaleMeasure from "@/components/cad/CadScaleMeasure";
 import CadTilingPreview from "@/components/cad/CadTilingPreview";
 import CadExportPanel from "@/components/cad/CadExportPanel";
+import { ProgressBar, uploadWithProgress } from "@/components/RunProgress";
 
 const REFS_KEY = "davidani_cad_refs_v1";
 
@@ -128,10 +129,19 @@ const DEFAULT_ESTIMATE_MS: Record<string, number> = {
   "extract:seedream-4:1K": 60_000,
   "extract:seedream-4:2K": 90_000,
   "extract:seedream-4:4K": 120_000,
+  "cleanup:gpt-image:2K": 180_000,
+  "cleanup:nano-banana:2K": 300_000,
+  "cleanup:seedream-4:2K": 90_000,
 };
 
 function durationKey(job: JobConfig): string {
   return job.mode === "spec" ? "spec" : `extract:${job.modelId}:${job.resolution}`;
+}
+
+// Cleanup runs are fixed at 2K on whichever model the tile came from; give
+// them their own history bucket so extract timings don't skew them.
+function cleanupDurationKey(modelId: ModelId): string {
+  return `cleanup:${modelId}:2K`;
 }
 
 function readDurations(): Record<string, number[]> {
@@ -144,8 +154,7 @@ function readDurations(): Record<string, number[]> {
   }
 }
 
-function estimateMsFor(job: JobConfig): number {
-  const key = durationKey(job);
+function estimateMsForKey(key: string): number {
   const hist = readDurations()[key]?.filter((n) => Number.isFinite(n) && n > 0);
   if (hist?.length) {
     const sorted = [...hist].sort((a, b) => a - b);
@@ -154,10 +163,13 @@ function estimateMsFor(job: JobConfig): number {
   return DEFAULT_ESTIMATE_MS[key] ?? 180_000;
 }
 
-function recordDuration(job: JobConfig, ms: number): void {
+function estimateMsFor(job: JobConfig): number {
+  return estimateMsForKey(durationKey(job));
+}
+
+function recordDurationForKey(key: string, ms: number): void {
   try {
     const all = readDurations();
-    const key = durationKey(job);
     all[key] = [...(all[key] ?? []), ms].slice(-DURATION_SAMPLES_KEPT);
     localStorage.setItem(DURATIONS_KEY, JSON.stringify(all));
   } catch {
@@ -165,59 +177,10 @@ function recordDuration(job: JobConfig, ms: number): void {
   }
 }
 
-function formatClock(ms: number): string {
-  const s = Math.max(0, Math.round(ms / 1000));
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+function recordDuration(job: JobConfig, ms: number): void {
+  recordDurationForKey(durationKey(job), ms);
 }
 
-function CadProgressBar({
-  startedAt,
-  estimateMs,
-  label,
-  compact,
-}: {
-  startedAt: number;
-  estimateMs: number;
-  label?: string;
-  compact?: boolean;
-}) {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 250);
-    return () => clearInterval(t);
-  }, []);
-  const elapsed = Math.max(0, now - startedAt);
-  // Ease-out toward an asymptote: ~82% at the estimate, ~97% at 2x. The bar
-  // is honest about estimate uncertainty — it never claims 100% before the
-  // result actually lands.
-  const pct = Math.min(0.98, 1 - Math.pow(2, (-elapsed / Math.max(1000, estimateMs)) * 2.5)) * 100;
-
-  const track = (
-    <div className={`relative w-full overflow-hidden rounded-full bg-neutral-200 ${compact ? "h-0.5" : "h-1"}`}>
-      <div
-        className="relative h-full overflow-hidden rounded-full bg-neutral-900 transition-[width] duration-500 ease-out motion-reduce:transition-none"
-        style={{ width: `${pct}%` }}
-      >
-        <div className="absolute inset-0 -translate-x-full animate-[shimmer_2.4s_ease-out_infinite] bg-gradient-to-r from-transparent via-white/25 to-transparent motion-reduce:hidden" />
-      </div>
-    </div>
-  );
-
-  if (compact) return track;
-  return (
-    <div className="w-full max-w-xs space-y-2">
-      <div className="flex items-baseline justify-between text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
-        <span>
-          {label ?? "Extracting"} · {Math.round(pct)}%
-        </span>
-        <span className="font-normal normal-case tracking-normal tabular-nums text-neutral-400">
-          {formatClock(elapsed)} / ~{formatClock(estimateMs)}
-        </span>
-      </div>
-      {track}
-    </div>
-  );
-}
 
 const Spinner = ({ className = "h-4 w-4" }: { className?: string }) => (
   <svg viewBox="0 0 24 24" className={`${className} animate-spin`}>
@@ -245,6 +208,7 @@ export default function CadExtractorClient() {
   const [refs, setRefs] = useState<UploadedImage[]>([]);
   const [selectedRefUrls, setSelectedRefUrls] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [uploadFraction, setUploadFraction] = useState(0);
   const [dragging, setDragging] = useState(false);
 
   const [running, setRunning] = useState(false);
@@ -255,6 +219,7 @@ export default function CadExtractorClient() {
   const [spec, setSpec] = useState<CadSpec | null>(null);
   const [scale, setScale] = useState<{ repeatCm: number; dpi: number } | null>(null);
   const [cleaning, setCleaning] = useState(false);
+  const [cleanupTiming, setCleanupTiming] = useState<{ startedAt: number; estimateMs: number } | null>(null);
   const [colorway, setColorway] = useState<CadSpec | null>(null);
 
   const [queue, setQueue] = useState<QueueItem[]>([]);
@@ -330,12 +295,18 @@ export default function CadExtractorClient() {
 
   async function addFiles(files: FileList) {
     setUploading(true);
+    setUploadFraction(0);
     setError(null);
     try {
       const resized = await Promise.all(Array.from(files).map((f) => resizeIfNeeded(f)));
       const form = new FormData();
       resized.forEach((f) => form.append("files", f));
-      const data = await fetchJson("Upload", "/api/upload", { method: "POST", body: form });
+      // Bytes-sent progress covers the browser -> server leg; the server
+      // still forwards to storage after that, so hold the bar at 90% until
+      // the response lands rather than showing a false 100%.
+      const data = await uploadWithProgress("Upload", "/api/upload", form, (f) =>
+        setUploadFraction(f * 0.9)
+      );
       const added: UploadedImage[] = data.uploads ?? [];
       if (!added.length) throw new Error("Upload returned no URLs");
       setRefs((list) => [...added, ...list]);
@@ -503,6 +474,8 @@ export default function CadExtractorClient() {
     if (!resultUrls.length) return;
     setError(null);
     setCleaning(true);
+    const startedAt = Date.now();
+    setCleanupTiming({ startedAt, estimateMs: estimateMsForKey(cleanupDurationKey(modelId)) });
     try {
       const images = await runCadTask("Cleanup", "/api/cad-cleanup", {
         imageUrl: resultUrls[0],
@@ -510,11 +483,13 @@ export default function CadExtractorClient() {
       });
       const urls: string[] = images.map((i) => i.url).filter(Boolean);
       if (!urls.length) throw new Error("Cleanup returned no image");
+      recordDurationForKey(cleanupDurationKey(modelId), Date.now() - startedAt);
       setResultUrls([urls[0]]);
     } catch (e: any) {
       setError(e?.message || "Cleanup failed");
     } finally {
       setCleaning(false);
+      setCleanupTiming(null);
     }
   }
 
@@ -642,9 +617,7 @@ export default function CadExtractorClient() {
               }`}
             >
               {uploading ? (
-                <span className="inline-flex items-center gap-2">
-                  <Spinner /> Uploading
-                </span>
+                <ProgressBar label="Uploading" fraction={uploadFraction} className="px-2" />
               ) : dragging ? (
                 "Drop to upload"
               ) : (
@@ -776,7 +749,7 @@ export default function CadExtractorClient() {
                           ) : null}
                           {it.status === "running" && it.startedAt ? (
                             <div className="mt-1.5 pr-1">
-                              <CadProgressBar
+                              <ProgressBar
                                 compact
                                 startedAt={it.startedAt}
                                 estimateMs={it.estimateMs ?? 180_000}
@@ -898,7 +871,7 @@ export default function CadExtractorClient() {
                 <SpecCard spec={spec} />
               ) : running && runTiming ? (
                 <div className="flex h-40 items-center justify-center px-6">
-                  <CadProgressBar startedAt={runTiming.startedAt} estimateMs={runTiming.estimateMs} label="Analyzing" />
+                  <ProgressBar className="max-w-xs" startedAt={runTiming.startedAt} estimateMs={runTiming.estimateMs} label="Analyzing" />
                 </div>
               ) : (
                 <div className="flex h-40 items-center justify-center text-xs text-neutral-400">
@@ -920,7 +893,7 @@ export default function CadExtractorClient() {
               </div>
             ) : running && runTiming ? (
               <div className="flex h-40 items-center justify-center px-6">
-                <CadProgressBar startedAt={runTiming.startedAt} estimateMs={runTiming.estimateMs} label="Extracting" />
+                <ProgressBar className="max-w-xs" startedAt={runTiming.startedAt} estimateMs={runTiming.estimateMs} label="Extracting" />
               </div>
             ) : (
               <div className="flex h-40 items-center justify-center text-xs text-neutral-400">
@@ -940,6 +913,13 @@ export default function CadExtractorClient() {
                   )}
                 </div>
                 <CadTilingPreview imageUrl={resultUrls[0]} onReroll={run} rerolling={running} onCleanup={cleanup} cleaning={cleaning} />
+                {cleaning && cleanupTiming ? (
+                  <ProgressBar
+                    label="Cleaning"
+                    startedAt={cleanupTiming.startedAt}
+                    estimateMs={cleanupTiming.estimateMs}
+                  />
+                ) : null}
                 <CadExportPanel imageUrl={resultUrls[0]} scale={scale} spec={colorway} />
               </div>
             ) : null}

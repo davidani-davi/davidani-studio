@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { ASPECT_RATIOS, FORMATS, MODELS, RESOLUTIONS, type ModelId } from "@/lib/models";
 import type { OverlayPlacement } from "@/lib/fal";
 import type { UploadedImage } from "./types";
+import { ProgressBar } from "@/components/RunProgress";
 import { resizeIfNeeded } from "@/lib/image-resize";
 // NOTE: `import type` is required — models-registry imports node:fs, which
 // must never end up in the client bundle. Type-only imports are erased at
@@ -27,6 +28,8 @@ interface Props {
   selectedUrls: string[];
   onToggleSelect: (url: string) => void;
   onAddFiles: (files: FileList) => void;
+  uploading?: boolean;
+  uploadFraction?: number;
   onRemoveUpload: (url: string) => void;
 
   /* Human model catalog + selection */
@@ -309,6 +312,12 @@ export default function ModelSidebar(p: Props) {
         onDrop={handleUploadDrop}
       >
         <SectionHeader icon={IconCamera} title="Garment intake" hint={refHint} />
+
+        {p.uploading ? (
+          <div className="mb-2">
+            <ProgressBar label="Uploading" fraction={p.uploadFraction ?? 0} />
+          </div>
+        ) : null}
 
         {p.multiModelMode ? (
           <div className="grid gap-2">
