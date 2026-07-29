@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { uploadToFal } from "@/lib/fal";
+import { uploadCompatibleImageToFal } from "@/lib/fal";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -15,12 +15,7 @@ export async function POST(req: Request) {
     const uploads = await Promise.all(
       files
         .filter((entry): entry is File => entry instanceof File)
-        .map((entry) =>
-          uploadToFal(entry, entry.name || "upload.png").then((url) => ({
-            name: entry.name,
-            url,
-          }))
-        )
+        .map((entry) => uploadCompatibleImageToFal(entry))
     );
 
     return NextResponse.json({ ok: true, uploads });

@@ -6,6 +6,12 @@ import { MODELS, type ModelId } from "./models";
 import { optimizePromptForModel } from "./prompt-strategy";
 import type { CadSpec } from "./cad-prompts";
 import { CAD_SPEC_SYSTEM_PROMPT, CAD_SPEC_USER_PROMPT } from "./cad-prompts";
+import {
+  canPassThroughKieUpload,
+  hasKieSupportedImageExtension,
+  isTrustedKieNormalizationHost,
+  KIE_SUPPORTED_IMAGE_MIME_TYPES,
+} from "./kie-image-compat";
 
 let configured = false;
 function ensureConfigured() {
@@ -2710,6 +2716,95 @@ export async function uploadToFal(file: File | Blob, filename = "upload.png"): P
   }
 }
 
+/**
+ * Upload a user-supplied reference in a format accepted by every image model.
+ * Browsers can preview WebP/AVIF, but Kie's Nano Banana endpoint only accepts
+ * JPEG/PNG references. Convert unsupported formats at the upload boundary.
+ */
+export async function uploadCompatibleImageToFal(file: File): Promise<{
+  name: string;
+  url: string;
+}> {
+  if (canPassThroughKieUpload(file)) {
+    return { name: file.name, url: await uploadToFal(file, file.name || "upload.png") };
+  }
+
+  let jpeg: Buffer;
+  try {
+    jpeg = await sharp(Buffer.from(await file.arrayBuffer()))
+      .rotate()
+      .flatten({ background: "#ffffff" })
+      .jpeg({ quality: 92, mozjpeg: true })
+      .toBuffer();
+  } catch {
+    throw new Error(
+      `"${file.name || "This file"}" could not be converted. Upload a PNG or JPEG image.`
+    );
+  }
+
+  const baseName = (file.name || "upload").replace(/\.[^.]+$/, "") || "upload";
+  const outputName = `${baseName}.jpg`;
+  const blobPart = jpeg.buffer.slice(
+    jpeg.byteOffset,
+    jpeg.byteOffset + jpeg.byteLength
+  ) as ArrayBuffer;
+  const normalized = new File([blobPart], outputName, { type: "image/jpeg" });
+  return { name: outputName, url: await uploadToFal(normalized, outputName) };
+}
+
+/**
+ * Repair references uploaded before format normalization was introduced.
+ * Supported URLs pass through without downloading; unsupported or extensionless
+ * URLs are inspected and, when necessary, re-hosted as JPEG.
+ */
+async function normalizeImageUrlsForKie(imageUrls: string[]): Promise<string[]> {
+  return Promise.all(
+    imageUrls.map(async (url, index) => {
+      if (hasKieSupportedImageExtension(url)) return url;
+      if (!isTrustedKieNormalizationHost(url)) {
+        throw new Error(
+          `Reference image ${index + 1} must be a direct PNG or JPEG URL. For other formats, download the image and upload the file instead.`
+        );
+      }
+
+      const source = await fetch(url);
+      if (!source.ok) {
+        throw new Error(
+          `Could not read reference image ${index + 1} (HTTP ${source.status}).`
+        );
+      }
+
+      const contentType = (source.headers.get("content-type") || "")
+        .split(";")[0]
+        .trim()
+        .toLowerCase();
+      if (KIE_SUPPORTED_IMAGE_MIME_TYPES.has(contentType)) return url;
+
+      let jpeg: Buffer;
+      try {
+        jpeg = await sharp(Buffer.from(await source.arrayBuffer()))
+          .rotate()
+          .flatten({ background: "#ffffff" })
+          .jpeg({ quality: 92, mozjpeg: true })
+          .toBuffer();
+      } catch {
+        throw new Error(
+          `Reference image ${index + 1} uses a format Nano Banana cannot read. Upload it again as PNG or JPEG.`
+        );
+      }
+
+      const blobPart = jpeg.buffer.slice(
+        jpeg.byteOffset,
+        jpeg.byteOffset + jpeg.byteLength
+      ) as ArrayBuffer;
+      return uploadToFal(
+        new Blob([blobPart], { type: "image/jpeg" }),
+        `kie-reference-${index + 1}.jpg`
+      );
+    })
+  );
+}
+
 /*
  * NOTE: No post-processing upscaler. Previously this file contained an
  * `upscaleImage()` helper that piped Nano Banana output through
@@ -2788,9 +2883,10 @@ export async function generate(params: GenerateParams): Promise<GenerationResult
   // synchronous `subscribe`. Return directly here to skip everything below.
   if (model.inputShape === "kie") {
     const { generateViaKie } = await import("./kie");
+    const kieImageUrls = await normalizeImageUrlsForKie(generatorImageUrls);
     const kieResult = await generateViaKie({
       prompt: finalPrompt,
-      imageUrls: generatorImageUrls,
+      imageUrls: kieImageUrls,
       numImages: params.numImages,
       aspectRatio: params.aspectRatio,
       format: params.format,
