@@ -2620,13 +2620,6 @@ export function buildGptImageOptions(params: {
   if (params.numImages) options.num_images = params.numImages;
   if (params.aspectRatio && params.aspectRatio !== "auto") {
     options.aspect_ratio = params.aspectRatio;
-    options.image_size =
-      params.aspectRatio === "1:1"
-        ? "1024x1024"
-        : Number(params.aspectRatio.split(":")[0]) >
-            Number(params.aspectRatio.split(":")[1])
-          ? "1536x1024"
-          : "1024x1536";
   }
   if (params.format) options.output_format = params.format;
   return options;
