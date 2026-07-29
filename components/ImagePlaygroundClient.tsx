@@ -112,8 +112,8 @@ function hasImageFiles(e: React.DragEvent): boolean {
 
 export default function ImagePlaygroundClient() {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [modelId, setModelId] = useState<ModelId>("nano-banana");
-  const [aspect, setAspect] = useState<string>("2:3");
+  const [modelId, setModelId] = useState<ModelId>("gpt-image");
+  const [aspect, setAspect] = useState<string>("auto");
   const [resolution, setResolution] = useState<string>("2K");
   const [parallel, setParallel] = useState<number>(1);
   const [numPerPrompt, setNumPerPrompt] = useState<number>(1);
