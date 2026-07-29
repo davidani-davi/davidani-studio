@@ -53,6 +53,11 @@ interface Props {
   onReferenceReplace: (file: File) => void;
   onReferenceReset: () => void;
   referenceUploading: boolean;
+  /** True when a freshly uploaded custom reference can be saved as a preset. */
+  canSaveReference: boolean;
+  referenceSaving: boolean;
+  onReferenceSave: (label: string) => void;
+  onPresetDelete: (id: string) => void;
 }
 
 const BG_PRESETS: { hex: string; label: string }[] = [
@@ -184,6 +189,7 @@ export default function Sidebar(p: Props) {
   const [previewSrc, setPreviewSrc] = useState<string | null>(null);
   const [draggingUploads, setDraggingUploads] = useState(false);
   const [draggingReference, setDraggingReference] = useState(false);
+  const [presetName, setPresetName] = useState("");
 
   const uploadCount = p.uploads.length;
   const intakeCount = Number(!!p.frontIntakeUrl) + Number(!!p.backIntakeUrl);
@@ -427,6 +433,30 @@ export default function Sidebar(p: Props) {
                 Reset
               </button>
             </div>
+            {p.canSaveReference && (
+              <div className="mt-2 flex gap-1.5">
+                <input
+                  type="text"
+                  value={presetName}
+                  onChange={(e) => setPresetName(e.target.value)}
+                  placeholder="Preset name"
+                  className="min-w-0 flex-1 rounded-md border border-neutral-200 bg-white px-2 py-1.5 text-[11px] text-neutral-700 placeholder:text-neutral-400 focus:border-brand-400 focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const label = presetName.trim();
+                    if (!label) return;
+                    p.onReferenceSave(label);
+                    setPresetName("");
+                  }}
+                  disabled={p.referenceSaving || !presetName.trim()}
+                  className="rounded-md border border-brand-300 bg-brand-50 px-2 py-1.5 text-[11px] font-medium text-brand-700 transition hover:bg-brand-100 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {p.referenceSaving ? "Saving…" : "Save as preset"}
+                </button>
+              </div>
+            )}
             <input
               ref={referenceInputRef}
               type="file"
@@ -451,12 +481,19 @@ export default function Sidebar(p: Props) {
                 const selected =
                   !hasCustomReference && p.selectedProductShotPath === ref.path;
                 return (
-                  <button
+                  <div
                     key={ref.id}
-                    type="button"
+                    role="button"
+                    tabIndex={0}
                     onClick={() => p.onProductShotSelect(ref.path)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        p.onProductShotSelect(ref.path);
+                      }
+                    }}
                     title={ref.label}
-                    className={`group relative aspect-square overflow-hidden rounded-md border bg-white transition ${
+                    className={`group relative aspect-square cursor-pointer overflow-hidden rounded-md border bg-white transition ${
                       selected
                         ? "border-brand-500 ring-2 ring-brand-100"
                         : "border-neutral-200 hover:border-neutral-400"
@@ -469,7 +506,20 @@ export default function Sidebar(p: Props) {
                         ✓
                       </span>
                     )}
-                  </button>
+                    {ref.userAdded && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (confirm(`Delete preset "${ref.label}"?`)) p.onPresetDelete(ref.id);
+                        }}
+                        title="Delete preset"
+                        className="absolute left-1 top-1 hidden h-4 w-4 items-center justify-center rounded-full bg-neutral-800/70 text-[9px] font-bold text-white group-hover:flex"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
                 );
               })}
             </div>

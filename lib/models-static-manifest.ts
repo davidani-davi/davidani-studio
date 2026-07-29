@@ -276,10 +276,6 @@ export const STATIC_HUMAN_MODELS = [
             "filename": "front.png",
             "publicPath": "/models/pants 1/front.png"
           },
-          "full": {
-            "filename": "full5.jpg",
-            "publicPath": "/models/pants 1/full5.jpg"
-          },
           "side": {
             "filename": "side.jpg",
             "publicPath": "/models/pants 1/side.jpg"
@@ -324,10 +320,6 @@ export const STATIC_HUMAN_MODELS = [
             {
               "filename": "front5.jpg",
               "publicPath": "/models/pants 1/front5.jpg"
-            },
-            {
-              "filename": "front6.jpg",
-              "publicPath": "/models/pants 1/front6.jpg"
             }
           ],
           "side": [
@@ -342,14 +334,6 @@ export const STATIC_HUMAN_MODELS = [
             {
               "filename": "side4.jpg",
               "publicPath": "/models/pants 1/side4.jpg"
-            },
-            {
-              "filename": "side5.jpg",
-              "publicPath": "/models/pants 1/side5.jpg"
-            },
-            {
-              "filename": "side6.jpg",
-              "publicPath": "/models/pants 1/side6.jpg"
             }
           ]
         }

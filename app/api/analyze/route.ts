@@ -4,6 +4,7 @@ import {
   analyzeGarmentToPrompt,
   analyzeTwoPieceSetToPrompt,
 } from "@/lib/fal";
+import { cachedVision } from "@/lib/vision-cache";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -33,13 +34,21 @@ export async function POST(req: Request) {
     // backgroundColor field isn't used by either path right now (legacy shape)
     // but we keep the argument for single-garment so the signature stays stable.
     const primaryImageUrl = selectedImageUrls[0] || imageUrl;
-    const prompt = twoPiece
-      ? await analyzeTwoPieceSetToPrompt(primaryImageUrl)
-      : selectedImageUrls.length >= 2
-      ? await analyzeFrontBackGarmentToPrompt(selectedImageUrls[0], selectedImageUrls[1], {
-          backgroundColor,
-        })
-      : await analyzeGarmentToPrompt(primaryImageUrl, { backgroundColor });
+    // Cached on the immutable image URLs + options (lib/vision-cache), so a
+    // repeat Generate on an unchanged photo skips the vision round-trip and
+    // the client-side warmup call makes the first click hit a hot cache too.
+    const prompt = await cachedVision(
+      "image-analyze",
+      { urls: selectedImageUrls, primaryImageUrl, backgroundColor: backgroundColor ?? null, twoPiece: Boolean(twoPiece) },
+      () =>
+        twoPiece
+          ? analyzeTwoPieceSetToPrompt(primaryImageUrl)
+          : selectedImageUrls.length >= 2
+          ? analyzeFrontBackGarmentToPrompt(selectedImageUrls[0], selectedImageUrls[1], {
+              backgroundColor,
+            })
+          : analyzeGarmentToPrompt(primaryImageUrl, { backgroundColor })
+    );
     return NextResponse.json({ ok: true, prompt });
   } catch (err: any) {
     console.error("[analyze] error:", err);

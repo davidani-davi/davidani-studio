@@ -2,15 +2,15 @@
 // shared types. Pure module: no fal/sharp/node imports, so the client may
 // `import type` from it without bundling server code.
 //
-// Philosophy (do not soften in the prompts): every garment photo is a
-// distorted projection of a flat 2D textile print. The job is to REVERSE every
-// post-design transformation (body warp, drape, wrinkles, seams, pockets,
-// lighting, perspective, lens distortion) and RECOVER the original artwork.
-// Never design, restyle, modernize, or "improve". Preserve every PRINTED motif,
-// distress mark, color, opacity, placement, rotation, scale, and intentional
-// imperfection — but remove physically applied embellishments (appliqués,
-// lace/crochet patches, embroidery, beading) since those are not part of the
-// mill print. The output must read as flat textile artwork, never as a garment.
+// Philosophy (do not soften in the prompts): every garment photo is a distorted
+// projection of a flat 2D textile print. Rather than edit the photo in place
+// (edit models copy the garment's pockets/waistband/seams no matter what the
+// prompt says), RE-SYNTHESIZE fresh flat yardage from the print's motifs + color.
+// Preserve the print's palette, brushwork, texture, scale, and intentional
+// imperfections exactly; add none of the garment's construction. Remove
+// physically applied embellishments (appliqués, lace/crochet patches, embroidery,
+// beading). Output must read as flat textile artwork, never a garment. Runs best
+// on an instruction-obeying model (GPT Image 2).
 
 export type CadMode = "flat" | "seamless";
 
@@ -35,27 +35,28 @@ export interface CadSpec {
   notes: string;
 }
 
-// Shared recovery directives used by both image modes.
-const RECOVERY_CORE = [
-  "You are an expert textile CAD engineer recovering the original digital print artwork from a photograph of a finished garment.",
-  "Treat the photograph as a distorted projection of a flat 2D textile print. Mathematically and visually reverse every transformation applied after the artwork left the designer: pattern warp from body shape, fabric drape, wrinkles, stretch, compression, construction seams, pockets, waistbands, elastic, gathering, drawstrings, stitching, washing, fading caused by photography, lighting, shadows, highlights, camera perspective, lens distortion, and cropping.",
-  "Completely remove every garment-specific element: construction seams, top stitching, cover stitching, overlock stitching, elastic casing, waistbands, hem bands, drawstrings, buttons, snaps, zippers, pockets, pleats, gathering, panel breaks, necklines, sleeves, cuffs, yokes, side seams, fabric folds, wrinkles, body shape, shadows, lighting gradients, and perspective. Nothing from the garment may remain.",
-  "Pay special attention to elasticated and gathered areas — balloon and bubble hems, gathered or scrunched ankle cuffs, elastic-ruched hems, ruched panels, gathered waistbands, and the puckered ridges around them are CONSTRUCTION, not print. The bunched, rippled, ridged, and shadowed fabric there is fold and shadow, never artwork. Delete every gathered cuff, elastic ridge, pucker, scrunch, and hem stitch completely and reconstruct the flat, undistorted print across that whole area from the surrounding artwork, so no trace of a cuff, hem, or gather remains.",
-  "Preserve EXACTLY, do not clean or stylize: every PRINTED illustration, icon, motif, brush stroke, distress mark, ink texture, halftone, color, opacity, fade, placement, rotation, scale, spacing, overlap, and intentional imperfection. If something is intentionally distressed, washed, cracked, or aged, keep it exactly — do not sharpen, simplify, or restore it.",
-  "Critical distinction — printed artwork vs. applied embellishment: only the flat MILL-PRINTED design is the textile artwork. Physical embellishments added during garment construction are NOT part of the print and must be completely removed: lace, crochet, eyelet, and embroidered appliqués and patches (e.g. flower, daisy, butterfly, star, or animal patches), embroidery, beading, sequins, rhinestones, studs, grommets, screen-printed or heat-pressed patches, trims, bows, ribbons, ric-rac, and labels. These sit ON TOP of the fabric in a different material or texture (often raised, openwork, or a contrasting solid color like cream lace). Treat each one as an occluder: delete it and reconstruct the continuous base print underneath it using ONLY the surrounding printed artwork. Do NOT reproduce, tile, or repeat any appliqué or embellishment anywhere in the output.",
-  "Preserve exact color relationships of the print. Do NOT increase saturation or contrast, adjust hue, normalize colors, change brightness, or white-balance. Match the original textile artwork's colors.",
-  "Reconstruct print hidden beneath pockets, seams, elastic, waistbands, gathering, folded fabric, or any removed appliqué/embellishment using ONLY the surrounding printed artwork, so the continuation looks perfectly natural with no visible interruption. Printed motifs cut off by seams, pockets, or folds must continue and reconnect naturally. Never invent unrelated motifs; when uncertain, preserve the printed artwork rather than invent.",
-  "Output flat 2D artwork only: a square composition that FILLS THE ENTIRE FRAME edge to edge. The print must extend to and bleed off all four edges with NO white or blank border, no margin, no frame, no matting, no rounded corners, and no empty negative space anywhere around it. High resolution, production-ready CAD. No garment, no mannequin, no folds, no perspective, no shadows, no background. Artwork only — it must look like the original digital textile file the brand sent to the fabric mill, with no evidence it came from a photograph.",
+// Both image modes RE-SYNTHESIZE the print rather than "recovering" it by
+// editing the photo in place. Recovery fails on edit models: they copy the
+// garment's pockets/waistband/seams no matter how forcefully the prompt says to
+// remove them (Nano Banana and Seedream both proved this). Re-synthesizing fresh
+// flat yardage from the print's motifs + color is what actually yields clean
+// artwork — and an instruction-obeying model (GPT Image 2) honors it.
+const RESYNTH_CORE = [
+  "You are an expert textile CAD engineer. Use the attached garment photograph ONLY as a MOTIF-AND-COLOR reference for its surface print — never as pixels to copy, trace, or edit.",
+  "Completely RE-SYNTHESIZE new flat textile artwork that reproduces the same visual language of the print: identical color palette, the same brush strokes, ink texture, halftone, mottled density, motif shapes, scale, and spacing.",
+  "Do NOT preserve the photograph's layout or composition. Redistribute the motifs evenly and naturally across a flat field so that NOTHING from the garment survives — no construction seams, top stitching, cover/overlock stitching, pockets, waistbands, elastic casing, gathering, drawstrings, hem bands, panel breaks, necklines, sleeves, cuffs, folds, wrinkles, drape, body warp, shadows, lighting gradients, highlights, perspective, or lens distortion. There must be NO vertical panel seam, no center line, no horizontal hem band, no gathered or puckered zone, no directional streaking, and no lighter or darker regions carried over from the source.",
+  "Match the print's colors exactly — do NOT increase saturation or contrast, shift hue, normalize, or white-balance. Reproduce only the flat MILL-PRINTED design: remove physical embellishments that are not printed (lace, crochet, eyelet, and embroidered appliqués and patches, embroidery, beading, sequins, rhinestones, studs, grommets, trims, bows, ribbons, ric-rac, labels) and do not reproduce them anywhere.",
+  "Output flat 2D artwork only: a square composition that FILLS THE ENTIRE FRAME edge to edge with balanced density corner to corner, no white or blank border, no margin, frame, matting, rounded corners, or empty negative space. High resolution, production-ready CAD. No garment, no mannequin, no folds, no perspective, no shadows, no background. It must read as the original digital textile file the brand sent to the mill, with no evidence it came from a photograph.",
 ].join(" ");
 
 const FLAT_PROMPT = [
-  RECOVERY_CORE,
-  "MODE — FLAT ARTWORK RECOVERY: recover the flat print artwork exactly as it was printed across the fabric. Do NOT force a seamless tiling repeat in this mode; reproduce the artwork's true layout, scale, and spacing as recovered from the photograph.",
+  RESYNTH_CORE,
+  "MODE — FLAT ARTWORK RECOVERY: reproduce the artwork's true motif scale and spacing as an even flat field. Do NOT force a seamless tiling repeat in this mode.",
 ].join(" ");
 
 const SEAMLESS_PROMPT = [
-  RECOVERY_CORE,
-  "MODE — SEAMLESS PRODUCTION CAD: produce a perfectly tileable square repeat of the recovered artwork. Determine the repeat logic (full repeat, half-drop, brick, mirror, engineered placement, border, panel, all-over, directional or non-directional) and reconstruct it. When the photograph shows only part of the repeat, INFER AND COMPLETE the full repeat from the surrounding artwork while preserving the original artistic language — never introduce unrelated motifs.",
+  RESYNTH_CORE,
+  "MODE — SEAMLESS PRODUCTION CAD: produce a perfectly tileable square repeat of the artwork. Determine the repeat logic (full repeat, half-drop, brick, mirror, engineered placement, border, panel, all-over, directional or non-directional) and reconstruct it while preserving the original artistic language — never introduce unrelated motifs.",
   "Edge handling is mandatory: every edge must tile perfectly — the top connects to the bottom and the left connects to the right with no visible seams, no duplicated motifs near the edges, no broken artwork, and no abrupt cutoffs.",
 ].join(" ");
 
@@ -97,3 +98,20 @@ Rules:
 
 export const CAD_SPEC_USER_PROMPT =
   "Analyze the underlying textile print in this garment photograph and return the production spec as strict JSON per your system instructions. Output JSON only.";
+
+// One-click "Clean up (AI)" pass. The input is a tile that has already been
+// offset by half (so its outer edges are continuous and any seam now runs as a
+// faint cross through the exact center). This pass scrubs residual garment
+// construction the first recovery left behind — hem/stitch lines, panel and
+// inseam seams, creases, fold shadows, gathers — plus that center crosshair,
+// healing the printed artwork over all of them. It must NOT touch the outer
+// edges (they are already tileable).
+export const CAD_CLEANUP_PROMPT = [
+  "You are an expert textile CAD engineer cleaning up a flat 2D textile print that was recovered from a photograph of a finished garment. The print is good but still contains RESIDUAL GARMENT CONSTRUCTION that must be removed.",
+  "Remove every remaining trace of garment construction anywhere in the image: faint hem lines, stitch lines, top-stitching, cover-stitch and overlock rows, panel seams, inseams, side seams, waistband and hem-band lines, creases, fold shadows, drape shading, gathers, pleats, and puckers. None of these belong in a flat mill print.",
+  "There is also a faint cross-shaped seam through the EXACT CENTER of the image — one horizontal line across the middle and one vertical line down the middle. Repair it as well.",
+  "For every line, seam, crease, gather, and the center cross: reconstruct the continuous printed artwork over it using ONLY the surrounding print, so the motifs, colors, opacity, fade, texture, and spacing continue naturally with no visible interruption.",
+  "Preserve the print exactly otherwise: do not restyle, recolor, sharpen, simplify, brighten, increase contrast, or invent new motifs. Keep every printed flower, leaf, and shape, its color, and its washed/distressed character unchanged.",
+  "CRITICAL: do NOT modify the outer edges of the image. The four edges are already perfectly continuous and tileable — leave a margin near every edge untouched so the result still tiles seamlessly.",
+  "Output flat 2D artwork only: a square composition that fills the entire frame edge to edge, high resolution, production-ready CAD. No garment, no mannequin, no folds, no perspective, no shadows, no background, no border. Artwork only.",
+].join(" ");

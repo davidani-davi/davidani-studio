@@ -12,9 +12,16 @@ const JPEG_QUALITY = 0.85;
 // Skip resizing entirely for files already well under the limit.
 const SKIP_IF_BYTES_UNDER = 3 * 1024 * 1024; // 3 MB
 
-export async function resizeIfNeeded(file: File): Promise<File> {
+export async function resizeIfNeeded(
+  file: File,
+  opts?: { skipIfBytesUnder?: number }
+): Promise<File> {
   // Small files pass through untouched (no quality loss for already-small PNGs).
-  if (file.size < SKIP_IF_BYTES_UNDER && !/heic|heif/i.test(file.type)) {
+  // Callers that need a tighter aggregate body size (e.g. multi-photo forms
+  // under Vercel's 4.5 MB request cap) can lower this threshold so more
+  // files get downscaled; default preserves existing behavior.
+  const threshold = opts?.skipIfBytesUnder ?? SKIP_IF_BYTES_UNDER;
+  if (file.size < threshold && !/heic|heif/i.test(file.type)) {
     return file;
   }
 

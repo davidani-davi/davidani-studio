@@ -5,6 +5,7 @@ import StudioHeader from "@/components/StudioHeader";
 import ImageLightbox, { ZoomButton } from "@/components/ImageLightbox";
 import type { UploadedImage } from "@/components/types";
 import { resizeIfNeeded } from "@/lib/image-resize";
+import { ProgressBar, uploadWithProgress } from "@/components/RunProgress";
 
 async function fetchJson(label: string, input: string, init?: RequestInit): Promise<any> {
   const res = await fetch(input, init);
@@ -95,6 +96,7 @@ export default function PromptStudioClient() {
   const [uploads, setUploads] = useState<UploadedImage[]>([]);
   const [selectedUrl, setSelectedUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadFraction, setUploadFraction] = useState(0);
   const [generating, setGenerating] = useState(false);
   const [prompts, setPrompts] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -143,12 +145,17 @@ export default function PromptStudioClient() {
 
   async function addFiles(files: FileList) {
     setUploading(true);
+    setUploadFraction(0);
     setError(null);
     try {
       const resized = await Promise.all(Array.from(files).map((f) => resizeIfNeeded(f)));
       const form = new FormData();
       resized.forEach((f) => form.append("files", f));
-      const data = await fetchJson("Upload", "/api/upload", { method: "POST", body: form });
+      // Bytes-sent progress covers the browser -> server leg; hold at 90%
+      // until the server finishes forwarding to storage and responds.
+      const data = await uploadWithProgress("Upload", "/api/upload", form, (f) =>
+        setUploadFraction(f * 0.9)
+      );
       const added: UploadedImage[] = data.uploads ?? [];
       if (!added.length) throw new Error("Upload succeeded but no image URL returned");
       setUploads((list) => [...list, ...added]);
@@ -271,10 +278,7 @@ export default function PromptStudioClient() {
               }`}
             >
               {uploading ? (
-                <span className="inline-flex items-center gap-2">
-                  <Spinner />
-                  Uploading
-                </span>
+                <ProgressBar label="Uploading" fraction={uploadFraction} className="max-w-[75%]" />
               ) : (
                 <span className="inline-flex items-center gap-2">
                   {IconUpload}

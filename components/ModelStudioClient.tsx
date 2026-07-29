@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import ModelSidebar from "@/components/ModelSidebar";
 import PromptPanel, {
   type AnalysisReview,
@@ -16,6 +17,7 @@ import type {
   OverlayPlacement,
 } from "@/lib/fal";
 import { resizeIfNeeded } from "@/lib/image-resize";
+import { uploadWithProgress } from "@/components/RunProgress";
 import type { ModelId } from "@/lib/models";
 import type { HumanModel, PresetView } from "@/lib/models-registry";
 import { optimizePromptForModel } from "@/lib/prompt-strategy";
@@ -86,6 +88,11 @@ type QualityControlAction =
   | "restore-proportion";
 type PhotoshootView = "front" | "side" | "back" | "full";
 const MULTI_MODEL_VIEWS: PresetView[] = ["front", "side", "back", "full"];
+// How many views generate concurrently in a Multi Model run. 4 = all views
+// at once; the old 4-at-once provider timeouts were on the previous fal
+// backend, and kie's async task API tolerates it. If timeout retries show
+// up in the [timing] console logs, drop back to 2.
+const MULTI_MODEL_WORKERS = 4;
 
 function multiModelPoseVariantIndex(view: PresetView): number {
   // The primary Kylie back canvas is an over-shoulder pose that exposes the
@@ -389,10 +396,75 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
   const [uploads, setUploads] = useState<UploadedImage[]>([]);
   const [selected, setSelected] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [uploadFraction, setUploadFraction] = useState(0);
 
   /* ---------- Human model catalog ---------- */
-  const [humanModels] = useState<HumanModel[]>(initialHumanModels);
+  const [humanModels, setHumanModels] = useState<HumanModel[]>(initialHumanModels);
   const [modelsLoading] = useState(false);
+
+  // The blob index that backs /api/models can lag ~5s after a write, so a
+  // plain refresh right after POST/DELETE can silently no-op. Poll briefly
+  // for the expected state before giving up and settling on whatever the
+  // last fetch returned.
+  async function fetchModelsOnce(): Promise<HumanModel[] | null> {
+    try {
+      const res = await fetch("/api/models", { cache: "no-store" });
+      const data = await res.json();
+      if (data?.ok && Array.isArray(data.models)) return data.models as HumanModel[];
+    } catch (err) {
+      console.warn("[model-studio] models refresh failed:", err);
+    }
+    return null;
+  }
+
+  // After a successful add, poll until the new model id shows up (or we run
+  // out of attempts), then select it. Never leaves the UI looking like the
+  // save was ignored. Returns the last-seen models array so the caller can
+  // select against fresh data instead of a stale `humanModels` closure.
+  async function refreshUntilModelPresent(
+    id: string,
+    attempts = 5,
+    delayMs = 1500
+  ): Promise<HumanModel[] | null> {
+    let last: HumanModel[] | null = null;
+    for (let i = 0; i < attempts; i++) {
+      const models = await fetchModelsOnce();
+      if (models) {
+        last = models;
+        setHumanModels(models);
+        if (models.some((m) => m.id === id)) break;
+      }
+      if (i < attempts - 1) await new Promise((r) => setTimeout(r, delayMs));
+    }
+    return last;
+  }
+
+  // Returns true when the new model was found (and selected) after polling.
+  // Returns false when the polls exhaust without the id appearing — the
+  // caller surfaces that to the user rather than us selecting a phantom id
+  // that isn't in the picker yet.
+  async function handleModelAdded(id: string): Promise<boolean> {
+    const models = await refreshUntilModelPresent(id);
+    const m = models?.find((hm) => hm.id === id);
+    if (!m) return false;
+    setSelectedHumanModelId(id);
+    setSelectedPoseId(m.poses[0]?.id ?? null);
+    setPrompt("");
+    setAnalysisReview(null);
+    return true;
+  }
+
+  // Optimistic local removal — instant, and avoids the read-after-write lag
+  // re-introducing a just-deleted model into the picker. A later natural
+  // refresh (e.g. the next add) reconciles against the blob index once it
+  // has caught up.
+  function handleModelDeleted(id: string) {
+    setHumanModels((prev) => prev.filter((m) => m.id !== id));
+    if (selectedHumanModelId === id) {
+      const fallback = humanModels.find((m) => m.id !== id);
+      if (fallback) handleHumanModelChange(fallback.id);
+    }
+  }
   const [selectedHumanModelId, setSelectedHumanModelId] = useState<string | null>(
     initialHumanModels[0]?.id ?? null
   );
@@ -628,6 +700,42 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
     return selected.filter(Boolean);
   }, [selected]);
 
+  // Speculative analyze warmup: fires the analyze endpoint (debounced,
+  // fire-and-forget) as soon as a garment + model + pose are selected, so
+  // the server-side vision cache (garment fields + pose analysis) is hot by
+  // the time Generate is clicked. Only inputs that change the cache keys are
+  // dependencies — prompt options/sliders assemble text without new vision
+  // calls, so tweaking them doesn't re-fire. The response is ignored.
+  useEffect(() => {
+    if (activeGarmentUrls.length === 0 || !selectedHumanModelId || !selectedPoseId) return;
+    const timer = setTimeout(() => {
+      fetch("/api/analyze-model", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          modelId: selectedHumanModelId,
+          poseId: selectedPoseId,
+          view: selectedView,
+          garmentImageUrl: activeGarmentUrls[0],
+          garmentImageUrls: twoPiece
+            ? coordinatedSetMode === "single-image"
+              ? activeGarmentUrls.slice(0, 1)
+              : activeGarmentUrls.slice(0, 2)
+            : activeGarmentUrls,
+          twoPiece,
+        }),
+      }).catch(() => {});
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, [
+    activeGarmentUrls,
+    selectedHumanModelId,
+    selectedPoseId,
+    selectedView,
+    twoPiece,
+    coordinatedSetMode,
+  ]);
+
   /* ---------- Handlers ---------- */
 
   function toggleSelect(url: string) {
@@ -644,6 +752,7 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
 
   async function addFiles(files: FileList) {
     setUploading(true);
+    setUploadFraction(0);
     setError(null);
     try {
       const resized = await Promise.all(
@@ -651,7 +760,11 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
       );
       const form = new FormData();
       resized.forEach((f) => form.append("files", f));
-      const data = await fetchJson("Upload", "/api/upload", { method: "POST", body: form });
+      // Bytes-sent progress covers the browser -> server leg; hold at 90%
+      // until the server finishes forwarding to storage and responds.
+      const data = await uploadWithProgress("Upload", "/api/upload", form, (f) =>
+        setUploadFraction(f * 0.9)
+      );
       const added: UploadedImage[] = data.uploads;
       setUploads((list) => [...list, ...added]);
       setSelected(added.map((a) => a.url));
@@ -968,8 +1081,8 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
             );
             // Seed an in-flight HistoryItem with empty imageUrls so OutputPanel
             // can render skeleton placeholders for the three pending variants
-            // immediately. Each variant's URL fills in as its API call resolves
-            // (parallel, but each ~10-15s — visible "filling in" feedback).
+            // immediately. All three variants generate in parallel; each slot's
+            // URL fills in as its own API call resolves.
             const seedItem: HistoryItem = {
               id,
               timestamp: Date.now(),
@@ -999,8 +1112,13 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
             // pose for models/views that only have one or two references.
             const slotUrls: (string | null)[] = [null, null, null];
             const slotPoseUrls: (string | null)[] = [null, null, null];
-            for (let idx = 0; idx < optimizedTrio.length; idx += 1) {
-              const variantPrompt = optimizedTrio[idx];
+            // All three variants run concurrently — the backend creates one
+            // async task per variant, so serializing them only stacked their
+            // wall-clock times (~3x slower). Slot writes are index-scoped and
+            // setHistory uses functional updates, so concurrent completion is
+            // safe; the picker stays positional regardless of finish order.
+            const trioStartedAt = performance.now();
+            const generateVariant = async (variantPrompt: string, idx: number) => {
               let lastError = "";
               for (let attempt = 0; attempt < 3; attempt += 1) {
                 try {
@@ -1023,6 +1141,9 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
                     slotUrls[idx] = url;
                     if (typeof response.poseUrl === "string") slotPoseUrls[idx] = response.poseUrl;
                     if (!poseUrl && response.poseUrl) poseUrl = response.poseUrl;
+                    console.info(
+                      `[timing] trio variant ${idx} done in ${Math.round(performance.now() - trioStartedAt)}ms (attempt ${attempt + 1})`
+                    );
                     // Update the seeded HistoryItem incrementally so the
                     // skeleton card for this slot turns into a real image.
                     setHistory((existing) =>
@@ -1038,7 +1159,7 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
                       )
                     );
                     lastError = "";
-                    break;
+                    return;
                   }
                 } catch (variantErr) {
                   lastError =
@@ -1054,7 +1175,11 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
                   }
                 }
               }
-            }
+            };
+            await Promise.all(optimizedTrio.map(generateVariant));
+            console.info(
+              `[timing] trio total ${Math.round(performance.now() - trioStartedAt)}ms`
+            );
             const collectedUrls = slotUrls.filter(
               (url): url is string => typeof url === "string"
             );
@@ -1121,12 +1246,16 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
     const frontGarmentUrl = garmentUrls[0];
     const backGarmentUrl = garmentUrls[1];
     const hasBackReference = typeof backGarmentUrl === "string" && backGarmentUrl.trim().length > 0;
-    setLoading(true);
-    setError(null);
 
     // Register the run in the output panel immediately — before the async job
     // starts — so the user sees "Run #xxxx" right away instead of "No runs yet"
     // throughout the entire analysis + generation phase.
+    const seedMultiModelViews = MULTI_MODEL_VIEWS.reduce<
+      NonNullable<HistoryItem["multiModelViews"]>
+    >((acc, view) => {
+      acc[view] = { status: "queued" };
+      return acc;
+    }, {});
     const seedItem: HistoryItem = {
       id,
       timestamp: Date.now(),
@@ -1144,9 +1273,18 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
       view: "front",
       prompts: [],
       viewLabels: [...MULTI_MODEL_VIEWS],
+      multiModelViews: seedMultiModelViews,
     };
-    setHistory((existing) => [seedItem, ...existing.filter((run) => run.id !== id)].slice(0, 50));
-    setCurrentId(id);
+    // flushSync forces React to synchronously commit the seed item to the DOM
+    // before startStudioJob fires — React 18 automatic batching otherwise
+    // defers the paint until after the job's first history-updated event,
+    // losing the seed item and leaving the panel stuck on "No runs yet".
+    flushSync(() => {
+      setHistory((existing) => [seedItem, ...existing.filter((run) => run.id !== id)].slice(0, 50));
+      setCurrentId(id);
+      setLoading(true);
+      setError(null);
+    });
     localStorage.setItem(currentIdKey, id);
 
     startStudioJob(
@@ -1404,16 +1542,21 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
           };
 
           const failures: Array<{ view: (typeof MULTI_MODEL_VIEWS)[number]; error: string }> = [];
+          const multiRunStartedAt = performance.now();
           let nextViewIndex = 0;
           const worker = async () => {
             while (nextViewIndex < MULTI_MODEL_VIEWS.length) {
               const idx = nextViewIndex;
               nextViewIndex += 1;
               const targetView = MULTI_MODEL_VIEWS[idx];
+              const viewStartedAt = performance.now();
               let lastError = "";
               for (let attempt = 0; attempt < 3; attempt += 1) {
                 try {
                   await generateOneView(targetView, idx, resolution);
+                  console.info(
+                    `[timing] multi-model view ${targetView} done in ${Math.round(performance.now() - viewStartedAt)}ms (attempt ${attempt + 1}, ${Math.round(performance.now() - multiRunStartedAt)}ms into run)`
+                  );
                   lastError = "";
                   break;
                 } catch (err: any) {
@@ -1436,11 +1579,17 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
             }
           };
 
-          // Run 2 workers in parallel: each grabs the next available view slot
-          // sequentially (nextViewIndex is shared). This cuts wall-clock time
-          // roughly in half vs fully sequential without triggering the
-          // provider-side timeouts that occurred when all 4 ran at once.
-          await Promise.all([worker(), worker()]);
+          // Run MULTI_MODEL_WORKERS workers in parallel: each grabs the next
+          // available view slot sequentially (nextViewIndex is shared). 2 was
+          // chosen because all-4-at-once triggered provider-side timeouts on
+          // the old fal backend; the [timing] console logs exist to measure
+          // whether the current backend tolerates a higher worker count.
+          await Promise.all(
+            Array.from({ length: MULTI_MODEL_WORKERS }, () => worker())
+          );
+          console.info(
+            `[timing] multi-model run total ${Math.round(performance.now() - multiRunStartedAt)}ms (${MULTI_MODEL_WORKERS} workers, ${resolution})`
+          );
 
           const imageUrls = slotUrls.filter((url): url is string => typeof url === "string");
           if (imageUrls.length === 0) {
@@ -2610,10 +2759,14 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
             selectedUrls={selected}
             onToggleSelect={toggleSelect}
             onAddFiles={addFiles}
+            uploading={uploading}
+            uploadFraction={uploadFraction}
             onRemoveUpload={removeUpload}
             humanModels={humanModels}
             selectedHumanModelId={selectedHumanModelId}
             onHumanModelChange={handleHumanModelChange}
+            onModelAdded={handleModelAdded}
+            onModelDeleted={handleModelDeleted}
             selectedPoseId={selectedPoseId}
             onPoseChange={handlePoseChange}
             selectedView={selectedView}

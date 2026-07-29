@@ -10,6 +10,7 @@ import type { CadMode, CadSpec } from "@/lib/cad-prompts";
 import CadScaleMeasure from "@/components/cad/CadScaleMeasure";
 import CadTilingPreview from "@/components/cad/CadTilingPreview";
 import CadExportPanel from "@/components/cad/CadExportPanel";
+import { ProgressBar, uploadWithProgress } from "@/components/RunProgress";
 
 const REFS_KEY = "davidani_cad_refs_v1";
 
@@ -20,6 +21,35 @@ const MODE_OPTIONS: { id: ModeId; label: string; blurb: string }[] = [
   { id: "seamless", label: "Seamless Production CAD", blurb: "Perfectly tileable square repeat. Infers hidden artwork." },
   { id: "spec", label: "Spec Analysis", blurb: "Text spec: repeat type, colors, motifs, technique." },
 ];
+
+type QueueStatus = "queued" | "running" | "done" | "failed";
+
+interface QueueItem {
+  id: string;
+  imageUrls: string[];
+  mode: ModeId;
+  modelId: ModelId;
+  resolution: string;
+  notes: string;
+  status: QueueStatus;
+  resultUrls: string[];
+  spec: CadSpec | null;
+  error?: string;
+  startedAt?: number;
+  estimateMs?: number;
+}
+
+type JobConfig = Pick<QueueItem, "mode" | "modelId" | "resolution" | "notes" | "imageUrls">;
+
+// How many queued CAD jobs run concurrently. If provider timeouts show up
+// in the [timing] console logs, drop back to 2 (or 1 for sequential).
+const CAD_QUEUE_WORKERS = 4;
+
+function newQueueId(): string {
+  return typeof crypto !== "undefined" && "randomUUID" in crypto
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
 
 async function fetchJson(label: string, input: string, init?: RequestInit): Promise<any> {
   const res = await fetch(input, init);
@@ -33,6 +63,124 @@ async function fetchJson(label: string, input: string, init?: RequestInit): Prom
   if (!res.ok) throw new Error(`${label}: ${data?.error || `HTTP ${res.status}`}`);
   return data;
 }
+
+const TASK_POLL_MS = 4000;
+const TASK_TIMEOUT_MS = 15 * 60 * 1000;
+// Transient poll failures (network blips, blob list lag right after submit)
+// are tolerated up to this many consecutive misses before giving up.
+const TASK_MAX_CONSECUTIVE_MISSES = 15;
+
+// Extraction/cleanup run as server-side tasks: POST returns { taskId } and the
+// multi-minute generation completes in the background. Holding one fetch open
+// for the whole run got killed by the browser at ~4-5 min ("Failed to fetch"),
+// losing paid, completed results.
+async function runCadTask(
+  label: string,
+  endpoint: string,
+  payload: unknown
+): Promise<{ url: string; width?: number; height?: number }[]> {
+  const submit = await fetchJson(label, endpoint, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const taskId: string = submit.taskId;
+  if (!taskId) throw new Error(`${label}: no task id returned`);
+
+  const startedAt = Date.now();
+  let misses = 0;
+  for (;;) {
+    await new Promise((r) => setTimeout(r, TASK_POLL_MS));
+    if (Date.now() - startedAt > TASK_TIMEOUT_MS) {
+      throw new Error(`${label}: timed out after ${Math.round(TASK_TIMEOUT_MS / 60000)} minutes`);
+    }
+    let data: any;
+    try {
+      data = await fetchJson(label, `${endpoint}?taskId=${encodeURIComponent(taskId)}`);
+      misses = 0;
+    } catch {
+      misses += 1;
+      if (misses >= TASK_MAX_CONSECUTIVE_MISSES) {
+        throw new Error(`${label}: lost contact with the server while polling`);
+      }
+      continue;
+    }
+    const task = data.task;
+    if (task?.status === "failed") throw new Error(`${label}: ${task.error || "Run failed"}`);
+    if (task?.status === "done") return task.images ?? [];
+  }
+}
+
+// ---- Run-duration estimates --------------------------------------------
+// The providers expose no true progress signal, so the progress bar tracks
+// elapsed time against a calibrated estimate: the median of the last few
+// real durations for the same mode/model/quality (persisted locally),
+// seeded with observed ballparks. It self-corrects after the first run.
+const DURATIONS_KEY = "davidani_cad_durations_v1";
+const DURATION_SAMPLES_KEPT = 8;
+const DEFAULT_ESTIMATE_MS: Record<string, number> = {
+  spec: 25_000,
+  "extract:gpt-image:1K": 90_000,
+  "extract:gpt-image:2K": 180_000,
+  "extract:gpt-image:4K": 420_000,
+  "extract:nano-banana:1K": 120_000,
+  "extract:nano-banana:2K": 300_000,
+  "extract:nano-banana:4K": 480_000,
+  "extract:seedream-4:1K": 60_000,
+  "extract:seedream-4:2K": 90_000,
+  "extract:seedream-4:4K": 120_000,
+  "cleanup:gpt-image:2K": 180_000,
+  "cleanup:nano-banana:2K": 300_000,
+  "cleanup:seedream-4:2K": 90_000,
+};
+
+function durationKey(job: JobConfig): string {
+  return job.mode === "spec" ? "spec" : `extract:${job.modelId}:${job.resolution}`;
+}
+
+// Cleanup runs are fixed at 2K on whichever model the tile came from; give
+// them their own history bucket so extract timings don't skew them.
+function cleanupDurationKey(modelId: ModelId): string {
+  return `cleanup:${modelId}:2K`;
+}
+
+function readDurations(): Record<string, number[]> {
+  try {
+    const raw = localStorage.getItem(DURATIONS_KEY);
+    const parsed = raw ? JSON.parse(raw) : null;
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function estimateMsForKey(key: string): number {
+  const hist = readDurations()[key]?.filter((n) => Number.isFinite(n) && n > 0);
+  if (hist?.length) {
+    const sorted = [...hist].sort((a, b) => a - b);
+    return sorted[Math.floor(sorted.length / 2)];
+  }
+  return DEFAULT_ESTIMATE_MS[key] ?? 180_000;
+}
+
+function estimateMsFor(job: JobConfig): number {
+  return estimateMsForKey(durationKey(job));
+}
+
+function recordDurationForKey(key: string, ms: number): void {
+  try {
+    const all = readDurations();
+    all[key] = [...(all[key] ?? []), ms].slice(-DURATION_SAMPLES_KEPT);
+    localStorage.setItem(DURATIONS_KEY, JSON.stringify(all));
+  } catch {
+    // Estimation is a nicety; never let storage failures break a run.
+  }
+}
+
+function recordDuration(job: JobConfig, ms: number): void {
+  recordDurationForKey(durationKey(job), ms);
+}
+
 
 const Spinner = ({ className = "h-4 w-4" }: { className?: string }) => (
   <svg viewBox="0 0 24 24" className={`${className} animate-spin`}>
@@ -50,24 +198,39 @@ function hasImageFiles(e: React.DragEvent): boolean {
 export default function CadExtractorClient() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [mode, setMode] = useState<ModeId>("flat");
-  // Nano Banana 2 recovers clean flat CAD artwork; Seedream 4.5 tends to render
-  // a "photo of draped fabric" and hallucinate motifs (smoke-tested 2026-06-30).
-  const [modelId, setModelId] = useState<ModelId>("nano-banana");
+  // GPT Image 2 is the only model that obeys the re-synthesis prompt and drops
+  // the garment's construction; Nano Banana and Seedream copy pockets/waistband/
+  // seams from the photo no matter what the prompt says (bake-off 2026-07-01).
+  const [modelId, setModelId] = useState<ModelId>("gpt-image");
   const [resolution, setResolution] = useState<string>("2K");
   const [notes, setNotes] = useState<string>("");
 
   const [refs, setRefs] = useState<UploadedImage[]>([]);
   const [selectedRefUrls, setSelectedRefUrls] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [uploadFraction, setUploadFraction] = useState(0);
   const [dragging, setDragging] = useState(false);
 
   const [running, setRunning] = useState(false);
+  const [runTiming, setRunTiming] = useState<{ startedAt: number; estimateMs: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const [resultUrls, setResultUrls] = useState<string[]>([]);
   const [spec, setSpec] = useState<CadSpec | null>(null);
   const [scale, setScale] = useState<{ repeatCm: number; dpi: number } | null>(null);
+  const [cleaning, setCleaning] = useState(false);
+  const [cleanupTiming, setCleanupTiming] = useState<{ startedAt: number; estimateMs: number } | null>(null);
   const [colorway, setColorway] = useState<CadSpec | null>(null);
+
+  const [queue, setQueue] = useState<QueueItem[]>([]);
+  const [queueRunning, setQueueRunning] = useState(false);
+  // The queue runner loops across awaits, so it reads the latest queue from a
+  // ref mirror instead of a stale closure snapshot.
+  const queueRef = useRef<QueueItem[]>([]);
+  useEffect(() => {
+    queueRef.current = queue;
+  }, [queue]);
+  const queueRunningRef = useRef(false);
 
   // Scale is measured on the garment photo, not the result tile. Reset it only
   // when the primary selected photo changes — NOT on re-roll (which regenerates
@@ -122,6 +285,33 @@ export default function CadExtractorClient() {
     }
   }, []);
 
+  // Cross-app import: the pants cockpit links here with
+  // ?importUrl=http://localhost:8787/images/<style>.jpg. Vercel can't reach
+  // that origin but this browser can — fetch client-side and push through
+  // the normal upload path. The cockpit serves CORS for this origin.
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const importUrl = url.searchParams.get("importUrl");
+    if (!importUrl) return;
+    url.searchParams.delete("importUrl");
+    window.history.replaceState(null, "", url.toString());
+    (async () => {
+      try {
+        const res = await fetch(importUrl);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const blob = await res.blob();
+        if (!blob.type.startsWith("image/")) throw new Error("not an image");
+        const name = importUrl.split("/").pop() || "import.jpg";
+        const dt = new DataTransfer();
+        dt.items.add(new File([blob], name, { type: blob.type }));
+        await addFiles(dt.files);
+      } catch (e: any) {
+        setError(`Import failed: ${e?.message || e} — is the cockpit running?`);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     try {
       localStorage.setItem(REFS_KEY, JSON.stringify(refs));
@@ -132,12 +322,18 @@ export default function CadExtractorClient() {
 
   async function addFiles(files: FileList) {
     setUploading(true);
+    setUploadFraction(0);
     setError(null);
     try {
       const resized = await Promise.all(Array.from(files).map((f) => resizeIfNeeded(f)));
       const form = new FormData();
       resized.forEach((f) => form.append("files", f));
-      const data = await fetchJson("Upload", "/api/upload", { method: "POST", body: form });
+      // Bytes-sent progress covers the browser -> server leg; the server
+      // still forwards to storage after that, so hold the bar at 90% until
+      // the response lands rather than showing a false 100%.
+      const data = await uploadWithProgress("Upload", "/api/upload", form, (f) =>
+        setUploadFraction(f * 0.9)
+      );
       const added: UploadedImage[] = data.uploads ?? [];
       if (!added.length) throw new Error("Upload returned no URLs");
       setRefs((list) => [...added, ...list]);
@@ -158,6 +354,32 @@ export default function CadExtractorClient() {
     setSelectedRefUrls((cur) => cur.filter((u) => u !== url));
   }
 
+  async function executeJob(job: JobConfig): Promise<{ resultUrls: string[]; spec: CadSpec | null }> {
+    const startedAt = Date.now();
+    if (job.mode === "spec") {
+      const data = await fetchJson("Spec analysis", "/api/cad-spec", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageUrls: job.imageUrls }),
+      });
+      recordDuration(job, Date.now() - startedAt);
+      return { resultUrls: [], spec: data.spec as CadSpec };
+    }
+    const images = await runCadTask("CAD extract", "/api/cad-extract", {
+      modelId: job.modelId,
+      mode: job.mode,
+      imageUrls: job.imageUrls,
+      notes: job.notes,
+      resolution: job.resolution,
+      format: "png",
+      numImages: 1,
+    });
+    const urls: string[] = images.map((i) => i.url).filter(Boolean);
+    if (!urls.length) throw new Error("No artwork returned");
+    recordDuration(job, Date.now() - startedAt);
+    return { resultUrls: urls, spec: null };
+  }
+
   async function run() {
     if (!selectedRefUrls.length) {
       setError("Select at least one garment photo");
@@ -167,48 +389,171 @@ export default function CadExtractorClient() {
     setRunning(true);
     setResultUrls([]);
     setSpec(null);
+    const job: JobConfig = { mode, modelId, resolution, notes, imageUrls: selectedRefUrls };
+    setRunTiming({ startedAt: Date.now(), estimateMs: estimateMsFor(job) });
     try {
-      if (isSpec) {
-        const data = await fetchJson("Spec analysis", "/api/cad-spec", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ imageUrls: selectedRefUrls }),
-        });
-        setSpec(data.spec as CadSpec);
-      } else {
-        const data = await fetchJson("CAD extract", "/api/cad-extract", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            modelId,
-            mode,
-            imageUrls: selectedRefUrls,
-            notes,
-            resolution,
-            format: "png",
-            numImages: 1,
-          }),
-        });
-        const urls: string[] = data.images?.map((i: any) => i.url).filter(Boolean) ?? [];
-        if (!urls.length) throw new Error("No artwork returned");
-        setResultUrls(urls);
-      }
+      const out = await executeJob(job);
+      setResultUrls(out.resultUrls);
+      setSpec(out.spec);
     } catch (e: any) {
       setError(e?.message || "Run failed");
     } finally {
       setRunning(false);
+      setRunTiming(null);
     }
   }
 
+  function updateQueueItem(id: string, patch: Partial<QueueItem>) {
+    setQueue((q) => q.map((it) => (it.id === id ? { ...it, ...patch } : it)));
+  }
+
+  function addToQueue() {
+    if (!selectedRefUrls.length) {
+      setError("Select at least one garment photo");
+      return;
+    }
+    const item: QueueItem = {
+      id: newQueueId(),
+      imageUrls: [...selectedRefUrls],
+      mode,
+      modelId,
+      resolution,
+      notes,
+      status: "queued",
+      resultUrls: [],
+      spec: null,
+    };
+    setQueue((q) => [...q, item]);
+    // Clear the workspace so the next garment can be composed immediately.
+    setSelectedRefUrls([]);
+    setNotes("");
+    setError(null);
+  }
+
+  function removeQueueItem(id: string) {
+    setQueue((q) => q.filter((it) => it.id !== id));
+  }
+
+  function clearFinishedQueueItems() {
+    setQueue((q) => q.filter((it) => it.status === "queued" || it.status === "running"));
+  }
+
+  function viewQueueItem(item: QueueItem) {
+    setMode(item.mode);
+    setModelId(item.modelId);
+    setResolution(item.resolution);
+    setNotes(item.notes);
+    setSelectedRefUrls([...item.imageUrls]);
+    setResultUrls([...item.resultUrls]);
+    setSpec(item.spec);
+    setError(item.status === "failed" ? item.error ?? "Run failed" : null);
+  }
+
+  async function runQueue() {
+    if (queueRunningRef.current) return;
+    queueRunningRef.current = true;
+    setQueueRunning(true);
+    setError(null);
+    // Jobs are claimed via this synchronous Set, not queue state — React
+    // state (and queueRef, which trails it by a render) updates too late to
+    // stop two workers from grabbing the same job.
+    const claimed = new Set<string>();
+    const queueStartedAt = performance.now();
+    const worker = async () => {
+      for (;;) {
+        const next = queueRef.current.find(
+          (it) => it.status === "queued" && !claimed.has(it.id)
+        );
+        if (!next) break;
+        claimed.add(next.id);
+        updateQueueItem(next.id, {
+          status: "running",
+          startedAt: Date.now(),
+          estimateMs: estimateMsFor(next),
+        });
+        const jobStartedAt = performance.now();
+        try {
+          const out = await executeJob(next);
+          console.info(
+            `[timing] cad queue job (${next.mode}/${next.modelId}) done in ${Math.round(performance.now() - jobStartedAt)}ms`
+          );
+          updateQueueItem(next.id, { status: "done", resultUrls: out.resultUrls, spec: out.spec });
+        } catch (e: any) {
+          updateQueueItem(next.id, { status: "failed", error: e?.message || "Run failed" });
+        }
+      }
+    };
+    try {
+      // CAD_QUEUE_WORKERS jobs run concurrently. The old sequential-on-purpose
+      // comment dated from provider timeouts on the previous fal backend; the
+      // [timing] logs above exist to verify the current backends tolerate it.
+      await Promise.all(Array.from({ length: CAD_QUEUE_WORKERS }, () => worker()));
+      console.info(
+        `[timing] cad queue total ${Math.round(performance.now() - queueStartedAt)}ms (${CAD_QUEUE_WORKERS} workers)`
+      );
+    } finally {
+      queueRunningRef.current = false;
+      setQueueRunning(false);
+    }
+  }
+
+  async function cleanup() {
+    if (!resultUrls.length) return;
+    setError(null);
+    setCleaning(true);
+    const startedAt = Date.now();
+    setCleanupTiming({ startedAt, estimateMs: estimateMsForKey(cleanupDurationKey(modelId)) });
+    try {
+      const images = await runCadTask("Cleanup", "/api/cad-cleanup", {
+        imageUrl: resultUrls[0],
+        modelId,
+      });
+      const urls: string[] = images.map((i) => i.url).filter(Boolean);
+      if (!urls.length) throw new Error("Cleanup returned no image");
+      recordDurationForKey(cleanupDurationKey(modelId), Date.now() - startedAt);
+      setResultUrls([urls[0]]);
+    } catch (e: any) {
+      setError(e?.message || "Cleanup failed");
+    } finally {
+      setCleaning(false);
+      setCleanupTiming(null);
+    }
+  }
+
+  const pendingCount = queue.filter((it) => it.status === "queued").length;
+  const runningCount = queue.filter((it) => it.status === "running").length;
+  const finishedCount = queue.filter((it) => it.status === "done" || it.status === "failed").length;
+
   return (
-    <main className="flex min-h-screen flex-col bg-neutral-50 lg:h-screen">
+    <main
+      className="flex min-h-screen flex-col bg-neutral-50 lg:h-screen"
+      onDragEnter={(e) => {
+        if (!hasImageFiles(e)) return;
+        e.preventDefault();
+        setDragging(true);
+      }}
+      onDragOver={(e) => {
+        if (!hasImageFiles(e)) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "copy";
+      }}
+      onDragLeave={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDragging(false);
+      }}
+      onDrop={(e) => {
+        e.preventDefault();
+        setDragging(false);
+        if (e.dataTransfer.files.length) addFiles(e.dataTransfer.files);
+      }}
+    >
       <StudioHeader
         active="cad"
         title="CAD Pattern Extractor"
         subtitle="Recover production-ready textile CAD artwork from garment photos."
         metrics={[
           { label: "Refs", value: selectedRefUrls.length },
-          { label: "Active", value: running ? 1 : 0 },
+          { label: "Queue", value: pendingCount + runningCount },
+          { label: "Active", value: (running ? 1 : 0) + runningCount },
         ]}
       />
 
@@ -279,24 +624,6 @@ export default function CadExtractorClient() {
           ) : null}
 
           <section
-            onDragEnter={(e) => {
-              if (!hasImageFiles(e)) return;
-              e.preventDefault();
-              setDragging(true);
-            }}
-            onDragOver={(e) => {
-              if (!hasImageFiles(e)) return;
-              e.preventDefault();
-              e.dataTransfer.dropEffect = "copy";
-            }}
-            onDragLeave={(e) => {
-              if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDragging(false);
-            }}
-            onDrop={(e) => {
-              e.preventDefault();
-              setDragging(false);
-              if (e.dataTransfer.files.length) addFiles(e.dataTransfer.files);
-            }}
             className={`-m-2 rounded-lg p-2 transition ${dragging ? "bg-brand-50/70 ring-2 ring-brand-400" : ""}`}
           >
             <div className="mb-2 flex items-center justify-between">
@@ -317,9 +644,7 @@ export default function CadExtractorClient() {
               }`}
             >
               {uploading ? (
-                <span className="inline-flex items-center gap-2">
-                  <Spinner /> Uploading
-                </span>
+                <ProgressBar label="Uploading" fraction={uploadFraction} className="px-2" />
               ) : dragging ? (
                 "Drop to upload"
               ) : (
@@ -399,6 +724,111 @@ export default function CadExtractorClient() {
                 Spec Analysis reads the primary selected photo and returns a textile production spec.
               </div>
             )}
+
+            {queue.length > 0 ? (
+              <div className="mt-4 flex max-h-72 shrink-0 flex-col">
+                <div className="mb-2 flex items-center justify-between">
+                  <h2 className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
+                    Queue · {queue.length}
+                  </h2>
+                  {finishedCount > 0 ? (
+                    <button
+                      type="button"
+                      onClick={clearFinishedQueueItems}
+                      className="text-[10px] font-semibold text-neutral-400 transition hover:text-neutral-700"
+                    >
+                      Clear finished
+                    </button>
+                  ) : null}
+                </div>
+                <ul className="min-h-0 space-y-2 overflow-y-auto pr-1">
+                  {queue.map((it) => (
+                    <li
+                      key={it.id}
+                      className={`flex items-center gap-3 rounded-lg border p-2 transition ${
+                        it.status === "running"
+                          ? "border-brand-400 bg-brand-50/40"
+                          : "border-neutral-200 bg-white hover:border-neutral-400"
+                      }`}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => viewQueueItem(it)}
+                        className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                        title="Load this run into the workspace"
+                      >
+                        <img
+                          src={it.imageUrls[0]}
+                          alt=""
+                          className="h-10 w-10 shrink-0 rounded-md border border-neutral-200 object-cover"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-xs font-medium text-neutral-800">
+                            {MODE_OPTIONS.find((m) => m.id === it.mode)?.label}
+                            {it.imageUrls.length > 1 ? ` · ${it.imageUrls.length} photos` : ""}
+                          </p>
+                          <p className="truncate text-[10px] text-neutral-500">
+                            {MODELS[it.modelId]?.label} · {it.resolution}
+                            {it.notes ? ` · ${it.notes}` : ""}
+                          </p>
+                          {it.status === "failed" && it.error ? (
+                            <p className="truncate text-[10px] text-red-600">{it.error}</p>
+                          ) : null}
+                          {it.status === "running" && it.startedAt ? (
+                            <div className="mt-1.5 pr-1">
+                              <ProgressBar
+                                compact
+                                startedAt={it.startedAt}
+                                estimateMs={it.estimateMs ?? 180_000}
+                              />
+                            </div>
+                          ) : null}
+                        </div>
+                        {it.status === "done" && it.mode !== "spec" && it.resultUrls[0] ? (
+                          <img
+                            src={it.resultUrls[0]}
+                            alt="Result"
+                            className="h-10 w-10 shrink-0 rounded-md border border-emerald-300 object-cover"
+                          />
+                        ) : null}
+                      </button>
+                      {it.status === "queued" ? (
+                        <span className="shrink-0 rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-semibold text-neutral-500">
+                          Queued
+                        </span>
+                      ) : it.status === "running" ? (
+                        <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-semibold text-brand-700">
+                          <Spinner className="h-3 w-3" /> Running
+                        </span>
+                      ) : it.status === "failed" ? (
+                        <button
+                          type="button"
+                          onClick={() => updateQueueItem(it.id, { status: "queued", error: undefined })}
+                          className="shrink-0 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-700 transition hover:bg-red-200"
+                          title="Put this run back in the queue"
+                        >
+                          Retry
+                        </button>
+                      ) : it.mode === "spec" ? (
+                        <span className="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+                          Spec ready
+                        </span>
+                      ) : null}
+                      {it.status !== "running" ? (
+                        <button
+                          type="button"
+                          onClick={() => removeQueueItem(it.id)}
+                          className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs text-neutral-400 transition hover:bg-neutral-100 hover:text-red-600"
+                          title="Remove from queue"
+                        >
+                          ×
+                        </button>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
           </div>
 
           <div className="flex items-center justify-between gap-3 border-t border-neutral-200 bg-neutral-50 px-6 py-4">
@@ -407,22 +837,49 @@ export default function CadExtractorClient() {
                 ? `${selectedRefUrls.length} photo${selectedRefUrls.length === 1 ? "" : "s"} selected`
                 : "Select garment photos in the left rail"}
             </span>
-            <button
-              type="button"
-              onClick={run}
-              disabled={running || !selectedRefUrls.length}
-              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-b from-neutral-800 to-neutral-950 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:from-neutral-700 hover:to-neutral-900 hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-neutral-300 disabled:bg-none disabled:text-neutral-500"
-            >
-              {running ? (
-                <span className="inline-flex items-center gap-2">
-                  <Spinner /> {isSpec ? "Analyzing" : "Extracting"}
-                </span>
-              ) : isSpec ? (
-                "Analyze Spec"
-              ) : (
-                "Extract CAD"
-              )}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={addToQueue}
+                disabled={!selectedRefUrls.length}
+                className="rounded-xl border border-neutral-300 bg-white px-4 py-2.5 text-sm font-semibold text-neutral-700 shadow-sm transition hover:border-neutral-500 hover:bg-neutral-100 active:scale-[0.98] disabled:cursor-not-allowed disabled:border-neutral-200 disabled:text-neutral-400"
+                title="Snapshot the current photos + settings as a queued run"
+              >
+                Add to Queue
+              </button>
+              {pendingCount > 0 || queueRunning ? (
+                <button
+                  type="button"
+                  onClick={runQueue}
+                  disabled={running || queueRunning || !pendingCount}
+                  className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-b from-neutral-800 to-neutral-950 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:from-neutral-700 hover:to-neutral-900 hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-neutral-300 disabled:bg-none disabled:text-neutral-500"
+                >
+                  {queueRunning ? (
+                    <span className="inline-flex items-center gap-2">
+                      <Spinner /> {pendingCount + runningCount} left
+                    </span>
+                  ) : (
+                    `Run Queue (${pendingCount})`
+                  )}
+                </button>
+              ) : null}
+              <button
+                type="button"
+                onClick={run}
+                disabled={running || queueRunning || !selectedRefUrls.length}
+                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-b from-neutral-800 to-neutral-950 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:from-neutral-700 hover:to-neutral-900 hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-neutral-300 disabled:bg-none disabled:text-neutral-500"
+              >
+                {running ? (
+                  <span className="inline-flex items-center gap-2">
+                    <Spinner /> {isSpec ? "Analyzing" : "Extracting"}
+                  </span>
+                ) : isSpec ? (
+                  "Analyze Spec"
+                ) : (
+                  "Extract CAD"
+                )}
+              </button>
+            </div>
           </div>
         </section>
 
@@ -439,9 +896,13 @@ export default function CadExtractorClient() {
             {isSpec ? (
               spec ? (
                 <SpecCard spec={spec} />
+              ) : running && runTiming ? (
+                <div className="flex h-40 items-center justify-center px-6">
+                  <ProgressBar className="max-w-xs" startedAt={runTiming.startedAt} estimateMs={runTiming.estimateMs} label="Analyzing" />
+                </div>
               ) : (
                 <div className="flex h-40 items-center justify-center text-xs text-neutral-400">
-                  {running ? "Analyzing…" : "Run Spec Analysis to see results"}
+                  Run Spec Analysis to see results
                 </div>
               )
             ) : resultUrls.length ? (
@@ -457,9 +918,13 @@ export default function CadExtractorClient() {
                   </button>
                 ))}
               </div>
+            ) : running && runTiming ? (
+              <div className="flex h-40 items-center justify-center px-6">
+                <ProgressBar className="max-w-xs" startedAt={runTiming.startedAt} estimateMs={runTiming.estimateMs} label="Extracting" />
+              </div>
             ) : (
               <div className="flex h-40 items-center justify-center text-xs text-neutral-400">
-                {running ? "Extracting…" : "Run extraction to see artwork"}
+                Run extraction to see artwork
               </div>
             )}
             {!isSpec && resultUrls.length ? (
@@ -474,7 +939,14 @@ export default function CadExtractorClient() {
                     <p className="text-[11px] text-neutral-400">Select a garment photo to measure scale.</p>
                   )}
                 </div>
-                <CadTilingPreview imageUrl={resultUrls[0]} onReroll={run} rerolling={running} />
+                <CadTilingPreview imageUrl={resultUrls[0]} onReroll={run} rerolling={running} onCleanup={cleanup} cleaning={cleaning} />
+                {cleaning && cleanupTiming ? (
+                  <ProgressBar
+                    label="Cleaning"
+                    startedAt={cleanupTiming.startedAt}
+                    estimateMs={cleanupTiming.estimateMs}
+                  />
+                ) : null}
                 <CadExportPanel imageUrl={resultUrls[0]} scale={scale} spec={colorway} />
               </div>
             ) : null}

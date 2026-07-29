@@ -9,3 +9,7 @@ node_modules/
 .env*.local
 .claude/
 *.xlsx
+.gstack/
+
+# user-assets dev fallback (Blob substitute when no BLOB_READ_WRITE_TOKEN)
+/public/user-assets/

@@ -6,9 +6,17 @@ import ImageLightbox, { ZoomButton } from "@/components/ImageLightbox";
 import type { UploadedImage } from "@/components/types";
 import { MODELS, type ModelId, ASPECT_RATIOS, RESOLUTIONS } from "@/lib/models";
 import { resizeIfNeeded } from "@/lib/image-resize";
+import {
+  alphabeticImageLabel,
+  appendUniqueReferences,
+  orderSelectedReferenceUrls,
+  parsePlaygroundPrompts,
+  restorePersistedReferences,
+} from "@/lib/image-playground";
 
 const HISTORY_KEY = "davidani_playground_history_v1";
 const REFS_KEY = "davidani_playground_refs_v1";
+const SELECTED_REFS_KEY = "davidani_playground_selected_refs_v1";
 
 // Approximate per-image USD cost by model. Update if upstream pricing changes.
 // Sources: fal.ai pricing (Seedream, GPT Image), kie.ai (Nano Banana 2).
@@ -30,6 +38,16 @@ function fmtUsd(n: number): string {
   if (n < 0.01) return `$${n.toFixed(4)}`;
   if (n < 1) return `$${n.toFixed(3)}`;
   return `$${n.toFixed(2)}`;
+}
+
+function fmtDuration(ms: number): string {
+  if (!Number.isFinite(ms) || ms < 0) ms = 0;
+  const totalSec = Math.floor(ms / 1000);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  if (h > 0) return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  return `${m}:${String(s).padStart(2, "0")}`;
 }
 
 type ResultStatus = "queued" | "running" | "done" | "failed";
@@ -81,19 +99,12 @@ function hasImageFiles(e: React.DragEvent): boolean {
   );
 }
 
-function parsePrompts(text: string): string[] {
-  return text
-    .split(/\r?\n/)
-    .map((s) => s.trim())
-    .filter(Boolean);
-}
-
 export default function ImagePlaygroundClient() {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [modelId, setModelId] = useState<ModelId>("gpt-image");
-  const [aspect, setAspect] = useState<string>("auto");
+  const [modelId, setModelId] = useState<ModelId>("nano-banana");
+  const [aspect, setAspect] = useState<string>("2:3");
   const [resolution, setResolution] = useState<string>("2K");
-  const [parallel, setParallel] = useState<number>(4);
+  const [parallel, setParallel] = useState<number>(1);
   const [numPerPrompt, setNumPerPrompt] = useState<number>(1);
 
   const [refs, setRefs] = useState<UploadedImage[]>([]);
@@ -116,6 +127,14 @@ export default function ImagePlaygroundClient() {
   const [selectedIdx, setSelectedIdx] = useState<number>(0);
   const [history, setHistory] = useState<PlaygroundRun[]>([]);
   const thumbRefs = useRef<Array<HTMLButtonElement | null>>([]);
+
+  // Ticks once per second while a batch is running so live timers re-render.
+  const [nowTick, setNowTick] = useState<number>(() => Date.now());
+  useEffect(() => {
+    if (!running) return;
+    const id = setInterval(() => setNowTick(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [running]);
 
   // Flat list of every completed image across the current result set, in
   // display order. This is the array arrow keys navigate and the lightbox
@@ -175,8 +194,12 @@ export default function ImagePlaygroundClient() {
     try {
       const r = localStorage.getItem(REFS_KEY);
       if (r) {
-        const parsed = JSON.parse(r) as UploadedImage[];
-        if (Array.isArray(parsed)) setRefs(parsed);
+        const restored = restorePersistedReferences(
+          r,
+          localStorage.getItem(SELECTED_REFS_KEY)
+        );
+        setRefs(restored.references);
+        setSelectedRefUrls(restored.selectedUrls);
       }
       const h = localStorage.getItem(HISTORY_KEY);
       if (h) {
@@ -196,7 +219,19 @@ export default function ImagePlaygroundClient() {
     }
   }, [refs]);
 
-  const prompts = useMemo(() => parsePrompts(promptsText), [promptsText]);
+  useEffect(() => {
+    try {
+      localStorage.setItem(SELECTED_REFS_KEY, JSON.stringify(selectedRefUrls));
+    } catch {
+      /* ignore */
+    }
+  }, [selectedRefUrls]);
+
+  const prompts = useMemo(() => parsePlaygroundPrompts(promptsText), [promptsText]);
+  const orderedSelectedRefUrls = useMemo(
+    () => orderSelectedReferenceUrls(refs, selectedRefUrls),
+    [refs, selectedRefUrls]
+  );
   const promptCount = prompts.length;
   const doneCount = results.filter((r) => r.status === "done").length;
   const failedCount = results.filter((r) => r.status === "failed").length;
@@ -205,6 +240,22 @@ export default function ImagePlaygroundClient() {
   const costPerImage = estimateCostPerImage(modelId, resolution);
   const totalImages = promptCount * numPerPrompt;
   const estimatedCost = totalImages * costPerImage;
+
+  // Batch timer: earliest startedAt → either now (while running) or latest finishedAt.
+  const startedTimestamps = results
+    .map((r) => r.startedAt)
+    .filter((t): t is number => typeof t === "number");
+  const finishedTimestamps = results
+    .map((r) => r.finishedAt)
+    .filter((t): t is number => typeof t === "number");
+  const batchStart = startedTimestamps.length ? Math.min(...startedTimestamps) : null;
+  const batchEnd = running
+    ? nowTick
+    : finishedTimestamps.length
+      ? Math.max(...finishedTimestamps)
+      : null;
+  const batchElapsedMs = batchStart != null && batchEnd != null ? batchEnd - batchStart : 0;
+
   const actualSpend = results.reduce(
     (sum, r) => (r.status === "done" ? sum + r.urls.length * costPerImage : sum),
     0
@@ -220,8 +271,8 @@ export default function ImagePlaygroundClient() {
       const data = await fetchJson("Upload", "/api/upload", { method: "POST", body: form });
       const added: UploadedImage[] = data.uploads ?? [];
       if (!added.length) throw new Error("Upload returned no URLs");
-      setRefs((list) => [...added, ...list]);
-      setSelectedRefUrls((cur) => Array.from(new Set([...added.map((u) => u.url), ...cur])));
+      setRefs((list) => appendUniqueReferences(list, added));
+      setSelectedRefUrls((cur) => Array.from(new Set([...cur, ...added.map((u) => u.url)])));
     } catch (e: any) {
       setError(e?.message || "Upload failed");
     } finally {
@@ -237,7 +288,9 @@ export default function ImagePlaygroundClient() {
       return;
     }
     if (!refs.some((r) => r.url === url)) {
-      setRefs((list) => [{ url, name: "Pasted reference" }, ...list]);
+      setRefs((list) =>
+        appendUniqueReferences(list, [{ url, name: "Pasted reference" }])
+      );
     }
     setSelectedRefUrls((cur) => (cur.includes(url) ? cur : [...cur, url]));
     setPasteUrl("");
@@ -257,7 +310,7 @@ export default function ImagePlaygroundClient() {
       setError("Add at least one prompt (one per line)");
       return;
     }
-    if (!selectedRefUrls.length) {
+    if (!orderedSelectedRefUrls.length) {
       setError("Select at least one reference image");
       return;
     }
@@ -290,7 +343,7 @@ export default function ImagePlaygroundClient() {
           body: JSON.stringify({
             modelId,
             prompt: item.prompt,
-            imageUrls: selectedRefUrls,
+            imageUrls: orderedSelectedRefUrls,
             aspectRatio: aspect,
             resolution,
             format: "png",
@@ -354,7 +407,7 @@ export default function ImagePlaygroundClient() {
         aspect,
         resolution,
         parallel,
-        refs: selectedRefUrls,
+        refs: orderedSelectedRefUrls,
         results: finalResults,
       };
       setHistory((cur) => {
@@ -467,7 +520,7 @@ export default function ImagePlaygroundClient() {
                 </Field>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Parallel">
+                <Field label="Parallel" hint="Jobs running at once · doesn't change cost">
                   <select
                     value={parallel}
                     onChange={(e) => setParallel(Number(e.target.value))}
@@ -527,7 +580,7 @@ export default function ImagePlaygroundClient() {
                 Reference Library
               </h2>
               <span className="text-[10px] text-neutral-500">
-                {selectedRefUrls.length}/{refs.length} selected
+                {orderedSelectedRefUrls.length}/{refs.length} selected
               </span>
             </div>
 
@@ -584,40 +637,60 @@ export default function ImagePlaygroundClient() {
             />
 
             {refs.length > 0 ? (
-              <div className="grid grid-cols-3 gap-2">
-                {refs.map((u) => {
-                  const selected = selectedRefUrls.includes(u.url);
-                  return (
-                    <div
-                      key={u.url}
-                      className={`group relative aspect-square overflow-hidden rounded-lg border ${
-                        selected
-                          ? "border-neutral-900 ring-2 ring-neutral-900/10"
-                          : "border-neutral-200"
-                      }`}
-                    >
-                      <button
-                        type="button"
-                        onClick={() => toggleRef(u.url)}
-                        className="block h-full w-full"
+              <>
+                <p className="mb-2 text-[10px] leading-snug text-neutral-500">
+                  Prompt rule: references are sent left to right. “Image 1” = “Image A”,
+                  “Image 2” = “Image B”, and so on.
+                </p>
+                <div className="grid grid-cols-3 gap-2">
+                  {refs.map((u) => {
+                    const attachmentIndex = orderedSelectedRefUrls.indexOf(u.url);
+                    const selected = attachmentIndex >= 0;
+                    const attachmentLabel = selected
+                      ? `Image ${attachmentIndex + 1} · ${alphabeticImageLabel(attachmentIndex)}`
+                      : "Not attached";
+                    return (
+                      <div
+                        key={u.url}
+                        className={`group relative aspect-square overflow-hidden rounded-lg border ${
+                          selected
+                            ? "border-neutral-900 ring-2 ring-neutral-900/10"
+                            : "border-neutral-200"
+                        }`}
                       >
-                        <img src={u.url} alt={u.name} className="h-full w-full object-cover" />
-                      </button>
-                      <ZoomButton
-                        className="absolute bottom-1 right-1"
-                        onClick={() => setRefPreviewSrc(u.url)}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => removeRef(u.url)}
-                        className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-white/90 text-xs text-neutral-500 opacity-0 shadow-sm transition hover:text-red-600 group-hover:opacity-100"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
+                        <button
+                          type="button"
+                          onClick={() => toggleRef(u.url)}
+                          className="block h-full w-full"
+                          aria-label={`${attachmentLabel}: ${u.name}`}
+                        >
+                          <img src={u.url} alt={u.name} className="h-full w-full object-cover" />
+                        </button>
+                        <span
+                          className={`pointer-events-none absolute left-1 top-1 rounded px-1.5 py-0.5 text-[9px] font-semibold shadow-sm ${
+                            selected
+                              ? "bg-neutral-900/90 text-white"
+                              : "bg-white/90 text-neutral-500"
+                          }`}
+                        >
+                          {attachmentLabel}
+                        </span>
+                        <ZoomButton
+                          className="absolute bottom-1 right-1"
+                          onClick={() => setRefPreviewSrc(u.url)}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeRef(u.url)}
+                          className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-white/90 text-xs text-neutral-500 opacity-0 shadow-sm transition hover:text-red-600 group-hover:opacity-100"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
             ) : (
               <p className="text-[11px] text-neutral-500">
                 Upload or paste at least one reference. All selected refs get passed to every prompt.
@@ -654,8 +727,8 @@ export default function ImagePlaygroundClient() {
           <div className="flex items-center justify-between gap-3 border-t border-neutral-200 bg-neutral-50 px-6 py-4">
             <div className="flex flex-col gap-0.5 text-xs text-neutral-500">
               <span>
-                {selectedRefUrls.length
-                  ? `${selectedRefUrls.length} ref${selectedRefUrls.length === 1 ? "" : "s"} → ${promptCount} prompt${promptCount === 1 ? "" : "s"} × ${numPerPrompt} = ${totalImages} images`
+                {orderedSelectedRefUrls.length
+                  ? `${orderedSelectedRefUrls.length} ref${orderedSelectedRefUrls.length === 1 ? "" : "s"} → ${promptCount} prompt${promptCount === 1 ? "" : "s"} × ${numPerPrompt} = ${totalImages} images`
                   : "Select reference images in the left rail"}
               </span>
               <span className="inline-flex items-center gap-1.5 text-[11px]">
@@ -698,13 +771,16 @@ export default function ImagePlaygroundClient() {
                 <span className="inline-flex items-center gap-2 rounded-xl bg-neutral-100 px-4 py-2.5 text-sm font-semibold text-neutral-600">
                   <Spinner />
                   {paused ? "Paused" : "Generating"} {doneCount + failedCount}/{promptCount}
+                  {batchStart != null ? (
+                    <span className="font-mono text-xs font-medium text-neutral-500">· {fmtDuration(batchElapsedMs)}</span>
+                  ) : null}
                 </span>
               </div>
             ) : (
               <button
                 type="button"
                 onClick={runBatch}
-                disabled={!promptCount || !selectedRefUrls.length}
+                disabled={!promptCount || !orderedSelectedRefUrls.length}
                 className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-b from-neutral-800 to-neutral-950 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:from-neutral-700 hover:to-neutral-900 hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-neutral-300 disabled:bg-none disabled:text-neutral-500"
               >
                 ⚡ Generate {promptCount || ""}
@@ -750,13 +826,25 @@ export default function ImagePlaygroundClient() {
                 // that matches `flatImages` exactly, so arrow-key selection
                 // stays in lock-step with thumbnail render order.
                 let globalIdx = 0;
-                return results.map((r) => (
+                return results.map((r) => {
+                  const elapsedMs =
+                    r.startedAt == null
+                      ? null
+                      : (r.finishedAt ?? (r.status === "running" ? nowTick : null)) != null
+                        ? (r.finishedAt ?? nowTick) - r.startedAt
+                        : null;
+                  return (
                   <div key={r.id} className="rounded-lg border border-neutral-200 bg-white p-3">
                     <div className="mb-2 flex items-start justify-between gap-2">
                       <p className="line-clamp-2 flex-1 text-[11px] leading-snug text-neutral-700">
                         {r.prompt}
                       </p>
-                      <StatusPill status={r.status} />
+                      <div className="flex shrink-0 flex-col items-end gap-1">
+                        <StatusPill status={r.status} />
+                        {elapsedMs != null ? (
+                          <span className="font-mono text-[10px] text-neutral-400">{fmtDuration(elapsedMs)}</span>
+                        ) : null}
+                      </div>
                     </div>
                     {r.status === "done" && r.urls.length ? (
                       <div className="grid grid-cols-2 gap-2">
@@ -781,7 +869,7 @@ export default function ImagePlaygroundClient() {
                                   : "border-neutral-200"
                               }`}
                             >
-                              <img src={url} alt="" className="aspect-square w-full object-cover" />
+                              <img src={url} alt="" className="block h-auto w-full" />
                             </button>
                           );
                         })}
@@ -800,7 +888,8 @@ export default function ImagePlaygroundClient() {
                       </div>
                     )}
                   </div>
-                ));
+                  );
+                });
               })()
             )}
           </div>
@@ -886,13 +975,16 @@ export default function ImagePlaygroundClient() {
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
     <label className="block">
       <span className="mb-1 block text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
         {label}
       </span>
       {children}
+      {hint ? (
+        <span className="mt-1 block text-[10px] leading-snug text-neutral-400">{hint}</span>
+      ) : null}
     </label>
   );
 }

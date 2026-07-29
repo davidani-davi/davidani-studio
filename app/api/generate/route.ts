@@ -21,6 +21,7 @@ export async function POST(req: Request) {
       overlay,
       useDefaultReference,
       raw,
+      deferResize,
     } = body as {
       modelId: ModelId;
       prompt: string;
@@ -33,6 +34,7 @@ export async function POST(req: Request) {
       overlay?: OverlayOptions;
       useDefaultReference?: boolean;
       raw?: boolean;
+      deferResize?: boolean;
     };
 
     if (!modelId || !MODELS[modelId]) {
@@ -55,8 +57,12 @@ export async function POST(req: Request) {
       format,
       numImages: numImages ?? 1,
       overlay,
-      // Always locked server-side — client value is intentionally ignored.
-      outputSize: IMAGE_STUDIO_OUTPUT_SIZE,
+      // The 2160x3240 lock stays server-side (client sizes are ignored), but
+      // deferResize returns native model output immediately — the client
+      // shows it and calls /api/finalize-image in the background to produce
+      // the locked-size final, instead of blocking the response on
+      // fetch -> sharp -> re-upload.
+      outputSize: deferResize ? null : IMAGE_STUDIO_OUTPUT_SIZE,
       useDefaultReference,
       raw,
     });

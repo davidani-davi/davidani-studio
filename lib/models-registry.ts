@@ -18,6 +18,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { uploadToFal } from "./fal";
 import { STATIC_HUMAN_MODELS } from "./models-static-manifest";
+import { listUserModels } from "./user-assets";
 
 export interface ModelPose {
   /** Stable preset ID, derived from the filename stem (e.g. "bianca1"). */
@@ -54,6 +55,8 @@ export interface HumanModel {
   /** Display name shown in the UI. */
   name: string;
   poses: ModelPose[];
+  /** True for user-uploaded models stored in Blob (deletable in the UI). */
+  userAdded?: boolean;
 }
 
 const IMAGE_EXTS = new Set(["png", "jpg", "jpeg", "webp"]);
@@ -384,6 +387,16 @@ export function listHumanModels(): HumanModel[] {
 }
 
 /**
+ * True when modelId is one of the built-in filesystem/static models. Cheap
+ * (fs scan only) — used by the analyze/generate hot path to skip the Vercel
+ * Blob user-model lookup entirely for built-in models, which would otherwise
+ * cost a network round-trip on every request.
+ */
+export function isKnownHumanModel(modelId: string): boolean {
+  return listHumanModels().some((m) => m.id === modelId);
+}
+
+/**
  * Resolve a model + preset pair to a fal.ai-hosted URL. Uploads the local file
  * to fal storage the first time it's requested and caches the URL afterwards.
  */
@@ -473,4 +486,38 @@ export async function getPoseUrl(
 
   poseUploadsInFlight.set(cacheKey, upload);
   return upload;
+}
+
+/**
+ * Filesystem/static models followed by user-uploaded (Blob) models converted
+ * to the HumanModel shape. Async because user models live in Blob storage.
+ */
+export async function listAllHumanModels(): Promise<HumanModel[]> {
+  const userModels = await listUserModels().catch((err) => {
+    console.warn("[models-registry] user models unavailable:", err);
+    return [];
+  });
+  const converted: HumanModel[] = userModels.map((um) => {
+    const views: ModelPose["views"] = {};
+    for (const view of ["front", "side", "back", "full"] as const) {
+      const url = um.views[view];
+      if (url) views[view] = { filename: view, publicPath: url };
+    }
+    return {
+      id: um.id,
+      name: um.name,
+      userAdded: true,
+      poses: [
+        {
+          id: `${um.id}-pose`,
+          label: um.name,
+          publicPath: um.views.front,
+          filename: "front",
+          subdir: "",
+          views,
+        },
+      ],
+    };
+  });
+  return [...listHumanModels(), ...converted];
 }

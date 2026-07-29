@@ -39,7 +39,11 @@ const CURRENT_ID_KEY = "davidani_image_current_run_v1";
 const IMAGE_JOBS_KEY = "davidani_image_jobs_v1";
 const USER_ID_KEY = "davidani_user_id_v1";
 const IMAGE_STUDIO_VERSION = "2.3";
-const IMAGE_STUDIO_OUTPUT_SIZE = { width: 2160, height: 2700 } as const;
+// 2:3 portrait — must match aspectRatio "2:3" sent at generation time and the
+// server-side lock in lib/output-sizes.ts (the server ignores this client value,
+// but keeping them equal avoids confusion). A mismatched ratio causes the
+// cover-resize in lib/fal.ts to crop the image (cut-off head/feet).
+const IMAGE_STUDIO_OUTPUT_SIZE = { width: 2160, height: 3240 } as const;
 
 function productShotViewDirective(mode: ProductShotMode, target?: "front" | "back"): string {
   const view =
@@ -213,6 +217,22 @@ export default function StudioPage() {
   );
   const [referenceImageUrl, setReferenceImageUrl] = useState<string | null>(null);
   const [referenceUploading, setReferenceUploading] = useState(false);
+  const [userReferences, setUserReferences] = useState<
+    { id: string; label: string; imageUrl: string }[]
+  >([]);
+  const [referenceSaving, setReferenceSaving] = useState(false);
+  // Bytes of the last successfully uploaded custom reference — needed to save
+  // it as a preset (the fal URL from /api/upload isn't guaranteed permanent).
+  const lastReferenceFileRef = useRef<File | null>(null);
+
+  useEffect(() => {
+    fetch("/api/user-references")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.ok) setUserReferences(d.references);
+      })
+      .catch(() => {});
+  }, []);
 
   // Prompt & generation
   const [prompt, setPrompt] = useState<string>("");
@@ -224,6 +244,39 @@ export default function StudioPage() {
   // reference photo alone isn't reliably auto-classifiable), and when true we
   // route Analyze through the four-field coordinated-set analyzer in lib/fal.
   const [twoPiece, setTwoPiece] = useState<boolean>(false);
+
+  // Speculative analyze warmup: the analysis only depends on the intake
+  // photos + options, all known well before Generate is clicked. Firing the
+  // analyze endpoint here (debounced, fire-and-forget) populates the
+  // server-side vision cache while the user is still picking settings, so
+  // the Generate click's own analyze call returns near-instantly. The
+  // response is deliberately ignored — the cache is the delivery mechanism.
+  useEffect(() => {
+    if (!frontIntakeUrl && !backIntakeUrl) return;
+    const warmUrls =
+      productShotMode === "front-back-contract"
+        ? [frontIntakeUrl, backIntakeUrl].filter((url): url is string => !!url)
+        : [
+            productShotMode === "single-back"
+              ? backIntakeUrl || frontIntakeUrl
+              : frontIntakeUrl || backIntakeUrl,
+          ].filter((url): url is string => !!url);
+    if (!warmUrls.length) return;
+    const timer = setTimeout(() => {
+      fetch("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          imageUrl: warmUrls[0],
+          imageUrls: warmUrls,
+          backgroundColor,
+          twoPiece,
+        }),
+      }).catch(() => {});
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, [frontIntakeUrl, backIntakeUrl, productShotMode, backgroundColor, twoPiece]);
+
   // Image Studio's analyze route only handles single-image two-piece extraction
   // (one photo of the full coordinated outfit). The "two separate photos"
   // variant from Single Model Studio isn't supported here, so we expose just
@@ -381,6 +434,7 @@ export default function StudioPage() {
       // Shrink oversized phone photos client-side — Vercel's serverless
       // functions reject bodies larger than 4.5 MB.
       const resized = await resizeIfNeeded(file);
+      lastReferenceFileRef.current = resized;
       const form = new FormData();
       form.append("files", resized);
       const data = await fetchJson("Upload reference", "/api/upload", {
@@ -399,6 +453,50 @@ export default function StudioPage() {
 
   function resetReferenceImage() {
     setReferenceImageUrl(null);
+  }
+
+  async function saveReferenceAsPreset(label: string) {
+    const file = lastReferenceFileRef.current;
+    if (!file) return;
+    setReferenceSaving(true);
+    setError(null);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      form.append("label", label);
+      const data = await fetchJson("Save reference preset", "/api/user-references", {
+        method: "POST",
+        body: form,
+      });
+      const saved = data.reference as { id: string; label: string; imageUrl: string };
+      setUserReferences((existing) => [...existing, saved]);
+      // Select the saved preset and clear the one-off override so the grid
+      // checkmark reflects reality.
+      setSelectedProductShotPath(saved.imageUrl);
+      setReferenceImageUrl(null);
+      lastReferenceFileRef.current = null;
+    } catch (err: any) {
+      setError(err.message || "Saving preset failed");
+    } finally {
+      setReferenceSaving(false);
+    }
+  }
+
+  async function deleteReferencePreset(id: string) {
+    try {
+      await fetchJson("Delete reference preset", `/api/user-references?id=${id}`, {
+        method: "DELETE",
+      });
+      // Compute the fallback selection outside the setState updater — updaters
+      // must stay pure (StrictMode invokes them twice).
+      const removed = userReferences.find((r) => r.id === id);
+      if (removed && selectedProductShotPath === removed.imageUrl) {
+        setSelectedProductShotPath(PRODUCT_SHOT_REFERENCES[0]?.path ?? "");
+      }
+      setUserReferences((existing) => existing.filter((r) => r.id !== id));
+    } catch (err: any) {
+      setError(err.message || "Deleting preset failed");
+    }
   }
 
   function resolveSelectedReferenceUrl(): string | null {
@@ -552,6 +650,9 @@ export default function StudioPage() {
             resolution: "4K",
             format,
             outputSize: IMAGE_STUDIO_OUTPUT_SIZE,
+            // Show native model output immediately; the 2160x3240 final is
+            // produced by /api/finalize-image in the background below.
+            deferResize: true,
             numImages: 1,
             overlay: {
               mode: deriveOverlayMode(showName, showNumber),
@@ -621,12 +722,30 @@ export default function StudioPage() {
               version: "2.2",
             },
           };
+          // Native images render right away; the locked-size finals swap in
+          // silently once /api/finalize-image returns (fallback: keep native).
           setHistory((existing) => [item, ...existing.filter((run) => run.id !== item.id)].slice(0, 50));
           setCurrentId(jobId);
           localStorage.setItem(CURRENT_ID_KEY, jobId);
+          const finalize = (url: string) =>
+            fetchJson("Finalize image", "/api/finalize-image", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ imageUrl: url }),
+            })
+              .then((d) => (typeof d.url === "string" && d.url ? d.url : url))
+              .catch(() => url);
+          const [finalLeft, finalRight] = await Promise.all([
+            finalize(leftUrl),
+            finalize(rightUrl),
+          ]);
+          const finalItem: HistoryItem = { ...item, imageUrls: [finalLeft, finalRight] };
+          setHistory((existing) =>
+            existing.map((run) => (run.id === jobId ? finalItem : run))
+          );
           updateImageJob(jobId, { status: "done" });
           setBackgroundJobs(readImageJobs());
-          return { historyItem: item };
+          return { historyItem: finalItem };
         } catch (err: any) {
           const message = err.message || "Generation failed";
           setError(message);
@@ -978,7 +1097,19 @@ export default function StudioPage() {
             onFontSizeChange={setFontSize}
             referenceImageUrl={referenceImageUrl}
             defaultReferencePreview={selectedProductShotPath || PRODUCT_SHOT_REFERENCES[0]?.path || ""}
-            productShotReferences={PRODUCT_SHOT_REFERENCES}
+            productShotReferences={[
+              ...PRODUCT_SHOT_REFERENCES,
+              ...userReferences.map((r) => ({
+                id: r.id,
+                label: r.label,
+                path: r.imageUrl,
+                userAdded: true as const,
+              })),
+            ]}
+            canSaveReference={Boolean(referenceImageUrl && lastReferenceFileRef.current)}
+            referenceSaving={referenceSaving}
+            onReferenceSave={saveReferenceAsPreset}
+            onPresetDelete={deleteReferencePreset}
             selectedProductShotPath={selectedProductShotPath}
             onProductShotSelect={(path) => {
               setSelectedProductShotPath(path);

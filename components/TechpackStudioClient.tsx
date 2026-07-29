@@ -5,6 +5,7 @@ import StudioHeader from "@/components/StudioHeader";
 import ImageLightbox, { ZoomButton } from "@/components/ImageLightbox";
 import type { UploadedImage } from "@/components/types";
 import { resizeIfNeeded } from "@/lib/image-resize";
+import { ProgressBar, uploadWithProgress } from "@/components/RunProgress";
 
 type TechpackTable = {
   columns: string[];
@@ -316,6 +317,7 @@ export default function TechpackStudioClient() {
   const [supportUploads, setSupportUploads] = useState<UploadedImage[]>([]);
   const [meta, setMeta] = useState<TechpackMeta>(initialMeta);
   const [uploading, setUploading] = useState<"primary" | "support" | null>(null);
+  const [uploadFraction, setUploadFraction] = useState(0);
   const [generating, setGenerating] = useState(false);
   const [dragTarget, setDragTarget] = useState<"primary" | "support" | null>(null);
   const [techpack, setTechpack] = useState<TechpackResult | null>(null);
@@ -334,12 +336,17 @@ export default function TechpackStudioClient() {
 
   async function addFiles(files: FileList, kind: "primary" | "support") {
     setUploading(kind);
+    setUploadFraction(0);
     setError(null);
     try {
       const resized = await Promise.all(Array.from(files).map((file) => resizeIfNeeded(file)));
       const form = new FormData();
       resized.forEach((file) => form.append("files", file));
-      const data = await fetchJson("Upload", "/api/upload", { method: "POST", body: form });
+      // Bytes-sent progress covers the browser -> server leg; hold at 90%
+      // until the server finishes forwarding to storage and responds.
+      const data = await uploadWithProgress("Upload", "/api/upload", form, (f) =>
+        setUploadFraction(f * 0.9)
+      );
       const added: UploadedImage[] = data.uploads ?? [];
       if (!added.length) throw new Error("Upload succeeded but no image URL returned.");
       if (kind === "primary") {
@@ -493,10 +500,7 @@ export default function TechpackStudioClient() {
               }`}
             >
               {uploading === "primary" ? (
-                <span className="inline-flex items-center gap-2">
-                  <Spinner />
-                  Uploading
-                </span>
+                <ProgressBar label="Uploading" fraction={uploadFraction} className="max-w-[75%]" />
               ) : (
                 <span className="inline-flex items-center gap-2">
                   {IconUpload}
@@ -582,8 +586,14 @@ export default function TechpackStudioClient() {
               disabled={!!uploading || generating}
               className="flex w-full items-center justify-center gap-2 rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-700 transition hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {uploading === "support" ? <Spinner /> : IconUpload}
-              Upload logos, trims, notes
+              {uploading === "support" ? (
+                <ProgressBar label="Uploading" fraction={uploadFraction} className="max-w-[75%]" />
+              ) : (
+                <>
+                  {IconUpload}
+                  Upload logos, trims, notes
+                </>
+              )}
             </button>
             <input
               ref={supportInputRef}

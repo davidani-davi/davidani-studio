@@ -747,6 +747,7 @@ export default function FaireSeoClient() {
                     <CopyBlock
                       title="Name"
                       value={activeTitle}
+                      maxLength={60}
                       copied={copied === `${activeListing}-title`}
                       onCopy={() => markCopied(`${activeListing}-title`, activeTitle)}
                       onChange={(value) =>
@@ -920,6 +921,7 @@ function CopyBlock({
   onCopy,
   onChange,
   area,
+  maxLength,
 }: {
   title: string;
   value: string;
@@ -927,12 +929,22 @@ function CopyBlock({
   onCopy: () => void;
   onChange?: (value: string) => void;
   area?: boolean;
+  maxLength?: number;
 }) {
   const rows = textareaRows(value, area);
+  const count = value.length;
+  const overLimit = typeof maxLength === "number" && count > maxLength;
   return (
     <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-3">
       <div className="mb-2 flex items-center justify-between gap-3">
-        <h3 className="text-xs font-bold uppercase text-neutral-500">{title}</h3>
+        <div>
+          <h3 className="text-xs font-bold uppercase text-neutral-500">{title}</h3>
+          {typeof maxLength === "number" ? (
+            <p className={`mt-1 text-xs font-semibold ${overLimit ? "text-red-700" : "text-neutral-500"}`}>
+              {count}/{maxLength} characters
+            </p>
+          ) : null}
+        </div>
         <SmallButton onClick={onCopy} label={copied ? "Copied" : "Copy"} />
       </div>
       {onChange ? (

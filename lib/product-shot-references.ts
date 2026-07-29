@@ -4,6 +4,8 @@ export interface ProductShotReference {
   id: string;
   label: string;
   path: string;
+  /** True for team-saved presets loaded from /api/user-references (deletable). */
+  userAdded?: boolean;
 }
 
 export const PRODUCT_SHOT_REFERENCES = [
