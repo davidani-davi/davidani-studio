@@ -1208,7 +1208,15 @@ export default function OutputPanel({
                         : "Generating"}
                     </span>
                   </div>
-                  <div className="flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-lg bg-neutral-50">
+                  <div
+                    className={`flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-lg ${
+                      url
+                        ? "bg-neutral-50"
+                        : failed
+                        ? "bg-red-50"
+                        : "animate-pulse bg-neutral-100"
+                    }`}
+                  >
                     {url ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
@@ -1229,7 +1237,7 @@ export default function OutputPanel({
                         )}
                       </div>
                     ) : (
-                      <span className="text-xs text-neutral-400">
+                      <span className="text-xs text-neutral-400" style={{ animationPlayState: "paused" }}>
                         {status === "queued" ? "Waiting..." : "Generating..."}
                       </span>
                     )}
