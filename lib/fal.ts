@@ -2601,6 +2601,30 @@ export interface GenerationResult {
   cost?: number;
 }
 
+export function buildGptImageOptions(params: {
+  numImages?: number;
+  aspectRatio?: string;
+  resolution?: string;
+  format?: "png" | "jpeg";
+  openAiApiKey?: string;
+}): Record<string, unknown> {
+  const options: Record<string, unknown> = {
+    openai_api_key: params.openAiApiKey ?? "",
+    quality:
+      params.resolution === "4K"
+        ? "high"
+        : params.resolution === "2K"
+          ? "medium"
+          : "low",
+  };
+  if (params.numImages) options.num_images = params.numImages;
+  if (params.aspectRatio && params.aspectRatio !== "auto") {
+    options.aspect_ratio = params.aspectRatio;
+  }
+  if (params.format) options.output_format = params.format;
+  return options;
+}
+
 function defaultOutputSize(params: GenerateParams, _resolution: string) {
   // Only resize when the caller explicitly provides outputSize (Image Studio always does).
   // Model Studios do NOT pass outputSize and must never be force-resized here.
@@ -2929,10 +2953,16 @@ export async function generate(params: GenerateParams): Promise<GenerationResult
     }
   } else if (model.inputShape === "gpt") {
     input.image_urls = generatorImageUrls;
-    if (params.numImages) input.num_images = params.numImages;
-    input.openai_api_key = process.env.OPENAI_API_KEY ?? "";
-    // GPT Image uses a "quality" enum rather than a pixel resolution.
-    input.quality = resolution === "4K" ? "high" : resolution === "2K" ? "medium" : "low";
+    Object.assign(
+      input,
+      buildGptImageOptions({
+        numImages: params.numImages,
+        aspectRatio: params.aspectRatio,
+        resolution,
+        format: params.format,
+        openAiApiKey: process.env.OPENAI_API_KEY,
+      })
+    );
   }
 
   const result: any = await fal.subscribe(model.endpoint, {

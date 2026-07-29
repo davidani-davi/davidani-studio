@@ -52,11 +52,22 @@ function fmtDuration(ms: number): string {
 
 type ResultStatus = "queued" | "running" | "done" | "failed";
 
+interface GenerationSettings {
+  modelId: ModelId;
+  modelLabel: string;
+  aspect: string;
+  resolution: string;
+  numImages: number;
+  referenceCount: number;
+  format: "png";
+}
+
 interface PlaygroundResult {
   id: string;
   prompt: string;
   status: ResultStatus;
   urls: string[];
+  settings?: GenerationSettings;
   error?: string;
   startedAt?: number;
   finishedAt?: number;
@@ -319,11 +330,21 @@ export default function ImagePlaygroundClient() {
     setPaused(false);
     pausedRef.current = false;
 
+    const settingsSnapshot: GenerationSettings = {
+      modelId,
+      modelLabel: MODELS[modelId]?.label ?? modelId,
+      aspect,
+      resolution,
+      numImages: numPerPrompt,
+      referenceCount: orderedSelectedRefUrls.length,
+      format: "png",
+    };
     const initial: PlaygroundResult[] = prompts.map((p, i) => ({
       id: `${Date.now()}-${i}`,
       prompt: p,
       status: "queued" as const,
       urls: [],
+      settings: settingsSnapshot,
     }));
     setResults(initial);
 
@@ -846,6 +867,28 @@ export default function ImagePlaygroundClient() {
                         ) : null}
                       </div>
                     </div>
+                    {r.settings ? (
+                      <div
+                        className="mb-2 flex flex-wrap gap-1"
+                        aria-label="Generation settings"
+                      >
+                        {[
+                          r.settings.modelLabel,
+                          r.settings.aspect,
+                          r.settings.resolution,
+                          `${r.settings.numImages} ${r.settings.numImages === 1 ? "image" : "images"}`,
+                          `${r.settings.referenceCount} ${r.settings.referenceCount === 1 ? "reference" : "references"}`,
+                          r.settings.format.toUpperCase(),
+                        ].map((setting) => (
+                          <span
+                            key={setting}
+                            className="rounded-full border border-neutral-200 bg-neutral-50 px-2 py-0.5 text-[9px] font-medium text-neutral-500"
+                          >
+                            {setting}
+                          </span>
+                        ))}
+                      </div>
+                    ) : null}
                     {r.status === "done" && r.urls.length ? (
                       <div className="grid grid-cols-2 gap-2">
                         {r.urls.map((url, i) => {
@@ -921,7 +964,7 @@ export default function ImagePlaygroundClient() {
                         <span className="font-semibold text-neutral-800">
                           {MODELS[run.modelId]?.label ?? run.modelId}
                         </span>{" "}
-                        · {run.results.length} prompts · {done} done
+                        · {run.aspect} · {run.resolution} · {run.results.length} prompts · {done} done
                         <span className="ml-1 text-neutral-400">
                           {new Date(run.timestamp).toLocaleTimeString([], {
                             hour: "2-digit",
