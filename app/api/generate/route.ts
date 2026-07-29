@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { generate, type OverlayOptions } from "@/lib/fal";
 import { MODELS, type ModelId } from "@/lib/models";
 import { IMAGE_STUDIO_OUTPUT_SIZE } from "@/lib/output-sizes";
+import { resolveGenerateOutputSize } from "@/lib/generate-output-size";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -62,7 +63,10 @@ export async function POST(req: Request) {
       // shows it and calls /api/finalize-image in the background to produce
       // the locked-size final, instead of blocking the response on
       // fetch -> sharp -> re-upload.
-      outputSize: deferResize ? null : IMAGE_STUDIO_OUTPUT_SIZE,
+      // Raw callers such as Image Playground own their aspect ratio. Applying
+      // Image Studio's fixed 2:3 export size here would crop every selected
+      // ratio (including 16:9) back into a portrait image.
+      outputSize: resolveGenerateOutputSize(raw, deferResize, IMAGE_STUDIO_OUTPUT_SIZE),
       useDefaultReference,
       raw,
     });
