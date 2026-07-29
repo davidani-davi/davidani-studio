@@ -2620,6 +2620,13 @@ export function buildGptImageOptions(params: {
   if (params.numImages) options.num_images = params.numImages;
   if (params.aspectRatio && params.aspectRatio !== "auto") {
     options.aspect_ratio = params.aspectRatio;
+    options.image_size =
+      params.aspectRatio === "1:1"
+        ? "1024x1024"
+        : Number(params.aspectRatio.split(":")[0]) >
+            Number(params.aspectRatio.split(":")[1])
+          ? "1536x1024"
+          : "1024x1536";
   }
   if (params.format) options.output_format = params.format;
   return options;
@@ -2633,7 +2640,8 @@ function defaultOutputSize(params: GenerateParams, _resolution: string) {
 
 export async function resizeGeneratedImages(
   images: GenerationResult["images"],
-  size: { width: number; height: number } | null
+  size: { width: number; height: number } | null,
+  format: "png" | "jpeg" = "jpeg"
 ): Promise<GenerationResult["images"]> {
   if (!size) return images;
 
@@ -2644,31 +2652,31 @@ export async function resizeGeneratedImages(
         throw new Error(`Could not fetch generated image for resizing (HTTP ${source.status})`);
       }
       const input = Buffer.from(await source.arrayBuffer());
-      const output = await sharp(input)
-        .resize(size.width, size.height, {
+      const pipeline = sharp(input).resize(size.width, size.height, {
           fit: "cover",
           position: "center",
           withoutEnlargement: false,
-        })
-        .jpeg({
-          quality: 92,
-          mozjpeg: true,
-        })
-        .toBuffer();
+        });
+      const output =
+        format === "png"
+          ? await pipeline.png({ compressionLevel: 8 }).toBuffer()
+          : await pipeline.jpeg({ quality: 92, mozjpeg: true }).toBuffer();
+      const extension = format === "png" ? "png" : "jpg";
+      const contentType = format === "png" ? "image/png" : "image/jpeg";
       const blobPart = output.buffer.slice(
         output.byteOffset,
         output.byteOffset + output.byteLength
       ) as ArrayBuffer;
       const url = await uploadToFal(
-        new Blob([blobPart], { type: "image/jpeg" }),
-        `davidani-${size.width}x${size.height}-${index + 1}.jpg`
+        new Blob([blobPart], { type: contentType }),
+        `davidani-${size.width}x${size.height}-${index + 1}.${extension}`
       );
       return {
         ...image,
         url,
         width: size.width,
         height: size.height,
-        content_type: "image/jpeg",
+        content_type: contentType,
       };
     })
   );
@@ -2917,7 +2925,11 @@ export async function generate(params: GenerateParams): Promise<GenerationResult
       resolution,
       model: model.endpoint, // e.g. "nano-banana-2"
     });
-    const images = await resizeGeneratedImages(kieResult.images, outputSize);
+    const images = await resizeGeneratedImages(
+      kieResult.images,
+      outputSize,
+      params.format
+    );
     return {
       images,
       requestId: kieResult.taskIds[0],
@@ -2979,7 +2991,7 @@ export async function generate(params: GenerateParams): Promise<GenerationResult
     content_type: img.content_type,
   }));
 
-  const resizedImages = await resizeGeneratedImages(images, outputSize);
+  const resizedImages = await resizeGeneratedImages(images, outputSize, params.format);
 
   return {
     images: resizedImages,

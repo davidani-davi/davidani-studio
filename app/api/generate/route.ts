@@ -63,10 +63,17 @@ export async function POST(req: Request) {
       // shows it and calls /api/finalize-image in the background to produce
       // the locked-size final, instead of blocking the response on
       // fetch -> sharp -> re-upload.
-      // Raw callers such as Image Playground own their aspect ratio. Applying
-      // Image Studio's fixed 2:3 export size here would crop every selected
-      // ratio (including 16:9) back into a portrait image.
-      outputSize: resolveGenerateOutputSize(raw, deferResize, IMAGE_STUDIO_OUTPUT_SIZE),
+      // Raw callers such as Image Playground own their aspect ratio. Normalize
+      // the provider output to that exact ratio because some edit endpoints
+      // treat their ratio parameter as a hint and may follow a portrait
+      // reference canvas instead.
+      outputSize: resolveGenerateOutputSize(
+        raw,
+        deferResize,
+        IMAGE_STUDIO_OUTPUT_SIZE,
+        aspectRatio,
+        resolution
+      ),
       useDefaultReference,
       raw,
     });

@@ -14,6 +14,7 @@ describe("GPT Image generation options", () => {
     ).toEqual({
       num_images: 1,
       aspect_ratio: "16:9",
+      image_size: "1536x1024",
       quality: "medium",
       output_format: "png",
       openai_api_key: "test-key",
@@ -21,8 +22,8 @@ describe("GPT Image generation options", () => {
   });
 
   it("lets the provider choose the ratio only when Auto is selected", () => {
-    expect(buildGptImageOptions({ aspectRatio: "auto" })).not.toHaveProperty(
-      "aspect_ratio"
-    );
+    const options = buildGptImageOptions({ aspectRatio: "auto" });
+    expect(options).not.toHaveProperty("aspect_ratio");
+    expect(options).not.toHaveProperty("image_size");
   });
 });
