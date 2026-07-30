@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import StudioHeader from "@/components/StudioHeader";
 import ImageLightbox, { ZoomButton } from "@/components/ImageLightbox";
 import type { UploadedImage } from "@/components/types";
@@ -17,6 +17,8 @@ import {
 const HISTORY_KEY = "davidani_playground_history_v1";
 const REFS_KEY = "davidani_playground_refs_v1";
 const SELECTED_REFS_KEY = "davidani_playground_selected_refs_v1";
+const WORKSPACES_KEY = "davidani_playground_workspaces_v1";
+const MAX_WORKSPACES = 4;
 
 // Approximate per-image USD cost by model. Update if upstream pricing changes.
 // Sources: fal.ai pricing (Seedream, GPT Image), kie.ai (Nano Banana 2).
@@ -110,7 +112,187 @@ function hasImageFiles(e: React.DragEvent): boolean {
   );
 }
 
+interface WorkspaceStatus {
+  running: boolean;
+  done: number;
+  total: number;
+}
+
+function workspaceStorageKey(base: string, workspaceId: number): string {
+  return workspaceId === 1 ? base : `${base}_workspace_${workspaceId}`;
+}
+
 export default function ImagePlaygroundClient() {
+  const [workspaceIds, setWorkspaceIds] = useState<number[]>([1]);
+  const [activeWorkspaceId, setActiveWorkspaceId] = useState(1);
+  const [workspaceStatuses, setWorkspaceStatuses] = useState<
+    Record<number, WorkspaceStatus>
+  >({});
+
+  useEffect(() => {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(WORKSPACES_KEY) || "[]");
+      const valid = Array.isArray(parsed)
+        ? parsed.filter(
+            (id): id is number =>
+              Number.isInteger(id) && id >= 1 && id <= MAX_WORKSPACES
+          )
+        : [];
+      if (valid.length) {
+        const unique = [...new Set(valid)].slice(0, MAX_WORKSPACES);
+        setWorkspaceIds(unique);
+        setActiveWorkspaceId(unique[0]);
+      }
+    } catch {
+      /* ignore malformed saved workspace state */
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(WORKSPACES_KEY, JSON.stringify(workspaceIds));
+    } catch {
+      /* ignore */
+    }
+  }, [workspaceIds]);
+
+  const updateWorkspaceStatus = useCallback(
+    (workspaceId: number, status: WorkspaceStatus) => {
+      setWorkspaceStatuses((current) => {
+        const previous = current[workspaceId];
+        if (
+          previous?.running === status.running &&
+          previous?.done === status.done &&
+          previous?.total === status.total
+        ) {
+          return current;
+        }
+        return { ...current, [workspaceId]: status };
+      });
+    },
+    []
+  );
+
+  function addWorkspace() {
+    if (workspaceIds.length >= MAX_WORKSPACES) return;
+    const nextId =
+      Array.from({ length: MAX_WORKSPACES }, (_, index) => index + 1).find(
+        (id) => !workspaceIds.includes(id)
+      ) ?? workspaceIds.length + 1;
+    setWorkspaceIds((current) => [...current, nextId]);
+    setActiveWorkspaceId(nextId);
+  }
+
+  function closeWorkspace(workspaceId: number) {
+    if (workspaceIds.length === 1 || workspaceStatuses[workspaceId]?.running) return;
+    const index = workspaceIds.indexOf(workspaceId);
+    const next = workspaceIds.filter((id) => id !== workspaceId);
+    setWorkspaceIds(next);
+    if (activeWorkspaceId === workspaceId) {
+      setActiveWorkspaceId(next[Math.max(0, index - 1)] ?? next[0]);
+    }
+  }
+
+  const workspaceBar = (
+    <div className="flex items-center gap-2 overflow-x-auto border-b border-neutral-200 bg-white px-5 py-2">
+      <span className="mr-1 shrink-0 text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
+        Workspaces
+      </span>
+      {workspaceIds.map((workspaceId, index) => {
+        const status = workspaceStatuses[workspaceId];
+        const active = workspaceId === activeWorkspaceId;
+        return (
+          <button
+            key={workspaceId}
+            type="button"
+            onClick={() => setActiveWorkspaceId(workspaceId)}
+            className={`inline-flex shrink-0 items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
+              active
+                ? "border-neutral-800 bg-neutral-900 text-white"
+                : "border-neutral-200 bg-neutral-50 text-neutral-600 hover:border-neutral-400"
+            }`}
+          >
+            <span
+              className={`h-1.5 w-1.5 rounded-full ${
+                status?.running
+                  ? "animate-pulse bg-amber-400"
+                  : status?.done
+                    ? "bg-emerald-500"
+                    : "bg-neutral-300"
+              }`}
+            />
+            Playground {index + 1}
+            {status?.running ? (
+              <span className={active ? "text-neutral-300" : "text-neutral-400"}>
+                {status.done}/{status.total}
+              </span>
+            ) : null}
+            {workspaceIds.length > 1 ? (
+              <span
+                role="button"
+                aria-label={`Close Playground ${index + 1}`}
+                title={
+                  status?.running
+                    ? "Wait for this workspace to finish before closing it"
+                    : `Close Playground ${index + 1}`
+                }
+                onClick={(event) => {
+                  event.stopPropagation();
+                  closeWorkspace(workspaceId);
+                }}
+                className={`ml-0.5 text-sm leading-none ${
+                  status?.running
+                    ? "cursor-not-allowed opacity-30"
+                    : "opacity-60 hover:opacity-100"
+                }`}
+              >
+                ×
+              </span>
+            ) : null}
+          </button>
+        );
+      })}
+      <button
+        type="button"
+        onClick={addWorkspace}
+        disabled={workspaceIds.length >= MAX_WORKSPACES}
+        className="shrink-0 rounded-lg border border-dashed border-neutral-300 px-3 py-1.5 text-xs font-semibold text-neutral-600 hover:border-neutral-500 disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        + New Playground
+      </button>
+      <span className="ml-auto shrink-0 text-[10px] text-neutral-400">
+        {Object.values(workspaceStatuses).filter((status) => status.running).length} running
+      </span>
+    </div>
+  );
+
+  return (
+    <>
+      {workspaceIds.map((workspaceId) => (
+        <div
+          key={workspaceId}
+          className={workspaceId === activeWorkspaceId ? "contents" : "hidden"}
+        >
+          <ImagePlaygroundWorkspace
+            workspaceId={workspaceId}
+            workspaceBar={workspaceBar}
+            onStatusChange={updateWorkspaceStatus}
+          />
+        </div>
+      ))}
+    </>
+  );
+}
+
+function ImagePlaygroundWorkspace({
+  workspaceId,
+  workspaceBar,
+  onStatusChange,
+}: {
+  workspaceId: number;
+  workspaceBar: React.ReactNode;
+  onStatusChange: (workspaceId: number, status: WorkspaceStatus) => void;
+}) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [modelId, setModelId] = useState<ModelId>("gpt-image");
   const [aspect, setAspect] = useState<string>("auto");
@@ -138,6 +320,9 @@ export default function ImagePlaygroundClient() {
   const [selectedIdx, setSelectedIdx] = useState<number>(0);
   const [history, setHistory] = useState<PlaygroundRun[]>([]);
   const thumbRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const historyKey = workspaceStorageKey(HISTORY_KEY, workspaceId);
+  const refsKey = workspaceStorageKey(REFS_KEY, workspaceId);
+  const selectedRefsKey = workspaceStorageKey(SELECTED_REFS_KEY, workspaceId);
 
   // Ticks once per second while a batch is running so live timers re-render.
   const [nowTick, setNowTick] = useState<number>(() => Date.now());
@@ -203,16 +388,16 @@ export default function ImagePlaygroundClient() {
   // Load persisted state.
   useEffect(() => {
     try {
-      const r = localStorage.getItem(REFS_KEY);
+      const r = localStorage.getItem(refsKey);
       if (r) {
         const restored = restorePersistedReferences(
           r,
-          localStorage.getItem(SELECTED_REFS_KEY)
+          localStorage.getItem(selectedRefsKey)
         );
         setRefs(restored.references);
         setSelectedRefUrls(restored.selectedUrls);
       }
-      const h = localStorage.getItem(HISTORY_KEY);
+      const h = localStorage.getItem(historyKey);
       if (h) {
         const parsed = JSON.parse(h) as PlaygroundRun[];
         if (Array.isArray(parsed)) setHistory(parsed);
@@ -220,23 +405,23 @@ export default function ImagePlaygroundClient() {
     } catch {
       /* ignore */
     }
-  }, []);
+  }, [historyKey, refsKey, selectedRefsKey]);
 
   useEffect(() => {
     try {
-      localStorage.setItem(REFS_KEY, JSON.stringify(refs));
+      localStorage.setItem(refsKey, JSON.stringify(refs));
     } catch {
       /* ignore */
     }
-  }, [refs]);
+  }, [refs, refsKey]);
 
   useEffect(() => {
     try {
-      localStorage.setItem(SELECTED_REFS_KEY, JSON.stringify(selectedRefUrls));
+      localStorage.setItem(selectedRefsKey, JSON.stringify(selectedRefUrls));
     } catch {
       /* ignore */
     }
-  }, [selectedRefUrls]);
+  }, [selectedRefUrls, selectedRefsKey]);
 
   const prompts = useMemo(() => parsePlaygroundPrompts(promptsText), [promptsText]);
   const orderedSelectedRefUrls = useMemo(
@@ -247,6 +432,21 @@ export default function ImagePlaygroundClient() {
   const doneCount = results.filter((r) => r.status === "done").length;
   const failedCount = results.filter((r) => r.status === "failed").length;
   const activeJob = running ? 1 : 0;
+
+  useEffect(() => {
+    onStatusChange(workspaceId, {
+      running,
+      done: doneCount + failedCount,
+      total: promptCount,
+    });
+  }, [
+    doneCount,
+    failedCount,
+    onStatusChange,
+    promptCount,
+    running,
+    workspaceId,
+  ]);
 
   const costPerImage = estimateCostPerImage(modelId, resolution);
   const totalImages = promptCount * numPerPrompt;
@@ -434,7 +634,7 @@ export default function ImagePlaygroundClient() {
       setHistory((cur) => {
         const next = [run, ...cur].slice(0, 20);
         try {
-          localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
+          localStorage.setItem(historyKey, JSON.stringify(next));
         } catch {
           /* ignore quota */
         }
@@ -461,7 +661,7 @@ export default function ImagePlaygroundClient() {
   function clearHistory() {
     setHistory([]);
     try {
-      localStorage.removeItem(HISTORY_KEY);
+      localStorage.removeItem(historyKey);
     } catch {
       /* ignore */
     }
@@ -494,6 +694,7 @@ export default function ImagePlaygroundClient() {
           },
         ]}
       />
+      {workspaceBar}
 
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
         {/* Settings rail */}
