@@ -2,10 +2,7 @@ import { NextResponse } from "next/server";
 import { generate, type OverlayOptions } from "@/lib/fal";
 import { MODELS, type ModelId } from "@/lib/models";
 import { IMAGE_STUDIO_OUTPUT_SIZE } from "@/lib/output-sizes";
-import {
-  resolveGenerateOutputSize,
-  resolveRequestedAspectRatio,
-} from "@/lib/generate-output-size";
+import { resolveGenerateOutputSize } from "@/lib/generate-output-size";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -19,7 +16,6 @@ export async function POST(req: Request) {
       imageUrls,
       referenceImageUrl,
       aspectRatio,
-      outputAspectRatio,
       resolution,
       format,
       numImages,
@@ -33,7 +29,6 @@ export async function POST(req: Request) {
       imageUrls: string[];
       referenceImageUrl?: string | null;
       aspectRatio?: string;
-      outputAspectRatio?: string;
       resolution?: string;
       format?: "png" | "jpeg";
       numImages?: number;
@@ -76,10 +71,7 @@ export async function POST(req: Request) {
         raw,
         deferResize,
         IMAGE_STUDIO_OUTPUT_SIZE,
-        raw
-          ? outputAspectRatio ||
-              resolveRequestedAspectRatio(aspectRatio, prompt)
-          : aspectRatio,
+        aspectRatio,
         resolution
       ),
       useDefaultReference,

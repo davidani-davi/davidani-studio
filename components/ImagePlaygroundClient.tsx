@@ -13,7 +13,6 @@ import {
   parsePlaygroundPrompts,
   restorePersistedReferences,
 } from "@/lib/image-playground";
-import { resolveRequestedAspectRatio } from "@/lib/generate-output-size";
 
 const HISTORY_KEY = "davidani_playground_history_v1";
 const REFS_KEY = "davidani_playground_refs_v1";
@@ -331,24 +330,22 @@ export default function ImagePlaygroundClient() {
     setPaused(false);
     pausedRef.current = false;
 
-    const settingsSnapshot: Omit<GenerationSettings, "aspect"> = {
+    const settingsSnapshot: GenerationSettings = {
       modelId,
       modelLabel: MODELS[modelId]?.label ?? modelId,
+      aspect,
       resolution,
       numImages: numPerPrompt,
       referenceCount: orderedSelectedRefUrls.length,
       format: "png",
     };
-    const initial: PlaygroundResult[] = prompts.map((p, i) => {
-      const effectiveAspect = resolveRequestedAspectRatio(aspect, p);
-      return {
-        id: `${Date.now()}-${i}`,
-        prompt: p,
-        status: "queued" as const,
-        urls: [],
-        settings: { ...settingsSnapshot, aspect: effectiveAspect },
-      };
-    });
+    const initial: PlaygroundResult[] = prompts.map((p, i) => ({
+      id: `${Date.now()}-${i}`,
+      prompt: p,
+      status: "queued" as const,
+      urls: [],
+      settings: settingsSnapshot,
+    }));
     setResults(initial);
 
     const queue = initial.map((r, i) => ({ ...r, index: i }));
@@ -369,7 +366,6 @@ export default function ImagePlaygroundClient() {
             prompt: item.prompt,
             imageUrls: orderedSelectedRefUrls,
             aspectRatio: aspect,
-            outputAspectRatio: item.settings?.aspect,
             resolution,
             format: "png",
             numImages: numPerPrompt,
