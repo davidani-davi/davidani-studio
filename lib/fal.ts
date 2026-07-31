@@ -2682,6 +2682,7 @@ export interface GenerationResult {
   requestId?: string;
   modelId: ModelId;
   cost?: number;
+  fallbackFrom?: ModelId;
 }
 
 export function buildGptImageOptions(params: {
@@ -3109,7 +3110,19 @@ export async function generate(params: GenerateParams): Promise<GenerationResult
         logs: false,
       });
     } catch (retryErr: any) {
-      throw new Error(`Portrait request rejected after safe retry: ${validationErrorDetail(retryErr)}`);
+      const retryDetail = validationErrorDetail(retryErr);
+      if (/content_policy_violation|content checker|flagged by a content/i.test(retryDetail)) {
+        console.warn(
+          "[generate] GPT rejected the fictional portrait after safe retry; continuing with Seedream 4.5"
+        );
+        const fallback = await generate({
+          ...params,
+          modelId: "seedream-4",
+          prompt: safePrompt,
+        });
+        return { ...fallback, fallbackFrom: "gpt-image" };
+      }
+      throw new Error(`Portrait request rejected after safe retry: ${retryDetail}`);
     }
   }
 

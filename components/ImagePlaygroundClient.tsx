@@ -71,6 +71,7 @@ interface PlaygroundResult {
   urls: string[];
   settings?: GenerationSettings;
   error?: string;
+  fallbackFrom?: string;
   startedAt?: number;
   finishedAt?: number;
 }
@@ -579,7 +580,21 @@ function ImagePlaygroundWorkspace({
         const urls: string[] = data.images?.map((img: any) => img.url).filter(Boolean) ?? [];
         setResults((cur) => {
           const next = cur.slice();
-          next[idx] = { ...next[idx], status: "done", urls, finishedAt: Date.now() };
+          const actualModelId = (data.modelId || modelId) as ModelId;
+          next[idx] = {
+            ...next[idx],
+            status: "done",
+            urls,
+            fallbackFrom: data.fallbackFrom,
+            settings: next[idx].settings
+              ? {
+                  ...next[idx].settings!,
+                  modelId: actualModelId,
+                  modelLabel: MODELS[actualModelId]?.label ?? actualModelId,
+                }
+              : next[idx].settings,
+            finishedAt: Date.now(),
+          };
           return next;
         });
       } catch (e: any) {
@@ -1089,6 +1104,11 @@ function ImagePlaygroundWorkspace({
                           </span>
                         ))}
                       </div>
+                    ) : null}
+                    {r.fallbackFrom ? (
+                      <p className="mb-2 text-[10px] font-medium text-amber-700">
+                        ChatGPT declined this portrait; completed with Seedream 4.5.
+                      </p>
                     ) : null}
                     {r.status === "done" && r.urls.length ? (
                       <div className="grid grid-cols-2 gap-2">
