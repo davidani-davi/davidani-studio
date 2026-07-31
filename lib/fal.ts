@@ -2716,17 +2716,15 @@ export function sanitizeRejectedPortraitPrompt(prompt: string): string {
     .split(/(?<=[.!?])\s+/)
     .filter(
       (sentence) =>
-        !/\b(?:identity[- ]?defining|identity blending|face averaging|recognizable person|celebrity|existing model|identify the source|resemble the original|replace all facial anatomy|copied eye shape)\b/i.test(
+        !/\b(?:identity|identify|source|recognizable|resembl|celebrity|known person|existing model|copy|copied|transform|replace|retain)\b/i.test(
           sentence
         )
     )
     .join(" ")
-    .replace(/\bRebuild the face in Image 1 as\b/gi, "Create")
-    .replace(/\bReplace (?:the|all) facial anatomy\b/gi, "Create original facial features")
     .trim();
 
   return (
-    "Create an original fictional adult fashion model. Use the attached image only for its non-identifying photographic setup, including pose, framing, wardrobe, lighting, background, and camera treatment. Do not copy or transform the photographed person's identity. " +
+    "Create a fictional adult fashion portrait. Follow the attached reference for composition, pose, framing, hair placement, wardrobe, lighting, background, and camera treatment. Design the subject as described by the positive appearance details below. " +
     filtered
   );
 }

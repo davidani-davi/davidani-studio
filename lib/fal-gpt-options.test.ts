@@ -31,10 +31,10 @@ describe("GPT rejected portrait prompt retry", () => {
     const result = sanitizeRejectedPortraitPrompt(
       "Rebuild the face in Image 1 as a fictional adult model. Preserve the pose, wardrobe, and soft lighting. Replace all facial anatomy that could identify the source. Avoid resemblance to a celebrity or existing model. Add freckles and gray-hazel eyes."
     );
-    expect(result).toContain("original fictional adult fashion model");
-    expect(result).toContain("Preserve the pose, wardrobe, and soft lighting");
+    expect(result).toContain("fictional adult fashion portrait");
+    expect(result).toContain("composition, pose, framing");
     expect(result).toContain("Add freckles and gray-hazel eyes");
-    expect(result).not.toMatch(/identify the source|celebrity|existing model|replace all facial anatomy/i);
+    expect(result).not.toMatch(/identity|source|recognizable|resembl|celebrity|existing model|copy|transform|replace|retain/i);
   });
 
   it("does not alter unrelated product prompts", () => {
