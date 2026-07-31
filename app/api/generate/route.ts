@@ -80,9 +80,18 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ ok: true, ...result });
   } catch (err: any) {
-    console.error("[generate] error:", err);
+    const providerDetail = (() => {
+      const detail = err?.body?.detail ?? err?.body?.error;
+      if (!detail) return null;
+      try {
+        return typeof detail === "string" ? detail : JSON.stringify(detail);
+      } catch {
+        return String(detail);
+      }
+    })();
+    console.error("[generate] error:", err, providerDetail || "");
     return NextResponse.json(
-      { ok: false, error: err?.message ?? "Generation failed" },
+      { ok: false, error: providerDetail || err?.message || "Generation failed" },
       { status: 500 }
     );
   }

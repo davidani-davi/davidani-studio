@@ -2708,6 +2708,42 @@ export function buildGptImageOptions(params: {
   return options;
 }
 
+export function sanitizeRejectedPortraitPrompt(prompt: string): string {
+  const isPortraitIdentityPrompt = /\b(face|facial|portrait|identity|model|person)\b/i.test(prompt);
+  if (!isPortraitIdentityPrompt) return prompt;
+
+  const filtered = prompt
+    .split(/(?<=[.!?])\s+/)
+    .filter(
+      (sentence) =>
+        !/\b(?:identity[- ]?defining|identity blending|face averaging|recognizable person|celebrity|existing model|identify the source|resemble the original|replace all facial anatomy|copied eye shape)\b/i.test(
+          sentence
+        )
+    )
+    .join(" ")
+    .replace(/\bRebuild the face in Image 1 as\b/gi, "Create")
+    .replace(/\bReplace (?:the|all) facial anatomy\b/gi, "Create original facial features")
+    .trim();
+
+  return (
+    "Create an original fictional adult fashion model. Use the attached image only for its non-identifying photographic setup, including pose, framing, wardrobe, lighting, background, and camera treatment. Do not copy or transform the photographed person's identity. " +
+    filtered
+  );
+}
+
+function validationErrorDetail(err: any): string {
+  const detail = err?.body?.detail ?? err?.body?.error;
+  if (typeof detail === "string") return detail;
+  if (detail) {
+    try {
+      return JSON.stringify(detail);
+    } catch {
+      return String(detail);
+    }
+  }
+  return String(err?.message || err || "Generation failed");
+}
+
 function defaultOutputSize(params: GenerateParams, _resolution: string) {
   // Only resize when the caller explicitly provides outputSize (Image Studio always does).
   // Model Studios do NOT pass outputSize and must never be force-resized here.
@@ -3053,10 +3089,31 @@ export async function generate(params: GenerateParams): Promise<GenerationResult
     );
   }
 
-  const result: any = await fal.subscribe(model.endpoint, {
-    input,
-    logs: false,
-  });
+  let result: any;
+  try {
+    result = await fal.subscribe(model.endpoint, { input, logs: false });
+  } catch (err: any) {
+    const isRejectedPortrait =
+      model.inputShape === "gpt" &&
+      err?.status === 422 &&
+      /\b(face|facial|portrait|identity|model|person)\b/i.test(finalPrompt);
+    if (!isRejectedPortrait) {
+      throw new Error(validationErrorDetail(err));
+    }
+
+    const safePrompt = sanitizeRejectedPortraitPrompt(finalPrompt);
+    console.warn(
+      `[generate] GPT portrait request rejected with 422; retrying with identity-safe wording: ${validationErrorDetail(err)}`
+    );
+    try {
+      result = await fal.subscribe(model.endpoint, {
+        input: { ...input, prompt: safePrompt },
+        logs: false,
+      });
+    } catch (retryErr: any) {
+      throw new Error(`Portrait request rejected after safe retry: ${validationErrorDetail(retryErr)}`);
+    }
+  }
 
   // Normalise output shape.
   const data = result?.data ?? result;
