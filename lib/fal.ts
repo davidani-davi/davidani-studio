@@ -727,6 +727,7 @@ The product analysis supplied in the user message is the absolute source of trut
 Every prompt must:
 - Begin by explicitly assigning the product-reference image positions and the final photographic-reference image position exactly as specified by the user.
 - Cast a completely new model who is not the person in either source image.
+- When an identity-anchor image is assigned, preserve that approved model's facial identity, hair, age, and overall appearance exactly while changing her pose and camera angle.
 - Preserve every visible product detail: garment category, color, fabric, pattern, artwork, lettering, patches, trims, hardware, pockets, seams, construction, silhouette, volume, proportions, and length.
 - Describe a believable original location, styling, pose, and transitional action suited to the product.
 - Match the photographic reference's lighting, time of day, lens character, exposure, shadows, palette, grain, and realism while deliberately changing the pose, camera angle, subject placement, action, and framing.
@@ -742,6 +743,7 @@ export async function generatePhotoshootPrompts(params: {
   count: number;
   direction: string;
   shotVariation: string;
+  hasIdentityAnchor?: boolean;
 }): Promise<string> {
   const productAnalyses = await Promise.all(
     params.productImageUrls.map((url, index) =>
@@ -760,7 +762,11 @@ export async function generatePhotoshootPrompts(params: {
       : "Balance candid transitional moments with polished fashion-editorial composition; most poses should look away from camera.";
   const productCount = params.productImageUrls.length;
   const imageMapping =
-    productCount === 1
+    params.hasIdentityAnchor
+      ? productCount === 1
+        ? "Begin every prompt by stating: Image 1 is exclusively the exact product reference. Image 2 is exclusively the photographic shoot-day reference. Image 3 is exclusively the approved model identity anchor; preserve that same person but do not copy her pose or composition."
+        : `Begin every prompt by stating that Images 1 through ${productCount} are exclusively exact views of the same product/style, Image ${productCount + 1} is exclusively the photographic shoot-day reference, and Image ${productCount + 2} is exclusively the approved model identity anchor; preserve that same person but do not copy her pose or composition.`
+      : productCount === 1
       ? "Begin every prompt exactly with this semantic mapping: Image 1 is exclusively the exact product reference. Image 2 is exclusively the photographic reference."
       : `Begin every prompt by stating that Images 1 through ${productCount} are exclusively exact views of the same product/style, and Image ${productCount + 1} is exclusively the photographic reference.`;
 

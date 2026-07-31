@@ -9,7 +9,7 @@ export const maxDuration = 180;
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { imageUrl, imageUrls, referenceId, referenceUrl, count = 3, direction = "balanced", variationIndex = 0 } = body as {
+    const { imageUrl, imageUrls, referenceId, referenceUrl, count = 3, direction = "balanced", variationIndex = 0, hasIdentityAnchor = false } = body as {
       imageUrl?: string;
       imageUrls?: string[];
       referenceId?: string;
@@ -17,6 +17,7 @@ export async function POST(req: Request) {
       count?: number;
       direction?: string;
       variationIndex?: number;
+      hasIdentityAnchor?: boolean;
     };
     const productImageUrls = Array.isArray(imageUrls)
       ? imageUrls.filter((url): url is string => typeof url === "string" && Boolean(url.trim())).slice(0, 6)
@@ -43,6 +44,7 @@ export async function POST(req: Request) {
       count: safeCount,
       direction: ["candid", "editorial", "balanced"].includes(direction) ? direction : "balanced",
       shotVariation: variation.instruction,
+      hasIdentityAnchor: Boolean(hasIdentityAnchor),
     });
     return NextResponse.json({ ok: true, prompts, shotVariation: variation.label });
   } catch (err: any) {
