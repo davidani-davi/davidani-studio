@@ -152,6 +152,8 @@ async function uploadLocalPublicImageUrl(input: string): Promise<string> {
     const mimeType =
       ext === "jpg" || ext === "jpeg"
         ? "image/jpeg"
+        : ext === "avif"
+        ? "image/avif"
         : ext === "webp"
         ? "image/webp"
         : ext === "gif"
@@ -716,6 +718,78 @@ export async function generateRecoloringPrompts(
   }
 
   return prompts;
+}
+
+const PHOTOSHOOT_PROMPT_SYSTEM_PROMPT = `You are Davi & Dani's senior fashion campaign prompt writer. Write production-ready image-edit prompts from one exact apparel product and one photographic reference.
+
+The product analysis supplied in the user message is the absolute source of truth for the garment. The attached image is the photographic reference only: use it for lighting, time of day, camera position, lens character, color response, texture, atmosphere, and editorial energy. Never transfer clothing from the photographic reference.
+
+Every prompt must:
+- Begin by explicitly assigning the product-reference image positions and the final photographic-reference image position exactly as specified by the user.
+- Cast a completely new model who is not the person in either source image.
+- Preserve every visible product detail: garment category, color, fabric, pattern, artwork, lettering, patches, trims, hardware, pockets, seams, construction, silhouette, volume, proportions, and length.
+- Describe a believable original location, styling, pose, and transitional action suited to the product.
+- Match the photographic reference's lighting, time of day, lens/perspective, exposure, shadows, palette, grain, and realism.
+- Feel candid, editorial, and genuinely photographed—not glossy synthetic AI imagery.
+- Specify a native horizontal 16:9 landscape composition with the entire model visible from hair through both shoe soles and comfortable breathing room.
+- End by prohibiting cropped hair, hands, garment, legs, or footwear; portrait crop; borders; letterboxing; collage; canvas extension; and outpainting.
+
+Vary location, pose, styling, and action across prompts while keeping the product and photographic language exact. Plain text only. Separate prompts with one blank line. No numbering, titles, bullets, markdown, introduction, or commentary.`;
+
+export async function generatePhotoshootPrompts(params: {
+  productImageUrls: string[];
+  referenceImageUrl: string;
+  count: number;
+  direction: string;
+}): Promise<string> {
+  const productAnalyses = await Promise.all(
+    params.productImageUrls.map((url, index) =>
+      extractCatalogGarmentFields(url, `photoshoot-product-${index + 1}`)
+    )
+  );
+  const product = {
+    garment: productAnalyses.map((item) => item.garment).filter(Boolean).join("; "),
+    features: productAnalyses.map((item) => item.features).filter(Boolean).join("; "),
+  };
+  const directionInstruction =
+    params.direction === "candid"
+      ? "Favor unposed transitional moments, movement, interactions with the setting, and looking away from camera."
+      : params.direction === "editorial"
+      ? "Favor composed magazine-editorial gestures and strong spatial composition while retaining natural realism."
+      : "Balance candid transitional moments with polished fashion-editorial composition; most poses should look away from camera.";
+  const productCount = params.productImageUrls.length;
+  const imageMapping =
+    productCount === 1
+      ? "Begin every prompt exactly with this semantic mapping: Image 1 is exclusively the exact product reference. Image 2 is exclusively the photographic reference."
+      : `Begin every prompt by stating that Images 1 through ${productCount} are exclusively exact views of the same product/style, and Image ${productCount + 1} is exclusively the photographic reference.`;
+
+  const result: any = await subscribeVisionWithRetry(
+    {
+      model: VISION_MODEL,
+      system_prompt: PHOTOSHOOT_PROMPT_SYSTEM_PROMPT,
+      prompt:
+        `Write exactly ${params.count} complete prompts.\n` +
+        `${imageMapping}\n` +
+        `${directionInstruction}\n\n` +
+        `PRODUCT ANALYSIS — preserve exactly:\nGarment: ${product.garment}\nVisible details: ${product.features}\n\n` +
+        "Analyze the attached photographic reference internally, then incorporate its actual photographic language into every prompt. Do not describe or copy its clothing or model.",
+      image_url: params.referenceImageUrl,
+    },
+    "photoshoot prompt generation"
+  );
+  const data = result?.data ?? result;
+  const output: string = (data?.output ?? data?.response ?? data?.text ?? "").trim();
+  if (!output) throw new Error("Photoshoot prompt generator returned no text output.");
+
+  const blocks = output
+    .split(/\n\s*\n/)
+    .map((block) => block.trim().replace(/^\s*(?:[-*•]|\d+[.)])\s*/, ""))
+    .filter(Boolean)
+    .slice(0, params.count);
+  if (blocks.length !== params.count) {
+    throw new Error(`Photoshoot prompt generator returned ${blocks.length} prompts instead of ${params.count}.`);
+  }
+  return blocks.join("\n\n");
 }
 
 const BESTSELLER_REMIX_PROMPT_SYSTEM_PROMPT = `You are a senior head designer, wholesale sales strategist, boutique buyer, ecommerce manager, and production-aware apparel developer for Davi & Dani.

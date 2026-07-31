@@ -6,6 +6,7 @@ import ImageLightbox, { ZoomButton } from "@/components/ImageLightbox";
 import type { UploadedImage } from "@/components/types";
 import { resizeIfNeeded } from "@/lib/image-resize";
 import { ProgressBar, uploadWithProgress } from "@/components/RunProgress";
+import { PHOTOSHOOT_REFERENCES } from "@/lib/photoshoot-references";
 
 async function fetchJson(label: string, input: string, init?: RequestInit): Promise<any> {
   const res = await fetch(input, init);
@@ -65,7 +66,7 @@ const IconCopy = (
   </svg>
 );
 
-type PromptTool = "recoloring" | "bestseller-remix";
+type PromptTool = "recoloring" | "bestseller-remix" | "photoshoot";
 const PROMPT_STUDIO_IMPORT_KEY = "davidani:prompt-studio:import";
 
 const toolCopy: Record<
@@ -88,11 +89,19 @@ const toolCopy: Record<
       "Upload an apparel image, then generate bestseller remix prompts. The output appears here as plain text: 10 full-paragraph prompts, separated by one blank line.",
     metricLabel: "prompts",
   },
+  photoshoot: {
+    label: "Photoshoot",
+    title: "F/W Photoshoot Generator",
+    subtitle: "Pairs your product with yesterday’s proven photographic references.",
+    placeholder:
+      "Upload a product, choose a photoshoot reference, then generate ready-to-paste Image Playground prompts.",
+    metricLabel: "prompts",
+  },
 };
 
 export default function PromptStudioClient() {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [activeTool, setActiveTool] = useState<PromptTool>("recoloring");
+  const [activeTool, setActiveTool] = useState<PromptTool>("photoshoot");
   const [uploads, setUploads] = useState<UploadedImage[]>([]);
   const [selectedUrl, setSelectedUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -104,6 +113,11 @@ export default function PromptStudioClient() {
   const [copied, setCopied] = useState(false);
   const [draggingUpload, setDraggingUpload] = useState(false);
   const [requestedColors, setRequestedColors] = useState("");
+  const [photoshootReferenceId, setPhotoshootReferenceId] = useState(
+    PHOTOSHOOT_REFERENCES[0]?.id ?? ""
+  );
+  const [photoshootCount, setPhotoshootCount] = useState(3);
+  const [photoshootDirection, setPhotoshootDirection] = useState("balanced");
 
   useEffect(() => {
     try {
@@ -116,7 +130,9 @@ export default function PromptStudioClient() {
         title: string;
       }>;
       if (!imported.imageUrl) return;
-      const tool = imported.tool === "bestseller-remix" ? "bestseller-remix" : "recoloring";
+      const tool: PromptTool = ["bestseller-remix", "photoshoot"].includes(imported.tool || "")
+        ? (imported.tool as PromptTool)
+        : "recoloring";
       const upload = {
         url: imported.imageUrl,
         name: imported.title || (tool === "bestseller-remix" ? "Bestseller remix source" : "Prompt source"),
@@ -137,7 +153,7 @@ export default function PromptStudioClient() {
     [uploads, selectedUrl]
   );
   const promptCount = prompts.trim()
-    ? activeTool === "bestseller-remix"
+    ? activeTool === "bestseller-remix" || activeTool === "photoshoot"
       ? prompts.trim().split(/\n\s*\n/).filter(Boolean).length
       : prompts.trim().split(/\r?\n/).filter(Boolean).length
     : 0;
@@ -193,14 +209,17 @@ export default function PromptStudioClient() {
     setCopied(false);
     setError(null);
     try {
-      const endpoint =
-        activeTool === "bestseller-remix"
-          ? "/api/prompt-studio/bestseller-remix"
-          : "/api/prompt-studio/recoloring";
-      const body =
-        activeTool === "bestseller-remix"
-          ? { imageUrl: selectedUrl }
-          : { imageUrl: selectedUrl, colors: requestedColors };
+      const endpoint = `/api/prompt-studio/${activeTool}`;
+      const body = activeTool === "photoshoot"
+        ? {
+            imageUrl: selectedUrl,
+            referenceId: photoshootReferenceId,
+            count: photoshootCount,
+            direction: photoshootDirection,
+          }
+        : activeTool === "bestseller-remix"
+        ? { imageUrl: selectedUrl }
+        : { imageUrl: selectedUrl, colors: requestedColors };
       const data = await fetchJson("Generate prompts", endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -387,7 +406,7 @@ export default function PromptStudioClient() {
                   Each listed color gets one prompt. Any remaining prompts are chosen by AI.
                 </p>
               </>
-            ) : (
+            ) : activeTool === "bestseller-remix" ? (
               <div className="mt-5 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-3">
                 <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
                   Bestseller Remix
@@ -397,6 +416,86 @@ export default function PromptStudioClient() {
                   front/back composition, hero graphics, construction details, trims, fabric, fit,
                   and wholesale appeal.
                 </p>
+              </div>
+            ) : (
+              <div className="mt-5 space-y-4">
+                <div>
+                  <div className="mb-2 flex items-center justify-between">
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
+                      Photographic reference
+                    </p>
+                    <span className="text-[10px] text-neutral-400">Yesterday’s library</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    {PHOTOSHOOT_REFERENCES.map((reference, index) => {
+                      const selected = photoshootReferenceId === reference.id;
+                      return (
+                        <button
+                          key={reference.id}
+                          type="button"
+                          title={reference.label}
+                          onClick={() => {
+                            setPhotoshootReferenceId(reference.id);
+                            setPrompts("");
+                          }}
+                          className={`group relative aspect-[4/5] overflow-hidden rounded-lg border transition ${
+                            selected
+                              ? "border-neutral-900 ring-2 ring-neutral-900/15"
+                              : "border-neutral-200 hover:border-neutral-400"
+                          }`}
+                        >
+                          <img
+                            src={reference.url}
+                            alt={reference.label}
+                            className="h-full w-full object-cover"
+                          />
+                          <span className="absolute left-1 top-1 rounded bg-black/75 px-1.5 py-0.5 text-[9px] font-semibold text-white">
+                            {index + 1}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="mt-2 truncate text-[11px] text-neutral-600">
+                    {PHOTOSHOOT_REFERENCES.find((r) => r.id === photoshootReferenceId)?.label}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <label className="block">
+                    <span className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
+                      Prompts
+                    </span>
+                    <select
+                      value={photoshootCount}
+                      onChange={(e) => setPhotoshootCount(Number(e.target.value))}
+                      className="mt-1.5 w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs outline-none focus:border-neutral-500"
+                    >
+                      {[1, 2, 3, 4, 5, 6].map((count) => (
+                        <option key={count} value={count}>{count}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="block">
+                    <span className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
+                      Direction
+                    </span>
+                    <select
+                      value={photoshootDirection}
+                      onChange={(e) => setPhotoshootDirection(e.target.value)}
+                      className="mt-1.5 w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs outline-none focus:border-neutral-500"
+                    >
+                      <option value="balanced">Balanced</option>
+                      <option value="candid">More candid</option>
+                      <option value="editorial">More editorial</option>
+                    </select>
+                  </label>
+                </div>
+
+                <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-3 text-[11px] leading-relaxed text-emerald-800">
+                  Locked rule: Image 1 = exact product. Image 2 = photographic reference. New
+                  model, faithful garment details, native 16:9, complete head-to-toe framing.
+                </div>
               </div>
             )}
           </section>
@@ -494,7 +593,7 @@ export default function PromptStudioClient() {
 
         <aside className="hidden w-80 shrink-0 overflow-y-auto bg-neutral-50 p-5 xl:block">
           <div className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-neutral-500">
-            Preview
+            {activeTool === "photoshoot" ? "Image order" : "Preview"}
           </div>
           <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white">
             {selectedUpload ? (
@@ -515,6 +614,37 @@ export default function PromptStudioClient() {
               </div>
             )}
           </div>
+          {activeTool === "photoshoot" ? (
+            <>
+              <p className="mt-2 text-[11px] font-semibold text-neutral-700">Image 1 · Product</p>
+              <div className="mt-4 overflow-hidden rounded-lg border border-neutral-200 bg-white">
+                {(() => {
+                  const reference = PHOTOSHOOT_REFERENCES.find(
+                    (item) => item.id === photoshootReferenceId
+                  );
+                  return reference ? (
+                    <button
+                      type="button"
+                      onClick={() => setPreviewSrc(reference.url)}
+                      className="block w-full"
+                    >
+                      <img
+                        src={reference.url}
+                        alt={reference.label}
+                        className="aspect-[4/5] w-full object-cover"
+                      />
+                    </button>
+                  ) : null;
+                })()}
+              </div>
+              <p className="mt-2 text-[11px] font-semibold text-neutral-700">
+                Image 2 · Photographic reference
+              </p>
+              <p className="mt-1 text-[10px] leading-relaxed text-neutral-500">
+                Upload these two images to Image Playground in this exact left-to-right order.
+              </p>
+            </>
+          ) : null}
         </aside>
       </div>
 
