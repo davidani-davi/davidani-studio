@@ -238,7 +238,10 @@ input[type="checkbox"]:disabled {
   top: 0;
   z-index: 30;
   display: grid;
-  grid-template-columns: minmax(190px, 0.74fr) minmax(0, 1.35fr) minmax(112px, 0.74fr);
+  grid-template-areas:
+    "brand meta"
+    "tabs tabs";
+  grid-template-columns: minmax(190px, 1fr) auto;
   align-items: center;
   gap: 18px;
   min-height: 66px;
@@ -257,10 +260,12 @@ input[type="checkbox"]:disabled {
 }
 
 .studio-header__brand {
+  grid-area: brand;
   gap: 10px;
 }
 
 .studio-header__meta {
+  grid-area: meta;
   position: relative;
   z-index: 2;
   justify-content: flex-end;
@@ -331,13 +336,15 @@ input[type="checkbox"]:disabled {
 }
 
 .studio-tabs {
+  grid-area: tabs;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-self: center;
   width: 100%;
   min-width: 0;
   max-width: 100%;
-  overflow-x: auto;
+  overflow: visible;
   border: 1px solid var(--polieco-line);
   border-radius: 9999px;
   background: rgba(235, 228, 216, 0.58);
@@ -351,7 +358,8 @@ input[type="checkbox"]:disabled {
 }
 
 .studio-tab {
-  flex: 0 0 auto;
+  flex: 1 1 auto;
+  text-align: center;
   border-radius: 9999px;
   padding: 7px 10px;
   color: var(--polieco-soft);
@@ -875,7 +883,10 @@ select {
 @media (max-width: 1023px) {
   .studio-header {
     position: static;
-    grid-template-columns: 1fr;
+    grid-template-areas:
+      "brand meta"
+      "tabs tabs";
+    grid-template-columns: minmax(0, 1fr) auto;
     gap: 10px;
     padding: 12px 16px;
   }
@@ -910,7 +921,7 @@ select {
 
 @media (min-width: 1024px) and (max-width: 1380px) {
   .studio-header {
-    grid-template-columns: minmax(180px, 0.62fr) minmax(0, 1fr) auto;
+    grid-template-columns: minmax(180px, 1fr) auto;
     gap: 12px;
     padding-inline: 16px;
   }
@@ -936,7 +947,7 @@ select {
   }
 
   body {
-    padding-bottom: calc(82px + env(safe-area-inset-bottom));
+    padding-bottom: calc(108px + env(safe-area-inset-bottom));
   }
 
   .studio-header {
@@ -995,7 +1006,8 @@ select {
     left: 10px;
     z-index: 50;
     justify-self: auto;
-    justify-content: flex-start;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     max-width: none;
     padding: 5px;
     border-color: rgba(28, 24, 20, 0.14);
@@ -1005,10 +1017,14 @@ select {
   }
 
   .studio-tab {
-    min-height: 40px;
-    padding: 10px 12px;
-    font-size: 12px;
+    display: grid;
+    min-height: 38px;
+    place-items: center;
+    padding: 7px 4px;
+    font-size: 10px;
+    line-height: 1.15;
     letter-spacing: 0;
+    white-space: normal;
   }
 
   .studio-workspace {
@@ -1174,8 +1190,9 @@ select {
 
 @media (max-width: 420px) {
   .studio-tab {
-    min-width: max-content;
-    padding-inline: 11px;
+    min-width: 0;
+    padding-inline: 3px;
+    font-size: 9px;
   }
 
   .prompt-action-bar {
