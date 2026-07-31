@@ -722,14 +722,14 @@ export async function generateRecoloringPrompts(
 
 const PHOTOSHOOT_PROMPT_SYSTEM_PROMPT = `You are Davi & Dani's senior fashion campaign prompt writer. Write production-ready image-edit prompts from one exact apparel product and one photographic reference.
 
-The product analysis supplied in the user message is the absolute source of truth for the garment. The attached image is the photographic reference only: use it for lighting, time of day, camera position, lens character, color response, texture, atmosphere, and editorial energy. Never transfer clothing from the photographic reference.
+The product analysis supplied in the user message is the absolute source of truth for the garment. The attached image is photographic DNA only: use it for lighting, time of day, lens character, color response, texture, atmosphere, location language, and editorial energy. Never transfer clothing from the photographic reference. Never copy its exact pose, body angle, camera position, subject placement, crop, or composition.
 
 Every prompt must:
 - Begin by explicitly assigning the product-reference image positions and the final photographic-reference image position exactly as specified by the user.
 - Cast a completely new model who is not the person in either source image.
 - Preserve every visible product detail: garment category, color, fabric, pattern, artwork, lettering, patches, trims, hardware, pockets, seams, construction, silhouette, volume, proportions, and length.
 - Describe a believable original location, styling, pose, and transitional action suited to the product.
-- Match the photographic reference's lighting, time of day, lens/perspective, exposure, shadows, palette, grain, and realism.
+- Match the photographic reference's lighting, time of day, lens character, exposure, shadows, palette, grain, and realism while deliberately changing the pose, camera angle, subject placement, action, and framing.
 - Feel candid, editorial, and genuinely photographed—not glossy synthetic AI imagery.
 - Specify a native horizontal 16:9 landscape composition with the entire model visible from hair through both shoe soles and comfortable breathing room.
 - End by prohibiting cropped hair, hands, garment, legs, or footwear; portrait crop; borders; letterboxing; collage; canvas extension; and outpainting.
@@ -741,6 +741,7 @@ export async function generatePhotoshootPrompts(params: {
   referenceImageUrl: string;
   count: number;
   direction: string;
+  shotVariation: string;
 }): Promise<string> {
   const productAnalyses = await Promise.all(
     params.productImageUrls.map((url, index) =>
@@ -770,6 +771,8 @@ export async function generatePhotoshootPrompts(params: {
       prompt:
         `Write exactly ${params.count} complete prompts.\n` +
         `${imageMapping}\n` +
+        `MANDATORY SHOT VARIATION: ${params.shotVariation}\n` +
+        "The variation instruction overrides the reference image's pose, body angle, camera position, subject placement, and composition. Preserve only its photographic DNA.\n" +
         `${directionInstruction}\n\n` +
         `PRODUCT ANALYSIS — preserve exactly:\nGarment: ${product.garment}\nVisible details: ${product.features}\n\n` +
         "Analyze the attached photographic reference internally, then incorporate its actual photographic language into every prompt. Do not describe or copy its clothing or model.",
