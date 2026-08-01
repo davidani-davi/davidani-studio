@@ -104,6 +104,7 @@ const styleReferenceUploadsInFlight: Partial<
 > = {};
 const cachedPublicAssetUrls: Record<string, string> = {};
 const publicAssetUploadsInFlight: Partial<Record<string, Promise<string>>> = {};
+const identityNeutralReferenceCache: Record<string, string> = {};
 
 function localPublicPathFromUrl(input: string): string | null {
   const raw = String(input || "").trim();
@@ -174,6 +175,83 @@ async function uploadLocalPublicImageUrl(input: string): Promise<string> {
 
 async function prepareGeneratorImageUrls(urls: string[]): Promise<string[]> {
   return Promise.all(urls.map((url) => uploadLocalPublicImageUrl(url)));
+}
+
+export function parseFaceBox(output: string): { x: number; y: number; width: number; height: number } | null {
+  const match = output.match(/\{[\s\S]*?\}/);
+  if (!match) return null;
+  try {
+    const value = JSON.parse(match[0]);
+    const box = {
+      x: Number(value.x),
+      y: Number(value.y),
+      width: Number(value.width),
+      height: Number(value.height),
+    };
+    if (Object.values(box).some((number) => !Number.isFinite(number))) return null;
+    if (box.width <= 0 || box.height <= 0) return null;
+    return box;
+  } catch {
+    return null;
+  }
+}
+
+async function neutralizePrimaryFace(imageUrl: string): Promise<string> {
+  if (identityNeutralReferenceCache[imageUrl]) return identityNeutralReferenceCache[imageUrl];
+  try {
+    const detection: any = await subscribeVisionWithRetry(
+      {
+        model: VISION_MODEL,
+        system_prompt:
+          "Locate the primary visible human face. Return only JSON using normalized 0-to-1 coordinates: {\"x\":number,\"y\":number,\"width\":number,\"height\":number}. The x/y coordinates are the top-left corner. If no face is visible, return null.",
+        prompt: "Return the bounding box of the primary face only.",
+        image_url: imageUrl,
+      },
+      "portrait face localization"
+    );
+    const data = detection?.data ?? detection;
+    const text = String(data?.output ?? data?.response ?? data?.text ?? "");
+    const box = parseFaceBox(text);
+    if (!box) return imageUrl;
+
+    const response = await fetch(imageUrl);
+    if (!response.ok) return imageUrl;
+    const source = Buffer.from(await response.arrayBuffer());
+    const base = sharp(source).rotate();
+    const metadata = await base.metadata();
+    if (!metadata.width || !metadata.height) return imageUrl;
+
+    const padX = box.width * 0.28;
+    const padY = box.height * 0.22;
+    const left = Math.max(0, Math.floor((box.x - padX) * metadata.width));
+    const top = Math.max(0, Math.floor((box.y - padY) * metadata.height));
+    const right = Math.min(metadata.width, Math.ceil((box.x + box.width + padX) * metadata.width));
+    const bottom = Math.min(metadata.height, Math.ceil((box.y + box.height + padY) * metadata.height));
+    const width = Math.max(1, right - left);
+    const height = Math.max(1, bottom - top);
+
+    const pixelsWide = Math.max(4, Math.round(width / 35));
+    const pixelsHigh = Math.max(4, Math.round(height / 35));
+    const obscured = await sharp(source)
+      .rotate()
+      .extract({ left, top, width, height })
+      .resize(pixelsWide, pixelsHigh, { fit: "fill" })
+      .resize(width, height, { fit: "fill", kernel: "nearest" })
+      .blur(12)
+      .toBuffer();
+    const output = await sharp(source)
+      .rotate()
+      .composite([{ input: obscured, left, top }])
+      .jpeg({ quality: 92, mozjpeg: true })
+      .toBuffer();
+    const blobPart = output.buffer.slice(output.byteOffset, output.byteOffset + output.byteLength) as ArrayBuffer;
+    const url = await uploadToFal(new Blob([blobPart], { type: "image/jpeg" }), "identity-neutral-reference.jpg");
+    identityNeutralReferenceCache[imageUrl] = url;
+    return url;
+  } catch (error) {
+    console.warn("[generate] could not neutralize portrait reference; using original:", error);
+    return imageUrl;
+  }
 }
 
 export async function getStyleReferenceUrl(
@@ -2992,9 +3070,16 @@ export async function generate(params: GenerateParams): Promise<GenerationResult
   // This reframes the task as a surgical "replace the garment on this studio
   // photo" edit (Nano Banana's training sweet spot) rather than a "composite
   // two images from scratch" task (which it handles poorly).
+  const portraitRecreation =
+    params.raw &&
+    model.inputShape === "gpt" &&
+    /\b(face|facial|portrait|identity|fictional adult|fashion model)\b/i.test(params.prompt);
   const allImageUrls = referenceUrl
     ? [referenceUrl, ...params.imageUrls]
     : [...params.imageUrls];
+  if (portraitRecreation && allImageUrls.length) {
+    allImageUrls[0] = await neutralizePrimaryFace(allImageUrls[0]);
+  }
   const generatorImageUrls = await prepareGeneratorImageUrls(allImageUrls);
 
   console.log(
@@ -3008,7 +3093,9 @@ export async function generate(params: GenerateParams): Promise<GenerationResult
   // and Gemini-based edit models respond badly to stacked preservation-speak.
   const overlayInstruction = params.raw ? "" : buildOverlayInstruction(params.overlay);
   const modelOptimizedPrompt = params.raw
-    ? params.prompt
+    ? portraitRecreation
+      ? sanitizeRejectedPortraitPrompt(params.prompt)
+      : params.prompt
     : optimizePromptForModel(params.modelId, params.prompt);
   const finalPrompt = modelOptimizedPrompt + overlayInstruction;
   let input: Record<string, unknown> = { prompt: finalPrompt };

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildGptImageOptions, sanitizeRejectedPortraitPrompt } from "./fal";
+import { buildGptImageOptions, parseFaceBox, sanitizeRejectedPortraitPrompt } from "./fal";
 
 describe("GPT Image generation options", () => {
   it("passes an explicit 16:9 aspect ratio to the provider", () => {
@@ -23,6 +23,22 @@ describe("GPT Image generation options", () => {
   it("lets the provider choose the ratio only when Auto is selected", () => {
     const options = buildGptImageOptions({ aspectRatio: "auto" });
     expect(options).not.toHaveProperty("aspect_ratio");
+  });
+});
+
+describe("portrait face localization parsing", () => {
+  it("reads normalized face coordinates from a vision response", () => {
+    expect(parseFaceBox('```json\n{"x":0.3,"y":0.1,"width":0.25,"height":0.3}\n```')).toEqual({
+      x: 0.3,
+      y: 0.1,
+      width: 0.25,
+      height: 0.3,
+    });
+  });
+
+  it("rejects missing and invalid boxes", () => {
+    expect(parseFaceBox("null")).toBeNull();
+    expect(parseFaceBox('{"x":0.2,"y":0.1,"width":0,"height":0.2}')).toBeNull();
   });
 });
 
