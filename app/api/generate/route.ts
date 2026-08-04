@@ -23,6 +23,7 @@ export async function POST(req: Request) {
       useDefaultReference,
       raw,
       deferResize,
+      normalizeBackground,
     } = body as {
       modelId: ModelId;
       prompt: string;
@@ -36,6 +37,7 @@ export async function POST(req: Request) {
       useDefaultReference?: boolean;
       raw?: boolean;
       deferResize?: boolean;
+      normalizeBackground?: boolean;
     };
 
     if (!modelId || !MODELS[modelId]) {
@@ -75,6 +77,10 @@ export async function POST(req: Request) {
         resolution
       ),
       useDefaultReference,
+      // Batch mode resizes inside this call rather than via /api/finalize-image,
+      // so it has to opt into the backdrop snap here or batch outputs would be
+      // the only Image Studio results left un-normalized.
+      normalizeBackground: raw ? false : Boolean(normalizeBackground),
       raw,
     });
 

@@ -12,6 +12,9 @@ import {
   isTrustedKieNormalizationHost,
   KIE_SUPPORTED_IMAGE_MIME_TYPES,
 } from "./kie-image-compat";
+import { STUDIO_BACKGROUND_HEX, type BackgroundCanvasMode } from "./studio-background";
+
+export { STUDIO_BACKGROUND_HEX, type BackgroundCanvasMode };
 
 let configured = false;
 function ensureConfigured() {
@@ -513,6 +516,13 @@ OUTPUT FORMAT RULES:
 export interface AnalyzeOptions {
   /** Kept for backwards compatibility; no longer used. */
   backgroundColor?: string;
+  /**
+   * Which canvas image 0 will be at generation time. Must match what
+   * lib/fal.ts `generate()` actually puts there, or the prompt will describe
+   * a canvas that isn't present — the exact failure that made back-mode
+   * outputs keep the reference photo's floor. Defaults to "preserve".
+   */
+  backgroundMode?: BackgroundCanvasMode;
 }
 
 export interface AnalyzedGarment {
@@ -566,7 +576,11 @@ async function extractCatalogGarmentFields(imageUrl: string, label = "analyze") 
   return fields;
 }
 
-function buildFrontBackContractPrompt(front: { garment: string; features: string }, back: { garment: string; features: string }) {
+function buildFrontBackContractPrompt(
+  front: { garment: string; features: string },
+  back: { garment: string; features: string },
+  backgroundMode: BackgroundCanvasMode = "preserve"
+) {
   const contractFeatures = [
     front.features ? `Front-facing source of truth: ${front.features}` : "",
     back.features ? `Back-facing source of truth: ${back.features}` : "",
@@ -578,7 +592,63 @@ function buildFrontBackContractPrompt(front: { garment: string; features: string
     .filter(Boolean)
     .join(", ");
   const garment = front.garment || back.garment || "uploaded apparel product";
-  return buildTwoImagePrompt(garment, contractFeatures);
+  return buildTwoImagePrompt(garment, contractFeatures, backgroundMode);
+}
+
+/**
+ * Nothing in the old template told the model where the background must NOT
+ * come from. The garment reference is a phone photo shot on a floor, a foam
+ * mat, a bed, or against a wall, and that environment kept bleeding into the
+ * output. This is the reverse of GARMENT_SOURCE_FIREWALL in prompt-strategy.
+ */
+const BACKGROUND_SOURCE_FIREWALL =
+  `BACKGROUND SOURCE FIREWALL: the attached garment reference photograph contributes NOTHING to the background. ` +
+  `It was shot in a real-world environment, and none of that environment may appear in the output. ` +
+  `Discard its floor, foam play-mat, puzzle-mat seams, interlocking tile edges, rug, carpet, bedding, tabletop, ` +
+  `countertop, wall, baseboard, door, hanger, hook, clothing rail, wood grain, tile grout, shadows cast onto that ` +
+  `surface, and every other environmental cue. Use it strictly as the source of the garment itself. ` +
+  `No part of the reference photo's surface or setting may survive anywhere in the frame, including the extreme ` +
+  `corners and the outer edges.`;
+
+/** The flat-fill requirement, shared by both canvas modes. */
+const BACKGROUND_UNIFORMITY_CLAUSE =
+  `BACKGROUND UNIFORMITY: the studio background must be rendered as one perfectly flat, seamless solid color — ` +
+  `hex ${STUDIO_BACKGROUND_HEX} — across the ENTIRE frame, from the top edge to the bottom edge and from the left ` +
+  `edge to the right edge. There must be no color patches, rectangular blocks, banding, tiling artifacts, ` +
+  `gradient shifts, vignetting, lighter or darker zones, or mismatched regions anywhere in the background. Every ` +
+  `pixel of the background must match ${STUDIO_BACKGROUND_HEX}; the background reads as a single continuous flat ` +
+  `surface with no visible seams or transitions.`;
+
+/**
+ * Background instructions for the given canvas mode.
+ *
+ * The "preserve" text is deliberately split into two sentences. The original
+ * single-sentence version buried the hex spec inside a nested em-dash aside
+ * and closed a parenthesis that was never opened ("...darker than #edeeee),
+ * soft diffused lighting..."), which broke the "PRESERVE: a, b, c" list at
+ * exactly the point where the background color was defined.
+ */
+function buildBackgroundClause(mode: BackgroundCanvasMode): string {
+  const preserved =
+    `PRESERVE from the primary studio photograph (do not alter any of these): soft diffused lighting, shadow ` +
+    `character, camera angle, camera distance, framing, and centered composition. `;
+
+  const intro =
+    mode === "backdrop"
+      ? `The primary image is an EMPTY studio backdrop sweep. It contains no garment, no model, and no props — it ` +
+        `exists only to define the background, and it is the sole authority for the background. Keep its color and ` +
+        `its flat, seamless, edge-to-edge character exactly. Take the lighting as soft, even, diffused studio ` +
+        `lighting with only a subtle contact shadow beneath the garment. `
+      : preserved;
+
+  return (
+    `${intro}` +
+    `STUDIO BACKGROUND: the background must be rendered as a flat, solid, seamless color that exactly matches hex ` +
+    `${STUDIO_BACKGROUND_HEX}, a soft neutral cool-gray. Do not shift it warmer, cooler, brighter, or darker than ` +
+    `${STUDIO_BACKGROUND_HEX}. ` +
+    `${BACKGROUND_UNIFORMITY_CLAUSE} ` +
+    `${BACKGROUND_SOURCE_FIREWALL} `
+  );
 }
 
 /**
@@ -591,7 +661,11 @@ function buildFrontBackContractPrompt(front: { garment: string; features: string
  * attached reference photograph"). The API array order still does the real
  * semantic work: image_urls[0] is the canvas, later images are references.
  */
-export function buildTwoImagePrompt(garment: string, features: string): string {
+export function buildTwoImagePrompt(
+  garment: string,
+  features: string,
+  backgroundMode: BackgroundCanvasMode = "preserve"
+): string {
   // Inner renderer — called once to introspect the static template, then
   // again with sanitized analyzer output.
   const render = (g: string, f: string): string => {
@@ -620,31 +694,30 @@ export function buildTwoImagePrompt(garment: string, features: string): string {
       `wide-leg, render wide-leg. If the reference is oversized or boxy, render oversized or boxy. ` +
       `Do not normalize, slim down, straighten, or otherwise alter the reference silhouette to ` +
       `match whatever garment was originally on the canvas. ` +
-      `PRESERVE from the primary studio photograph (do not alter any of these): the clean solid ` +
-      `studio background — the background must be rendered as a flat, solid, seamless color that ` +
-      `exactly matches hex #edeeee (a soft neutral cool-gray) — do not shift warmer, cooler, ` +
-      `brighter, or darker than #edeeee), soft diffused lighting, shadow character, camera angle, ` +
-      `camera distance, framing, and centered composition. Do NOT inherit garment-shape cues ` +
+      buildBackgroundClause(backgroundMode) +
+      `Do NOT inherit garment-shape cues ` +
       `(silhouette, cut, fit, leg width, torso fit, length) from the primary studio photograph — ` +
       `those come exclusively from the reference photograph. ` +
-      `BACKGROUND UNIFORMITY: the studio background must be rendered as one perfectly flat, ` +
-      `seamless solid color — hex #edeeee — across the ENTIRE frame, from the top edge to the ` +
-      `bottom edge and from the left edge to the right edge. There must be no color patches, ` +
-      `rectangular blocks, banding, tiling artifacts, gradient shifts, lighter or darker zones, ` +
-      `or mismatched regions anywhere in the background. Every pixel of the background must ` +
-      `match #edeeee; the background reads as a single continuous flat surface with no visible ` +
-      `seams or transitions. ` +
-      `STUDIO COMPOSITION STANDARD: this is a locked visual requirement — every output must match ` +
-      `the primary studio photograph's composition exactly. Do not zoom in tighter or pull back ` +
-      `wider than the canvas. The garment must occupy the same proportional area of the frame as ` +
-      `it does in the primary studio photograph — do not scale up or scale down the subject. The ` +
-      `full garment must be visible from the top (collar, hang point, or shoulder line) to the ` +
-      `bottom hem — nothing cropped, nothing cut off at the edges. The garment is centered ` +
-      `horizontally with equal left and right margins, and positioned at the same vertical height ` +
-      `as the canvas. Camera is straight-on, perpendicular to the canvas plane — no tilt, no ` +
-      `perspective shift, no barrel distortion, no lens compression change. Every output must ` +
-      `feel as though it was photographed in the same studio session, at the same camera ` +
-      `position and focal length, as the primary studio photograph. ` +
+      (backgroundMode === "backdrop"
+        ? `STUDIO COMPOSITION STANDARD: this is a locked visual requirement. Place the garment alone on the empty ` +
+          `backdrop as a single centered catalog product shot. The full garment must be visible from the top ` +
+          `(collar, hang point, or shoulder line) to the bottom hem — nothing cropped, nothing cut off at the ` +
+          `edges — with comfortable, even margins on all four sides. The garment is centered horizontally with ` +
+          `equal left and right margins and sits at the vertical center of the frame. Camera is straight-on and ` +
+          `perpendicular to the backdrop plane — no tilt, no perspective shift, no barrel distortion. Re-center ` +
+          `and straighten the garment rather than copying its position, angle, or scale from the reference ` +
+          `photograph. Output a single product image, not a collage and not a side-by-side layout. `
+        : `STUDIO COMPOSITION STANDARD: this is a locked visual requirement — every output must match ` +
+          `the primary studio photograph's composition exactly. Do not zoom in tighter or pull back ` +
+          `wider than the canvas. The garment must occupy the same proportional area of the frame as ` +
+          `it does in the primary studio photograph — do not scale up or scale down the subject. The ` +
+          `full garment must be visible from the top (collar, hang point, or shoulder line) to the ` +
+          `bottom hem — nothing cropped, nothing cut off at the edges. The garment is centered ` +
+          `horizontally with equal left and right margins, and positioned at the same vertical height ` +
+          `as the canvas. Camera is straight-on, perpendicular to the canvas plane — no tilt, no ` +
+          `perspective shift, no barrel distortion, no lens compression change. Every output must ` +
+          `feel as though it was photographed in the same studio session, at the same camera ` +
+          `position and focal length, as the primary studio photograph. `) +
       `RENDER THE REPLACEMENT GARMENT FRESH — do not copy the wrinkles, folds, creases, twists, ` +
       `asymmetries, or specific placement of whatever garment was originally in the primary ` +
       `photograph. The new ${g} must be perfectly symmetrical along the vertical centerline, ` +
@@ -679,10 +752,10 @@ export function buildTwoImagePrompt(garment: string, features: string): string {
 
 export async function analyzeGarmentToPrompt(
   imageUrl: string,
-  _opts: AnalyzeOptions = {}
+  opts: AnalyzeOptions = {}
 ): Promise<string> {
   const { garment, features } = await extractCatalogGarmentFields(imageUrl);
-  const finalPrompt = buildTwoImagePrompt(garment, features);
+  const finalPrompt = buildTwoImagePrompt(garment, features, opts.backgroundMode);
   console.log("[analyze] final prompt preview:", finalPrompt.slice(0, 240));
   return finalPrompt;
 }
@@ -690,13 +763,13 @@ export async function analyzeGarmentToPrompt(
 export async function analyzeFrontBackGarmentToPrompt(
   frontImageUrl: string,
   backImageUrl: string,
-  _opts: AnalyzeOptions = {}
+  opts: AnalyzeOptions = {}
 ): Promise<string> {
   const [front, back] = await Promise.all([
     extractCatalogGarmentFields(frontImageUrl, "analyze-front"),
     extractCatalogGarmentFields(backImageUrl, "analyze-back"),
   ]);
-  const finalPrompt = buildFrontBackContractPrompt(front, back);
+  const finalPrompt = buildFrontBackContractPrompt(front, back, opts.backgroundMode);
   console.log("[analyze-front-back] final prompt preview:", finalPrompt.slice(0, 240));
   return finalPrompt;
 }
@@ -1768,7 +1841,10 @@ export async function extractTwoPieceFields(imageUrl: string): Promise<TwoPieceF
  * share the same preservation + FRESH-RENDER clauses as the single-garment
  * template.
  */
-export function buildTwoPiecePrompt(fields: TwoPieceFields): string {
+export function buildTwoPiecePrompt(
+  fields: TwoPieceFields,
+  backgroundMode: BackgroundCanvasMode = "preserve"
+): string {
   const render = (t: string, tf: string, b: string, bf: string): string => {
     const topClause = tf
       ? ` The top has these visible properties (match exactly): ${tf}.`
@@ -1794,30 +1870,30 @@ export function buildTwoPiecePrompt(fields: TwoPieceFields): string {
       `photograph. If the reference bottom is wide-leg or barrel-fit, render wide-leg or barrel. ` +
       `If the reference top is oversized or cropped, render oversized or cropped. Do not normalize ` +
       `the reference silhouette to match whatever garment was originally on the canvas. ` +
-      `PRESERVE from the primary studio photograph (do not alter any of these): the clean solid ` +
-      `studio background — the background must be rendered as a flat, solid, seamless color that ` +
-      `exactly matches hex #edeeee (a soft neutral cool-gray) — do not shift warmer, cooler, ` +
-      `brighter, or darker than #edeeee), soft diffused lighting, shadow character, camera angle, ` +
-      `camera distance, framing, and centered composition. Do NOT inherit garment-shape cues ` +
+      buildBackgroundClause(backgroundMode) +
+      `Do NOT inherit garment-shape cues ` +
       `(silhouette, cut, fit, length) from the primary studio photograph. ` +
-      `BACKGROUND UNIFORMITY: the studio background must be rendered as one perfectly flat, ` +
-      `seamless solid color — hex #edeeee — across the ENTIRE frame, from the top edge to the ` +
-      `bottom edge and from the left edge to the right edge. There must be no color patches, ` +
-      `rectangular blocks, banding, tiling artifacts, gradient shifts, lighter or darker zones, ` +
-      `or mismatched regions anywhere in the background. Every pixel of the background must ` +
-      `match #edeeee; the background reads as a single continuous flat surface with no visible ` +
-      `seams or transitions. ` +
-      `STUDIO COMPOSITION STANDARD: this is a locked visual requirement — every output must match ` +
-      `the primary studio photograph's composition exactly. Do not zoom in tighter or pull back ` +
-      `wider than the canvas. Both the top and bottom pieces must occupy the same proportional ` +
-      `area of the frame as in the primary studio photograph — do not scale up or scale down. The ` +
-      `full set must be visible from the top (collar or shoulder line of the top piece) to the ` +
-      `bottom hem of the bottom piece — nothing cropped, nothing cut off. The set is centered ` +
-      `horizontally with equal left and right margins, and positioned at the same vertical height ` +
-      `as the canvas. Camera is straight-on, perpendicular to the canvas plane — no tilt, no ` +
-      `perspective shift, no barrel distortion, no lens compression change. Every output must ` +
-      `feel as though it was photographed in the same studio session, at the same camera ` +
-      `position and focal length, as the primary studio photograph. ` +
+      (backgroundMode === "backdrop"
+        ? `STUDIO COMPOSITION STANDARD: this is a locked visual requirement. Place the coordinated set alone on ` +
+          `the empty backdrop as a single centered catalog product shot. The full set must be visible from the ` +
+          `top (collar or shoulder line of the top piece) to the bottom hem of the bottom piece — nothing ` +
+          `cropped, nothing cut off — with comfortable, even margins on all four sides. The set is centered ` +
+          `horizontally with equal left and right margins and sits at the vertical center of the frame. Camera ` +
+          `is straight-on and perpendicular to the backdrop plane — no tilt, no perspective shift, no barrel ` +
+          `distortion. Re-center and straighten both pieces rather than copying their position, angle, or scale ` +
+          `from the reference photograph. Output a single product image, not a collage and not a side-by-side ` +
+          `layout. `
+        : `STUDIO COMPOSITION STANDARD: this is a locked visual requirement — every output must match ` +
+          `the primary studio photograph's composition exactly. Do not zoom in tighter or pull back ` +
+          `wider than the canvas. Both the top and bottom pieces must occupy the same proportional ` +
+          `area of the frame as in the primary studio photograph — do not scale up or scale down. The ` +
+          `full set must be visible from the top (collar or shoulder line of the top piece) to the ` +
+          `bottom hem of the bottom piece — nothing cropped, nothing cut off. The set is centered ` +
+          `horizontally with equal left and right margins, and positioned at the same vertical height ` +
+          `as the canvas. Camera is straight-on, perpendicular to the canvas plane — no tilt, no ` +
+          `perspective shift, no barrel distortion, no lens compression change. Every output must ` +
+          `feel as though it was photographed in the same studio session, at the same camera ` +
+          `position and focal length, as the primary studio photograph. `) +
       `COLOR AUTHORITY: match the exact hues and saturation visible in the attached reference ` +
       `photograph for both pieces. Do not desaturate, mute, dust, or shift colors toward ` +
       `catalog-neutral, sage, mauve, dusty, or earth-tone palettes. If a color reads as vivid lime ` +
@@ -1868,9 +1944,12 @@ export function buildTwoPiecePrompt(fields: TwoPieceFields): string {
  * Image Studio convenience: run the two-piece analyzer pass and return the
  * fully assembled prompt in one call, matching analyzeGarmentToPrompt's shape.
  */
-export async function analyzeTwoPieceSetToPrompt(imageUrl: string): Promise<string> {
+export async function analyzeTwoPieceSetToPrompt(
+  imageUrl: string,
+  opts: AnalyzeOptions = {}
+): Promise<string> {
   const fields = await extractTwoPieceFields(imageUrl);
-  const finalPrompt = buildTwoPiecePrompt(fields);
+  const finalPrompt = buildTwoPiecePrompt(fields, opts.backgroundMode);
   console.log("[analyze-twopiece] final prompt preview:", finalPrompt.slice(0, 240));
   return finalPrompt;
 }
@@ -2698,6 +2777,12 @@ export interface GenerateParams {
    * `null` disables post-resizing.
    */
   outputSize?: { width: number; height: number } | null;
+  /**
+   * Snap the finished render's backdrop to STUDIO_BACKGROUND_HEX. Image Studio
+   * only — model and photoshoot studios render real scenes that must not be
+   * flattened. Ignored when outputSize is null (no resize pass runs).
+   */
+  normalizeBackground?: boolean;
   numImages?: number;
   overlay?: OverlayOptions;
   /**
@@ -2830,7 +2915,8 @@ function defaultOutputSize(params: GenerateParams, _resolution: string) {
 export async function resizeGeneratedImages(
   images: GenerationResult["images"],
   size: { width: number; height: number } | null,
-  format: "png" | "jpeg" = "jpeg"
+  format: "png" | "jpeg" = "jpeg",
+  opts: { normalizeBackground?: boolean } = {}
 ): Promise<GenerationResult["images"]> {
   if (!size) return images;
 
@@ -2846,10 +2932,32 @@ export async function resizeGeneratedImages(
           position: "center",
           withoutEnlargement: false,
         });
-      const output =
+      let output =
         format === "png"
           ? await pipeline.png({ compressionLevel: 8 }).toBuffer()
           : await pipeline.jpeg({ quality: 92, mozjpeg: true }).toBuffer();
+
+      // Opt-in only — Image Studio's finalize step asks for it. Model and
+      // photoshoot studios render real scenes and must never be flattened.
+      if (opts.normalizeBackground) {
+        const { normalizeStudioBackground } = await import("./normalize-studio-background");
+        try {
+          const normalized = await normalizeStudioBackground(output, format);
+          if (normalized.applied) {
+            output = normalized.buffer;
+            console.log(
+              `[normalize-bg] snapped to ${STUDIO_BACKGROUND_HEX} ` +
+                `(coverage ${(normalized.coverage * 100).toFixed(1)}%, ` +
+                `was rgb(${normalized.sampled?.r},${normalized.sampled?.g},${normalized.sampled?.b}))`
+            );
+          } else {
+            console.log(`[normalize-bg] skipped: ${normalized.skipReason}`);
+          }
+        } catch (err) {
+          // A cosmetic pass must never cost the user a finished render.
+          console.warn("[normalize-bg] failed; using un-normalized image:", err);
+        }
+      }
       const extension = format === "png" ? "png" : "jpg";
       const contentType = format === "png" ? "image/png" : "image/jpeg";
       const blobPart = output.buffer.slice(
@@ -3126,7 +3234,8 @@ export async function generate(params: GenerateParams): Promise<GenerationResult
     const images = await resizeGeneratedImages(
       kieResult.images,
       outputSize,
-      params.format
+      params.format,
+      { normalizeBackground: params.normalizeBackground }
     );
     return {
       images,
@@ -3222,7 +3331,9 @@ export async function generate(params: GenerateParams): Promise<GenerationResult
     content_type: img.content_type,
   }));
 
-  const resizedImages = await resizeGeneratedImages(images, outputSize, params.format);
+  const resizedImages = await resizeGeneratedImages(images, outputSize, params.format, {
+    normalizeBackground: params.normalizeBackground,
+  });
 
   return {
     images: resizedImages,

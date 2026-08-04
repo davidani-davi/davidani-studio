@@ -16,7 +16,15 @@ export async function POST(req: Request) {
     if (!imageUrl || typeof imageUrl !== "string") {
       return NextResponse.json({ ok: false, error: "imageUrl is required" }, { status: 400 });
     }
-    const [finalized] = await resizeGeneratedImages([{ url: imageUrl }], IMAGE_STUDIO_OUTPUT_SIZE);
+    // normalizeBackground: the model lands a few levels off #edeeee even with
+    // a pixel-exact canvas (measured #dfe2e9 on a real run). Snapped here,
+    // deterministically, rather than by asking the prompt more nicely.
+    const [finalized] = await resizeGeneratedImages(
+      [{ url: imageUrl }],
+      IMAGE_STUDIO_OUTPUT_SIZE,
+      "jpeg",
+      { normalizeBackground: true }
+    );
     return NextResponse.json({ ok: true, url: finalized.url });
   } catch (err: any) {
     console.error("[finalize-image] error:", err);
