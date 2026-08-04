@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import JobCenter from "@/components/JobCenter";
+import StudioBootOverlay from "@/components/StudioBootOverlay";
 import TopTabs, { type StudioTab } from "@/components/TopTabs";
 import { activeStudioJobCount, subscribeStudioJobs } from "@/components/studio-job-store";
 
@@ -55,6 +56,7 @@ export default function StudioHeader({
 
   return (
     <header className="studio-header">
+      <StudioBootOverlay />
       <div className="studio-header__brand">
         <div className="studio-logo">D</div>
         <div className="min-w-0">
