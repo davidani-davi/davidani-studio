@@ -451,7 +451,7 @@ input[type="checkbox"]:disabled {
   overflow: hidden;
 }
 
-.studio-nav-panes--leaving {
+.studio-nav-panes.studio-nav-panes--leaving {
   position: absolute;
   top: 0;
   left: 0;
@@ -460,7 +460,7 @@ input[type="checkbox"]:disabled {
   animation: studio-nav-leave 0.09s ease forwards;
 }
 
-.studio-nav-panes--entering {
+.studio-nav-panes.studio-nav-panes--entering {
   animation: studio-nav-enter 0.16s cubic-bezier(0.32, 0.72, 0.25, 1) 0.09s backwards;
 }
 
