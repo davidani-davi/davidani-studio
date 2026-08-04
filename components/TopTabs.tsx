@@ -219,7 +219,10 @@ export default function TopTabs({ active }: Props) {
       if (openGroup === group) return;
       const inner = innerRef.current;
       if (openGroup !== null && inner) {
-        const h0 = inner.offsetHeight;
+        // Pin the drawer height BEFORE the pane swap commits — otherwise the
+        // browser paints one frame at the new pane's natural height (a visible
+        // pop) before the animation frame below re-pins and transitions it.
+        inner.style.height = `${inner.offsetHeight}px`;
         // Directional slide+fade handoff: the outgoing pane slides away while
         // the incoming pane slides in from the opposite side, so the drawer is
         // never empty and the two texts are spatially offset, never stacked.
@@ -233,8 +236,10 @@ export default function TopTabs({ active }: Props) {
           const pane = inner.querySelector<HTMLElement>(
             ".studio-nav-panes:not(.studio-nav-panes--leaving)"
           );
-          if (!pane) return;
-          inner.style.height = `${h0}px`;
+          if (!pane) {
+            inner.style.height = "";
+            return;
+          }
           void inner.offsetHeight;
           inner.style.transition = "height 0.26s cubic-bezier(0.32, 0.72, 0.25, 1)";
           inner.style.height = `${pane.offsetHeight}px`;
