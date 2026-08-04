@@ -201,6 +201,8 @@ const Chevron = (
 export default function TopTabs({ active }: Props) {
   const router = useRouter();
   const [openGroup, setOpenGroup] = useState<NavGroup["key"] | null>(null);
+  const [leavingGroup, setLeavingGroup] = useState<NavGroup["key"] | null>(null);
+  const leaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const shellRef = useRef<HTMLElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -217,9 +219,16 @@ export default function TopTabs({ active }: Props) {
       const inner = innerRef.current;
       if (openGroup !== null && inner) {
         const h0 = inner.offsetHeight;
+        // Keep the outgoing pane visible as a fading overlay so the drawer
+        // never shows blank panel while the height animates to the new pane.
+        setLeavingGroup(openGroup);
+        if (leaveTimer.current) clearTimeout(leaveTimer.current);
+        leaveTimer.current = setTimeout(() => setLeavingGroup(null), 150);
         setOpenGroup(group);
         requestAnimationFrame(() => {
-          const pane = inner.querySelector<HTMLElement>(".studio-nav-panes");
+          const pane = inner.querySelector<HTMLElement>(
+            ".studio-nav-panes:not(.studio-nav-panes--leaving)"
+          );
           if (!pane) return;
           inner.style.height = `${h0}px`;
           void inner.offsetHeight;
@@ -241,6 +250,7 @@ export default function TopTabs({ active }: Props) {
   const close = useCallback(() => {
     pinned.current = false;
     setOpenGroup(null);
+    setLeavingGroup(null);
   }, []);
 
   // Dropdown cards only mount when a panel opens, so Next's viewport-based
@@ -269,6 +279,7 @@ export default function TopTabs({ active }: Props) {
       document.removeEventListener("mousedown", onDown);
       if (closeTimer.current) clearTimeout(closeTimer.current);
       if (heightTimer.current) clearTimeout(heightTimer.current);
+      if (leaveTimer.current) clearTimeout(leaveTimer.current);
     };
   }, [close]);
 
@@ -282,6 +293,51 @@ export default function TopTabs({ active }: Props) {
   };
 
   const pane = openGroup ? NAV_GROUPS.find((g) => g.key === openGroup) : null;
+  const leavingPane =
+    leavingGroup && leavingGroup !== openGroup
+      ? NAV_GROUPS.find((g) => g.key === leavingGroup)
+      : null;
+
+  const renderPane = (g: NavGroup, leaving: boolean) => (
+    <div
+      className={`studio-nav-panes ${leaving ? "studio-nav-panes--leaving" : ""}`}
+      key={`${g.key}${leaving ? "-leaving" : ""}`}
+      aria-hidden={leaving || undefined}
+    >
+      {g.items.map((item) => (
+        <Link
+          key={item.id}
+          href={item.href}
+          tabIndex={leaving ? -1 : undefined}
+          className={`studio-nav-card ${item.util ? "studio-nav-card--util" : ""} ${
+            active === item.id ? "is-current" : ""
+          }`}
+          onClick={close}
+        >
+          {item.icon}
+          <span className="studio-nav-card__text">
+            <b>
+              {item.label}
+              {item.beta ? <span className="studio-nav-beta">BETA</span> : null}
+            </b>
+            <small>{item.description}</small>
+          </span>
+          {item.util ? (
+            <svg className="studio-nav-card__arr" viewBox="0 0 12 12" aria-hidden="true">
+              <path
+                d="M2.5 6h7M6.5 3l3 3-3 3"
+                stroke="currentColor"
+                strokeWidth={1.3}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                fill="none"
+              />
+            </svg>
+          ) : null}
+        </Link>
+      ))}
+    </div>
+  );
 
   return (
     <div className="studio-nav-slot">
@@ -332,41 +388,8 @@ export default function TopTabs({ active }: Props) {
         </div>
         <div className="studio-nav-drawer">
           <div ref={innerRef} className="studio-nav-drawer__inner">
-            {pane ? (
-              <div className="studio-nav-panes" key={pane.key}>
-                {pane.items.map((item) => (
-                  <Link
-                    key={item.id}
-                    href={item.href}
-                    className={`studio-nav-card ${item.util ? "studio-nav-card--util" : ""} ${
-                      active === item.id ? "is-current" : ""
-                    }`}
-                    onClick={close}
-                  >
-                    {item.icon}
-                    <span className="studio-nav-card__text">
-                      <b>
-                        {item.label}
-                        {item.beta ? <span className="studio-nav-beta">BETA</span> : null}
-                      </b>
-                      <small>{item.description}</small>
-                    </span>
-                    {item.util ? (
-                      <svg className="studio-nav-card__arr" viewBox="0 0 12 12" aria-hidden="true">
-                        <path
-                          d="M2.5 6h7M6.5 3l3 3-3 3"
-                          stroke="currentColor"
-                          strokeWidth={1.3}
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          fill="none"
-                        />
-                      </svg>
-                    ) : null}
-                  </Link>
-                ))}
-              </div>
-            ) : null}
+            {pane ? renderPane(pane, false) : null}
+            {leavingPane ? renderPane(leavingPane, true) : null}
           </div>
         </div>
       </nav>

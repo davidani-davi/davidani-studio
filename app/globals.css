@@ -447,7 +447,26 @@ input[type="checkbox"]:disabled {
 }
 
 .studio-nav-drawer__inner {
+  position: relative;
   overflow: hidden;
+}
+
+.studio-nav-panes--leaving {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+  animation: studio-nav-leave 0.15s ease forwards;
+}
+
+@keyframes studio-nav-leave {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
 }
 
 .studio-nav-panes {
