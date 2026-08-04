@@ -202,6 +202,7 @@ export default function TopTabs({ active }: Props) {
   const router = useRouter();
   const [openGroup, setOpenGroup] = useState<NavGroup["key"] | null>(null);
   const [leavingGroup, setLeavingGroup] = useState<NavGroup["key"] | null>(null);
+  const [switchDir, setSwitchDir] = useState<1 | -1>(1);
   const leaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const shellRef = useRef<HTMLElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
@@ -219,11 +220,14 @@ export default function TopTabs({ active }: Props) {
       const inner = innerRef.current;
       if (openGroup !== null && inner) {
         const h0 = inner.offsetHeight;
-        // Keep the outgoing pane visible as a fading overlay so the drawer
-        // never shows blank panel while the height animates to the new pane.
+        // Directional slide+fade handoff: the outgoing pane slides away while
+        // the incoming pane slides in from the opposite side, so the drawer is
+        // never empty and the two texts are spatially offset, never stacked.
+        const order = NAV_GROUPS.map((g) => g.key);
+        setSwitchDir(order.indexOf(group) > order.indexOf(openGroup) ? 1 : -1);
         setLeavingGroup(openGroup);
         if (leaveTimer.current) clearTimeout(leaveTimer.current);
-        leaveTimer.current = setTimeout(() => setLeavingGroup(null), 150);
+        leaveTimer.current = setTimeout(() => setLeavingGroup(null), 180);
         setOpenGroup(group);
         requestAnimationFrame(() => {
           const pane = inner.querySelector<HTMLElement>(
@@ -300,8 +304,12 @@ export default function TopTabs({ active }: Props) {
 
   const renderPane = (g: NavGroup, leaving: boolean) => (
     <div
-      className={`studio-nav-panes ${leaving ? "studio-nav-panes--leaving" : ""} ${
-        !leaving && leavingPane ? "studio-nav-panes--entering" : ""
+      className={`studio-nav-panes ${
+        leaving
+          ? `studio-nav-panes--leaving ${switchDir === -1 ? "studio-nav-panes--to-right" : ""}`
+          : leavingPane
+            ? `studio-nav-panes--entering ${switchDir === -1 ? "studio-nav-panes--from-left" : ""}`
+            : ""
       }`}
       key={`${g.key}${leaving ? "-leaving" : ""}`}
       aria-hidden={leaving || undefined}

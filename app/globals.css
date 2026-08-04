@@ -457,30 +457,66 @@ input[type="checkbox"]:disabled {
   left: 0;
   right: 0;
   pointer-events: none;
-  animation: studio-nav-leave 0.09s ease forwards;
+  animation: studio-nav-leave-left 0.16s ease forwards;
+}
+
+.studio-nav-panes.studio-nav-panes--leaving.studio-nav-panes--to-right {
+  animation-name: studio-nav-leave-right;
 }
 
 .studio-nav-panes.studio-nav-panes--entering {
-  animation: studio-nav-enter 0.16s cubic-bezier(0.32, 0.72, 0.25, 1) 0.09s backwards;
+  animation: studio-nav-enter-right 0.2s cubic-bezier(0.32, 0.72, 0.25, 1) backwards;
 }
 
-@keyframes studio-nav-enter {
+.studio-nav-panes.studio-nav-panes--entering.studio-nav-panes--from-left {
+  animation-name: studio-nav-enter-left;
+}
+
+@keyframes studio-nav-enter-right {
   from {
     opacity: 0;
+    transform: translateX(26px);
   }
   to {
     opacity: 1;
+    transform: translateX(0);
   }
 }
 
-@keyframes studio-nav-leave {
+@keyframes studio-nav-enter-left {
+  from {
+    opacity: 0;
+    transform: translateX(-26px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes studio-nav-leave-left {
   from {
     opacity: 1;
+    transform: translateX(0);
   }
   to {
     opacity: 0;
+    transform: translateX(-26px);
   }
 }
+
+@keyframes studio-nav-leave-right {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(26px);
+  }
+}
+
+
 
 .studio-nav-panes {
   display: grid;
@@ -596,11 +632,9 @@ input[type="checkbox"]:disabled {
   .studio-nav,
   .studio-nav-drawer,
   .studio-nav-chev,
-  .studio-nav-panes,
-  .studio-nav-panes--leaving,
-  .studio-nav-panes--entering {
-    animation: none;
-    transition: none;
+  .studio-nav .studio-nav-panes {
+    animation: none !important;
+    transition: none !important;
   }
 }
 
