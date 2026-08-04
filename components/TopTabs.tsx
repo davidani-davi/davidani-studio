@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -198,6 +199,7 @@ const Chevron = (
 );
 
 export default function TopTabs({ active }: Props) {
+  const router = useRouter();
   const [openGroup, setOpenGroup] = useState<NavGroup["key"] | null>(null);
   const shellRef = useRef<HTMLElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
@@ -240,6 +242,16 @@ export default function TopTabs({ active }: Props) {
     pinned.current = false;
     setOpenGroup(null);
   }, []);
+
+  // Dropdown cards only mount when a panel opens, so Next's viewport-based
+  // Link prefetch never fires for them until it's too late. Warm every nav
+  // destination once so the first click doesn't stall on RSC/chunk fetches.
+  useEffect(() => {
+    for (const group of NAV_GROUPS) {
+      for (const item of group.items) router.prefetch(item.href);
+    }
+    for (const link of PLAIN_LINKS) router.prefetch(link.href);
+  }, [router]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
