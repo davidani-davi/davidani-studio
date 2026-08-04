@@ -300,7 +300,9 @@ export default function TopTabs({ active }: Props) {
 
   const renderPane = (g: NavGroup, leaving: boolean) => (
     <div
-      className={`studio-nav-panes ${leaving ? "studio-nav-panes--leaving" : ""}`}
+      className={`studio-nav-panes ${leaving ? "studio-nav-panes--leaving" : ""} ${
+        !leaving && leavingPane ? "studio-nav-panes--entering" : ""
+      }`}
       key={`${g.key}${leaving ? "-leaving" : ""}`}
       aria-hidden={leaving || undefined}
     >

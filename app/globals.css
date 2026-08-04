@@ -457,7 +457,20 @@ input[type="checkbox"]:disabled {
   left: 0;
   right: 0;
   pointer-events: none;
-  animation: studio-nav-leave 0.15s ease forwards;
+  animation: studio-nav-leave 0.09s ease forwards;
+}
+
+.studio-nav-panes--entering {
+  animation: studio-nav-enter 0.16s cubic-bezier(0.32, 0.72, 0.25, 1) 0.09s backwards;
+}
+
+@keyframes studio-nav-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes studio-nav-leave {
@@ -583,7 +596,9 @@ input[type="checkbox"]:disabled {
   .studio-nav,
   .studio-nav-drawer,
   .studio-nav-chev,
-  .studio-nav-panes {
+  .studio-nav-panes,
+  .studio-nav-panes--leaving,
+  .studio-nav-panes--entering {
     animation: none;
     transition: none;
   }
