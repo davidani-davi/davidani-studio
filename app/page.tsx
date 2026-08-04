@@ -9,6 +9,7 @@ import type { HistoryItem, UploadedImage } from "@/components/types";
 import type { ModelId } from "@/lib/models";
 import type { OverlayMode, OverlayPlacement } from "@/lib/fal";
 import { PRODUCT_SHOT_REFERENCES } from "@/lib/product-shot-references";
+import { STUDIO_BACKDROP_PATH, STUDIO_BACKGROUND_HEX } from "@/lib/studio-background";
 import { resizeIfNeeded } from "@/lib/image-resize";
 import { optimizePromptForModel } from "@/lib/prompt-strategy";
 import {
@@ -62,9 +63,15 @@ function productShotViewDirective(mode: ProductShotMode, target?: "front" | "bac
 function buildBackProductPrompt(analyzedPrompt: string): string {
   return [
     "Create a clean ecommerce BACK product shot from the uploaded back-facing garment photo.",
+    "The first image is an EMPTY studio backdrop sweep containing no garment. It is the background authority and nothing else. The uploaded back-facing garment photo is the garment authority and contributes nothing to the background.",
     "Use the uploaded back product image itself as the structural source of truth. Preserve the rear orientation exactly: the back body panel faces the camera, sleeves extend from the back view, rear collar/neck seam stays rear-facing, and rear graphics or sleeve graphics stay in their original back-side positions.",
     "Do not use any front-facing product-shot template, front sweatshirt neckline, front chest composition, front pockets, front placket, front drawstrings, or front-facing garment structure. Do not turn the garment around.",
-    "Clean up the photo into a production-ready studio product image: remove phone/photo environment cues, center the garment, straighten the hanger/garment axis if needed, smooth wrinkles lightly, preserve fabric texture and construction, and keep realistic shadows on a clean neutral studio background.",
+    // The uploaded back photo is a phone snap on a floor/mat/bed. Naming those
+    // surfaces explicitly is what stops them surviving into the output; the
+    // old generic "remove phone/photo environment cues" was not enough and
+    // foam-mat seams kept leaking in around the frame edges.
+    `Clean up the photo into a production-ready studio product image: place the garment alone on the empty backdrop against a flat, seamless ${STUDIO_BACKGROUND_HEX} studio background covering the entire frame edge to edge, center the garment, straighten the hanger/garment axis if needed, smooth wrinkles lightly, and preserve fabric texture and construction.`,
+    "Discard every trace of the uploaded photo's setting: its floor, foam play-mat, puzzle-mat seams, interlocking tile edges, rug, carpet, bedding, tabletop, wall, baseboard, wood grain, tile grout, hanger, hook, and any shadow cast onto that surface. None of it may appear anywhere in the output, including the corners and outer edges. Keep only a subtle contact shadow beneath the garment itself.",
     "Output one vertical 2160x2700 product image, not a collage and not a side-by-side layout.",
     `Analyzer product context from this upload: ${analyzedPrompt}`,
   ].join(" ");
@@ -499,6 +506,13 @@ export default function StudioPage() {
     }
   }
 
+  /** Empty #edeeee sweep used as the back-mode canvas. Deliberately not in
+   *  PRODUCT_SHOT_REFERENCES — it's a background plate, not a pickable preset. */
+  function resolveStudioBackdropUrl(): string | null {
+    if (typeof window === "undefined") return STUDIO_BACKDROP_PATH;
+    return new URL(STUDIO_BACKDROP_PATH, window.location.origin).toString();
+  }
+
   function resolveSelectedReferenceUrl(): string | null {
     if (referenceImageUrl) return referenceImageUrl;
     if (!selectedProductShotPath) return null;
@@ -613,6 +627,9 @@ export default function StudioPage() {
           // Unified flow: every Generate click re-runs the analyzer so the prompt
           // stays in sync with the current photo + toggle state.
           setStatus("analyzing");
+          // Must agree with the canvas actually sent below: back mode gets the
+          // empty backdrop, every other mode gets a styled preset canvas.
+          const canvasMode = productShotMode === "single-back" ? "backdrop" : "preserve";
           const analyzeData = await fetchJson("Analyze", "/api/analyze", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -621,6 +638,7 @@ export default function StudioPage() {
               imageUrls: selectedUrls,
               backgroundColor,
               twoPiece,
+              backgroundMode: canvasMode,
             }),
           });
           const activePrompt = String(analyzeData.prompt || "").trim();
@@ -644,7 +662,17 @@ export default function StudioPage() {
           const generationBase = {
             modelId,
             imageUrls: selectedUrls,
-            referenceImageUrl: singleBackMode ? null : resolveSelectedReferenceUrl(),
+            // Back mode used to pass no canvas at all (null + useDefaultReference
+            // false), which left the user's phone photo as image_urls[0] — the
+            // image the prompt tells the model to preserve the background from.
+            // Result: the floor/foam mat it was shot on became the backdrop.
+            // The styled presets can't be reused here (they're all front-facing
+            // garments and would contaminate the back structure), so back mode
+            // gets a garment-free #edeeee sweep instead: background authority
+            // with nothing else to inherit.
+            referenceImageUrl: singleBackMode
+              ? resolveStudioBackdropUrl()
+              : resolveSelectedReferenceUrl(),
             useDefaultReference: !singleBackMode,
             aspectRatio: "2:3",
             resolution: "4K",
@@ -969,6 +997,9 @@ export default function StudioPage() {
             resolution: "4K",
             format,
             outputSize: IMAGE_STUDIO_OUTPUT_SIZE,
+            // Batch skips /api/finalize-image (it resizes inline), so ask for
+            // the #edeeee snap here to match single-run output.
+            normalizeBackground: true,
             // Always 1 variant per input in batch mode (see design decisions).
             numImages: 1,
             overlay: {
