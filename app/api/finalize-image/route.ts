@@ -6,7 +6,7 @@ export const runtime = "nodejs";
 export const maxDuration = 120;
 
 /**
- * Produce the locked 2160x3240 Image Studio final from a native generation
+ * Produce the locked 2160x2700 Image Studio final from a native generation
  * URL. Split out of /api/generate (see deferResize there) so the client can
  * show the native image immediately and finalize in the background.
  */

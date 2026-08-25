@@ -3,6 +3,7 @@ import { generate, type OverlayOptions } from "@/lib/fal";
 import { MODELS, type ModelId } from "@/lib/models";
 import { IMAGE_STUDIO_OUTPUT_SIZE } from "@/lib/output-sizes";
 import { resolveGenerateOutputSize } from "@/lib/generate-output-size";
+import type { PromptIntent } from "@/lib/prompt-strategy";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -24,6 +25,7 @@ export async function POST(req: Request) {
       raw,
       deferResize,
       normalizeBackground,
+      intent,
     } = body as {
       modelId: ModelId;
       prompt: string;
@@ -38,6 +40,7 @@ export async function POST(req: Request) {
       raw?: boolean;
       deferResize?: boolean;
       normalizeBackground?: boolean;
+      intent?: PromptIntent;
     };
 
     if (!modelId || !MODELS[modelId]) {
@@ -60,7 +63,7 @@ export async function POST(req: Request) {
       format,
       numImages: numImages ?? 1,
       overlay,
-      // The 2160x3240 lock stays server-side (client sizes are ignored), but
+      // The 2160x2700 lock stays server-side (client sizes are ignored), but
       // deferResize returns native model output immediately — the client
       // shows it and calls /api/finalize-image in the background to produce
       // the locked-size final, instead of blocking the response on
@@ -82,6 +85,7 @@ export async function POST(req: Request) {
       // the only Image Studio results left un-normalized.
       normalizeBackground: raw ? false : Boolean(normalizeBackground),
       raw,
+      intent,
     });
 
     return NextResponse.json({ ok: true, ...result });

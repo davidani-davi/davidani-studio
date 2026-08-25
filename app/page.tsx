@@ -9,7 +9,7 @@ import type { HistoryItem, UploadedImage } from "@/components/types";
 import type { ModelId } from "@/lib/models";
 import type { OverlayMode, OverlayPlacement } from "@/lib/fal";
 import { PRODUCT_SHOT_REFERENCES } from "@/lib/product-shot-references";
-import { STUDIO_BACKDROP_PATH, STUDIO_BACKGROUND_HEX } from "@/lib/studio-background";
+import type { CanvasChoice } from "@/lib/canvas-registry";
 import { resizeIfNeeded } from "@/lib/image-resize";
 import { optimizePromptForModel } from "@/lib/prompt-strategy";
 import {
@@ -40,11 +40,34 @@ const CURRENT_ID_KEY = "davidani_image_current_run_v1";
 const IMAGE_JOBS_KEY = "davidani_image_jobs_v1";
 const USER_ID_KEY = "davidani_user_id_v1";
 const IMAGE_STUDIO_VERSION = "2.3";
-// 2:3 portrait — must match aspectRatio "2:3" sent at generation time and the
-// server-side lock in lib/output-sizes.ts (the server ignores this client value,
-// but keeping them equal avoids confusion). A mismatched ratio causes the
-// cover-resize in lib/fal.ts to crop the image (cut-off head/feet).
-const IMAGE_STUDIO_OUTPUT_SIZE = { width: 2160, height: 3240 } as const;
+// 4:5 portrait — must match aspectRatio "4:5" sent at generation time, the
+// server-side lock in lib/output-sizes.ts (the server ignores this client
+// value, but keeping them equal avoids confusion), AND the canvas presets in
+// public/product-shots/ which are all 2160x2700. A mismatched ratio causes the
+// cover-resize in lib/fal.ts to crop the image (clipped sleeve tips).
+const IMAGE_STUDIO_OUTPUT_SIZE = { width: 2160, height: 2700 } as const;
+
+/**
+ * Clause appended to the BACK half of a front/back contract run, when that run
+ * is chained off an already-rendered front image.
+ *
+ * The approved front and back canvases come from the same shoot, so framing,
+ * scale, and background already match by construction. What they cannot pin is
+ * how THIS render interpreted the garment — two independent samples of the same
+ * SKU can land on slightly different blacks, sheens, or fabric weights. Handing
+ * the finished front render to the back call closes that gap.
+ *
+ * The wording is deliberately narrow. The front render is a colour and finish
+ * reference ONLY; without saying so explicitly the model treats the most
+ * garment-like input as a layout source and returns a second front view.
+ */
+const SIBLING_MATCH_CLAUSE =
+  " Colour and finish continuity: the final attached image is the already-approved FRONT render of this exact " +
+  "same physical garment, produced in this same session. Match its colour, tone, depth of black or dye, sheen, " +
+  "fabric weight, texture rendition, embroidery and print colour, and hardware finish exactly, so the two images " +
+  "read as one SKU photographed once. Use it for colour and finish ONLY. It is NOT a layout, view, orientation, " +
+  "or composition source: do not copy its front-facing garment structure, do not reproduce a front view, and do " +
+  "not turn the garment around. This output must remain a BACK view.";
 
 function productShotViewDirective(mode: ProductShotMode, target?: "front" | "back"): string {
   const view =
@@ -58,35 +81,6 @@ function productShotViewDirective(mode: ProductShotMode, target?: "front" | "bac
       ? " Use the selected front and back garment references together as one structural SKU contract. The first selected image is the front truth and the second selected image is the back truth. Preserve proportions, high-low hems, sleeve structure, silhouette, fabric behavior, drape, embroidery or graphic placements, pocket placement, trims, and construction consistency from both references."
       : " Use the single uploaded garment reference as the product source of truth. If the requested side is not fully visible, infer the hidden side conservatively from the visible garment construction without changing the product category, length, silhouette, fabric, color, or trims.";
   return ` Product shot side directive: ${viewText}${contractText} Output one clean 2160x2700 vertical product-shot image, not a collage and not a side-by-side layout.`;
-}
-
-function buildBackProductPrompt(analyzedPrompt: string): string {
-  return [
-    "Create a clean ecommerce BACK product shot from the uploaded back-facing garment photo.",
-    "The first image is an EMPTY studio backdrop sweep containing no garment. It is the background authority and nothing else. The uploaded back-facing garment photo is the garment authority and contributes nothing to the background.",
-    "Use the uploaded back product image itself as the structural source of truth. Preserve the rear orientation exactly: the back body panel faces the camera, sleeves extend from the back view, rear collar/neck seam stays rear-facing, and rear graphics or sleeve graphics stay in their original back-side positions.",
-    "Do not use any front-facing product-shot template, front sweatshirt neckline, front chest composition, front pockets, front placket, front drawstrings, or front-facing garment structure. Do not turn the garment around.",
-    // The uploaded back photo is a phone snap on a floor/mat/bed. Naming those
-    // surfaces explicitly is what stops them surviving into the output; the
-    // old generic "remove phone/photo environment cues" was not enough and
-    // foam-mat seams kept leaking in around the frame edges.
-    `Clean up the photo into a production-ready studio product image: place the garment alone on the empty backdrop against a flat, seamless ${STUDIO_BACKGROUND_HEX} studio background covering the entire frame edge to edge, center the garment, straighten the hanger/garment axis if needed, smooth wrinkles lightly, and preserve fabric texture and construction.`,
-    "Discard every trace of the uploaded photo's setting: its floor, foam play-mat, puzzle-mat seams, interlocking tile edges, rug, carpet, bedding, tabletop, wall, baseboard, wood grain, tile grout, hanger, hook, and any shadow cast onto that surface. None of it may appear anywhere in the output, including the corners and outer edges. Keep only a subtle contact shadow beneath the garment itself.",
-    "Output one vertical 2160x2700 product image, not a collage and not a side-by-side layout.",
-    `Analyzer product context from this upload: ${analyzedPrompt}`,
-  ].join(" ");
-}
-
-function buildV17Prompt(analyzedPrompt: string): string {
-  return [
-    "Use the clean studio style reference/base image as the base image and keep the clean studio background, lighting, and camera angle unchanged.",
-    "Replace the garment with the exact apparel product from the uploaded product reference image while strictly preserving its original garment category, silhouette, volume, proportions, construction, fabric texture, print, trims, pockets, closures, waistband or neckline, sleeve or leg shape, hems, and material behavior.",
-    "Do not convert the uploaded product into pants unless the uploaded product is actually pants. If the uploaded product is a jacket, hoodie, cardigan, top, dress, skirt, set, or outerwear piece, keep that exact product category.",
-    "Restyle the garment into a professionally styled Zara-inspired flat lay/product image by centering it precisely, straightening the main garment axis, balancing sleeves, legs, panels, hems, waistbands, necklines, or openings according to the actual garment type, and creating subtle symmetry without changing the product identity.",
-    "Apply light tension to smooth wrinkles while keeping natural fabric character, ensure hems and openings are intentionally positioned, and create controlled, realistic folds.",
-    "Maintain realistic shadows and crisp edges, output a 4K 2:3 product image.",
-    `Analyzer product context from this upload: ${analyzedPrompt}`,
-  ].join(" ");
 }
 
 interface ImageJob {
@@ -191,7 +185,7 @@ function getOrCreateUserId(): string {
 export default function StudioPage() {
   // Controls
   const [modelId, setModelId] = useState<ModelId>("nano-banana");
-  const [aspect, setAspect] = useState<string>("2:3");
+  const [aspect, setAspect] = useState<string>("4:5");
   const [resolution, setResolution] = useState<string>("4K");
   const [format, setFormat] = useState<"png" | "jpeg">("png");
   const [numImages, setNumImages] = useState<number>(1);
@@ -219,6 +213,11 @@ export default function StudioPage() {
 
   // Style reference (image 2). Image Studio presets live under
   // public/product-shots; custom uploads override the selected preset.
+  // False while the canvas is chosen automatically from the garment category
+  // (the default). Flipped once the user picks a preset by hand, after which
+  // their choice wins — auto-routing must never silently override an explicit
+  // selection, or the preset thumbnail would stop matching what is generated.
+  const [canvasOverridden, setCanvasOverridden] = useState(false);
   const [selectedProductShotPath, setSelectedProductShotPath] = useState<string>(
     PRODUCT_SHOT_REFERENCES[0]?.path ?? ""
   );
@@ -506,11 +505,10 @@ export default function StudioPage() {
     }
   }
 
-  /** Empty #edeeee sweep used as the back-mode canvas. Deliberately not in
-   *  PRODUCT_SHOT_REFERENCES — it's a background plate, not a pickable preset. */
-  function resolveStudioBackdropUrl(): string | null {
-    if (typeof window === "undefined") return STUDIO_BACKDROP_PATH;
-    return new URL(STUDIO_BACKDROP_PATH, window.location.origin).toString();
+  /** Absolute URL for a canvas path returned by the analyzer's registry. */
+  function absoluteCanvasUrl(path: string): string {
+    if (typeof window === "undefined") return path;
+    return new URL(path, window.location.origin).toString();
   }
 
   function resolveSelectedReferenceUrl(): string | null {
@@ -627,9 +625,12 @@ export default function StudioPage() {
           // Unified flow: every Generate click re-runs the analyzer so the prompt
           // stays in sync with the current photo + toggle state.
           setStatus("analyzing");
-          // Must agree with the canvas actually sent below: back mode gets the
-          // empty backdrop, every other mode gets a styled preset canvas.
-          const canvasMode = productShotMode === "single-back" ? "backdrop" : "preserve";
+          // The analyzer now chooses the canvas: it infers the garment category
+          // and returns the approved canvas per view, falling back to the empty
+          // #edeeee sweep for a category with no approved flat lay. It returns
+          // the prompt assembled BOTH ways, because one run can need both — a
+          // contract run on a category with a front canvas but no back one
+          // renders front in "preserve" and back in "backdrop".
           const analyzeData = await fetchJson("Analyze", "/api/analyze", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -638,23 +639,62 @@ export default function StudioPage() {
               imageUrls: selectedUrls,
               backgroundColor,
               twoPiece,
-              backgroundMode: canvasMode,
             }),
           });
-          const activePrompt = String(analyzeData.prompt || "").trim();
+
+          const singleBackMode = productShotMode === "single-back";
+          const contractMode = productShotMode === "front-back-contract";
+          const primaryView: "front" | "back" = singleBackMode ? "back" : "front";
+
+          // A hand-picked preset (or an uploaded reference) wins over routing.
+          const overrideUrl = canvasOverridden ? resolveSelectedReferenceUrl() : null;
+          const routed = analyzeData.canvas as
+            | { front: CanvasChoice; back: CanvasChoice }
+            | undefined;
+          const canvasFor = (view: "front" | "back"): CanvasChoice | null =>
+            routed ? routed[view] : null;
+
+          // Prompt must describe the canvas actually sent, so mode and canvas
+          // are always read from the same CanvasChoice.
+          const promptForView = (view: "front" | "back"): string => {
+            const choice: CanvasChoice | null = canvasFor(view);
+            const byMode = analyzeData.promptByMode as
+              | Record<"preserve" | "backdrop", string>
+              | undefined;
+            if (overrideUrl) {
+              // Manual canvases are all real flat lays, so preserve is correct.
+              return String(byMode?.preserve || analyzeData.prompt || "").trim();
+            }
+            if (choice && byMode?.[choice.mode]) return String(byMode[choice.mode]).trim();
+            return String(analyzeData.prompt || "").trim();
+          };
+          const canvasUrlFor = (view: "front" | "back"): string | null => {
+            if (overrideUrl) return overrideUrl;
+            const choice = canvasFor(view);
+            return choice ? absoluteCanvasUrl(choice.path) : resolveSelectedReferenceUrl();
+          };
+
+          const activePrompt = promptForView(primaryView);
           if (!activePrompt) throw new Error("Analyzer returned empty prompt");
+          if (routed && !overrideUrl) {
+            const c = canvasFor(primaryView)!;
+            console.log(
+              `[image-studio] category=${analyzeData.category} canvas=${c.path} ` +
+                `mode=${c.mode}${c.isFallback ? " (empty-sweep fallback)" : ""}`
+            );
+          }
 
           const studioFeedbackMemory = feedbackMemorySuffix("image");
           const promptWithSideDirective = `${activePrompt}${productShotViewDirective(productShotMode)}`;
           setPrompt(promptWithSideDirective);
 
-          const singleBackMode = productShotMode === "single-back";
+          // The single locked recipe: analyzer fields folded into
+          // buildTwoImagePrompt (lib/fal.ts), plus the side directive and any
+          // feedback memory. This used to be one arm of an A/B against the
+          // shorter buildV17Prompt template; that test is settled, so both
+          // variants below now run this prompt and differ only by sampling.
           const promptWithMemory = `${promptWithSideDirective}${studioFeedbackMemory}`;
-          const v17Prompt = `${
-            singleBackMode ? buildBackProductPrompt(activePrompt) : buildV17Prompt(activePrompt)
-          }${productShotViewDirective(productShotMode)}${studioFeedbackMemory}`;
-          const oldPromptUsed = optimizePromptForModel(modelId, promptWithMemory);
-          const newPromptUsed = optimizePromptForModel(modelId, v17Prompt);
+          const promptUsed = optimizePromptForModel(modelId, promptWithMemory, "product-shot");
 
           updateImageJob(jobId, { status: "generating" });
           setBackgroundJobs(readImageJobs());
@@ -662,23 +702,22 @@ export default function StudioPage() {
           const generationBase = {
             modelId,
             imageUrls: selectedUrls,
-            // Back mode used to pass no canvas at all (null + useDefaultReference
-            // false), which left the user's phone photo as image_urls[0] — the
-            // image the prompt tells the model to preserve the background from.
-            // Result: the floor/foam mat it was shot on became the backdrop.
-            // The styled presets can't be reused here (they're all front-facing
-            // garments and would contaminate the back structure), so back mode
-            // gets a garment-free #edeeee sweep instead: background authority
-            // with nothing else to inherit.
-            referenceImageUrl: singleBackMode
-              ? resolveStudioBackdropUrl()
-              : resolveSelectedReferenceUrl(),
-            useDefaultReference: !singleBackMode,
-            aspectRatio: "2:3",
+            // Never null in practice: the registry falls back to the empty
+            // #edeeee sweep rather than returning nothing, because a missing
+            // canvas puts the user's phone photo at image_urls[0] and the
+            // prompt then preserves the floor it was shot on.
+            // Contract mode overrides this per-call below.
+            referenceImageUrl: canvasUrlFor(primaryView),
+            useDefaultReference: true,
+            aspectRatio: "4:5",
             resolution: "4K",
+            // Image Studio is a flat-lay product studio. Without this the
+            // server falls back to Model Studio's prefix, which explicitly
+            // forbids flat lays (see PromptIntent in lib/prompt-strategy).
+            intent: "product-shot",
             format,
             outputSize: IMAGE_STUDIO_OUTPUT_SIZE,
-            // Show native model output immediately; the 2160x3240 final is
+            // Show native model output immediately; the 2160x2700 final is
             // produced by /api/finalize-image in the background below.
             deferResize: true,
             numImages: 1,
@@ -691,42 +730,70 @@ export default function StudioPage() {
               fontSize,
             },
           };
-          const contractMode = productShotMode === "front-back-contract";
-          const frontContractPrompt = `${activePrompt}${productShotViewDirective(
+          const frontContractPrompt = `${promptForView("front")}${productShotViewDirective(
             productShotMode,
             "front"
           )}${studioFeedbackMemory}`;
-          const backContractPrompt = `${activePrompt}${productShotViewDirective(
+          const backContractPrompt = `${promptForView("back")}${productShotViewDirective(
             productShotMode,
             "back"
           )}${studioFeedbackMemory}`;
+          // Contract mode genuinely needs two different prompts (front truth vs
+          // back truth). Every other mode sends the same prompt twice and
+          // relies on the model's own sampling for two takes to pick from.
           const leftPrompt = contractMode ? frontContractPrompt : promptWithMemory;
-          const rightPrompt = contractMode ? backContractPrompt : v17Prompt;
-          const leftPromptUsed = optimizePromptForModel(modelId, leftPrompt);
-          const rightPromptUsed = optimizePromptForModel(modelId, rightPrompt);
+          const rightPrompt = contractMode ? backContractPrompt : promptWithMemory;
+          const leftPromptUsed = contractMode
+            ? optimizePromptForModel(modelId, leftPrompt, "product-shot")
+            : promptUsed;
+          // Contract mode appends SIBLING_MATCH_CLAUSE to the back call below.
+          // Record what is actually sent, so the history prompt matches the run.
+          const rightPromptUsed = contractMode
+            ? optimizePromptForModel(
+                modelId,
+                `${rightPrompt}${SIBLING_MATCH_CLAUSE}`,
+                "product-shot"
+              )
+            : promptUsed;
 
-          const [leftData, rightData] = await Promise.all([
-            fetchJson("Generate Image A", "/api/generate", {
+          const generateVariant = (label: string, body: Record<string, unknown>) =>
+            fetchJson(label, "/api/generate", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                ...generationBase,
-                prompt: leftPrompt,
-              }),
-            }),
-            fetchJson("Generate Image B", "/api/generate", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                ...generationBase,
-                prompt: rightPrompt,
-              }),
-            }),
-          ]);
+              body: JSON.stringify({ ...generationBase, ...body }),
+            });
+
+          let leftData: any;
+          let rightData: any;
+          if (contractMode) {
+            // Chained, not parallel. The back render is the SAME SKU as the
+            // front, so it waits for the front and then matches its colour and
+            // finish. Costs one extra round-trip of latency and buys front/back
+            // pairs that read as one shoot instead of two independent samples.
+            leftData = await generateVariant("Generate front", { prompt: leftPrompt });
+            const frontUrl = leftData.images?.[0]?.url;
+            rightData = await generateVariant("Generate back", {
+              // Contract mode's second call is the BACK render, so it needs the
+              // back canvas. It was inheriting generationBase's front canvas,
+              // which asked the model to match a front-facing composition while
+              // rendering a back-facing garment.
+              referenceImageUrl: canvasUrlFor("back"),
+              // Front render goes last so it stays a trailing reference rather
+              // than displacing the user's own garment photos.
+              imageUrls: frontUrl ? [...selectedUrls, frontUrl] : selectedUrls,
+              prompt: frontUrl ? `${rightPrompt}${SIBLING_MATCH_CLAUSE}` : rightPrompt,
+            });
+          } else {
+            // Two independent takes of one prompt — genuinely parallel.
+            [leftData, rightData] = await Promise.all([
+              generateVariant("Generate variant 1", { prompt: leftPrompt }),
+              generateVariant("Generate variant 2", { prompt: rightPrompt }),
+            ]);
+          }
 
           const leftUrl = leftData.images?.[0]?.url;
           const rightUrl = rightData.images?.[0]?.url;
-          if (!leftUrl || !rightUrl) throw new Error("A/B generator did not return both images.");
+          if (!leftUrl || !rightUrl) throw new Error("Generator did not return both variants.");
 
           const item: HistoryItem = {
             id: jobId,
@@ -734,20 +801,26 @@ export default function StudioPage() {
             modelId,
             prompt: contractMode
               ? `Front product shot prompt:\n${leftPromptUsed}\n\nBack product shot prompt:\n${rightPromptUsed}`
-              : `Image A / current prompt:\n${oldPromptUsed}\n\nImage B / V2.2 prompt:\n${newPromptUsed}`,
+              : promptUsed,
             imageUrls: [leftUrl, rightUrl],
             referenceUrls: [...selectedUrls],
             sourceImageUrls: [...selectedUrls],
-            aspect: "2:3",
+            aspect: "4:5",
             resolution: "4K",
             format,
             styleNumber: styleNumber.trim() || undefined,
-            prompts: contractMode ? [leftPromptUsed, rightPromptUsed] : [oldPromptUsed, newPromptUsed],
+            prompts: contractMode ? [leftPromptUsed, rightPromptUsed] : [promptUsed, promptUsed],
             viewLabels: contractMode
               ? ["Front", "Back"]
-              : [productShotMode === "single-back" ? "Back A" : "Front A", productShotMode === "single-back" ? "Back B" : "Front B"],
+              : [
+                  singleBackMode ? "Back · Variant 1" : "Front · Variant 1",
+                  singleBackMode ? "Back · Variant 2" : "Front · Variant 2",
+                ],
+            // Reuses the two-up picker UI. Both variants now come from the
+            // same prompt, so this is a "pick your favourite take" chooser
+            // rather than a prompt experiment.
             abTest: {
-              version: "2.2",
+              version: "2.3",
             },
           };
           // Native images render right away; the locked-size finals swap in
@@ -858,8 +931,9 @@ export default function StudioPage() {
           prompt: feedbackPrompt,
           imageUrls: [sourceUrl, markupUrl].filter(Boolean),
           referenceImageUrl: resolveSelectedReferenceUrl(),
-          aspectRatio: "2:3",
+          aspectRatio: "4:5",
           resolution: "4K",
+          intent: "product-shot",
           format,
           outputSize: IMAGE_STUDIO_OUTPUT_SIZE,
           numImages: 1,
@@ -877,11 +951,11 @@ export default function StudioPage() {
         id: jobId,
         timestamp: Date.now(),
         modelId,
-        prompt: optimizePromptForModel(modelId, feedbackPrompt),
+        prompt: optimizePromptForModel(modelId, feedbackPrompt, "product-shot"),
         imageUrls: data.images.map((i: any) => i.url),
         referenceUrls: [sourceUrl],
         sourceImageUrls: [sourceUrl],
-        aspect: "2:3",
+        aspect: "4:5",
         resolution: "4K",
         format,
         styleNumber: styleNumber.trim() || undefined,
@@ -948,7 +1022,7 @@ export default function StudioPage() {
       prompt: "", // will be set to the first successful prompt below
       imageUrls: [],
       referenceUrls: [],
-      aspect: "2:3",
+      aspect: "4:5",
       resolution: "4K",
       format,
       styleNumber: styleNumber.trim() || undefined,
@@ -964,15 +1038,40 @@ export default function StudioPage() {
       // --- Analyze this specific image ---
       setBatchProgress((p) => (p ? { ...p, stage: "analyzing" } : p));
       let imagePrompt: string;
+      let promptForDisplay = "";
+      // Routed per image, not once for the batch: a batch can mix a bomber, a
+      // dress and a skirt, and each needs its own canvas.
+      let imageCanvasUrl: string | null = null;
       try {
         const analyzeData = await fetchJson("Analyze", "/api/analyze", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ imageUrl: sourceUrl, backgroundColor, twoPiece }),
         });
-        imagePrompt = (analyzeData.prompt as string).trim();
+        const batchFront = (analyzeData.canvas as { front?: CanvasChoice } | undefined)?.front;
+        const batchByMode = analyzeData.promptByMode as
+          | Record<"preserve" | "backdrop", string>
+          | undefined;
+        if (canvasOverridden) {
+          imageCanvasUrl = resolveSelectedReferenceUrl();
+          imagePrompt = String(batchByMode?.preserve || analyzeData.prompt || "").trim();
+        } else if (batchFront) {
+          imageCanvasUrl = absoluteCanvasUrl(batchFront.path);
+          imagePrompt = String(
+            batchByMode?.[batchFront.mode] || analyzeData.prompt || ""
+          ).trim();
+        } else {
+          imageCanvasUrl = resolveSelectedReferenceUrl();
+          imagePrompt = String(analyzeData.prompt || "").trim();
+        }
         if (!imagePrompt) throw new Error("Analyzer returned empty prompt");
-        imagePrompt = optimizePromptForModel(modelId, imagePrompt);
+        // Do NOT overwrite imagePrompt with the optimized version. /api/generate
+        // runs optimizePromptForModel server-side on whatever it receives, so
+        // prefixing client-side too stacked the whole prefix twice in batch
+        // mode (single-run mode has always sent the raw prompt and let the
+        // server do it once). The optimized string is display-only, matching
+        // what single-run mode records in history.
+        promptForDisplay = optimizePromptForModel(modelId, imagePrompt, "product-shot");
       } catch (err: any) {
         failures.push({ url: sourceUrl, error: err?.message || "Analyze failed" });
         setBatchProgress((p) =>
@@ -992,9 +1091,13 @@ export default function StudioPage() {
             prompt: imagePrompt,
             // Batch mode: each input is its own generation — use only this URL.
             imageUrls: [sourceUrl],
-            referenceImageUrl: resolveSelectedReferenceUrl(),
-            aspectRatio: "2:3",
+            referenceImageUrl: imageCanvasUrl,
+            aspectRatio: "4:5",
             resolution: "4K",
+            // Image Studio is a flat-lay product studio. Without this the
+            // server falls back to Model Studio's prefix, which explicitly
+            // forbids flat lays (see PromptIntent in lib/prompt-strategy).
+            intent: "product-shot",
             format,
             outputSize: IMAGE_STUDIO_OUTPUT_SIZE,
             // Batch skips /api/finalize-image (it resizes inline), so ask for
@@ -1022,10 +1125,10 @@ export default function StudioPage() {
             item.id === batchId
               ? {
                   ...item,
-                  prompt: item.prompt || imagePrompt,
+                  prompt: item.prompt || promptForDisplay,
                   imageUrls: [...item.imageUrls, ...outputUrls],
                   referenceUrls: [...item.referenceUrls, sourceUrl],
-                  prompts: [...(item.prompts ?? []), imagePrompt],
+                  prompts: [...(item.prompts ?? []), promptForDisplay],
                 }
               : item
           )
@@ -1145,6 +1248,8 @@ export default function StudioPage() {
             onProductShotSelect={(path) => {
               setSelectedProductShotPath(path);
               setReferenceImageUrl(null);
+              // Touching the picker opts this run out of category routing.
+              setCanvasOverridden(true);
             }}
             onReferenceReplace={replaceReferenceImage}
             onReferenceReset={resetReferenceImage}

@@ -127,7 +127,7 @@ export function computeBackgroundMask(
   }
 
   // --- Flood fill inward from every border pixel within tolerance ---
-  // Iterative with an explicit stack: at 2160x3240 a recursive fill would
+  // Iterative with an explicit stack: at 2160x2700 a recursive fill would
   // blow the call stack.
   const mask = new Uint8Array(pixelCount);
   const stack = new Int32Array(pixelCount);

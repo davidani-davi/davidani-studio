@@ -3,7 +3,7 @@ import sharp from "sharp";
 import fs from "node:fs";
 import path from "node:path";
 import { MODELS, type ModelId } from "./models";
-import { optimizePromptForModel } from "./prompt-strategy";
+import { optimizePromptForModel, type PromptIntent } from "./prompt-strategy";
 import type { CadSpec } from "./cad-prompts";
 import { CAD_SPEC_SYSTEM_PROMPT, CAD_SPEC_USER_PROMPT } from "./cad-prompts";
 import {
@@ -386,16 +386,47 @@ function inferGarmentCategory(prompt: string): StyleReferenceKind {
  * "quilted", "knit", "denim") are intentionally omitted because those bind
  * to concrete garment parts and repeating them is descriptive, not diluting.
  */
-const DESCRIPTOR_TOKENS = new Set<string>([
-  // drape / fit / silhouette character
-  "soft", "gentle", "natural", "relaxed", "loose", "light", "subtle",
-  "tailored", "crisp", "smooth", "clean", "fresh", "defined", "balanced",
+/**
+ * Quality/manner descriptors. These dilute when repeated, so a token already
+ * present in the static template is stripped from analyzer output.
+ */
+const QUALITY_DESCRIPTORS = new Set<string>([
+  // drape / handfeel character
+  "soft", "gentle", "natural", "light", "subtle",
+  "crisp", "smooth", "clean", "fresh", "defined", "balanced",
   "delicate", "cozy", "rich", "fine", "even",
-  "structured", "fluid", "fitted", "cropped", "oversized", "slim", "boxy",
   // manner / quality adverbs
   "perfect", "perfectly", "neat", "neatly", "freshly",
+]);
+
+/**
+ * Identity descriptors: cut/fit words and color-intensity words. These name
+ * WHAT THE PRODUCT IS, not how nicely it is presented, and by the same logic
+ * that exempts nouns and pattern names above, repeating them is descriptive
+ * rather than diluting.
+ *
+ * They are deliberately NOT seeded from the template. The template names
+ * several of them as examples — SILHOUETTE AUTHORITY cites "oversized or
+ * boxy", the flat-lay clause cites "cropped" — and seeding those deleted the
+ * analyzer's silhouette word from the garment slot, which is the single most
+ * load-bearing thing ANALYSIS_SYSTEM_PROMPT is asked to produce. Measured
+ * before this split: "boxy black cotton bomber jacket" assembled as "black
+ * cotton bomber jacket", and "cropped white ribbed cotton tank top" lost
+ * "cropped" — a different product, not a differently-worded one.
+ *
+ * They still dedupe against each other across the GARMENT and FEATURES lines.
+ */
+const IDENTITY_DESCRIPTORS = new Set<string>([
+  // silhouette / cut / fit
+  "relaxed", "loose", "tailored", "structured", "fluid",
+  "fitted", "cropped", "oversized", "slim", "boxy",
   // color intensity / temperature
   "bright", "vivid", "saturated", "deep", "pale", "warm", "cool",
+]);
+
+const DESCRIPTOR_TOKENS = new Set<string>([
+  ...QUALITY_DESCRIPTORS,
+  ...IDENTITY_DESCRIPTORS,
 ]);
 
 /**
@@ -418,7 +449,9 @@ function descriptorsInTemplate(text: string): Set<string> {
   const used = new Set<string>();
   const matches = text.toLowerCase().match(/\b[a-z][a-z-]*\b/g) || [];
   for (const w of matches) {
-    if (DESCRIPTOR_TOKENS.has(w)) used.add(w);
+    // QUALITY only — see IDENTITY_DESCRIPTORS for why cut/fit and color words
+    // must survive a collision with the template's own examples.
+    if (QUALITY_DESCRIPTORS.has(w)) used.add(w);
   }
   return used;
 }
@@ -548,7 +581,7 @@ function parseGarmentAnalysisOutput(output: string, label: string): { garment: s
   return { garment, features };
 }
 
-async function extractCatalogGarmentFields(imageUrl: string, label = "analyze") {
+export async function extractCatalogGarmentFields(imageUrl: string, label = "analyze") {
   const result: any = await subscribeVisionWithRetry(
     {
       model: VISION_MODEL,
@@ -576,7 +609,7 @@ async function extractCatalogGarmentFields(imageUrl: string, label = "analyze") 
   return fields;
 }
 
-function buildFrontBackContractPrompt(
+export function buildFrontBackContractPrompt(
   front: { garment: string; features: string },
   back: { garment: string; features: string },
   backgroundMode: BackgroundCanvasMode = "preserve"
@@ -630,15 +663,17 @@ const BACKGROUND_UNIFORMITY_CLAUSE =
  */
 function buildBackgroundClause(mode: BackgroundCanvasMode): string {
   const preserved =
-    `PRESERVE from the primary studio photograph (do not alter any of these): soft diffused lighting, shadow ` +
-    `character, camera angle, camera distance, framing, and centered composition. `;
+    `PRESERVE from the primary studio photograph (do not alter any of these): its soft diffused lighting, its ` +
+    `shadow character, camera angle, camera distance, framing, and centered composition. The canvas is a ` +
+    `near-shadowless studio setup — match it, and do not add a cast shadow, drop shadow, or grounding shadow ` +
+    `that the canvas does not already have. `;
 
   const intro =
     mode === "backdrop"
       ? `The primary image is an EMPTY studio backdrop sweep. It contains no garment, no model, and no props — it ` +
         `exists only to define the background, and it is the sole authority for the background. Keep its color and ` +
-        `its flat, seamless, edge-to-edge character exactly. Take the lighting as soft, even, diffused studio ` +
-        `lighting with only a subtle contact shadow beneath the garment. `
+        `its flat, seamless, edge-to-edge character exactly. Take the lighting as even, diffused, near-shadowless ` +
+        `studio lighting: no cast shadow and no drop shadow on the background beneath or beside the garment. `
       : preserved;
 
   return (
@@ -718,20 +753,46 @@ export function buildTwoImagePrompt(
           `perspective shift, no barrel distortion, no lens compression change. Every output must ` +
           `feel as though it was photographed in the same studio session, at the same camera ` +
           `position and focal length, as the primary studio photograph. `) +
-      `RENDER THE REPLACEMENT GARMENT FRESH — do not copy the wrinkles, folds, creases, twists, ` +
-      `asymmetries, or specific placement of whatever garment was originally in the primary ` +
-      `photograph. The new ${g} must be perfectly symmetrical along the vertical centerline, ` +
-      `neatly laid flat with smooth, freshly-steamed fabric, no wrinkles, no creases, no bunched ` +
-      `or twisted sections, and in the canonical catalog layout for its garment type (tops: ` +
-      `sleeves angled slightly downward and symmetric; pants: waistband centered at top with the ` +
-      `two legs laid parallel and symmetric about the vertical centerline WHILE RETAINING the ` +
-      `reference garment's true leg-shape and leg-width (a barrel leg stays barrel, a flare stays ` +
-      `flared, a wide leg stays wide); dresses and skirts: hem fanning gently and symmetrically ` +
-      `per the reference silhouette). Symmetry and flat-lay cleanliness must NOT override the ` +
-      `reference silhouette. ` +
+      // "folds" is deliberately absent from this prohibition: the filled
+      // flat-lay clause below REQUIRES natural folds, and listing them here as
+      // something to avoid put a ban and a requirement a sentence apart.
+      `RENDER THE REPLACEMENT GARMENT FRESH — do not copy the specific wrinkles, creases, twists, ` +
+      `asymmetries, or placement of whatever garment was originally in the primary photograph; ` +
+      `those belong to that garment, not to this one. Arrange the new ${g} as a FILLED flat lay: ` +
+      `the garment lies flat but is gently padded from within so it holds three-dimensional body, ` +
+      `the way a steamed sample is stuffed for a catalog shoot. Sleeves, legs, torso, and collar ` +
+      `keep their rounded tubular volume instead of being pressed flat, ribbed collars, cuffs, and ` +
+      `hems keep their raised three-dimensional shape, and the garment sits slightly proud of the ` +
+      `background rather than reading as flattened cloth. ` +
+      // The old text asked for zero wrinkles AND perfect mirror symmetry. Both
+      // over-shoot the approved comps, which show soft breaks at the elbow and
+      // hem and a sleeve that hangs differently from its opposite. Asking for
+      // an ironed, mirrored garment is what produced the cardboard-cutout look.
+      `Keep the fabric smoothly steamed and free of harsh creases, storage folds, and bunched or ` +
+      `twisted sections, but retain the soft natural folds a filled garment makes where the fabric ` +
+      `breaks — at the elbow, under the arm, and above the hem. Do not iron the garment into a ` +
+      `flat plane. ` +
+      `Place it in the canonical catalog layout for its garment type (tops: sleeves relaxed, ` +
+      `angled slightly downward and away from the body, each holding its own volume; pants: ` +
+      `waistband centered at top with the two legs laid parallel about the vertical centerline ` +
+      `WHILE RETAINING the reference garment's true leg-shape and leg-width (a barrel leg stays ` +
+      `barrel, a flare stays flared, a wide leg stays wide); dresses and skirts: hem fanning ` +
+      `gently per the reference silhouette). The garment is balanced and centered on the vertical ` +
+      `centerline, with left and right sitting at matching heights — but it is a real garment ` +
+      `resting on a surface, NOT a mirrored graphic: small natural differences between the two ` +
+      `sleeves or legs are correct and must not be corrected away. Layout discipline must NOT ` +
+      `override the reference silhouette. ` +
+      // The comps are near-shadowless: the garment floats on the sweep with no
+      // cast shadow at all. "Realistic shadows" was pulling renders toward a
+      // grounded drop shadow the approved look does not have.
+      `LIGHTING: flat, even, diffused frontal studio light with no visible cast shadow, drop ` +
+      `shadow, or grounding shadow on the background — the background stays a clean unbroken ` +
+      `sweep right up to the garment edge. The only shading present is the gentle self-shading ` +
+      `inside the garment's own folds and under its own volume, which is what gives the filled ` +
+      `flat lay its depth. No hard highlights, no specular hotspots, no directional key light. ` +
       `The result must look like a brand-new, professionally styled catalog photograph taken in ` +
       `the same studio session as the primary photograph — same lighting, same camera, same ` +
-      `background — but with a freshly arranged, crisp, symmetric ${g} whose SILHOUETTE matches ` +
+      `background — but with a freshly arranged, dimensional ${g} whose SILHOUETTE matches ` +
       `the attached reference photograph. ` +
       `REMOVE ALL NECK LABELS, BRAND TAGS, SIZE TAGS, CARE LABELS, AND SEWN-IN WOVEN TAGS from the ` +
       `rendered garment — the inside of the neckline, collar band, and any other typical label ` +
@@ -1910,19 +1971,34 @@ export function buildTwoPiecePrompt(
       `same placement across both pieces. Do not omit, smooth over, flatten, or fabric-substitute ` +
       `these embellishments. Do not convert a rhinestone-studded knit into a plain knit, velvet, or ` +
       `velour surface; preserve the original fabric body AND the surface embellishment. ` +
-      `RENDER THE REPLACEMENT SET FRESH — do not copy the wrinkles, folds, creases, twists, ` +
-      `asymmetries, or specific placement of whatever garment was originally in the primary ` +
-      `photograph. Display both pieces in the canonical catalog layout for a coordinated set: the ` +
-      `${t} positioned above and slightly overlapping the ${b}, both centered on the vertical ` +
-      `axis, symmetric along the vertical centerline, neatly laid flat with smooth, ` +
-      `freshly-steamed fabric, no wrinkles, no creases, no bunched or twisted sections — WHILE ` +
-      `RETAINING each piece's true silhouette from the reference. Sleeves on the top angle ` +
-      `slightly downward and symmetric; the bottom's waistband is centered under the top's hem ` +
-      `with its hem fanning gently and symmetrically. Symmetry and flat-lay cleanliness must NOT ` +
-      `override the reference silhouette. ` +
+      // Kept in step with buildTwoImagePrompt's filled-flat-lay standard. This
+      // path is reachable from the same studio via the two-piece toggle, so
+      // leaving the old pressed-flat wording here would have made a set render
+      // in a visibly different style from every single-garment render.
+      `RENDER THE REPLACEMENT SET FRESH — do not copy the specific wrinkles, creases, twists, ` +
+      `asymmetries, or placement of whatever garment was originally in the primary photograph; ` +
+      `those belong to that garment, not to this one. Arrange both pieces as a FILLED flat lay: ` +
+      `each piece lies flat but is gently padded from within so it holds three-dimensional body, ` +
+      `the way a steamed sample is stuffed for a catalog shoot. Sleeves, legs, torso, and collar ` +
+      `keep their rounded tubular volume instead of being pressed flat, and ribbed collars, cuffs, ` +
+      `waistbands, and hems keep their raised three-dimensional shape. ` +
+      `Keep the fabric smoothly steamed and free of harsh creases, storage folds, and bunched or ` +
+      `twisted sections, but retain the soft natural folds a filled garment makes where the fabric ` +
+      `breaks. Do not iron either piece into a flat plane. ` +
+      `Display both pieces in the canonical catalog layout for a coordinated set: the ` +
+      `${t} positioned above and slightly overlapping the ${b}, both balanced and centered on the ` +
+      `vertical centerline — WHILE RETAINING each piece's true silhouette from the reference. ` +
+      `Sleeves on the top angle slightly downward and away from the body, each holding its own ` +
+      `volume; the bottom's waistband is centered under the top's hem with its hem fanning gently. ` +
+      `Both pieces are real garments resting on a surface, NOT mirrored graphics: small natural ` +
+      `differences between left and right are correct and must not be corrected away. Layout ` +
+      `discipline must NOT override the reference silhouette. ` +
+      `LIGHTING: flat, even, diffused frontal studio light with no visible cast shadow, drop ` +
+      `shadow, or grounding shadow on the background. The only shading present is the gentle ` +
+      `self-shading inside each garment's own folds and under its own volume. ` +
       `The result must look like a brand-new, professionally styled catalog photograph taken in ` +
       `the same studio session as the primary photograph — same lighting, same camera, same ` +
-      `background — but with a freshly arranged, crisp, symmetric coordinated set whose ` +
+      `background — but with a freshly arranged, dimensional coordinated set whose ` +
       `SILHOUETTE matches the attached reference photograph. ` +
       `REMOVE ALL NECK LABELS, BRAND TAGS, SIZE TAGS, CARE LABELS, AND SEWN-IN WOVEN TAGS from ` +
       `both the top and the bottom — the inside of the neckline, collar band, waistband, and any ` +
@@ -2798,6 +2874,12 @@ export interface GenerateParams {
    * URLs are passed through verbatim — nothing leaks in from other modules.
    */
   raw?: boolean;
+  /**
+   * Which studio's prompt prefix to stack in front of `prompt`. Image Studio
+   * passes "product-shot" so it stops inheriting Model Studio's prefix, which
+   * explicitly forbids flat lays. Defaults to "model-swap" — see PromptIntent.
+   */
+  intent?: PromptIntent;
 }
 
 const PLACEMENT_TO_ENGLISH: Record<OverlayPlacement, string> = {
@@ -3204,7 +3286,7 @@ export async function generate(params: GenerateParams): Promise<GenerationResult
     ? portraitRecreation
       ? sanitizeRejectedPortraitPrompt(params.prompt)
       : params.prompt
-    : optimizePromptForModel(params.modelId, params.prompt);
+    : optimizePromptForModel(params.modelId, params.prompt, params.intent);
   const finalPrompt = modelOptimizedPrompt + overlayInstruction;
   let input: Record<string, unknown> = { prompt: finalPrompt };
 

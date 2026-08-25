@@ -59,7 +59,8 @@ export interface HistoryItem {
     createdAt: number;
   }>;
   abTest?: {
-    version: "2.2";
+    /** "2.2" = the retired buildV17Prompt A/B; "2.3" = same-prompt variants. */
+    version: "2.2" | "2.3";
     selectedImage?: "left" | "right" | "no_preference";
   };
   // Multi-option run with per-view trios. Front trio lives at imageUrls[0..2]

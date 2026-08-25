@@ -1112,10 +1112,10 @@ export default function OutputPanel({
                 >
                   <div className="flex items-center justify-between px-1 pb-2">
                     <span className="text-xs font-semibold text-neutral-800">
-                      {imageIndex === 0 ? "Left · Image A" : "Right · Image B"}
+                      {imageIndex === 0 ? "Left · Variant 1" : "Right · Variant 2"}
                     </span>
                     <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-semibold text-neutral-500">
-                      {imageIndex === 0 ? "Current" : "V1.7 test"}
+                      {imageIndex === 0 ? "Variant 1" : "Variant 2"}
                     </span>
                   </div>
                   <div className="flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-xl bg-neutral-50">
@@ -1289,10 +1289,10 @@ export default function OutputPanel({
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
-                    V1.7 A/B test
+                    Variant picker
                   </p>
                   <p className="mt-0.5 text-sm font-semibold text-neutral-900">
-                    Which image do you prefer? (Left / Right)
+                    Which variant do you prefer? (Left / Right)
                   </p>
                 </div>
                 {current.abTest.selectedImage && (
