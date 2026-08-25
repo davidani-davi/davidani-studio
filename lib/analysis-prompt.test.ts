@@ -42,3 +42,63 @@ describe("analyzer picks one garment from a styled shot", () => {
     expect(BLOCK).toMatch(/silently merges two products/);
   });
 });
+
+const SHAPE = SRC.slice(
+  SRC.indexOf("SHAPE DISAMBIGUATION — check the overall silhouette"),
+  SRC.indexOf("ANTI-HALLUCINATION RULES")
+);
+const GALLERY = SRC.slice(
+  SRC.indexOf("You are looking at a CONTACT SHEET"),
+  SRC.indexOf("Then describe ONLY that one garment")
+);
+
+describe("layered bottoms — a skort is not shorts", () => {
+  // DSP50066 is a denim skort: a skirt panel over built-in shorts. The
+  // analyzer called it "sage green denim shorts" on every sample, so the
+  // panel was gone before any prompt ran and the render could only be
+  // shorts. The existing SHAPE DISAMBIGUATION rules pushed it there — "two
+  // parallel tubes ... = BOTTOM (... shorts)" describes a skort's underlayer
+  // exactly.
+  it("names the skort and its distinguishing cue", () => {
+    expect(SHAPE).toMatch(/LAYERED BOTTOMS/);
+    expect(SHAPE).toMatch(/must end with "skort"/);
+    expect(SHAPE).toMatch(/flat continuous panel/);
+    expect(SHAPE).toMatch(/leg hems are visible BELOW/);
+  });
+
+  it("separates the three lookalike bottoms by construction, not by guess", () => {
+    for (const cue of [
+      "SKORT:", // panel + leg openings
+      "SHORTS:", // inseam, leg openings are the lowest edge
+      "SKIRT:", // no leg openings at all
+    ]) {
+      expect(SHAPE).toContain(cue);
+    }
+    expect(SHAPE).toMatch(/inseam running up to the crotch/);
+    expect(SHAPE).toMatch(/One continuous hem all the way around/);
+  });
+
+  it("keeps the skort one garment, so it cannot fall into the SET path", () => {
+    // The two-piece rule says "if you cannot tell, say SET" — a skort read as
+    // a set would be split into a skirt and a pair of shorts as two products.
+    expect(SHAPE).toMatch(/A skort is ONE garment, not a set/);
+    expect(SHAPE).toMatch(/never call it a "skirt over shorts"/);
+  });
+
+  it("routes a skort to the skirt canvas", async () => {
+    const { inferCategory } = await import("./canvas-registry");
+    expect(inferCategory("sage green acid-wash denim skort")).toBe("skirt");
+  });
+});
+
+describe("contact sheet frames that disagree describe one garment", () => {
+  // A skort genuinely reads as a skirt from the front and as shorts from the
+  // back. Both readings are correct about their frame, and picking either one
+  // loses the product — so the disagreement itself is the signal.
+  it("tells the analyzer to reconcile rather than pick a side", () => {
+    expect(GALLERY).toMatch(/disagree about the product's CONSTRUCTION/);
+    expect(GALLERY).toMatch(/skirt from the front and as shorts from the back/);
+    expect(GALLERY).toMatch(/naming the construction that explains every frame/);
+    expect(GALLERY).toMatch(/never by picking whichever frame you saw first/);
+  });
+});

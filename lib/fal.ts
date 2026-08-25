@@ -534,6 +534,11 @@ SHAPE DISAMBIGUATION — check the overall silhouette BEFORE writing anything:
 - NEVER identify a garment as "pants" if you see a clear neckline or if the two extensions spread horizontally from a central torso.
 - A drawstring waistband + two long parallel tubes + elastic/tapered ankles = pants/sweatpants/joggers, regardless of color or pattern.
 - If the garment is laid flat and wider than it is tall, it is almost always a top. If it is taller than it is wide with two parallel tubes, it is almost always a bottom.
+- LAYERED BOTTOMS — check for these BEFORE writing "shorts" or "skirt", because the three look alike from the front and are different products:
+  - SKORT: a skirt panel attached over a built-in pair of shorts, sharing ONE waistband. Front reads as a flat continuous panel with no centre-front split and no inseam, while two short leg hems are visible BELOW that panel's hem, or from the side, or from the back. If you can see both a flat front panel AND leg openings, the garment is a SKORT and the GARMENT line must end with "skort".
+  - SHORTS: a centre-front seam and an inseam running up to the crotch, with the two leg openings forming the lowest edge of the garment. No panel hangs over them.
+  - SKIRT: no leg openings anywhere. One continuous hem all the way around.
+  - A skort is ONE garment, not a set and not two products. Never describe the panel and the shorts separately, and never call it a "skirt over shorts".
 
 ANTI-HALLUCINATION RULES — violating any of these produces bad outputs:
 
@@ -612,6 +617,7 @@ IDENTIFY THE PRODUCT FIRST, by comparing frames:
 - The product is what the close-up and cropped frames are centred on. Photographers zoom into the product, not the styling.
 - If two garments both appear in every frame, pick the one the close-ups centre on, and the one whose construction detail (texture, trim, hardware, pattern) is shown most deliberately.
 - Ignore trousers, skirts, shoes, bags, jewellery and outer layers that are only there to style the shot.
+- Frames that disagree about the product's CONSTRUCTION are describing one garment from different angles, not two candidates to choose between. A bottom that reads as a skirt from the front and as shorts from the back or side is a SKORT — one garment — and must be named "skort". Resolve the disagreement by naming the construction that explains every frame, never by picking whichever frame you saw first.
 
 Then describe ONLY that one garment, using the exact two-line format and every rule below. Describe it as it appears across the whole sheet, not in any single frame.
 
