@@ -7,6 +7,7 @@ import {
   extractTwoPieceFields,
 } from "@/lib/fal";
 import { inferCategory, resolveCanvas, type GarmentCategory } from "@/lib/canvas-registry";
+import { fetchErpCategory, mapErpCategory } from "@/lib/erp-category";
 import { cachedVision } from "@/lib/vision-cache";
 
 export const runtime = "nodejs";
@@ -35,11 +36,13 @@ export const maxDuration = 120;
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { imageUrl, imageUrls, backgroundColor, twoPiece } = body as {
+    const { imageUrl, imageUrls, backgroundColor, twoPiece, styleNumber } = body as {
       imageUrl: string;
       imageUrls?: string[];
       backgroundColor?: string;
       twoPiece?: boolean;
+      /** Optional. When present, the ERP decides the category — see below. */
+      styleNumber?: string;
     };
 
     const selectedImageUrls = Array.isArray(imageUrls)
@@ -53,17 +56,29 @@ export async function POST(req: Request) {
     const primaryImageUrl = selectedImageUrls[0] || imageUrl;
     const isContract = selectedImageUrls.length >= 2;
 
+    // --- ERP category, BEFORE vision ------------------------------------------
+    // This needs only the style number, and it decides WHICH extractor runs. A
+    // style the ERP calls SET must go through the two-piece extractor, and that
+    // has to be settled before extraction rather than after: DETS60234 is a
+    // "Two-piece active set" that vision read as a "tennis dress" on three
+    // consecutive live runs, so it was being described — and rendered — as one
+    // garment. Best effort throughout: no style number, no credentials, or an
+    // ERP hiccup all leave this null and fall back to vision.
+    const erpRaw = await fetchErpCategory(styleNumber);
+    const erpMapped = mapErpCategory(erpRaw);
+    const treatAsSet = Boolean(twoPiece) || erpMapped === "set";
+
     // --- vision (cached) -----------------------------------------------------
     const extracted = await cachedVision(
       "image-analyze-fields",
       {
         urls: selectedImageUrls,
         primaryImageUrl,
-        twoPiece: Boolean(twoPiece),
+        twoPiece: treatAsSet,
         contract: isContract,
       },
       async () => {
-        if (twoPiece) {
+        if (treatAsSet) {
           return { kind: "two-piece" as const, set: await extractTwoPieceFields(primaryImageUrl) };
         }
         if (isContract) {
@@ -84,12 +99,27 @@ export async function POST(req: Request) {
     // Inferred from the GARMENT line only, never the assembled prompt: the
     // template's own layout clause names "tops:", "pants:" and "dresses and
     // skirts", so matching against the full prompt would classify everything.
-    const category: GarmentCategory =
+    const visionCategory: GarmentCategory =
       extracted.kind === "two-piece"
         ? "set"
         : inferCategory(
             extracted.kind === "contract" ? extracted.front.garment : extracted.single.garment
           );
+
+    // The ERP outranks vision wherever it has an answer. BOTTOM is the one
+    // category it under-specifies — it covers both skirts and trousers — so
+    // vision breaks that tie and nothing else.
+    const category: GarmentCategory =
+      erpMapped === "ambiguous-bottom"
+        ? visionCategory === "skirt" || visionCategory === "pants"
+          ? visionCategory
+          : "pants"
+        : erpMapped ?? visionCategory;
+    const categorySource = !erpMapped
+      ? "vision"
+      : erpMapped === "ambiguous-bottom"
+      ? `erp:${erpRaw}+vision`
+      : `erp:${erpRaw}`;
 
     // --- assembly (pure, both canvas variants) -------------------------------
     const assemble = (mode: "preserve" | "backdrop") => {
@@ -105,7 +135,8 @@ export async function POST(req: Request) {
     const backCanvas = resolveCanvas(category, "back");
 
     console.log(
-      `[analyze] category=${category} front=${frontCanvas.path} back=${backCanvas.path} ` +
+      `[analyze] category=${category} (${categorySource}; vision said ${visionCategory}) ` +
+        `front=${frontCanvas.path} back=${backCanvas.path} ` +
         `fallback(front=${frontCanvas.isFallback}, back=${backCanvas.isFallback})`
     );
 
@@ -116,6 +147,8 @@ export async function POST(req: Request) {
       prompt: promptByMode[frontCanvas.mode],
       promptByMode,
       category,
+      categorySource,
+      visionCategory,
       canvas: { front: frontCanvas, back: backCanvas },
       // Unused by the current UI, kept so the response shape stays honest about
       // what the legacy field meant.

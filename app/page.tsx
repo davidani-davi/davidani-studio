@@ -277,6 +277,9 @@ export default function StudioPage() {
           imageUrls: warmUrls,
           backgroundColor,
           twoPiece,
+          // Lets /api/analyze settle the category from the ERP
+          // instead of inferring it from the photo (lib/erp-category.ts).
+          styleNumber: styleNumber.trim() || undefined,
         }),
       }).catch(() => {});
     }, 1200);
@@ -575,6 +578,9 @@ export default function StudioPage() {
           imageUrls: selectedUrls,
           backgroundColor,
           twoPiece,
+          // Lets /api/analyze settle the category from the ERP
+          // instead of inferring it from the photo (lib/erp-category.ts).
+          styleNumber: styleNumber.trim() || undefined,
         }),
       });
       const prompted = `${data.prompt}${productShotViewDirective(productShotMode)}`;
@@ -639,6 +645,9 @@ export default function StudioPage() {
               imageUrls: selectedUrls,
               backgroundColor,
               twoPiece,
+          // Lets /api/analyze settle the category from the ERP
+          // instead of inferring it from the photo (lib/erp-category.ts).
+          styleNumber: styleNumber.trim() || undefined,
             }),
           });
 
@@ -1046,6 +1055,11 @@ export default function StudioPage() {
         const analyzeData = await fetchJson("Analyze", "/api/analyze", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          // No styleNumber here ON PURPOSE. Batch runs many different products
+          // through one shared styleNumber field, so passing it would tag every
+          // image after the first with the wrong style and let the ERP hand
+          // back a confidently wrong category. Batch stays on vision inference
+          // until each queued image can carry its own style code.
           body: JSON.stringify({ imageUrl: sourceUrl, backgroundColor, twoPiece }),
         });
         const batchFront = (analyzeData.canvas as { front?: CanvasChoice } | undefined)?.front;
