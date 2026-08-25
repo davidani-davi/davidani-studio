@@ -9,7 +9,7 @@ import {
 } from "@/lib/fal";
 import { inferCategory, resolveCanvas, type GarmentCategory } from "@/lib/canvas-registry";
 import { fetchErpCategory, mapErpCategory } from "@/lib/erp-category";
-import { reconcileStyleCode } from "@/lib/style-code";
+import { decodeStyleCode, reconcileStyleCode } from "@/lib/style-code";
 import { buildGalleryContactSheet } from "@/lib/erp-gallery";
 import { cachedVision } from "@/lib/vision-cache";
 
@@ -165,6 +165,32 @@ export async function POST(req: Request) {
     const frontCanvas = resolveCanvas(category, "front");
     const backCanvas = resolveCanvas(category, "back");
 
+    // --- routing, as data rather than a log line ----------------------------
+    // Every decision below was already being computed and thrown away into
+    // console.log. The rail can only show its reasoning if the reasoning
+    // leaves this function, so it ships as a structured object rather than a
+    // source string the client would have to parse back apart.
+    const styleCode = decodeStyleCode(styleNumber);
+    const routing = {
+      styleCode: styleCode
+        ? { prefix: styleCode.prefix, category: styleCode.category, authority: styleCode.authority }
+        : null,
+      erp: erpRaw ? { raw: erpRaw, mapped: mapErpCategory(erpRaw) } : null,
+      vision: { category: visionCategory },
+      /** Which input actually settled `category`. */
+      decidedBy: reconciled.source,
+      /** True when the winning answer contradicted one that was available. */
+      overrode:
+        Boolean(erpRaw) &&
+        styleCode?.authority === "override" &&
+        mapErpCategory(erpRaw) !== styleCode.category
+          ? { field: "erp" as const, value: erpRaw }
+          : null,
+      describedFrom: gallery
+        ? { kind: "gallery" as const, frames: gallery.frames }
+        : { kind: "intake-photo" as const },
+    };
+
     console.log(
       `[analyze] category=${category} (${categorySource}; vision said ${visionCategory}) ` +
         `garmentSource=${gallery ? `erp-gallery:${gallery.frames}frames` : "intake-photo"} ` +
@@ -182,6 +208,7 @@ export async function POST(req: Request) {
       categorySource,
       visionCategory,
       garmentSource: gallery ? `erp-gallery:${gallery.frames}` : "intake-photo",
+      routing,
       canvas: { front: frontCanvas, back: backCanvas },
       // Unused by the current UI, kept so the response shape stays honest about
       // what the legacy field meant.

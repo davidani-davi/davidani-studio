@@ -8,7 +8,8 @@ import StudioHeader from "@/components/StudioHeader";
 import type { HistoryItem, UploadedImage } from "@/components/types";
 import type { ModelId } from "@/lib/models";
 import type { OverlayMode, OverlayPlacement } from "@/lib/fal";
-import { PRODUCT_SHOT_REFERENCES } from "@/lib/product-shot-references";
+import { STUDIO_BACKDROP_PATH } from "@/lib/studio-background";
+import type { CanvasSummary, RoutingPayload } from "@/lib/routing-summary";
 import type { CanvasChoice } from "@/lib/canvas-registry";
 import { resizeIfNeeded } from "@/lib/image-resize";
 import { optimizePromptForModel } from "@/lib/prompt-strategy";
@@ -213,32 +214,15 @@ export default function StudioPage() {
 
   // Style reference (image 2). Image Studio presets live under
   // public/product-shots; custom uploads override the selected preset.
-  // False while the canvas is chosen automatically from the garment category
-  // (the default). Flipped once the user picks a preset by hand, after which
-  // their choice wins — auto-routing must never silently override an explicit
-  // selection, or the preset thumbnail would stop matching what is generated.
-  const [canvasOverridden, setCanvasOverridden] = useState(false);
-  const [selectedProductShotPath, setSelectedProductShotPath] = useState<string>(
-    PRODUCT_SHOT_REFERENCES[0]?.path ?? ""
-  );
+  // How the studio arrived at this render, straight from /api/analyze. Drives
+  // the Routing section, which replaced the preset grid.
+  const [routing, setRouting] = useState<RoutingPayload | null>(null);
+  const [routingCanvas, setRoutingCanvas] = useState<CanvasSummary | null>(null);
   const [referenceImageUrl, setReferenceImageUrl] = useState<string | null>(null);
   const [referenceUploading, setReferenceUploading] = useState(false);
-  const [userReferences, setUserReferences] = useState<
-    { id: string; label: string; imageUrl: string }[]
-  >([]);
-  const [referenceSaving, setReferenceSaving] = useState(false);
-  // Bytes of the last successfully uploaded custom reference — needed to save
-  // it as a preset (the fal URL from /api/upload isn't guaranteed permanent).
-  const lastReferenceFileRef = useRef<File | null>(null);
-
-  useEffect(() => {
-    fetch("/api/user-references")
-      .then((r) => r.json())
-      .then((d) => {
-        if (d?.ok) setUserReferences(d.references);
-      })
-      .catch(() => {});
-  }, []);
+  // NOTE: team-saved canvas presets went with the preset grid. /api/user-references
+  // and everything already stored behind it are left untouched — nothing is
+  // deleted, and restoring the feature is a UI change, not a data recovery.
 
   // Prompt & generation
   const [prompt, setPrompt] = useState<string>("");
@@ -443,7 +427,6 @@ export default function StudioPage() {
       // Shrink oversized phone photos client-side — Vercel's serverless
       // functions reject bodies larger than 4.5 MB.
       const resized = await resizeIfNeeded(file);
-      lastReferenceFileRef.current = resized;
       const form = new FormData();
       form.append("files", resized);
       const data = await fetchJson("Upload reference", "/api/upload", {
@@ -464,61 +447,21 @@ export default function StudioPage() {
     setReferenceImageUrl(null);
   }
 
-  async function saveReferenceAsPreset(label: string) {
-    const file = lastReferenceFileRef.current;
-    if (!file) return;
-    setReferenceSaving(true);
-    setError(null);
-    try {
-      const form = new FormData();
-      form.append("file", file);
-      form.append("label", label);
-      const data = await fetchJson("Save reference preset", "/api/user-references", {
-        method: "POST",
-        body: form,
-      });
-      const saved = data.reference as { id: string; label: string; imageUrl: string };
-      setUserReferences((existing) => [...existing, saved]);
-      // Select the saved preset and clear the one-off override so the grid
-      // checkmark reflects reality.
-      setSelectedProductShotPath(saved.imageUrl);
-      setReferenceImageUrl(null);
-      lastReferenceFileRef.current = null;
-    } catch (err: any) {
-      setError(err.message || "Saving preset failed");
-    } finally {
-      setReferenceSaving(false);
-    }
-  }
-
-  async function deleteReferencePreset(id: string) {
-    try {
-      await fetchJson("Delete reference preset", `/api/user-references?id=${id}`, {
-        method: "DELETE",
-      });
-      // Compute the fallback selection outside the setState updater — updaters
-      // must stay pure (StrictMode invokes them twice).
-      const removed = userReferences.find((r) => r.id === id);
-      if (removed && selectedProductShotPath === removed.imageUrl) {
-        setSelectedProductShotPath(PRODUCT_SHOT_REFERENCES[0]?.path ?? "");
-      }
-      setUserReferences((existing) => existing.filter((r) => r.id !== id));
-    } catch (err: any) {
-      setError(err.message || "Deleting preset failed");
-    }
-  }
-
   /** Absolute URL for a canvas path returned by the analyzer's registry. */
   function absoluteCanvasUrl(path: string): string {
     if (typeof window === "undefined") return path;
     return new URL(path, window.location.origin).toString();
   }
 
+  /**
+   * The only manual canvas path left. The preset grid used to sit behind this
+   * too, offering a canvas choice that outranked the routed one — which stopped
+   * making sense once the category came from the ERP and the style code. The
+   * useful correction is to the style number, not to the canvas that fell out
+   * of it, so an uploaded canvas is now the sole override.
+   */
   function resolveSelectedReferenceUrl(): string | null {
-    if (referenceImageUrl) return referenceImageUrl;
-    if (!selectedProductShotPath) return null;
-    if (typeof window === "undefined") return selectedProductShotPath;
-    return new URL(selectedProductShotPath, window.location.origin).toString();
+    return referenceImageUrl;
   }
 
   async function addFiles(files: FileList, preferredSlot?: "front" | "back") {
@@ -655,8 +598,8 @@ export default function StudioPage() {
           const contractMode = productShotMode === "front-back-contract";
           const primaryView: "front" | "back" = singleBackMode ? "back" : "front";
 
-          // A hand-picked preset (or an uploaded reference) wins over routing.
-          const overrideUrl = canvasOverridden ? resolveSelectedReferenceUrl() : null;
+          // An uploaded canvas wins over routing; nothing else does.
+          const overrideUrl = resolveSelectedReferenceUrl();
           const routed = analyzeData.canvas as
             | { front: CanvasChoice; back: CanvasChoice }
             | undefined;
@@ -685,13 +628,22 @@ export default function StudioPage() {
 
           const activePrompt = promptForView(primaryView);
           if (!activePrompt) throw new Error("Analyzer returned empty prompt");
-          if (routed && !overrideUrl) {
-            const c = canvasFor(primaryView)!;
-            console.log(
-              `[image-studio] category=${analyzeData.category} canvas=${c.path} ` +
-                `mode=${c.mode}${c.isFallback ? " (empty-sweep fallback)" : ""}`
-            );
-          }
+
+          // Feed the Routing panel. These five values were already being
+          // computed on every analyze and thrown into console.log; the rail is
+          // the only place they were ever going to be useful.
+          setRouting((analyzeData.routing as RoutingPayload | undefined) ?? null);
+          setRoutingCanvas(
+            overrideUrl
+              ? null
+              : canvasFor(primaryView)
+              ? {
+                  path: canvasFor(primaryView)!.path,
+                  isFallback: canvasFor(primaryView)!.isFallback,
+                  category: canvasFor(primaryView)!.category,
+                }
+              : null
+          );
 
           const studioFeedbackMemory = feedbackMemorySuffix("image");
           const promptWithSideDirective = `${activePrompt}${productShotViewDirective(productShotMode)}`;
@@ -1066,7 +1018,7 @@ export default function StudioPage() {
         const batchByMode = analyzeData.promptByMode as
           | Record<"preserve" | "backdrop", string>
           | undefined;
-        if (canvasOverridden) {
+        if (resolveSelectedReferenceUrl()) {
           imageCanvasUrl = resolveSelectedReferenceUrl();
           imagePrompt = String(batchByMode?.preserve || analyzeData.prompt || "").trim();
         } else if (batchFront) {
@@ -1244,27 +1196,10 @@ export default function StudioPage() {
             fontSize={fontSize}
             onFontSizeChange={setFontSize}
             referenceImageUrl={referenceImageUrl}
-            defaultReferencePreview={selectedProductShotPath || PRODUCT_SHOT_REFERENCES[0]?.path || ""}
-            productShotReferences={[
-              ...PRODUCT_SHOT_REFERENCES,
-              ...userReferences.map((r) => ({
-                id: r.id,
-                label: r.label,
-                path: r.imageUrl,
-                userAdded: true as const,
-              })),
-            ]}
-            canSaveReference={Boolean(referenceImageUrl && lastReferenceFileRef.current)}
-            referenceSaving={referenceSaving}
-            onReferenceSave={saveReferenceAsPreset}
-            onPresetDelete={deleteReferencePreset}
-            selectedProductShotPath={selectedProductShotPath}
-            onProductShotSelect={(path) => {
-              setSelectedProductShotPath(path);
-              setReferenceImageUrl(null);
-              // Touching the picker opts this run out of category routing.
-              setCanvasOverridden(true);
-            }}
+            defaultReferencePreview={routingCanvas?.path || STUDIO_BACKDROP_PATH}
+            routing={routing}
+            routingCanvas={routingCanvas}
+            routingPending={analyzing}
             onReferenceReplace={replaceReferenceImage}
             onReferenceReset={resetReferenceImage}
             referenceUploading={referenceUploading}

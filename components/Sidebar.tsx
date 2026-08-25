@@ -3,7 +3,8 @@
 import { useRef, useState } from "react";
 import { ASPECT_RATIOS, FORMATS, MODELS, RESOLUTIONS, type ModelId } from "@/lib/models";
 import type { OverlayPlacement } from "@/lib/fal";
-import type { ProductShotReference } from "@/lib/product-shot-references";
+import RoutingPanel from "./RoutingPanel";
+import type { CanvasSummary, RoutingPayload } from "@/lib/routing-summary";
 import type { UploadedImage } from "./types";
 import ImageLightbox, { ZoomButton } from "./ImageLightbox";
 
@@ -42,22 +43,20 @@ interface Props {
   fontSize: number;
   onFontSizeChange: (v: number) => void;
 
-  /* Style reference (image 2) — Image Studio only. Product shot presets come
-     from public/product-shots unless the user supplies a replacement URL. */
+  /* Canvas — image_urls[0], the studio photo the model edits. Chosen from the
+     garment's category (lib/canvas-registry.ts); a hand-uploaded replacement
+     is the only manual path, and it opts the run out of routing. */
   referenceImageUrl: string | null;
-  /** Static preview path shown when no custom reference has been uploaded. */
+  /** Preview shown when no custom canvas has been uploaded — the routed one. */
   defaultReferencePreview: string;
-  productShotReferences: ProductShotReference[];
-  selectedProductShotPath: string;
-  onProductShotSelect: (path: string) => void;
   onReferenceReplace: (file: File) => void;
   onReferenceReset: () => void;
   referenceUploading: boolean;
-  /** True when a freshly uploaded custom reference can be saved as a preset. */
-  canSaveReference: boolean;
-  referenceSaving: boolean;
-  onReferenceSave: (label: string) => void;
-  onPresetDelete: (id: string) => void;
+
+  /* How the studio arrived at this render — see components/RoutingPanel.tsx. */
+  routing: RoutingPayload | null;
+  routingCanvas: CanvasSummary | null;
+  routingPending: boolean;
 }
 
 const BG_PRESETS: { hex: string; label: string }[] = [
@@ -179,6 +178,17 @@ const IconSliders = (
   </svg>
 );
 
+const IconTag = (
+  <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
+    <path d="M9.4 2H4a2 2 0 00-2 2v5.4a2 2 0 00.6 1.4l7 7a2 2 0 002.8 0l5.4-5.4a2 2 0 000-2.8l-7-7A2 2 0 009.4 2zM6 7a1.5 1.5 0 110-3 1.5 1.5 0 010 3z" />
+  </svg>
+);
+const IconRoute = (
+  <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
+    <path d="M5 2.5A2.5 2.5 0 002.5 5c0 1.1.72 2.05 1.75 2.38V12a4 4 0 004 4h1.87l-1.2 1.2a.75.75 0 101.06 1.06l2.5-2.5a.75.75 0 000-1.06l-2.5-2.5a.75.75 0 10-1.06 1.06l1.2 1.2H8.25A2.5 2.5 0 015.75 12V7.38A2.5 2.5 0 005 2.5zM15 8a2.5 2.5 0 100 5 2.5 2.5 0 000-5z" />
+  </svg>
+);
+
 /* ---------- Main component ---------- */
 
 export default function Sidebar(p: Props) {
@@ -189,7 +199,6 @@ export default function Sidebar(p: Props) {
   const [previewSrc, setPreviewSrc] = useState<string | null>(null);
   const [draggingUploads, setDraggingUploads] = useState(false);
   const [draggingReference, setDraggingReference] = useState(false);
-  const [presetName, setPresetName] = useState("");
 
   const uploadCount = p.uploads.length;
   const intakeCount = Number(!!p.frontIntakeUrl) + Number(!!p.backIntakeUrl);
@@ -378,8 +387,8 @@ export default function Sidebar(p: Props) {
       >
         <SectionHeader
           icon={IconCamera}
-          title="Style reference"
-          hint={hasCustomReference ? "Custom" : "Default"}
+          title="Canvas"
+          hint={hasCustomReference ? "Manual" : "Routed"}
         />
 
         <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-2">
@@ -412,8 +421,9 @@ export default function Sidebar(p: Props) {
 
           <div className="flex min-w-0 flex-1 flex-col justify-between">
             <p className="text-[11px] leading-snug text-neutral-500">
-              Used as image 2 — the aesthetic (lighting, framing, pose) your
-              output mimics.
+              {hasCustomReference
+                ? "Your own studio photo. Replacing the canvas opts this run out of category routing."
+                : "The studio photo your garment is rendered onto, chosen from its category. Background, framing and scale are copied from it."}
             </p>
             <div className="mt-2 flex gap-1.5">
               <button
@@ -433,30 +443,6 @@ export default function Sidebar(p: Props) {
                 Reset
               </button>
             </div>
-            {p.canSaveReference && (
-              <div className="mt-2 flex gap-1.5">
-                <input
-                  type="text"
-                  value={presetName}
-                  onChange={(e) => setPresetName(e.target.value)}
-                  placeholder="Preset name"
-                  className="min-w-0 flex-1 rounded-md border border-neutral-200 bg-white px-2 py-1.5 text-[11px] text-neutral-700 placeholder:text-neutral-400 focus:border-brand-400 focus:outline-none"
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    const label = presetName.trim();
-                    if (!label) return;
-                    p.onReferenceSave(label);
-                    setPresetName("");
-                  }}
-                  disabled={p.referenceSaving || !presetName.trim()}
-                  className="rounded-md border border-brand-300 bg-brand-50 px-2 py-1.5 text-[11px] font-medium text-brand-700 transition hover:bg-brand-100 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {p.referenceSaving ? "Saving…" : "Save as preset"}
-                </button>
-              </div>
-            )}
             <input
               ref={referenceInputRef}
               type="file"
@@ -471,60 +457,37 @@ export default function Sidebar(p: Props) {
           </div>
         </div>
         </div>
-        {p.productShotReferences.length > 0 && (
-          <div className="mt-3">
-            <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
-              Product shot presets
-            </p>
-            <div className="grid grid-cols-4 gap-1.5">
-              {p.productShotReferences.map((ref) => {
-                const selected =
-                  !hasCustomReference && p.selectedProductShotPath === ref.path;
-                return (
-                  <div
-                    key={ref.id}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => p.onProductShotSelect(ref.path)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        p.onProductShotSelect(ref.path);
-                      }
-                    }}
-                    title={ref.label}
-                    className={`group relative aspect-square cursor-pointer overflow-hidden rounded-md border bg-white transition ${
-                      selected
-                        ? "border-brand-500 ring-2 ring-brand-100"
-                        : "border-neutral-200 hover:border-neutral-400"
-                    }`}
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={ref.path} alt={ref.label} className="h-full w-full object-cover" />
-                    {selected && (
-                      <span className="pointer-events-none absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-brand-600 text-[9px] font-bold text-white">
-                        ✓
-                      </span>
-                    )}
-                    {ref.userAdded && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (confirm(`Delete preset "${ref.label}"?`)) p.onPresetDelete(ref.id);
-                        }}
-                        title="Delete preset"
-                        className="absolute left-1 top-1 hidden h-4 w-4 items-center justify-center rounded-full bg-neutral-800/70 text-[9px] font-bold text-white group-hover:flex"
-                      >
-                        ×
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
+      </section>
+
+      {/* ========== STYLE ========== */}
+      {/* Promoted out of the text-overlay block. It used to be there because
+          its only job was stamping digits on the export; it now decides the
+          category, the canvas, and whether the garment is described from one
+          photo or the style's whole gallery. */}
+      <section className="image-sidebar-card border-b border-neutral-100 p-5">
+        <SectionHeader icon={IconTag} title="Style" hint="drives routing" />
+        <input
+          type="text"
+          value={p.styleNumber}
+          onChange={(e) => p.onStyleNumberChange(e.target.value)}
+          placeholder="e.g. DWTS67099"
+          spellCheck={false}
+          autoCapitalize="characters"
+          className="w-full rounded-md border border-neutral-200 bg-white px-3 py-2 font-mono text-sm uppercase tracking-wide outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+        />
+        <p className="mt-2 text-[10px] leading-snug text-neutral-500">
+          Optional. Without it the garment is read from your photo alone.
+        </p>
+      </section>
+
+      {/* ========== ROUTING ========== */}
+      <section className="image-sidebar-card border-b border-neutral-100 p-5">
+        <SectionHeader icon={IconRoute} title="Routing" hint="automatic" />
+        <RoutingPanel
+          routing={p.routing}
+          canvas={p.routingCanvas}
+          pending={p.routingPending}
+        />
       </section>
 
       {/* ========== BACKGROUND ========== */}
@@ -614,6 +577,7 @@ export default function Sidebar(p: Props) {
           />
         </label>
 
+        {/* Reads the style number from the Style section rather than owning it. */}
         <label className={`mb-3 flex items-center gap-2 rounded-lg border p-2 transition ${p.showNumber ? "border-brand-500 bg-brand-50" : "border-neutral-200 bg-white"}`}>
           <input
             type="checkbox"
@@ -621,13 +585,12 @@ export default function Sidebar(p: Props) {
             onChange={(e) => p.onShowNumberChange(e.target.checked)}
             className="h-4 w-4 shrink-0 rounded border-neutral-300 text-brand-600 focus:ring-brand-400"
           />
-          <input
-            type="text"
-            value={p.styleNumber}
-            onChange={(e) => p.onStyleNumberChange(e.target.value)}
-            placeholder="Style number"
-            className="w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
-          />
+          <span className="flex w-full items-center justify-between gap-2 px-1 text-sm">
+            <span className={p.styleNumber ? "font-mono uppercase tracking-wide" : "text-neutral-400"}>
+              {p.styleNumber || "No style number set"}
+            </span>
+            <span className="text-[10px] uppercase tracking-widest text-neutral-400">stamp</span>
+          </span>
         </label>
 
         {/* Font family + size */}
