@@ -2,7 +2,6 @@
 
 import { useRef, useState } from "react";
 import { ASPECT_RATIOS, FORMATS, MODELS, RESOLUTIONS, type ModelId } from "@/lib/models";
-import type { OverlayPlacement } from "@/lib/fal";
 import RoutingPanel from "./RoutingPanel";
 import type { CanvasSummary, RoutingPayload } from "@/lib/routing-summary";
 import type { UploadedImage } from "./types";
@@ -25,23 +24,9 @@ interface Props {
   onAddFiles: (files: FileList, preferredSlot?: "front" | "back") => void;
   onRemoveUpload: (url: string) => void;
 
-  backgroundColor: string;
-  onBackgroundColorChange: (v: string) => void;
-
-  colorName: string;
-  onColorNameChange: (v: string) => void;
+  /** Typed style number — drives ERP routing, not decoration. */
   styleNumber: string;
   onStyleNumberChange: (v: string) => void;
-  showName: boolean;
-  onShowNameChange: (v: boolean) => void;
-  showNumber: boolean;
-  onShowNumberChange: (v: boolean) => void;
-  overlayPlacement: OverlayPlacement;
-  onOverlayPlacementChange: (v: OverlayPlacement) => void;
-  fontFamily: string;
-  onFontFamilyChange: (v: string) => void;
-  fontSize: number;
-  onFontSizeChange: (v: number) => void;
 
   /* Canvas — image_urls[0], the studio photo the model edits. Chosen from the
      garment's category (lib/canvas-registry.ts); a hand-uploaded replacement
@@ -57,46 +42,6 @@ interface Props {
   routing: RoutingPayload | null;
   routingCanvas: CanvasSummary | null;
   routingPending: boolean;
-}
-
-const BG_PRESETS: { hex: string; label: string }[] = [
-  { hex: "#edeeee", label: "Soft Gray" },
-  { hex: "#f8ebdc", label: "Warm Cream" },
-  { hex: "#ffffff", label: "Pure White" },
-];
-
-const PLACEMENTS: { value: OverlayPlacement; label: string }[] = [
-  { value: "top-left", label: "TL" },
-  { value: "top-center", label: "TC" },
-  { value: "top-right", label: "TR" },
-  { value: "bottom-left", label: "BL" },
-  { value: "bottom-center", label: "BC" },
-  { value: "bottom-right", label: "BR" },
-];
-
-const FONT_FAMILIES: string[] = [
-  "DM Sans",
-  "Inter",
-  "Helvetica",
-  "Arial",
-  "Futura",
-  "Georgia",
-  "Times New Roman",
-  "Courier New",
-];
-
-function isValidHex(v: string): boolean {
-  return /^#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})$/.test(v.trim());
-}
-
-/** Expand shorthand hex (#abc) to full form (#aabbcc) so <input type=color> is happy. */
-function toFullHex(v: string): string {
-  const trimmed = v.trim();
-  if (/^#[0-9a-fA-F]{3}$/.test(trimmed)) {
-    const [, r, g, b] = trimmed.match(/^#([0-9a-fA-F])([0-9a-fA-F])([0-9a-fA-F])$/)!;
-    return `#${r}${r}${g}${g}${b}${b}`;
-  }
-  return isValidHex(trimmed) ? trimmed : "#ffffff";
 }
 
 /* ---------- Reusable section header ---------- */
@@ -160,16 +105,6 @@ function SectionHeader({
 const IconCamera = (
   <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
     <path d="M6.5 3a1 1 0 00-.8.4L4.6 5H3a2 2 0 00-2 2v8a2 2 0 002 2h14a2 2 0 002-2V7a2 2 0 00-2-2h-1.6l-1.1-1.6a1 1 0 00-.8-.4h-7zM10 8.5a3 3 0 110 6 3 3 0 010-6z" />
-  </svg>
-);
-const IconSwatch = (
-  <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
-    <path d="M11 2a2 2 0 012 2v12a4 4 0 01-4 4 4 4 0 01-4-4V4a2 2 0 012-2h4zM9 15a1 1 0 100 2 1 1 0 000-2zm5-10.59l4.24 4.24a2 2 0 010 2.83l-5.66 5.66V4.41zM4 15h3v1a3 3 0 01-3 3V15z" />
-  </svg>
-);
-const IconText = (
-  <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
-    <path d="M3 4a1 1 0 011-1h12a1 1 0 110 2h-5v12a1 1 0 11-2 0V5H4a1 1 0 01-1-1z" />
   </svg>
 );
 const IconSliders = (
@@ -488,171 +423,6 @@ export default function Sidebar(p: Props) {
           canvas={p.routingCanvas}
           pending={p.routingPending}
         />
-      </section>
-
-      {/* ========== BACKGROUND ========== */}
-      <section className="image-sidebar-card border-b border-neutral-100 p-5">
-        <SectionHeader icon={IconSwatch} title="Background" />
-
-        <div className="mb-3 grid grid-cols-3 gap-2">
-          {BG_PRESETS.map((preset) => {
-            const active =
-              p.backgroundColor.toLowerCase() === preset.hex.toLowerCase();
-            return (
-              <button
-                key={preset.hex}
-                onClick={() => p.onBackgroundColorChange(preset.hex)}
-                title={`${preset.label} (${preset.hex})`}
-                className={`flex aspect-[4/3] items-end justify-center rounded-lg border p-1.5 transition ${
-                  active
-                    ? "border-brand-500 ring-2 ring-brand-200"
-                    : "border-neutral-200 hover:border-neutral-400"
-                }`}
-                style={{ backgroundColor: preset.hex }}
-              >
-                <span className={`rounded-full bg-white/80 px-2 py-0.5 text-[9px] font-semibold ${active ? "text-brand-700" : "text-neutral-600"}`}>
-                  {active ? "✓ " : ""}{preset.label}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        <label className="mb-1 block text-[10px] font-medium text-neutral-500">
-          Custom
-        </label>
-        <div className="relative flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => colorInputRef.current?.click()}
-            title="Open color picker"
-            className="h-9 w-9 shrink-0 rounded-md border border-neutral-200 transition hover:border-neutral-400 hover:ring-2 hover:ring-brand-100"
-            style={{
-              backgroundColor: isValidHex(p.backgroundColor)
-                ? p.backgroundColor
-                : "#ffffff",
-            }}
-          />
-          <input
-            ref={colorInputRef}
-            type="color"
-            value={toFullHex(p.backgroundColor)}
-            onChange={(e) => p.onBackgroundColorChange(e.target.value)}
-            className="pointer-events-none absolute h-0 w-0 opacity-0"
-            tabIndex={-1}
-            aria-hidden="true"
-          />
-          <input
-            type="text"
-            value={p.backgroundColor}
-            onChange={(e) => p.onBackgroundColorChange(e.target.value)}
-            placeholder="#edeeee"
-            spellCheck={false}
-            className={`w-full rounded-lg border bg-white px-3 py-2 font-mono text-xs outline-none transition ${
-              isValidHex(p.backgroundColor)
-                ? "border-neutral-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
-                : "border-red-300 focus:border-red-500"
-            }`}
-          />
-        </div>
-      </section>
-
-      {/* ========== TEXT OVERLAY ========== */}
-      <section className="image-sidebar-card border-b border-neutral-100 p-5">
-        <SectionHeader icon={IconText} title="Text overlay" />
-
-        <label className={`mb-2 flex items-center gap-2 rounded-lg border p-2 transition ${p.showName ? "border-brand-500 bg-brand-50" : "border-neutral-200 bg-white"}`}>
-          <input
-            type="checkbox"
-            checked={p.showName}
-            onChange={(e) => p.onShowNameChange(e.target.checked)}
-            className="h-4 w-4 shrink-0 rounded border-neutral-300 text-brand-600 focus:ring-brand-400"
-          />
-          <input
-            type="text"
-            value={p.colorName}
-            onChange={(e) => p.onColorNameChange(e.target.value)}
-            placeholder="Color name"
-            className="w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
-          />
-        </label>
-
-        {/* Reads the style number from the Style section rather than owning it. */}
-        <label className={`mb-3 flex items-center gap-2 rounded-lg border p-2 transition ${p.showNumber ? "border-brand-500 bg-brand-50" : "border-neutral-200 bg-white"}`}>
-          <input
-            type="checkbox"
-            checked={p.showNumber}
-            onChange={(e) => p.onShowNumberChange(e.target.checked)}
-            className="h-4 w-4 shrink-0 rounded border-neutral-300 text-brand-600 focus:ring-brand-400"
-          />
-          <span className="flex w-full items-center justify-between gap-2 px-1 text-sm">
-            <span className={p.styleNumber ? "font-mono uppercase tracking-wide" : "text-neutral-400"}>
-              {p.styleNumber || "No style number set"}
-            </span>
-            <span className="text-[10px] uppercase tracking-widest text-neutral-400">stamp</span>
-          </span>
-        </label>
-
-        {/* Font family + size */}
-        <label className="mb-1 block text-[10px] font-medium text-neutral-500">
-          Font
-        </label>
-        <div className="mb-3 flex items-center gap-2">
-          <select
-            value={p.fontFamily}
-            onChange={(e) => p.onFontFamilyChange(e.target.value)}
-            className="min-w-0 flex-1 rounded-lg border border-neutral-200 bg-white px-2 py-2 text-sm"
-            style={{ fontFamily: p.fontFamily }}
-          >
-            {FONT_FAMILIES.map((f) => (
-              <option key={f} value={f} style={{ fontFamily: f }}>
-                {f}
-              </option>
-            ))}
-          </select>
-          <div className="flex items-center rounded-lg border border-neutral-200 bg-white">
-            <input
-              type="number"
-              min={6}
-              max={96}
-              value={p.fontSize}
-              onChange={(e) => {
-                const n = parseInt(e.target.value, 10);
-                if (Number.isFinite(n)) p.onFontSizeChange(n);
-              }}
-              className="w-12 bg-transparent px-2 py-2 text-right text-sm outline-none"
-            />
-            <span className="pr-2 text-xs text-neutral-400">pt</span>
-          </div>
-        </div>
-
-        {/* Placement */}
-        <label className="mb-1 block text-[10px] font-medium text-neutral-500">
-          Placement
-        </label>
-        <div
-          className={`grid grid-cols-3 gap-1.5 transition ${
-            !p.showName && !p.showNumber ? "pointer-events-none opacity-40" : ""
-          }`}
-        >
-          {PLACEMENTS.map((pl) => {
-            const active = p.overlayPlacement === pl.value;
-            return (
-              <button
-                key={pl.value}
-                onClick={() => p.onOverlayPlacementChange(pl.value)}
-                title={pl.value.replace("-", " ")}
-                className={`rounded-md border px-2 py-2 text-[10px] font-mono transition ${
-                  active
-                    ? "border-brand-500 bg-brand-50 text-brand-700"
-                    : "border-neutral-200 bg-white text-neutral-500 hover:border-neutral-400"
-                }`}
-              >
-                {pl.label}
-              </button>
-            );
-          })}
-        </div>
       </section>
 
       {/* ========== OUTPUT SETTINGS (collapsible) ========== */}

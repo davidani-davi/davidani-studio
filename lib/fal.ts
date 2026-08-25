@@ -565,8 +565,6 @@ OUTPUT FORMAT RULES:
 - No preamble, no markdown, no code fences, no extra commentary.`;
 
 export interface AnalyzeOptions {
-  /** Kept for backwards compatibility; no longer used. */
-  backgroundColor?: string;
   /**
    * Which canvas image 0 will be at generation time. Must match what
    * lib/fal.ts `generate()` actually puts there, or the prompt will describe

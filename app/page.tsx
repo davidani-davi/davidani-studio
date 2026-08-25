@@ -7,7 +7,6 @@ import OutputPanel from "@/components/OutputPanel";
 import StudioHeader from "@/components/StudioHeader";
 import type { HistoryItem, UploadedImage } from "@/components/types";
 import type { ModelId } from "@/lib/models";
-import type { OverlayMode, OverlayPlacement } from "@/lib/fal";
 import { STUDIO_BACKDROP_PATH } from "@/lib/studio-background";
 import type { CanvasSummary, RoutingPayload } from "@/lib/routing-summary";
 import { styleNumbersForQueue } from "@/lib/style-from-filename";
@@ -30,13 +29,6 @@ import {
   mergeHistoryItems,
   syncCloudHistory,
 } from "@/lib/client-cloud-history";
-
-function deriveOverlayMode(showName: boolean, showNumber: boolean): OverlayMode {
-  if (showName && showNumber) return "both";
-  if (showName) return "name";
-  if (showNumber) return "number";
-  return "none";
-}
 
 const HISTORY_KEY = "davidani_history_v1";
 const CURRENT_ID_KEY = "davidani_image_current_run_v1";
@@ -194,18 +186,8 @@ export default function StudioPage() {
   const [numImages, setNumImages] = useState<number>(1);
   const [productShotMode, setProductShotMode] = useState<ProductShotMode>("single-front");
 
-  // Background color (sent to analyzer → becomes the studio backdrop)
-  const [backgroundColor, setBackgroundColor] = useState<string>("#edeeee");
-
-  // Text overlay controls
-  const [colorName, setColorName] = useState<string>("");
+  // Style number — the ERP routing key, typed in the Style section.
   const [styleNumber, setStyleNumber] = useState<string>("");
-  const [showName, setShowName] = useState<boolean>(false);
-  const [showNumber, setShowNumber] = useState<boolean>(false);
-  const [overlayPlacement, setOverlayPlacement] =
-    useState<OverlayPlacement>("bottom-left");
-  const [fontFamily, setFontFamily] = useState<string>("DM Sans");
-  const [fontSize, setFontSize] = useState<number>(12);
 
   // Upload state
   const [uploads, setUploads] = useState<UploadedImage[]>([]);
@@ -265,7 +247,6 @@ export default function StudioPage() {
         body: JSON.stringify({
           imageUrl: warmUrls[0],
           imageUrls: warmUrls,
-          backgroundColor,
           twoPiece,
           // Lets /api/analyze settle the category from the ERP
           // instead of inferring it from the photo (lib/erp-category.ts).
@@ -274,7 +255,7 @@ export default function StudioPage() {
       }).catch(() => {});
     }, 1200);
     return () => clearTimeout(timer);
-  }, [frontIntakeUrl, backIntakeUrl, productShotMode, backgroundColor, twoPiece]);
+  }, [frontIntakeUrl, backIntakeUrl, productShotMode, twoPiece]);
 
   // Image Studio's analyze route only handles single-image two-piece extraction
   // (one photo of the full coordinated outfit). The "two separate photos"
@@ -525,7 +506,6 @@ export default function StudioPage() {
         body: JSON.stringify({
           imageUrl: selectedUrls[0],
           imageUrls: selectedUrls,
-          backgroundColor,
           twoPiece,
           // Lets /api/analyze settle the category from the ERP
           // instead of inferring it from the photo (lib/erp-category.ts).
@@ -592,8 +572,7 @@ export default function StudioPage() {
             body: JSON.stringify({
               imageUrl: selectedUrls[0],
               imageUrls: selectedUrls,
-              backgroundColor,
-              twoPiece,
+                  twoPiece,
           // Lets /api/analyze settle the category from the ERP
           // instead of inferring it from the photo (lib/erp-category.ts).
           styleNumber: styleNumber.trim() || undefined,
@@ -688,14 +667,6 @@ export default function StudioPage() {
             // produced by /api/finalize-image in the background below.
             deferResize: true,
             numImages: 1,
-            overlay: {
-              mode: deriveOverlayMode(showName, showNumber),
-              placement: overlayPlacement,
-              colorName,
-              styleNumber,
-              fontFamily,
-              fontSize,
-            },
           };
           const frontContractPrompt = `${promptForView("front")}${productShotViewDirective(
             productShotMode,
@@ -904,14 +875,6 @@ export default function StudioPage() {
           format,
           outputSize: IMAGE_STUDIO_OUTPUT_SIZE,
           numImages: 1,
-          overlay: {
-            mode: deriveOverlayMode(showName, showNumber),
-            placement: overlayPlacement,
-            colorName,
-            styleNumber,
-            fontFamily,
-            fontSize,
-          },
         }),
       });
       const item: HistoryItem = {
@@ -1027,8 +990,7 @@ export default function StudioPage() {
           // to sit for every row.
           body: JSON.stringify({
             imageUrl: sourceUrl,
-            backgroundColor,
-            twoPiece,
+              twoPiece,
             styleNumber: itemStyle ?? undefined,
             styleNumberTrust: "inferred",
           }),
@@ -1096,14 +1058,6 @@ export default function StudioPage() {
             normalizeBackground: true,
             // Always 1 variant per input in batch mode (see design decisions).
             numImages: 1,
-            overlay: {
-              mode: deriveOverlayMode(showName, showNumber),
-              placement: overlayPlacement,
-              colorName,
-              styleNumber,
-              fontFamily,
-              fontSize,
-            },
           }),
         });
 
@@ -1203,22 +1157,8 @@ export default function StudioPage() {
             }}
             onAddFiles={addFiles}
             onRemoveUpload={removeUpload}
-            backgroundColor={backgroundColor}
-            onBackgroundColorChange={setBackgroundColor}
-            colorName={colorName}
-            onColorNameChange={setColorName}
             styleNumber={styleNumber}
             onStyleNumberChange={setStyleNumber}
-            showName={showName}
-            onShowNameChange={setShowName}
-            showNumber={showNumber}
-            onShowNumberChange={setShowNumber}
-            overlayPlacement={overlayPlacement}
-            onOverlayPlacementChange={setOverlayPlacement}
-            fontFamily={fontFamily}
-            onFontFamilyChange={setFontFamily}
-            fontSize={fontSize}
-            onFontSizeChange={setFontSize}
             referenceImageUrl={referenceImageUrl}
             defaultReferencePreview={routingCanvas?.path || STUDIO_BACKDROP_PATH}
             routing={routing}
@@ -1251,6 +1191,7 @@ export default function StudioPage() {
             garmentMode={garmentMode}
             onGarmentModeChange={handleGarmentModeChange}
             garmentModeOptions={["single", "set-single-image"]}
+            hideAdvancedPrompt
             productShotMode={productShotMode}
             onProductShotModeChange={(mode) => {
               setProductShotMode(mode);

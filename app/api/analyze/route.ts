@@ -39,11 +39,10 @@ export const maxDuration = 120;
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { imageUrl, imageUrls, backgroundColor, twoPiece, styleNumber, styleNumberTrust } =
+    const { imageUrl, imageUrls, twoPiece, styleNumber, styleNumberTrust } =
       body as {
         imageUrl: string;
         imageUrls?: string[];
-        backgroundColor?: string;
         twoPiece?: boolean;
         /** Optional. When present, the ERP decides the category — see below. */
         styleNumber?: string;
@@ -225,9 +224,6 @@ export async function POST(req: Request) {
       garmentSource: gallery ? `erp-gallery:${gallery.frames}` : "intake-photo",
       routing,
       canvas: { front: frontCanvas, back: backCanvas },
-      // Unused by the current UI, kept so the response shape stays honest about
-      // what the legacy field meant.
-      backgroundColor: backgroundColor ?? null,
     });
   } catch (err: any) {
     console.error("[analyze] error:", err);

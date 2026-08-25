@@ -105,6 +105,12 @@ interface Props {
   inferredScope?: "upper-body" | "lower-body" | "full-look";
   hideTwoPieceToggle?: boolean;
   hideVariantControl?: boolean;
+  /**
+   * Hides the collapsible raw-prompt drawer. Image Studio assembles its brief
+   * from the routing chain, so a hand-editable copy is a second source of
+   * truth that silently overrides it on the next Generate.
+   */
+  hideAdvancedPrompt?: boolean;
   generateLabel?: string;
   productShotMode?: ProductShotMode;
   onProductShotModeChange?: (mode: ProductShotMode) => void;
@@ -592,7 +598,11 @@ export default function PromptPanel(p: Props) {
       </div>
       )}
 
-      {/* ========== ANALYSIS REVIEW ========== */}
+      {/* ========== ANALYSIS REVIEW ==========
+          Only rendered when the parent actually wired it up. Image Studio
+          folded Analyze into Generate and passes neither prop, which left a
+          heading and an instruction over an empty box. */}
+      {(p.onAnalyze || p.analysisReview) && (
       <div className="border-b border-neutral-100 px-6 py-3">
         <div className="mb-2 flex items-center justify-between gap-3">
           <div>
@@ -659,8 +669,10 @@ export default function PromptPanel(p: Props) {
           </div>
         ) : null}
       </div>
+      )}
 
       {/* ========== ADVANCED PROMPT ========== */}
+      {!p.hideAdvancedPrompt && (
       <div className="border-b border-neutral-100 px-6 py-3">
         <button
           type="button"
@@ -696,6 +708,7 @@ export default function PromptPanel(p: Props) {
         )}
 
       </div>
+      )}
 
       {/* ========== ACTION BAR ========== */}
       <div className="prompt-action-bar flex items-center justify-between gap-3 border-t border-neutral-200 bg-neutral-50 px-6 py-4">
