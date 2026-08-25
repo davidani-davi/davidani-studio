@@ -150,3 +150,59 @@ describe("normalizeStudioBackground", () => {
     expect(result.buffer).toBe(png);
   });
 });
+
+describe("stranded islands (hallucinated watermarks)", () => {
+  const W = 200, H = 200, C = 3;
+  const BG = [0xed, 0xee, 0xee];
+
+  /** Frame with a centred garment plus optional marks. */
+  function frame(marks: Array<{ x: number; y: number; w: number; h: number }> = []) {
+    const data = new Uint8Array(W * H * C);
+    for (let i = 0; i < W * H; i++) {
+      data[i * C] = BG[0]; data[i * C + 1] = BG[1]; data[i * C + 2] = BG[2];
+    }
+    const paint = (x0: number, y0: number, w: number, h: number, v: number) => {
+      for (let y = y0; y < y0 + h; y++)
+        for (let x = x0; x < x0 + w; x++) {
+          const i = (y * W + x) * C;
+          data[i] = v; data[i + 1] = v; data[i + 2] = v;
+        }
+    };
+    paint(60, 40, 80, 120, 20);            // the garment, centred and dark
+    for (const m of marks) paint(m.x, m.y, m.w, m.h, 90);
+    return data;
+  }
+
+  const isBg = (mask: Uint8Array, x: number, y: number) => mask[y * W + x] === 255;
+
+  it("absorbs a small mark in the bottom-right corner", () => {
+    const withMark = computeBackgroundMask(frame([{ x: 175, y: 182, w: 18, h: 10 }]), W, H, C);
+    expect(withMark.applied).toBe(true);
+    expect(isBg(withMark.mask, 180, 186)).toBe(true); // watermark absorbed
+  });
+
+  it("leaves the garment alone", () => {
+    const r = computeBackgroundMask(frame([{ x: 175, y: 182, w: 18, h: 10 }]), W, H, C);
+    expect(isBg(r.mask, 100, 100)).toBe(false); // garment centre still subject
+    expect(isBg(r.mask, 62, 45)).toBe(false);   // garment corner still subject
+  });
+
+  it("does NOT absorb a detached piece near the centre", () => {
+    // The second half of a two-piece set: small, but centred — must survive.
+    const r = computeBackgroundMask(frame([{ x: 95, y: 170, w: 14, h: 12 }]), W, H, C);
+    expect(isBg(r.mask, 100, 175)).toBe(false);
+  });
+
+  it("does NOT absorb a large object even in the margin", () => {
+    // 40x60 = 12% of the frame, over the 1% island cap.
+    const r = computeBackgroundMask(frame([{ x: 4, y: 4, w: 40, h: 60 }]), W, H, C);
+    expect(isBg(r.mask, 20, 30)).toBe(false);
+  });
+
+  it("counts absorbed pixels toward coverage", () => {
+    const clean = computeBackgroundMask(frame(), W, H, C);
+    const marked = computeBackgroundMask(frame([{ x: 175, y: 182, w: 18, h: 10 }]), W, H, C);
+    // The mark's pixels end up background in both, so coverage matches.
+    expect(marked.coverage).toBeCloseTo(clean.coverage, 4);
+  });
+});
