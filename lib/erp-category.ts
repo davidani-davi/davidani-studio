@@ -110,6 +110,74 @@ async function login(): Promise<string | null> {
   return jar;
 }
 
+/**
+ * Authenticated GET against the ERP. Shared with lib/erp-gallery.ts so both
+ * reuse one session. Returns null rather than throwing on any failure.
+ */
+export async function erpFetch(pathAndQuery: string): Promise<string | null> {
+  try {
+    const jar = await login();
+    if (!jar) return null;
+    const res = await fetch(`${BASE}${pathAndQuery}`, {
+      headers: { Cookie: jar, "User-Agent": "Mozilla/5.0", Referer: `${BASE}/main.asp` },
+      signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS),
+    });
+    return res.ok ? await res.text() : null;
+  } catch (err: any) {
+    console.warn("[erp] request failed:", err?.name || err);
+    return null;
+  }
+}
+
+/** Authenticated POST (form-encoded). Same contract as erpFetch. */
+export async function erpPost(
+  path: string,
+  form: Record<string, string>
+): Promise<string | null> {
+  try {
+    const jar = await login();
+    if (!jar) return null;
+    const res = await fetch(`${BASE}${path}`, {
+      method: "POST",
+      headers: {
+        Cookie: jar,
+        "User-Agent": "Mozilla/5.0",
+        Referer: `${BASE}/main.asp`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams(form),
+      signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS),
+    });
+    return res.ok ? await res.text() : null;
+  } catch (err: any) {
+    console.warn("[erp] request failed:", err?.name || err);
+    return null;
+  }
+}
+
+/** Authenticated binary GET, for ERP-hosted images. Null on any failure. */
+export async function erpFetchBytes(url: string): Promise<Buffer | null> {
+  try {
+    const jar = await login();
+    if (!jar) return null;
+    const abs = url.startsWith("http") ? url : `${BASE}${url}`;
+    // The ERP serves filenames with spaces and parentheses unencoded.
+    const res = await fetch(encodeURI(abs), {
+      headers: { Cookie: jar, "User-Agent": "Mozilla/5.0", Referer: `${BASE}/main.asp` },
+      signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS),
+    });
+    if (!res.ok) return null;
+    if (!(res.headers.get("content-type") || "").startsWith("image")) return null;
+    return Buffer.from(await res.arrayBuffer());
+  } catch (err: any) {
+    console.warn("[erp] image fetch failed:", err?.name || err);
+    return null;
+  }
+}
+
+/** Base URL, for callers that need to absolutise ERP-relative image paths. */
+export const ERP_BASE = BASE;
+
 /** Raw ERP `category` string for a style, or null. Never throws. */
 export async function fetchErpCategory(
   style: string | null | undefined
@@ -120,28 +188,15 @@ export async function fetchErpCategory(
   const hit = categoryCache.get(key);
   if (hit && fresh(hit.at, CATEGORY_TTL_MS)) return hit.value;
 
-  try {
-    const jar = await login();
-    if (!jar) return null;
-
-    const res = await fetch(
-      `${BASE}/data/Style.Center.StyleForm.Load.asp?idStyle=${encodeURIComponent(key)}`,
-      {
-        headers: { Cookie: jar, "User-Agent": "Mozilla/5.0", Referer: `${BASE}/main.asp` },
-        signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS),
-      }
-    );
-    if (!res.ok) return null;
-    // The endpoint returns JS-object syntax (key: 'value'), not JSON.
-    const m = /\bcategory\s*:\s*'([^']*)'/.exec(await res.text());
-    const value = m ? m[1].trim() : null;
-    categoryCache.set(key, { value, at: Date.now() });
-    return value;
-  } catch (err: any) {
-    // Timeouts, DNS, ERP hiccups — all non-fatal, we just fall back to vision.
-    console.warn("[erp-category] lookup failed:", err?.name || err);
-    return null;
-  }
+  const body = await erpFetch(
+    `/data/Style.Center.StyleForm.Load.asp?idStyle=${encodeURIComponent(key)}`
+  );
+  if (body === null) return null;
+  // The endpoint returns JS-object syntax (key: 'value'), not JSON.
+  const m = /\bcategory\s*:\s*'([^']*)'/.exec(body);
+  const value = m ? m[1].trim() : null;
+  categoryCache.set(key, { value, at: Date.now() });
+  return value;
 }
 
 /**

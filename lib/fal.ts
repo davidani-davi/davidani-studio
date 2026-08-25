@@ -594,6 +594,60 @@ function parseGarmentAnalysisOutput(output: string, label: string): { garment: s
   return { garment, features };
 }
 
+/**
+ * Analyzer variant for a GALLERY CONTACT SHEET rather than one photo.
+ *
+ * Same two-line GARMENT / FEATURES contract as ANALYSIS_SYSTEM_PROMPT, and all
+ * of its anti-hallucination and descriptor rules still apply — but the hero
+ * question is answered by cross-referencing frames instead of guessing from
+ * layering order in a single shot. DDT9040 (a black crochet fringe halter shot
+ * under a sheer pearl cardigan) was rendered as the cardigan from one photo;
+ * across its gallery the halter is in every frame and the cardigan is not.
+ */
+const GALLERY_HERO_PREFIX = `You are looking at a CONTACT SHEET: several separate photographs of ONE product, tiled into a single image. The frames come from the same product's photo gallery, so every frame contains the product, while the other pieces the model wears change between frames or are absent from some.
+
+IDENTIFY THE PRODUCT FIRST, by comparing frames:
+
+- The product is the ONE garment that appears in EVERY frame. A garment missing from even one frame is styling, not product.
+- The product is what the close-up and cropped frames are centred on. Photographers zoom into the product, not the styling.
+- If two garments both appear in every frame, pick the one the close-ups centre on, and the one whose construction detail (texture, trim, hardware, pattern) is shown most deliberately.
+- Ignore trousers, skirts, shoes, bags, jewellery and outer layers that are only there to style the shot.
+
+Then describe ONLY that one garment, using the exact two-line format and every rule below. Describe it as it appears across the whole sheet, not in any single frame.
+
+`;
+
+/**
+ * Extract GARMENT / FEATURES for the hero product in a gallery contact sheet.
+ * Same output shape as extractCatalogGarmentFields, so callers are unchanged.
+ */
+export async function extractHeroGarmentFields(
+  contactSheetUrl: string,
+  frames: number,
+  label = "analyze-gallery"
+) {
+  const result: any = await subscribeVisionWithRetry(
+    {
+      model: VISION_MODEL,
+      system_prompt: GALLERY_HERO_PREFIX + ANALYSIS_SYSTEM_PROMPT,
+      prompt:
+        `This contact sheet holds ${frames} photographs of one product. Identify the single garment ` +
+        `present in every frame — the product — and describe only that garment using the two-line ` +
+        `GARMENT / FEATURES format from your system prompt. Output exactly those two lines, nothing else.`,
+      image_url: contactSheetUrl,
+    },
+    "gallery hero analysis"
+  );
+
+  const data = result?.data ?? result;
+  const output: string = (data?.output ?? data?.response ?? data?.text ?? "").trim();
+  if (!output) throw new Error("Gallery hero analysis returned no text output.");
+
+  const fields = parseGarmentAnalysisOutput(output, label);
+  console.log(`[${label}] hero garment:`, fields.garment);
+  return fields;
+}
+
 export async function extractCatalogGarmentFields(imageUrl: string, label = "analyze") {
   const result: any = await subscribeVisionWithRetry(
     {

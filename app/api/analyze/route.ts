@@ -4,10 +4,12 @@ import {
   buildTwoImagePrompt,
   buildTwoPiecePrompt,
   extractCatalogGarmentFields,
+  extractHeroGarmentFields,
   extractTwoPieceFields,
 } from "@/lib/fal";
 import { inferCategory, resolveCanvas, type GarmentCategory } from "@/lib/canvas-registry";
 import { fetchErpCategory, mapErpCategory } from "@/lib/erp-category";
+import { buildGalleryContactSheet } from "@/lib/erp-gallery";
 import { cachedVision } from "@/lib/vision-cache";
 
 export const runtime = "nodejs";
@@ -68,6 +70,17 @@ export async function POST(req: Request) {
     const erpMapped = mapErpCategory(erpRaw);
     const treatAsSet = Boolean(twoPiece) || erpMapped === "set";
 
+    // --- gallery contact sheet -----------------------------------------------
+    // The category settles WHAT the garment is; it cannot settle WHICH garment
+    // in a styled photo is the product. DDT9040 is a crochet halter shot under
+    // a sheer cardigan, and from the single intake photo the analyzer picked
+    // the cardigan. Its own gallery resolves it: the halter is in every frame,
+    // the cardigan is not. Only worth building for a single garment — a set
+    // uses the four-field extractor, and a front/back contract run already has
+    // two views of the same SKU.
+    const wantsGallery = Boolean(styleNumber) && !treatAsSet && !isContract;
+    const gallery = wantsGallery ? await buildGalleryContactSheet(styleNumber!) : null;
+
     // --- vision (cached) -----------------------------------------------------
     const extracted = await cachedVision(
       "image-analyze-fields",
@@ -76,6 +89,10 @@ export async function POST(req: Request) {
         primaryImageUrl,
         twoPiece: treatAsSet,
         contract: isContract,
+        // Part of the key: a gallery-derived description is a different answer
+        // for the same intake photo, so it must not be served from a cache
+        // entry built without one.
+        gallery: gallery?.url ?? null,
       },
       async () => {
         if (treatAsSet) {
@@ -87,6 +104,12 @@ export async function POST(req: Request) {
             extractCatalogGarmentFields(selectedImageUrls[1], "analyze-back"),
           ]);
           return { kind: "contract" as const, front, back };
+        }
+        if (gallery) {
+          return {
+            kind: "single" as const,
+            single: await extractHeroGarmentFields(gallery.url, gallery.frames),
+          };
         }
         return {
           kind: "single" as const,
@@ -136,6 +159,7 @@ export async function POST(req: Request) {
 
     console.log(
       `[analyze] category=${category} (${categorySource}; vision said ${visionCategory}) ` +
+        `garmentSource=${gallery ? `erp-gallery:${gallery.frames}frames` : "intake-photo"} ` +
         `front=${frontCanvas.path} back=${backCanvas.path} ` +
         `fallback(front=${frontCanvas.isFallback}, back=${backCanvas.isFallback})`
     );
@@ -149,6 +173,7 @@ export async function POST(req: Request) {
       category,
       categorySource,
       visionCategory,
+      garmentSource: gallery ? `erp-gallery:${gallery.frames}` : "intake-photo",
       canvas: { front: frontCanvas, back: backCanvas },
       // Unused by the current UI, kept so the response shape stays honest about
       // what the legacy field meant.
