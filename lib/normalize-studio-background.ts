@@ -28,6 +28,12 @@ export interface NormalizeBackgroundOptions {
   minBrightness?: number;
   /** Sampled border color's max-min channel spread must not exceed this. */
   maxChannelSpread?: number;
+  /**
+   * How much warmer/cooler than the sampled backdrop a pixel may be and still
+   * count as backdrop, measured as max-min channel spread. See the neutrality
+   * gate in computeBackgroundMask().
+   */
+  maxChromaOverSample?: number;
   /** Abort if the fill would swallow more than this fraction of the frame. */
   maxCoverage?: number;
   /**
@@ -44,6 +50,10 @@ export interface NormalizeBackgroundOptions {
 
 const DEFAULTS = {
   tolerance: 34,
+  // The studio sweep is neutral by construction (#edeeee, spread 1) and
+  // garment cream is warm (spread 10-22). 6 clears a backdrop that has picked
+  // up a slight tint while still rejecting the palest fabric measured.
+  maxChromaOverSample: 6,
   featherSigma: 1.4,
   minBrightness: 185,
   maxChannelSpread: 32,
@@ -154,11 +164,29 @@ export function computeBackgroundMask(
   let top = 0;
   const toleranceSq = opts.tolerance * opts.tolerance;
 
+  // Neutrality gate. Brightness alone cannot separate a cream garment from
+  // this backdrop: ivory sits 10 RGB from #edeeee while a backdrop that has
+  // drifted across the frame sits further from its own corner than that. A
+  // camo jacket with a cream yoke lost the entire yoke to the fill, because
+  // the yoke was closer to the sweep than the sweep's own gradient was.
+  //
+  // Hue does separate them, decisively. The sweep is neutral by construction
+  // — #edeeee has a max-min channel spread of 1 — and every cream, ivory and
+  // beige fabric measured spreads 10 to 22. So a pixel must be both close in
+  // brightness AND no warmer than the backdrop it claims to be part of.
+  const sampledSpread =
+    Math.max(sampled.r, sampled.g, sampled.b) - Math.min(sampled.r, sampled.g, sampled.b);
+  const maxSpread = sampledSpread + opts.maxChromaOverSample;
+
   const withinTolerance = (index: number): boolean => {
     const i = index * channels;
-    const dr = data[i] - sampled.r;
-    const dg = data[i + 1] - sampled.g;
-    const db = data[i + 2] - sampled.b;
+    const r = data[i];
+    const g = data[i + 1];
+    const b = data[i + 2];
+    if (Math.max(r, g, b) - Math.min(r, g, b) > maxSpread) return false;
+    const dr = r - sampled.r;
+    const dg = g - sampled.g;
+    const db = b - sampled.b;
     return dr * dr + dg * dg + db * db <= toleranceSq;
   };
 

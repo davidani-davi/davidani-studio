@@ -206,3 +206,115 @@ describe("stranded islands (hallucinated watermarks)", () => {
     expect(marked.coverage).toBeCloseTo(clean.coverage, 4);
   });
 });
+
+describe("a pale garment is not mistaken for the backdrop", () => {
+  /**
+   * Live failure: a camo jacket with a cream yoke came back with the entire
+   * yoke erased and a ragged white edge where it had been. The fill entered
+   * through the yoke — ivory sits 10 RGB from #edeeee, well inside tolerance —
+   * and stopped only when it reached the darker camo.
+   *
+   * Brightness cannot fix this. A backdrop that drifts across the frame is
+   * further from its own corner colour than cream is, so any tolerance loose
+   * enough to clean the backdrop is loose enough to eat the cream. Hue can:
+   * the sweep is neutral by construction and cream fabric is warm.
+   */
+  const CAMO: [number, number, number] = [198, 184, 156];
+
+  /** Cream yoke over a camo body, on a backdrop with gradient and noise. */
+  function twoTone(
+    yoke: [number, number, number],
+    { drift = 0, noise = 2 }: { drift?: number; noise?: number } = {}
+  ) {
+    const W = 400;
+    const H = 500;
+    const data = new Uint8Array(W * H * 3);
+    let seed = 7;
+    const rnd = () => ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff - 0.5) * 2;
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        const i = (y * W + x) * 3;
+        const inGarment = x > 90 && x < 310 && y > 110 && y < 390;
+        if (inGarment) {
+          const c = y < 200 ? yoke : CAMO;
+          data[i] = c[0];
+          data[i + 1] = c[1];
+          data[i + 2] = c[2];
+        } else {
+          const v = Math.max(0, Math.min(255, 0xed - drift * (y / H) + rnd() * noise));
+          data[i] = v;
+          data[i + 1] = v + 1;
+          data[i + 2] = v + 1;
+        }
+      }
+    }
+    const result = computeBackgroundMask(data, W, H, 3);
+    const share = (fromY: number, toY: number) => {
+      let hit = 0;
+      let total = 0;
+      for (let y = fromY; y < toY; y++) {
+        for (let x = 91; x < 310; x++) {
+          total++;
+          if (result.mask[y * W + x]) hit++;
+        }
+      }
+      return hit / total;
+    };
+    let bgHit = 0;
+    let bgTotal = 0;
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        if (x > 90 && x < 310 && y > 110 && y < 390) continue;
+        bgTotal++;
+        if (result.mask[y * W + x]) bgHit++;
+      }
+    }
+    return { yoke: share(111, 200), camo: share(200, 390), backdrop: bgHit / bgTotal };
+  }
+
+  it.each([
+    ["cream", [240, 234, 222]],
+    ["ivory", [245, 240, 232]],
+    ["warm white", [250, 246, 240]],
+    ["pale beige", [232, 224, 210]],
+  ] as const)("keeps a %s yoke intact", (_label, yoke) => {
+    const r = twoTone(yoke as [number, number, number]);
+    expect(r.yoke).toBe(0);
+    expect(r.camo).toBe(0);
+    expect(r.backdrop).toBeGreaterThan(0.99);
+  });
+
+  it.each([
+    [0, 2],
+    [6, 3],
+    [12, 4],
+    [18, 5],
+  ])("holds when the backdrop drifts %i with noise %i", (drift, noise) => {
+    // The drifting backdrop is the case a tolerance tweak cannot survive:
+    // at drift 12 every tolerance that still cleaned the sweep also ate cream.
+    const r = twoTone([240, 234, 222], { drift, noise });
+    expect(r.yoke).toBe(0);
+    expect(r.backdrop).toBeGreaterThan(0.99);
+  });
+
+  it("still cleans a backdrop that carries a slight tint of its own", () => {
+    // The gate is relative to the sampled border, not to pure grey, so a
+    // warm-lit sweep is still absorbed.
+    const W = 400;
+    const H = 500;
+    const data = new Uint8Array(W * H * 3);
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        const i = (y * W + x) * 3;
+        const inGarment = x > 90 && x < 310 && y > 110 && y < 390;
+        const c = inGarment ? [240, 234, 222] : [0xf0, 0xee, 0xea];
+        data[i] = c[0];
+        data[i + 1] = c[1];
+        data[i + 2] = c[2];
+      }
+    }
+    const r = computeBackgroundMask(data, W, H, 3);
+    expect(r.applied).toBe(true);
+    expect(r.coverage).toBeGreaterThan(0.6);
+  });
+});
