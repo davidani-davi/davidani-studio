@@ -2130,11 +2130,21 @@ export function buildTwoPiecePrompt(
       `Keep the fabric smoothly steamed and free of harsh creases, storage folds, and bunched or ` +
       `twisted sections, but retain the soft natural folds a filled garment makes where the fabric ` +
       `breaks. Do not iron either piece into a flat plane. ` +
-      `Display both pieces in the canonical catalog layout for a coordinated set: the ` +
-      `${t} positioned above and slightly overlapping the ${b}, both balanced and centered on the ` +
-      `vertical centerline — WHILE RETAINING each piece's true silhouette from the reference. ` +
-      `Sleeves on the top angle slightly downward and away from the body, each holding its own ` +
-      `volume; the bottom's waistband is centered under the top's hem with its hem fanning gently. ` +
+      // The approved set canvas separates the two pieces with a clean band of
+      // sweep — the top's hem ends, background shows, then the waistband
+      // starts. This clause used to ask for the opposite ("slightly
+      // overlapping"), which contradicted the canvas the composition standard
+      // tells the model to match. Following the prompt merged the pieces: a
+      // poncho and its maxi skirt came back reading as one long dress.
+      `Display both pieces in the canonical catalog layout for a coordinated set: the ${t} above ` +
+      `and the ${b} below, separated by a clean band of unbroken studio background. The top's hem ` +
+      `ends, the background shows through across the full width between them, and only then does ` +
+      `the bottom's waistband begin — a clearly visible band of sweep, not a hairline. That band of ` +
+      `background is what reads the frame as two separate products laid side by side in the same ` +
+      `shot. Both pieces are balanced and centered on the vertical centerline — WHILE RETAINING ` +
+      `each piece's true silhouette from the reference. Sleeves on the top angle slightly downward ` +
+      `and away from the body, each holding its own volume; the bottom's waistband is centered ` +
+      `below the top's hem with its hem fanning gently. ` +
       `Both pieces are real garments resting on a surface, NOT mirrored graphics: small natural ` +
       `differences between left and right are correct and must not be corrected away. Layout ` +
       `discipline must NOT override the reference silhouette. ` +

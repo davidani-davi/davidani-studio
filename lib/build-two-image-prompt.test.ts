@@ -260,3 +260,36 @@ describe("canvas artwork does not carry onto the rendered garment", () => {
     );
   });
 });
+
+describe("set layout separates the two pieces", () => {
+  // The approved set canvas shows the top's hem ending, a clean band of sweep,
+  // then the skirt's waistband. The clause used to ask for the pieces to
+  // "slightly overlap", contradicting the canvas the composition standard
+  // tells the model to match — and DWTS67099's poncho and maxi skirt came back
+  // merged into one long garment.
+  const out = buildTwoPiecePrompt({
+    top: "charcoal linen poncho top",
+    topFeatures: "a fringed asymmetric hem",
+    bottom: "matching charcoal linen maxi skirt",
+    bottomFeatures: "an elasticated waistband",
+  });
+
+  it("asks for a band of background between the pieces", () => {
+    expect(out).toContain("separated by a clean band of unbroken studio background");
+    expect(out).toContain("clearly visible band of sweep, not a hairline");
+  });
+
+  it("no longer asks the pieces to overlap", () => {
+    expect(out).not.toContain("slightly overlapping");
+    expect(out).toContain("centered below the top's hem");
+  });
+
+  it("says why the gap matters, so it is not read as optional styling", () => {
+    expect(out).toContain("two separate products");
+  });
+
+  it("keeps the silhouette override the layout must not outrank", () => {
+    expect(out).toContain("WHILE RETAINING");
+    expect(out).toContain("Layout discipline must NOT override the reference silhouette");
+  });
+});
