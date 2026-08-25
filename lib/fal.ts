@@ -731,6 +731,30 @@ const BACKGROUND_SOURCE_FIREWALL =
  * Stating what the frame DOES contain works at any position and names nothing
  * we do not want drawn.
  */
+/**
+ * Surface-authority clause.
+ *
+ * SILHOUETTE AUTHORITY splits canvas-vs-reference for garment SHAPE, and
+ * nothing split them for garment DECORATION. The outerwear canvas is the rodeo
+ * bomber, and a poncho rendered against it came back wearing the bomber's
+ * "Catch me at the Rodeo" script and horse patches — the model read the
+ * artwork as part of the scene it was told to preserve.
+ *
+ * Phrased positively, and appended at the tail rather than filed next to
+ * SILHOUETTE AUTHORITY where it belongs topically: inserting text mid-prompt
+ * moves STUDIO COMPOSITION STANDARD and garment scale visibly drifts on the
+ * rows the canvas is supposed to be pinning.
+ */
+function surfaceAuthorityClause(subject: string): string {
+  return (
+    `SURFACE AUTHORITY: every graphic element on the rendered ${subject} — embroidery, applique, ` +
+    `patches, prints, logos, lettering, script, numerals, artwork, stripes, and contrast trims — comes ` +
+    `exclusively from the attached reference photograph. The garment shown in the primary studio ` +
+    `photograph supplies the scene only; its decoration belongs to that garment alone and stays with it. ` +
+    `Wherever the reference shows plain undecorated fabric, render plain undecorated fabric.`
+  );
+}
+
 function garmentIsolationClause(g: string): string {
   return (
     `SINGLE PRODUCT: the finished frame holds exactly one object — the ${g} — resting alone on the studio ` +
@@ -903,6 +927,7 @@ export function buildTwoImagePrompt(
       // to 81% of frame height against a 53% canvas). Appending instead means
       // no previously-tuned clause moves, and this one gets recency.
       `${garmentIsolationClause(g)} ` +
+      `${surfaceAuthorityClause(g)} ` +
       `Hyper-realistic 4K e-commerce product photography, Zara-style catalog quality.`
     );
   };
@@ -2117,8 +2142,9 @@ export function buildTwoPiecePrompt(
       `REMOVE ALL NECK LABELS, BRAND TAGS, SIZE TAGS, CARE LABELS, AND SEWN-IN WOVEN TAGS from ` +
       `both the top and the bottom — the inside of the neckline, collar band, waistband, and any ` +
       `other typical label location must be clean and empty with no tag, label, patch, or printed ` +
-      `text of any kind showing. Hyper-realistic 4K e-commerce product photography, Zara-style ` +
-      `catalog quality.`
+      `text of any kind showing. ` +
+      `${surfaceAuthorityClause(`${t} and ${b}`)} ` +
+      `Hyper-realistic 4K e-commerce product photography, Zara-style catalog quality.`
     );
   };
 

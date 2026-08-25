@@ -9,6 +9,7 @@ import {
 } from "@/lib/fal";
 import { inferCategory, resolveCanvas, type GarmentCategory } from "@/lib/canvas-registry";
 import { fetchErpCategory, mapErpCategory } from "@/lib/erp-category";
+import { reconcileStyleCode } from "@/lib/style-code";
 import { buildGalleryContactSheet } from "@/lib/erp-gallery";
 import { cachedVision } from "@/lib/vision-cache";
 
@@ -67,7 +68,14 @@ export async function POST(req: Request) {
     // garment. Best effort throughout: no style number, no credentials, or an
     // ERP hiccup all leave this null and fall back to vision.
     const erpRaw = await fetchErpCategory(styleNumber);
-    const erpMapped = mapErpCategory(erpRaw);
+    // The style code is reconciled in BEFORE the category is used for anything.
+    // The category field is hand-entered and DWTS67099 — Winter Top & Skirt, a
+    // set — is filed under JACKETS / OUTWEAR, so it rendered as a lone poncho
+    // and its own skirt kept reading as contamination. The code names the
+    // garments outright. See lib/style-code.ts for how far it is allowed to
+    // push against the ERP (not all the way, and never for free).
+    const reconciled = reconcileStyleCode(styleNumber, mapErpCategory(erpRaw));
+    const erpMapped = reconciled.category;
     const treatAsSet = Boolean(twoPiece) || erpMapped === "set";
 
     // --- gallery contact sheet -----------------------------------------------
@@ -141,8 +149,8 @@ export async function POST(req: Request) {
     const categorySource = !erpMapped
       ? "vision"
       : erpMapped === "ambiguous-bottom"
-      ? `erp:${erpRaw}+vision`
-      : `erp:${erpRaw}`;
+      ? `${reconciled.source}(${erpRaw})+vision`
+      : `${reconciled.source}(${erpRaw})`;
 
     // --- assembly (pure, both canvas variants) -------------------------------
     const assemble = (mode: "preserve" | "backdrop") => {

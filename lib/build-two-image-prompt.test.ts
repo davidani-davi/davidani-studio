@@ -211,3 +211,52 @@ describe("two-piece sets keep their two pieces", () => {
     expect(out.slice(-700)).not.toMatch(/\bDo not render a (person|third)\b/i);
   });
 });
+
+describe("canvas artwork does not carry onto the rendered garment", () => {
+  // Live defect: the outerwear canvas IS the rodeo bomber, and a poncho
+  // rendered against it came back carrying the bomber's "Catch me at the
+  // Rodeo" script and horse patches. SILHOUETTE AUTHORITY splits canvas from
+  // reference for SHAPE; nothing split them for DECORATION.
+  const single = buildTwoImagePrompt("charcoal wool poncho", FEATURES);
+  const set = buildTwoPiecePrompt({
+    top: "cropped ribbed knit top",
+    topFeatures: "a square neckline",
+    bottom: "matching ribbed knit maxi skirt",
+    bottomFeatures: "an elasticated waistband",
+  });
+
+  it.each([
+    ["single garment", single],
+    ["two-piece set", set],
+  ])("%s names the reference as the source of all graphics", (_label, out) => {
+    expect(out).toContain("SURFACE AUTHORITY");
+    for (const kind of ["embroidery", "patches", "lettering", "script", "artwork"]) {
+      expect(out).toContain(kind);
+    }
+    expect(out).toContain("comes exclusively from the attached reference photograph");
+  });
+
+  it.each([
+    ["single garment", single],
+    ["two-piece set", set],
+  ])("%s states it positively, with no forbidden-noun list", (_label, out) => {
+    const clause = out.slice(out.indexOf("SURFACE AUTHORITY"));
+    // Negation backfire is a measured failure mode here: a tail made of
+    // forbidden nouns summoned exactly those nouns into the render.
+    expect(clause.toLowerCase()).not.toContain("do not");
+    expect(clause.toLowerCase()).not.toContain("never");
+    expect(clause).toContain("render plain undecorated fabric");
+  });
+
+  it("sits at the tail, after the composition standard it must not displace", () => {
+    // Inserting text ahead of STUDIO COMPOSITION STANDARD moved it from ~46%
+    // to ~55% of the prompt and garment scale drifted on exactly the rows the
+    // canvas was pinning. Appending is the whole point.
+    expect(single.indexOf("SURFACE AUTHORITY")).toBeGreaterThan(
+      single.indexOf("STUDIO COMPOSITION STANDARD")
+    );
+    expect(single.indexOf("SURFACE AUTHORITY")).toBeGreaterThan(
+      single.indexOf("SINGLE PRODUCT")
+    );
+  });
+});
