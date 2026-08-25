@@ -118,3 +118,51 @@ describe("authority — how far a code may push against the ERP", () => {
     expect(reconcileStyleCode(null, null)).toEqual({ category: null, source: "none" });
   });
 });
+
+describe("an inferred style number carries less weight than a typed one", () => {
+  // Batch reads the style number from the upload's filename. The shape can be
+  // right while the file is a copy, a re-export, or a renamed duplicate — so
+  // the code is not allowed to overrule a category the ERP actually stated.
+  it("does not let a filename code overrule the ERP", () => {
+    expect(reconcileStyleCode("DWTS67099", "outerwear", "inferred")).toEqual({
+      category: "outerwear",
+      source: "erp",
+      demoted: { prefix: "DWTS", wanted: "set", kept: "outerwear" },
+    });
+  });
+
+  it("reports the demotion so the row can be flagged rather than lost", () => {
+    const r = reconcileStyleCode("DWTS67099", "outerwear", "inferred");
+    expect(r.demoted?.wanted).toBe("set");
+    expect(r.demoted?.kept).toBe("outerwear");
+  });
+
+  it("still fills a blank category, marked as provisional", () => {
+    expect(reconcileStyleCode("DTS03032", null, "inferred")).toEqual({
+      category: "set",
+      source: "style-code:DTS?",
+    });
+  });
+
+  it("stays silent when it simply agrees with the ERP", () => {
+    const r = reconcileStyleCode("DTS03032", "set", "inferred");
+    expect(r).toEqual({ category: "set", source: "erp" });
+    expect(r.demoted).toBeUndefined();
+  });
+
+  it("still splits BOTTOM, which is a refinement and not an override", () => {
+    expect(reconcileStyleCode("DS65007", "ambiguous-bottom", "inferred")).toEqual({
+      category: "skirt",
+      source: "erp:BOTTOM+style-code:DS",
+    });
+  });
+
+  it("defaults to asserted, so the typed path is unchanged", () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    expect(reconcileStyleCode("DWTS67099", "outerwear")).toEqual({
+      category: "set",
+      source: "style-code:DWTS",
+    });
+    log.mockRestore();
+  });
+});

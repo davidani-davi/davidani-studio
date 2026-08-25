@@ -1112,7 +1112,7 @@ export default function OutputPanel({
                 >
                   <div className="flex items-center justify-between px-1 pb-2">
                     <span className="text-xs font-semibold text-neutral-800">
-                      {imageIndex === 0 ? "Left · Variant 1" : "Right · Variant 2"}
+                      {imageIndex === 0 ? "Left" : "Right"}
                     </span>
                     <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-semibold text-neutral-500">
                       {imageIndex === 0 ? "Variant 1" : "Variant 2"}
@@ -1122,7 +1122,7 @@ export default function OutputPanel({
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={url}
-                      alt={imageIndex === 0 ? "Image A current prompt" : "Image B V1.7 prompt"}
+                      alt={`Generated variant ${imageIndex + 1}`}
                       className="max-h-full max-w-full object-contain"
                     />
                   </div>

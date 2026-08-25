@@ -10,6 +10,8 @@ import type { ModelId } from "@/lib/models";
 import type { OverlayMode, OverlayPlacement } from "@/lib/fal";
 import { STUDIO_BACKDROP_PATH } from "@/lib/studio-background";
 import type { CanvasSummary, RoutingPayload } from "@/lib/routing-summary";
+import { styleNumbersForQueue } from "@/lib/style-from-filename";
+import { buildBatchSummary } from "@/lib/batch-summary";
 import type { CanvasChoice } from "@/lib/canvas-registry";
 import { resizeIfNeeded } from "@/lib/image-resize";
 import { optimizePromptForModel } from "@/lib/prompt-strategy";
@@ -216,6 +218,10 @@ export default function StudioPage() {
   // public/product-shots; custom uploads override the selected preset.
   // How the studio arrived at this render, straight from /api/analyze. Drives
   // the Routing section, which replaced the preset grid.
+  // Batch reports are not errors. They can describe a run that mostly worked,
+  // or one that worked entirely and merely used a weaker path for some rows —
+  // so they get their own neutral toast rather than the red one.
+  const [notice, setNotice] = useState<string | null>(null);
   const [routing, setRouting] = useState<RoutingPayload | null>(null);
   const [routingCanvas, setRoutingCanvas] = useState<CanvasSummary | null>(null);
   const [referenceImageUrl, setReferenceImageUrl] = useState<string | null>(null);
@@ -959,8 +965,16 @@ export default function StudioPage() {
   async function runBatchGeneration() {
     if (selected.length < 2) return;
 
-    const queue = [...selected];
+    // Per-item style numbers, read from each upload's original filename. One
+    // shared style field is why batch ran on the pre-ERP path: stamping every
+    // queued image with the same style would hand back a confidently wrong
+    // category for all but the first. A filename is per-item and already on
+    // disk. It is INFERRED rather than asserted — see lib/style-from-filename.
+    const queue = styleNumbersForQueue([...selected], uploadNames);
     const failures: { url: string; error: string }[] = [];
+    /** Rows where the filename's code disagreed with the ERP and lost. */
+    const conflicts: { filename: string; wanted: string; kept: string }[] = [];
+    let matched = 0;
     setError(null);
 
     setBatchProgress({
@@ -994,7 +1008,8 @@ export default function StudioPage() {
     setCurrentId(batchId);
 
     for (let i = 0; i < queue.length; i++) {
-      const sourceUrl = queue[i];
+      const { url: sourceUrl, style: itemStyle, filename } = queue[i];
+      if (itemStyle) matched++;
 
       // --- Analyze this specific image ---
       setBatchProgress((p) => (p ? { ...p, stage: "analyzing" } : p));
@@ -1007,13 +1022,23 @@ export default function StudioPage() {
         const analyzeData = await fetchJson("Analyze", "/api/analyze", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          // No styleNumber here ON PURPOSE. Batch runs many different products
-          // through one shared styleNumber field, so passing it would tag every
-          // image after the first with the wrong style and let the ERP hand
-          // back a confidently wrong category. Batch stays on vision inference
-          // until each queued image can carry its own style code.
-          body: JSON.stringify({ imageUrl: sourceUrl, backgroundColor, twoPiece }),
+          // This image's own style number, not the shared field. Absent when
+          // the filename carries no code, which lands exactly where batch used
+          // to sit for every row.
+          body: JSON.stringify({
+            imageUrl: sourceUrl,
+            backgroundColor,
+            twoPiece,
+            styleNumber: itemStyle ?? undefined,
+            styleNumberTrust: "inferred",
+          }),
         });
+        const demoted = (analyzeData.routing as RoutingPayload & {
+          demoted?: { prefix: string; wanted: string; kept: string } | null;
+        })?.demoted;
+        if (demoted) {
+          conflicts.push({ filename, wanted: demoted.wanted, kept: demoted.kept });
+        }
         const batchFront = (analyzeData.canvas as { front?: CanvasChoice } | undefined)?.front;
         const batchByMode = analyzeData.promptByMode as
           | Record<"preserve" | "backdrop", string>
@@ -1121,19 +1146,18 @@ export default function StudioPage() {
       return h;
     });
 
-    // Clear the progress strip but surface a summary toast if anything failed.
+    // Clear the progress strip, then say anything worth saying. Failures are
+    // no longer the only thing worth saying: a filename whose style code lost
+    // to the ERP, and a file with no style code at all, both change how that
+    // row was rendered without failing.
     setBatchProgress(null);
-    if (failures.length > 0) {
-      const list = failures
-        .slice(0, 3)
-        .map((f, idx) => `• image ${idx + 1}: ${f.error}`)
-        .join("\n");
-      const more =
-        failures.length > 3 ? `\n• …and ${failures.length - 3} more` : "";
-      setError(
-        `Batch finished — ${queue.length - failures.length} of ${queue.length} succeeded. ${failures.length} failed:\n${list}${more}`
-      );
-    }
+    const summary = buildBatchSummary({
+      total: queue.length,
+      failures,
+      matched,
+      conflicts,
+    });
+    if (summary) setNotice(summary);
   }
 
   return (
@@ -1314,16 +1338,39 @@ export default function StudioPage() {
         </div>
       </div>
 
-      {/* Error / batch-summary toast — whitespace-pre-line so multi-line
-          batch summaries render correctly. */}
-      {error && (
-        <div className="fixed bottom-6 right-6 max-w-md rounded-lg bg-red-600 px-4 py-3 text-sm text-white shadow-lg">
+      {/* Batch report — informational, so it is not styled as a failure.
+          whitespace-pre-line so the multi-line summary renders correctly. */}
+      {notice && (
+        <div className="fixed bottom-6 right-6 max-w-md rounded-lg border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-800 shadow-lg">
           <div className="flex items-start gap-2">
-            <span className="font-semibold">
-              {error.startsWith("Batch finished") ? "Summary:" : "Error:"}
-            </span>
+            <span className="font-semibold">Batch report:</span>
+            <span className="flex-1 whitespace-pre-line">{notice}</span>
+            <button
+              onClick={() => setNotice(null)}
+              aria-label="Dismiss batch report"
+              className="text-neutral-400 transition hover:text-neutral-700"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Error toast — whitespace-pre-line so multi-line messages render. */}
+      {error && (
+        <div
+          className={`fixed right-6 max-w-md rounded-lg bg-red-600 px-4 py-3 text-sm text-white shadow-lg ${
+            notice ? "bottom-28" : "bottom-6"
+          }`}
+        >
+          <div className="flex items-start gap-2">
+            <span className="font-semibold">Error:</span>
             <span className="flex-1 whitespace-pre-line">{error}</span>
-            <button onClick={() => setError(null)} className="opacity-70 hover:opacity-100">
+            <button
+              onClick={() => setError(null)}
+              aria-label="Dismiss error"
+              className="opacity-70 transition hover:opacity-100"
+            >
               ×
             </button>
           </div>

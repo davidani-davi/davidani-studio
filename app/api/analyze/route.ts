@@ -39,14 +39,21 @@ export const maxDuration = 120;
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { imageUrl, imageUrls, backgroundColor, twoPiece, styleNumber } = body as {
-      imageUrl: string;
-      imageUrls?: string[];
-      backgroundColor?: string;
-      twoPiece?: boolean;
-      /** Optional. When present, the ERP decides the category — see below. */
-      styleNumber?: string;
-    };
+    const { imageUrl, imageUrls, backgroundColor, twoPiece, styleNumber, styleNumberTrust } =
+      body as {
+        imageUrl: string;
+        imageUrls?: string[];
+        backgroundColor?: string;
+        twoPiece?: boolean;
+        /** Optional. When present, the ERP decides the category — see below. */
+        styleNumber?: string;
+        /**
+         * "asserted" (typed, the default) or "inferred" (read from the upload's
+         * filename in batch). An inferred code may not overrule a category the
+         * ERP stated — see StyleNumberTrust in lib/style-code.ts.
+         */
+        styleNumberTrust?: "asserted" | "inferred";
+      };
 
     const selectedImageUrls = Array.isArray(imageUrls)
       ? imageUrls.filter((url): url is string => typeof url === "string" && url.trim().length > 0)
@@ -74,7 +81,11 @@ export async function POST(req: Request) {
     // and its own skirt kept reading as contamination. The code names the
     // garments outright. See lib/style-code.ts for how far it is allowed to
     // push against the ERP (not all the way, and never for free).
-    const reconciled = reconcileStyleCode(styleNumber, mapErpCategory(erpRaw));
+    const reconciled = reconcileStyleCode(
+      styleNumber,
+      mapErpCategory(erpRaw),
+      styleNumberTrust === "inferred" ? "inferred" : "asserted"
+    );
     const erpMapped = reconciled.category;
     const treatAsSet = Boolean(twoPiece) || erpMapped === "set";
 
@@ -189,6 +200,10 @@ export async function POST(req: Request) {
       describedFrom: gallery
         ? { kind: "gallery" as const, frames: gallery.frames }
         : { kind: "intake-photo" as const },
+      /** Where the style number came from, so the UI can say so. */
+      styleNumber: styleNumber ? { value: styleNumber, trust: styleNumberTrust ?? "asserted" } : null,
+      /** Set when an inferred code was not allowed to overrule the ERP. */
+      demoted: reconciled.demoted ?? null,
     };
 
     console.log(

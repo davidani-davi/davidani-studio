@@ -116,6 +116,25 @@ export function decodeStyleCode(style: string | null | undefined): StyleCodeSign
 }
 
 /**
+ * How the style number reached us.
+ *
+ * "asserted" — typed into the Style field. The person looked at the garment and
+ *              said what it is, so the code carries its full authority.
+ * "inferred" — read out of the upload's filename (batch mode). The shape is
+ *              right, but a filename can be a copy, a re-export, or a renamed
+ *              duplicate, so it is not evidence about THIS photo. An inferred
+ *              code is demoted from "override" to "fill": it still fills a
+ *              blank category and still splits BOTTOM, but it no longer
+ *              overrules a category the ERP actually stated.
+ *
+ * The demotion is the honest reading of what a filename is. It costs the
+ * DWTS67099 case in batch — the ERP's wrong "outerwear" would stand — which is
+ * why reconcileStyleCode reports `demoted` so the caller can flag the row
+ * instead of silently taking the lesser answer.
+ */
+export type StyleNumberTrust = "asserted" | "inferred";
+
+/**
  * Combine the style code with the ERP's own category, per the authority rules
  * documented above. `erpCategory` is the already-mapped ERP value, where
  * "ambiguous-bottom" means the ERP said BOTTOM without saying which kind.
@@ -126,10 +145,34 @@ export function decodeStyleCode(style: string | null | undefined): StyleCodeSign
  */
 export function reconcileStyleCode(
   style: string | null | undefined,
-  erpCategory: GarmentCategory | "ambiguous-bottom" | null
-): { category: GarmentCategory | "ambiguous-bottom" | null; source: string } {
+  erpCategory: GarmentCategory | "ambiguous-bottom" | null,
+  trust: StyleNumberTrust = "asserted"
+): {
+  category: GarmentCategory | "ambiguous-bottom" | null;
+  source: string;
+  /**
+   * Set when an inferred code WOULD have overridden the ERP and was not
+   * allowed to. The row is worth a human glance; nothing else is.
+   */
+  demoted?: { prefix: string; wanted: GarmentCategory; kept: GarmentCategory | "ambiguous-bottom" };
+} {
   const code = decodeStyleCode(style);
   if (!code) return { category: erpCategory, source: erpCategory ? "erp" : "none" };
+
+  // A filename is not evidence about this photo — see StyleNumberTrust.
+  if (code.authority === "override" && trust === "inferred") {
+    if (erpCategory && erpCategory !== code.category) {
+      return {
+        category: erpCategory,
+        source: "erp",
+        demoted: { prefix: code.prefix, wanted: code.category, kept: erpCategory },
+      };
+    }
+    if (!erpCategory) {
+      return { category: code.category, source: `style-code:${code.prefix}?` };
+    }
+    return { category: erpCategory, source: "erp" };
+  }
 
   if (code.authority === "override") {
     if (erpCategory && erpCategory !== code.category) {

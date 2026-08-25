@@ -306,7 +306,7 @@ export default function PromptPanel(p: Props) {
         <div>
           <h2 className="text-sm font-semibold text-neutral-900">Shot Setup</h2>
           <p className="text-[11px] text-neutral-500">
-            Upload, confirm fit, then generate a launch-ready model image.
+            Upload a garment, check the routing, then generate the product shot.
           </p>
         </div>
         <span
