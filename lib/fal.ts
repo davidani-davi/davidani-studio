@@ -513,6 +513,19 @@ const ANALYSIS_SYSTEM_PROMPT = `You are a product catalog analyzer. You see a si
 GARMENT: <a short noun phrase describing the garment — include primary color, fabric/texture, an EXPLICIT SILHOUETTE / CUT / FIT descriptor (e.g. barrel-fit, wide-leg, straight-leg, slim, skinny, tapered, flared, bootcut, boxy, oversized, cropped, fitted, relaxed, A-line, bodycon), and the garment type. Examples: "soft fuzzy knit baby blue oversized cardigan", "barrel-fit dark indigo denim jeans", "cropped white ribbed cotton tank top", "boxy black cotton hoodie", "wide-leg hot pink leopard print sweatpants">
 FEATURES: <comma-separated noun phrases enumerating clearly visible structural details. ALWAYS begin with a silhouette clause that restates the cut/fit/leg-shape/body-shape in concrete visual terms (e.g. "a rounded barrel-shaped leg that curves outward through the thigh and knee then tapers to a narrow ankle cuff", "a straight leg of even width from hip to ankle", "a boxy torso that hangs loose from shoulder to hip without tapering", "a fitted torso that follows the body closely through the waist"). Then enumerate the remaining details. Examples: "a rounded barrel-shaped leg that curves outward through the thigh and knee then tapers to a narrow ankle cuff, a drawstring waistband, two side pockets, a back patch pocket" or "a boxy torso that hangs loose from shoulder to hip, a crew neckline, ribbed collar, cuffs, and hem, five small round white buttons aligned vertically down the center placket, long sleeves">
 
+PICK EXACTLY ONE GARMENT — do this FIRST, before describing anything:
+
+The photograph may be a styled shot in which a model wears several garments at once — a cardigan over a top, a poncho over a skirt, a jacket over a dress. You are describing ONE product, never an outfit.
+
+- Choose the single HERO garment: the one the photograph is selling. It is normally the garment that is most fully visible, occupies the most of the frame, is most sharply in focus, and is most centred on the body. An outer layer worn open over another piece is usually the hero; a plain neutral basic worn under a decorated piece usually is not.
+- Describe ONLY that garment. Say nothing about any other garment in the frame — not its color, not its sleeves, not its hem, not its texture.
+- NEVER merge two garments into one description. "cream cardigan with pearl beads and black crochet halter top" is two products written as one, and it is always wrong. Pick one and drop the other entirely.
+- NEVER let a garment worn UNDER the hero add features to it. A skirt visible below a poncho does not make the poncho longer. Trousers visible below a jacket do not make the jacket a jumpsuit.
+- ONE-PIECE vs TWO-PIECE SET — a coordinated set worn together looks almost exactly like a one-piece on a model, and getting this backwards changes the product. Decide from the WAIST:
+  - A separate top hem that ends and overlaps a separate waistband below it, a visible gap or layering shadow between the two, or two independent hems = TWO-PIECE SET. Describe it as a set. Matching fabric and colour do NOT make it one garment — a coordinated set is matching by design.
+  - Fabric that runs continuously through the waist with no separate hem, where a seam or belt is only surface detail on unbroken cloth = ONE-PIECE. Name it with a one-piece word (dress, gown, jumpsuit, romper, playsuit, coverall).
+  - If you genuinely cannot tell, say SET. A set rendered as one piece silently merges two products; a one-piece rendered as a set is obvious and correctable.
+
 SHAPE DISAMBIGUATION — check the overall silhouette BEFORE writing anything:
 
 - TWO PARALLEL TUBES extending downward from a waistband, with elastic or cuffs at the bottom and NO neckline = BOTTOM (pants, trousers, jeans, shorts, leggings, sweatpants, joggers, chinos, slacks, corduroys). The GARMENT line MUST end with a bottom word like "sweatpants", "joggers", "pants", "jeans", or "shorts". Never call these a "shirt" or "top".
@@ -642,6 +655,37 @@ const BACKGROUND_SOURCE_FIREWALL =
   `surface, and every other environmental cue. Use it strictly as the source of the garment itself. ` +
   `No part of the reference photo's surface or setting may survive anywhere in the frame, including the extreme ` +
   `corners and the outer edges.`;
+
+/**
+ * The garment-side counterpart to BACKGROUND_SOURCE_FIREWALL.
+ *
+ * The reference is often a styled on-model shot where the model wears several
+ * pieces at once, and the edit model renders what it sees: a poncho shot over
+ * a long skirt came back as poncho-plus-skirt, a halter shot under a sheer
+ * cardigan came back as both layered.
+ *
+ * PHRASED ENTIRELY POSITIVELY, ON PURPOSE. The first version of this clause
+ * was a list of forbidden nouns ("do not carry across a skirt, dress,
+ * trousers, top, jacket or cardigan... do not render a person or any part of
+ * one") and it ended up as the last ~500 characters of the prompt. That run
+ * produced exactly what the list named: a person's skin across the bottom of
+ * one frame and a ghost garment under another. Naming unwanted content at the
+ * highest-recency position summons it. Moving the negative version earlier
+ * avoided that but pushed STUDIO COMPOSITION STANDARD down and garment scale
+ * drifted instead — so neither position rescues a negative phrasing.
+ *
+ * Stating what the frame DOES contain works at any position and names nothing
+ * we do not want drawn.
+ */
+function garmentIsolationClause(g: string): string {
+  return (
+    `SINGLE PRODUCT: the finished frame holds exactly one object — the ${g} — resting alone on the studio ` +
+    `background. Every pixel that is not this ${g} is the flat, unbroken studio sweep: clean, empty, and free ` +
+    `of any other subject, mark, text, graphic, or watermark. Wherever the attached reference photograph shows ` +
+    `anything other than this ${g}, read that area as empty studio background and render it as such. This one ` +
+    `garment is the entire content of the image.`
+  );
+}
 
 /** The flat-fill requirement, shared by both canvas modes. */
 const BACKGROUND_UNIFORMITY_CLAUSE =
@@ -797,7 +841,15 @@ export function buildTwoImagePrompt(
       `REMOVE ALL NECK LABELS, BRAND TAGS, SIZE TAGS, CARE LABELS, AND SEWN-IN WOVEN TAGS from the ` +
       `rendered garment — the inside of the neckline, collar band, and any other typical label ` +
       `location must be clean and empty with no tag, label, patch, or printed text of any kind ` +
-      `showing. Hyper-realistic 4K e-commerce product photography, Zara-style catalog quality.`
+      `showing. ` +
+      // Deliberately LAST. First placed right after the garment was named,
+      // which pushed STUDIO COMPOSITION STANDARD from ~46% to ~55% of a
+      // 26%-longer prompt — and garment scale visibly drifted on the rows
+      // whose canvas was supposed to be pinning it (a cardigan went from 73%
+      // to 81% of frame height against a 53% canvas). Appending instead means
+      // no previously-tuned clause moves, and this one gets recency.
+      `${garmentIsolationClause(g)} ` +
+      `Hyper-realistic 4K e-commerce product photography, Zara-style catalog quality.`
     );
   };
 
@@ -1920,6 +1972,14 @@ export function buildTwoPiecePrompt(
       `Render both pieces as a single unified coordinated outfit — they share the same color ` +
       `family, fabric family, and trim language; they must look like two pieces of the same ` +
       `designed set, not two unrelated garments. ` +
+      // The single-garment path gets GARMENT_ISOLATION_FIREWALL; a set legitimately
+      // has two pieces, so it gets the exactly-two form instead. ONE_PIECE_INTEGRITY
+      // is deliberately absent here — splitting into two IS the deliverable.
+      `SINGLE PRODUCT: the finished frame holds exactly two objects — the ${t} and the ${b} — resting alone ` +
+      `on the studio background. Every pixel that is not one of those two pieces is the flat, unbroken studio ` +
+      `sweep: clean, empty, and free of any other subject, mark, text, graphic, or watermark. Wherever the ` +
+      `attached reference photograph shows anything other than these two pieces, read that area as empty ` +
+      `studio background. These two pieces are the entire content of the image. ` +
       `The exact appearance of both pieces — color, pattern, fabric texture, hardware, SILHOUETTE, ` +
       `CUT, FIT, leg shape, torso shape, length, volume, and every visible detail — is given by ` +
       `the attached reference photograph of that set; use the reference photograph strictly as the ` +

@@ -153,3 +153,61 @@ describe("no ban-and-require contradictions", () => {
     expect(out).not.toMatch(/wrinkles, folds, creases/);
   });
 });
+
+describe("single-product isolation is phrased positively", () => {
+  const out = buildTwoImagePrompt("boxy black cotton bomber jacket", FEATURES, "preserve");
+  const tail = out.slice(-700);
+
+  it("states what the frame contains", () => {
+    expect(out).toMatch(/SINGLE PRODUCT: the finished frame holds exactly one object/);
+    expect(out).toMatch(/Every pixel that is not this .* is the flat, unbroken studio sweep/);
+    expect(out).toMatch(/read that area as empty studio background/);
+  });
+
+  // The regression this guards: a negative version of this clause sat in the
+  // last ~500 chars naming "a person", "a skirt", "a jacket" — and that run
+  // rendered a person's skin and a ghost garment into the frame. Never put a
+  // list of unwanted content at the highest-recency position.
+  it("names no unwanted content anywhere in the prompt tail", () => {
+    expect(tail).not.toMatch(/\bDo not render a person\b/i);
+    expect(tail).not.toMatch(/do not carry across/i);
+    for (const noun of ["person", "wearer", "body", "cardigan", "trousers"]) {
+      expect(tail, `tail names "${noun}"`).not.toMatch(new RegExp(`\\b${noun}\\b`, "i"));
+    }
+  });
+
+  it("covers watermarks, which the garment-label rule never did", () => {
+    expect(out).toMatch(/free\s+of any other subject, mark, text, graphic, or watermark/);
+  });
+
+  it("sits after the composition standard, which must keep its position", () => {
+    expect(out.indexOf("SINGLE PRODUCT")).toBeGreaterThan(
+      out.indexOf("STUDIO COMPOSITION STANDARD")
+    );
+  });
+});
+
+describe("two-piece sets keep their two pieces", () => {
+  const out = buildTwoPiecePrompt(
+    {
+      top: "ribbed knit tank top",
+      topFeatures: "a scoop neckline",
+      bottom: "wide-leg knit pants",
+      bottomFeatures: "an elastic waistband",
+    },
+    "preserve"
+  );
+
+  it("states exactly two objects, positively", () => {
+    expect(out).toMatch(/the finished frame holds exactly two objects/);
+    expect(out).toMatch(/These two pieces are the entire content of the image/);
+  });
+
+  it("does not carry the single-object form", () => {
+    expect(out).not.toMatch(/holds exactly one object/);
+  });
+
+  it("names no unwanted content in its tail", () => {
+    expect(out.slice(-700)).not.toMatch(/\bDo not render a (person|third)\b/i);
+  });
+});
