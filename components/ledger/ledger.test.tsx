@@ -333,6 +333,23 @@ describe("stage", () => {
     expect(screen.getByAltText(/back intake photo/i)).toBeInTheDocument();
   });
 
+  // Opening a photo used to be reversible only by clicking it again or
+  // pressing Escape. Neither is visible, so the stage read as a dead end.
+  it("draws the way back out of an opened intake photo", () => {
+    renderStage({ run: makeRun({ sourceImageUrls: ["in-front.jpg"] }) });
+    expect(screen.queryByRole("button", { name: /back to/i })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByAltText(/front intake photo/i).closest("button")!);
+    fireEvent.click(screen.getByRole("button", { name: /back to the renders/i }));
+    expect(screen.getByAltText(/variant 1/i)).toBeInTheDocument();
+  });
+
+  it("draws the way back out of a soloed variant too", () => {
+    renderStage();
+    fireEvent.click(screen.getByAltText(/variant 2/i).closest("button")!);
+    fireEvent.click(screen.getByRole("button", { name: /back to both variants/i }));
+    expect(screen.getByAltText(/variant 1/i)).toBeInTheDocument();
+  });
+
   it("opens an intake photo at stage size and gives it back", () => {
     renderStage({ run: makeRun({ sourceImageUrls: ["in-front.jpg"] }) });
     const thumb = screen.getByAltText(/front intake photo/i).closest("button")!;

@@ -347,6 +347,32 @@ export default function StageView({
         </div>
         <span className="flex-1" />
 
+        {/*
+          The way out, drawn.
+          
+          Opening an intake photo used to be reversible only by clicking the
+          photo again or pressing Escape — neither of which is visible, so the
+          stage read as a dead end with the renders gone and Export greyed out.
+        */}
+        {(openedShot || (soloIndex !== null && shots.length > 1)) && (
+          <button
+            type="button"
+            onClick={() => {
+              setOpenedIntake(null);
+              setSoloed(null);
+            }}
+            className="flex items-center gap-1.5 rounded-md bg-neutral-900 px-2.5 py-1 text-[10px] font-bold text-white transition hover:bg-neutral-700"
+          >
+            <span aria-hidden="true" className="text-[11px] leading-none">
+              ←
+            </span>
+            {openedShot ? "Back to the renders" : "Back to both variants"}
+            <kbd className="rounded border border-white/30 px-1 font-mono text-[8px] opacity-80">
+              Esc
+            </kbd>
+          </button>
+        )}
+
         <button
           type="button"
           onClick={onOpenDetails}
@@ -364,6 +390,7 @@ export default function StageView({
             })
           }
           disabled={visible.length === 0 || Boolean(openedShot)}
+          title={openedShot ? "Go back to the renders to export them" : undefined}
           className="rounded-md border border-neutral-200 bg-white px-2 py-1 text-[10px] font-bold text-neutral-700 transition hover:border-neutral-400 disabled:opacity-40"
         >
           Export
@@ -381,7 +408,7 @@ export default function StageView({
             <ShotFrame
               url={openedShot.url}
               alt={`${openedShot.label} intake photo`}
-              label={`Intake · ${openedShot.label}`}
+              label={`Intake · ${openedShot.label} · click to go back`}
               openTitle="Back to the renders"
               soloed
               onOpen={() => setOpenedIntake(null)}
