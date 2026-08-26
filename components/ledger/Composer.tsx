@@ -45,67 +45,85 @@ function IntakeSlot({
   const [over, setOver] = useState(false);
 
   return (
-    <div className="flex flex-col gap-1">
-      <div
-        onDragOver={(e) => {
-          if (disabled) return;
-          e.preventDefault();
-          setOver(true);
-        }}
-        onDragLeave={() => setOver(false)}
-        onDrop={(e) => {
-          e.preventDefault();
-          setOver(false);
-          if (!disabled && e.dataTransfer.files.length) onFiles(e.dataTransfer.files);
-        }}
-        className={`group relative h-[52px] w-[42px] overflow-hidden rounded-lg border transition ${
-          over
-            ? "border-brand-500 bg-brand-50"
-            : url
-            ? "border-brand-200 bg-[#edeeee]"
-            : "border-dashed border-neutral-300 bg-neutral-50"
+    <div
+      onDragOver={(e) => {
+        if (disabled) return;
+        e.preventDefault();
+        setOver(true);
+      }}
+      onDragLeave={() => setOver(false)}
+      onDrop={(e) => {
+        e.preventDefault();
+        setOver(false);
+        if (!disabled && e.dataTransfer.files.length) onFiles(e.dataTransfer.files);
+      }}
+      className={`group relative h-[168px] flex-1 overflow-hidden rounded-xl border transition ${
+        over
+          ? "border-brand-500 bg-brand-50 ring-2 ring-brand-100"
+          : url
+          ? "border-neutral-200 bg-[#edeeee]"
+          : "border-dashed border-neutral-300 bg-neutral-50 hover:border-neutral-400 hover:bg-white"
+      }`}
+    >
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => input.current?.click()}
+        className="absolute inset-0 flex flex-col items-center justify-center gap-1 disabled:cursor-not-allowed"
+        title={url ? `Replace ${label.toLowerCase()}` : `Upload ${label.toLowerCase()}`}
+      >
+        {url ? (
+          /*
+            Contain, not cover: the tile is landscape and the garment photos
+            are portrait, so cover was cropping the hem and the shoulders —
+            the two places a bad render shows first. The ground is the
+            studio's own #edeeee, so the letterboxing reads as the sweep.
+          */
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img src={url} alt={`${label} product photo`} className="h-full w-full object-contain" />
+        ) : (
+          <>
+            <span className="text-[20px] leading-none text-neutral-300 transition group-hover:text-neutral-400">
+              +
+            </span>
+            <span className="text-[11px] font-medium text-neutral-400">Drop or click</span>
+          </>
+        )}
+      </button>
+
+      {/* The slot's name sits on the tile rather than under it — under it, at
+          the size that caption had to be, it read as noise. */}
+      <span
+        className={`pointer-events-none absolute left-0 top-0 rounded-br-lg px-2 py-1 font-mono text-[9.5px] font-bold uppercase tracking-[0.12em] ${
+          url ? "bg-white/85 text-neutral-600" : "text-neutral-400"
         }`}
       >
-        <button
-          type="button"
-          disabled={disabled}
-          onClick={() => input.current?.click()}
-          className="absolute inset-0 flex items-center justify-center disabled:cursor-not-allowed"
-          title={url ? `Replace ${label.toLowerCase()}` : `Upload ${label.toLowerCase()}`}
-        >
-          {url ? (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img src={url} alt={`${label} product photo`} className="h-full w-full object-cover" />
-          ) : (
-            <span className="text-[15px] leading-none text-neutral-400">+</span>
-          )}
-        </button>
-        {url && onClear && (
-          <button
-            type="button"
-            onClick={onClear}
-            aria-label={`Remove ${label.toLowerCase()}`}
-            className="absolute right-0 top-0 hidden rounded-bl-md bg-neutral-900/80 px-1 text-[9px] leading-4 text-white group-hover:block"
-          >
-            ×
-          </button>
-        )}
-        <input
-          ref={input}
-          type="file"
-          accept="image/*"
-          multiple={false}
-          className="hidden"
-          onChange={(e) => {
-            if (e.target.files?.length) onFiles(e.target.files);
-            e.target.value = "";
-          }}
-        />
-      </div>
-      <span className="text-center font-mono text-[7.5px] uppercase tracking-[0.12em] text-neutral-400">
         {label}
         {required ? " *" : ""}
       </span>
+
+      {url && onClear && (
+        <button
+          type="button"
+          onClick={onClear}
+          aria-label={`Remove ${label.toLowerCase()}`}
+          className="absolute right-1.5 top-1.5 hidden h-6 w-6 items-center justify-center rounded-full bg-neutral-900/75 text-[13px] leading-none text-white transition hover:bg-neutral-900 group-hover:flex"
+        >
+          ×
+        </button>
+      )}
+
+      <input
+        ref={input}
+        type="file"
+        accept="image/*"
+        multiple={false}
+        className="hidden"
+        onChange={(e) => {
+          if (e.target.files?.length) onFiles(e.target.files);
+          e.target.value = "";
+        }}
+      />
     </div>
   );
 }
@@ -141,12 +159,12 @@ function Flip({
       disabled={disabled}
       aria-label={`${label}: ${value}. Change to ${other}.`}
       title={disabled ? undefined : `Change to ${other.toLowerCase()}`}
-      className="group inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-bold text-neutral-800 transition hover:bg-neutral-100 disabled:cursor-not-allowed disabled:font-semibold disabled:text-neutral-500 disabled:hover:bg-transparent"
+      className="group -mx-0.5 inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-[12.5px] font-bold text-neutral-800 transition hover:bg-neutral-100 disabled:cursor-not-allowed disabled:font-semibold disabled:text-neutral-500 disabled:hover:bg-transparent"
     >
       {value}
       <span
         aria-hidden="true"
-        className="text-[9px] text-neutral-300 transition group-hover:text-neutral-500 group-disabled:opacity-0"
+        className="text-[10px] text-neutral-300 transition group-hover:text-neutral-500 group-disabled:opacity-0"
       >
         ⇄
       </span>
@@ -198,8 +216,14 @@ export default function Composer({
   const buttonState: ButtonState = analyzing || busy ? "loading" : "idle";
 
   return (
-    <div className="shrink-0 border-t border-neutral-200 bg-white px-3 pb-3 pt-2.5">
-      <div className="mb-2.5 flex items-end gap-2">
+    <div className="shrink-0 border-t border-neutral-200 bg-white px-4 pb-4 pt-3.5">
+      {/*
+        Intake is two tiles on their own row, not two thumbnails wedged beside
+        the style field. They were 42x52 — smaller than the favicon — for the
+        control the operator touches first on every single run, and too small
+        to show whether the photo that landed was even the right garment.
+      */}
+      <div className="mb-3 flex gap-2.5">
         <IntakeSlot
           url={frontIntakeUrl}
           label="Front"
@@ -215,32 +239,33 @@ export default function Composer({
           onFiles={(files) => onAddFiles(files, "back")}
           onClear={backIntakeUrl ? () => onClearIntake(backIntakeUrl) : undefined}
         />
-        <div className="min-w-0 flex-1">
-          <label
-            htmlFor="composer-style"
-            className="mb-1 block font-mono text-[7.5px] uppercase tracking-[0.12em] text-neutral-400"
-          >
-            Style number
-          </label>
-          <input
-            id="composer-style"
-            type="text"
-            value={styleNumber}
-            onChange={(e) => onStyleNumberChange(e.target.value)}
-            placeholder="DWTS67099"
-            spellCheck={false}
-            autoCapitalize="characters"
-            className={`w-full rounded-md border bg-white px-2.5 py-1.5 font-mono text-[11px] uppercase tracking-wide outline-none transition focus:ring-2 focus:ring-brand-100 ${
-              canvasNeedsStyleNumber
-                ? "border-amber-300 focus:border-amber-400"
-                : "border-neutral-200 focus:border-brand-500"
-            }`}
-          />
-        </div>
+      </div>
+
+      <div className="mb-3">
+        <label
+          htmlFor="composer-style"
+          className="mb-1.5 block font-mono text-[9.5px] font-semibold uppercase tracking-[0.12em] text-neutral-500"
+        >
+          Style number
+        </label>
+        <input
+          id="composer-style"
+          type="text"
+          value={styleNumber}
+          onChange={(e) => onStyleNumberChange(e.target.value)}
+          placeholder="DWTS67099"
+          spellCheck={false}
+          autoCapitalize="characters"
+          className={`h-10 w-full rounded-lg border bg-white px-3 font-mono text-[13px] uppercase tracking-wide outline-none transition placeholder:text-neutral-300 focus:ring-2 focus:ring-brand-100 ${
+            canvasNeedsStyleNumber
+              ? "border-amber-300 focus:border-amber-400"
+              : "border-neutral-200 focus:border-brand-500"
+          }`}
+        />
       </div>
 
       {canvasNeedsStyleNumber && (
-        <p className="mb-2.5 rounded-md border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-[9.5px] leading-snug text-amber-800">
+        <p className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] leading-snug text-amber-800">
           Category read from the photo alone, so this run goes to the empty sweep. A style number
           buys the approved flat lay.
         </p>
@@ -250,9 +275,9 @@ export default function Composer({
         One line, read as a sentence: what this run is, and where that came
         from. It replaces four segmented pills and a separate note underneath.
       */}
-      <div className="mb-2.5 flex flex-wrap items-baseline gap-x-1 gap-y-1 text-[11px] text-neutral-500">
+      <div className="mb-3 flex flex-wrap items-baseline gap-x-1 gap-y-1 text-[12px] text-neutral-500">
         {contract ? (
-          <span className="font-bold text-neutral-800">Front + back</span>
+          <span className="text-[12.5px] font-bold text-neutral-800">Front + back</span>
         ) : (
           <Flip
             label="Product shot side"
@@ -273,16 +298,20 @@ export default function Composer({
         <span className="ml-0.5">— {VIEW_NOTE[controls.viewSource]}</span>
       </div>
 
+      {/* Its own line. Sharing the button row, the label was truncating
+          mid-word — "CHATGPT IMAGE GENERATO…" — which is the one thing it
+          exists to tell you. */}
+      <p className="mb-2 truncate font-mono text-[9.5px] uppercase tracking-[0.12em] text-neutral-400">
+        {modelLabel}
+      </p>
+
       <div className="flex items-center gap-3">
-        <span className="min-w-0 flex-1 truncate font-mono text-[8px] uppercase tracking-[0.12em] text-neutral-400">
-          {modelLabel}
-        </span>
         {/* Quiet text, not bordered buttons. Neither is pressed on a normal
             run, and drawn as buttons they competed with the one that is. */}
         <button
           type="button"
           onClick={onOpenSetup}
-          className="shrink-0 text-[10px] font-semibold text-neutral-500 underline-offset-2 transition hover:text-neutral-900 hover:underline"
+          className="shrink-0 text-[11.5px] font-semibold text-neutral-500 underline-offset-2 transition hover:text-neutral-900 hover:underline"
         >
           Setup
         </button>
@@ -291,10 +320,11 @@ export default function Composer({
           onClick={onBatch}
           disabled={!canBatch || busy}
           title={batchDisabledReason}
-          className="shrink-0 text-[10px] font-semibold text-neutral-500 underline-offset-2 transition hover:text-neutral-900 hover:underline disabled:cursor-not-allowed disabled:text-neutral-300 disabled:no-underline"
+          className="shrink-0 text-[11.5px] font-semibold text-neutral-500 underline-offset-2 transition hover:text-neutral-900 hover:underline disabled:cursor-not-allowed disabled:text-neutral-300 disabled:no-underline"
         >
           Batch
         </button>
+        <span className="flex-1" />
         {/*
           beUI StatefulButton. Generate is a ~110 second action, so its label
           is the only place the interface can say so continuously — the button
@@ -308,11 +338,11 @@ export default function Composer({
           size="sm"
           loadingText={analyzing ? "Analyzing" : "Generating"}
           icon={
-            <kbd className="rounded border border-white/30 px-1 font-mono text-[8px] opacity-80">
+            <kbd className="rounded border border-white/30 px-1 font-mono text-[9px] opacity-80">
               ⌘↵
             </kbd>
           }
-          className="h-9 shrink-0 rounded-lg px-4 text-[11px] font-bold"
+          className="h-11 shrink-0 rounded-xl px-5 text-[13px] font-bold"
         >
           {generateLabel}
         </StatefulButton>

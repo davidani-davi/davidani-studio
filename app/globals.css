@@ -1145,7 +1145,9 @@ select {
  */
 .image-studio-layout {
   display: grid;
-  grid-template-columns: minmax(340px, 394px) minmax(0, 1fr);
+  /* Widened with the composer: two intake tiles at a size that shows the
+     garment need the room, and the stage still keeps the large majority. */
+  grid-template-columns: minmax(376px, 428px) minmax(0, 1fr);
   background: var(--polieco-bg);
 }
 
