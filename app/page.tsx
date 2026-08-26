@@ -8,6 +8,8 @@ import StudioHeader from "@/components/StudioHeader";
 import type { HistoryItem, UploadedImage } from "@/components/types";
 import type { ModelId } from "@/lib/models";
 import { STUDIO_BACKDROP_PATH } from "@/lib/studio-background";
+import { IMAGE_STUDIO_OUTPUT_FORMAT as OUTPUT_FORMAT } from "@/lib/output-sizes";
+import { styleNumberSurvives } from "@/lib/style-number-lifetime";
 import type { CanvasSummary, RoutingPayload } from "@/lib/routing-summary";
 import { styleNumbersForQueue } from "@/lib/style-from-filename";
 import { buildBatchSummary } from "@/lib/batch-summary";
@@ -41,6 +43,9 @@ const IMAGE_STUDIO_VERSION = "2.3";
 // public/product-shots/ which are all 2160x2700. A mismatched ratio causes the
 // cover-resize in lib/fal.ts to crop the image (clipped sleeve tips).
 const IMAGE_STUDIO_OUTPUT_SIZE = { width: 2160, height: 2700 } as const;
+
+/** What actually ships — see lib/output-sizes.ts. */
+const IMAGE_STUDIO_OUTPUT_FORMAT = OUTPUT_FORMAT;
 
 /**
  * Clause appended to the BACK half of a front/back contract run, when that run
@@ -180,14 +185,32 @@ function getOrCreateUserId(): string {
 export default function StudioPage() {
   // Controls
   const [modelId, setModelId] = useState<ModelId>("nano-banana");
-  const [aspect, setAspect] = useState<string>("4:5");
-  const [resolution, setResolution] = useState<string>("4K");
-  const [format, setFormat] = useState<"png" | "jpeg">("png");
-  const [numImages, setNumImages] = useState<number>(1);
+  // Aspect, resolution, format and variant-count state used to live here and
+  // back four sidebar controls. None of them reached a request: every call
+  // hardcodes 4:5 / 4K, /api/finalize-image hardcodes JPEG, and both variants
+  // are always numImages: 1. The controls are gone; the values below are the
+  // Image Studio standard, written once.
   const [productShotMode, setProductShotMode] = useState<ProductShotMode>("single-front");
 
   // Style number — the ERP routing key, typed in the Style section.
   const [styleNumber, setStyleNumber] = useState<string>("");
+  /**
+   * Last front photo the style number was entered against.
+   *
+   * The style number used to outlive its photo: nothing cleared it, so loading
+   * the next SKU without retyping sent that garment through the PREVIOUS
+   * style's ERP category and — worse — its gallery contact sheet, meaning the
+   * garment was described from a different style's photographs. The render
+   * came back confident, plausible and wrong, with nothing on screen saying
+   * which style it had actually routed as.
+   *
+   * Cleared only when one front photo REPLACES another. Typing the style
+   * before uploading is a normal order of operations and has to survive, so a
+   * first upload (no previous photo) leaves the field alone. Emptying the slot
+   * is not a SKU change either — this tracks the last non-empty photo, so the
+   * Remove-then-Upload loop still counts as a replacement.
+   */
+  const styleNumberPhoto = useRef<string | null>(null);
 
   // Upload state
   const [uploads, setUploads] = useState<UploadedImage[]>([]);
@@ -195,6 +218,15 @@ export default function StudioPage() {
   const [frontIntakeUrl, setFrontIntakeUrl] = useState<string | null>(null);
   const [backIntakeUrl, setBackIntakeUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+
+  // See styleNumberPhoto above, and lib/style-number-lifetime.ts for the rule
+  // and the cases it has to get right.
+  useEffect(() => {
+    if (!styleNumberSurvives(styleNumberPhoto.current, frontIntakeUrl)) {
+      setStyleNumber("");
+    }
+    if (frontIntakeUrl) styleNumberPhoto.current = frontIntakeUrl;
+  }, [frontIntakeUrl]);
 
   // Style reference (image 2). Image Studio presets live under
   // public/product-shots; custom uploads override the selected preset.
@@ -661,7 +693,7 @@ export default function StudioPage() {
             // server falls back to Model Studio's prefix, which explicitly
             // forbids flat lays (see PromptIntent in lib/prompt-strategy).
             intent: "product-shot",
-            format,
+            format: IMAGE_STUDIO_OUTPUT_FORMAT,
             outputSize: IMAGE_STUDIO_OUTPUT_SIZE,
             // Show native model output immediately; the 2160x2700 final is
             // produced by /api/finalize-image in the background below.
@@ -745,7 +777,7 @@ export default function StudioPage() {
             sourceImageUrls: [...selectedUrls],
             aspect: "4:5",
             resolution: "4K",
-            format,
+            format: IMAGE_STUDIO_OUTPUT_FORMAT,
             styleNumber: styleNumber.trim() || undefined,
             prompts: contractMode ? [leftPromptUsed, rightPromptUsed] : [promptUsed, promptUsed],
             viewLabels: contractMode
@@ -872,7 +904,7 @@ export default function StudioPage() {
           aspectRatio: "4:5",
           resolution: "4K",
           intent: "product-shot",
-          format,
+          format: IMAGE_STUDIO_OUTPUT_FORMAT,
           outputSize: IMAGE_STUDIO_OUTPUT_SIZE,
           numImages: 1,
         }),
@@ -887,7 +919,7 @@ export default function StudioPage() {
         sourceImageUrls: [sourceUrl],
         aspect: "4:5",
         resolution: "4K",
-        format,
+        format: IMAGE_STUDIO_OUTPUT_FORMAT,
         styleNumber: styleNumber.trim() || undefined,
         feedbackNotes: [note],
         feedbackMemory: [
@@ -962,7 +994,7 @@ export default function StudioPage() {
       referenceUrls: [],
       aspect: "4:5",
       resolution: "4K",
-      format,
+      format: IMAGE_STUDIO_OUTPUT_FORMAT,
       styleNumber: styleNumber.trim() || undefined,
       prompts: [],
       batch: true,
@@ -1051,7 +1083,7 @@ export default function StudioPage() {
             // server falls back to Model Studio's prefix, which explicitly
             // forbids flat lays (see PromptIntent in lib/prompt-strategy).
             intent: "product-shot",
-            format,
+            format: IMAGE_STUDIO_OUTPUT_FORMAT,
             outputSize: IMAGE_STUDIO_OUTPUT_SIZE,
             // Batch skips /api/finalize-image (it resizes inline), so ask for
             // the #edeeee snap here to match single-run output.
@@ -1134,16 +1166,9 @@ export default function StudioPage() {
         <div className="image-studio-setup min-h-0">
           <Sidebar
             modelId={modelId}
-            onModelChange={(nextModelId) => {
-              setModelId(nextModelId);
-              if (nextModelId === "nano-banana") setFormat("png");
-            }}
-            aspect={aspect}
-            onAspectChange={setAspect}
-            resolution={resolution}
-            onResolutionChange={setResolution}
-            format={format}
-            onFormatChange={setFormat}
+            // Used to also force format back to PNG for Nano Banana. The
+            // format is no longer a choice, so the model is just the model.
+            onModelChange={setModelId}
             uploads={uploads}
             frontIntakeUrl={frontIntakeUrl}
             backIntakeUrl={backIntakeUrl}
@@ -1174,8 +1199,6 @@ export default function StudioPage() {
           <PromptPanel
             prompt={prompt}
             onPromptChange={setPrompt}
-            numImages={2}
-            onNumImagesChange={() => setNumImages(2)}
             onGenerate={runGeneration}
             analyzing={analyzing}
             loading={loading || uploading}
@@ -1192,6 +1215,7 @@ export default function StudioPage() {
             onGarmentModeChange={handleGarmentModeChange}
             garmentModeOptions={["single", "set-single-image"]}
             hideAdvancedPrompt
+            hideVariantControl
             productShotMode={productShotMode}
             onProductShotModeChange={(mode) => {
               setProductShotMode(mode);

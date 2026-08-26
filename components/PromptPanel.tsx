@@ -38,8 +38,14 @@ export type ProductShotMode = "single-front" | "single-back" | "front-back-contr
 interface Props {
   prompt: string;
   onPromptChange: (v: string) => void;
-  numImages: number;
-  onNumImagesChange: (n: number) => void;
+  /**
+   * Variant count. Optional because not every studio offers the choice —
+   * Image Studio always renders a fixed pair and omits both, which is why it
+   * also passes hideVariantControl. Rendering the picker while the parent
+   * ignores it is what made the control look broken.
+   */
+  numImages?: number;
+  onNumImagesChange?: (n: number) => void;
   onAnalyze?: () => void;
   /**
    * Runs analyze → generate as a single atomic flow. The button always
@@ -198,6 +204,27 @@ export default function PromptPanel(p: Props) {
   const words = p.prompt.trim() ? p.prompt.trim().split(/\s+/).length : 0;
 
   const batchActive = !!p.batchProgress;
+
+  // The Generate button has advertised ⌘↵ on its face for as long as it has
+  // existed, and nothing implemented it — there was no keydown handler in this
+  // component or in either studio that hosts it. Either the badge goes or the
+  // shortcut arrives; the shortcut is worth more, and it is the one thing an
+  // operator running dozens of shots a day asked for by name.
+  //
+  // Guarded on exactly the conditions the button's own `disabled` uses, so the
+  // key can never start a run the button would refuse.
+  const canGenerate = !(p.disabled || p.loading || p.analyzing || batchActive);
+  const onGenerate = p.onGenerate;
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key !== "Enter" || !(e.metaKey || e.ctrlKey)) return;
+      if (!canGenerate) return;
+      e.preventDefault();
+      onGenerate();
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [canGenerate, onGenerate]);
 
   // Tri-state for the little status chip at the top-right of the header.
   // When a batch is running we override the chip with batch progress.
@@ -712,7 +739,10 @@ export default function PromptPanel(p: Props) {
 
       {/* ========== ACTION BAR ========== */}
       <div className="prompt-action-bar flex items-center justify-between gap-3 border-t border-neutral-200 bg-neutral-50 px-6 py-4">
-        {!p.hideVariantControl && (
+        {/* Spacer keeps the actions right-aligned when the variant picker is
+            hidden — justify-between would otherwise pull them to the left. */}
+        {(p.hideVariantControl || p.numImages === undefined) && <span />}
+        {!p.hideVariantControl && p.numImages !== undefined && p.onNumImagesChange && (
         <label className="flex items-center gap-2 text-xs text-neutral-600">
           <span className="font-medium">Variants</span>
           <div className="flex overflow-hidden rounded-lg border border-neutral-200 bg-white">
@@ -721,7 +751,7 @@ export default function PromptPanel(p: Props) {
               return (
                 <button
                   key={n}
-                  onClick={() => p.onNumImagesChange(n)}
+                  onClick={() => p.onNumImagesChange?.(n)}
                   disabled={batchActive}
                   className={`border-r border-neutral-200 px-2.5 py-1 text-xs font-medium last:border-r-0 transition disabled:opacity-40 ${
                     active

@@ -23,6 +23,22 @@
 // canvas composition to satisfy a different output ratio.
 export const IMAGE_STUDIO_OUTPUT_SIZE = { width: 2160, height: 2700 } as const;
 
+/**
+ * The format Image Studio actually delivers.
+ *
+ * /api/finalize-image hardcodes "jpeg" (sharp, quality 92, mozjpeg), so every
+ * single-run final is JPEG regardless of what anything upstream asked for. The
+ * sidebar used to offer a PNG/JPEG toggle whose PNG option was the default and
+ * whose JPEG option was disabled on the default model — so the delivered file
+ * was JPEG bytes recorded and named as .png. Batch, which skips finalize,
+ * honoured the toggle and really did emit PNG, leaving the two paths producing
+ * different file types for the same product standard.
+ *
+ * Named once here so the recorded format, the downloaded extension and the
+ * bytes agree, on both paths.
+ */
+export const IMAGE_STUDIO_OUTPUT_FORMAT = "jpeg" as const;
+
 // Model Studios — no resize, native 4K 2:3 output from kie.ai for speed.
 // export const MODEL_STUDIO_OUTPUT_SIZE = { width: 2000, height: 3000 } as const;
 

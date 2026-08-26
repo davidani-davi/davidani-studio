@@ -1,7 +1,9 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { ASPECT_RATIOS, FORMATS, MODELS, RESOLUTIONS, type ModelId } from "@/lib/models";
+import { MODELS, type ModelId } from "@/lib/models";
+import { IMAGE_STUDIO_OUTPUT_SIZE } from "@/lib/output-sizes";
+import { STUDIO_BACKGROUND_HEX } from "@/lib/studio-background";
 import RoutingPanel from "./RoutingPanel";
 import type { CanvasSummary, RoutingPayload } from "@/lib/routing-summary";
 import type { UploadedImage } from "./types";
@@ -10,12 +12,6 @@ import ImageLightbox, { ZoomButton } from "./ImageLightbox";
 interface Props {
   modelId: ModelId;
   onModelChange: (m: ModelId) => void;
-  aspect: string;
-  onAspectChange: (v: string) => void;
-  resolution: string;
-  onResolutionChange: (v: string) => void;
-  format: "png" | "jpeg";
-  onFormatChange: (v: "png" | "jpeg") => void;
   uploads: UploadedImage[];
   frontIntakeUrl: string | null;
   backIntakeUrl: string | null;
@@ -430,7 +426,7 @@ export default function Sidebar(p: Props) {
         <SectionHeader
           icon={IconSliders}
           title="Output settings"
-          hint={`${MODELS[p.modelId].label} · ${p.resolution} · ${p.format.toUpperCase()}`}
+          hint={`${MODELS[p.modelId].label} · ${IMAGE_STUDIO_OUTPUT_SIZE.width}×${IMAGE_STUDIO_OUTPUT_SIZE.height} · JPEG`}
           collapsible
           open={outputOpen}
           onToggle={() => setOutputOpen((v) => !v)}
@@ -474,72 +470,35 @@ export default function Sidebar(p: Props) {
               </div>
             </div>
 
-            {/* Aspect + Resolution */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="mb-1 block text-[10px] font-medium text-neutral-500">
-                  Aspect
-                </label>
-                <select
-                  value={p.aspect}
-                  onChange={(e) => p.onAspectChange(e.target.value)}
-                  className="w-full rounded-lg border border-neutral-200 bg-white px-2 py-2 text-sm"
-                >
-                  {ASPECT_RATIOS.map((a) => (
-                    <option key={a.value} value={a.value}>
-                      {a.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="mb-1 block text-[10px] font-medium text-neutral-500">
-                  Resolution
-                </label>
-                <select
-                  value={p.resolution}
-                  onChange={(e) => p.onResolutionChange(e.target.value)}
-                  className="w-full rounded-lg border border-neutral-200 bg-white px-2 py-2 text-sm"
-                >
-                  {RESOLUTIONS.map((r) => (
-                    <option key={r.value} value={r.value}>
-                      {r.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {/* Format */}
-            <div>
-              <label className="mb-1 block text-[10px] font-medium text-neutral-500">
-                Format
-              </label>
-              <div className="grid grid-cols-2 overflow-hidden rounded-lg border border-neutral-200">
-                {FORMATS.map((f) => {
-                  const active = p.format === f.value;
-                  const disabled = p.modelId === "nano-banana" && f.value === "jpeg";
-                  return (
-                    <button
-                      key={f.value}
-                      disabled={disabled}
-                      title={disabled ? "Nano Banana only supports PNG output in this app." : undefined}
-                      onClick={() =>
-                        p.onFormatChange(f.value as "png" | "jpeg")
-                      }
-                      className={`border-r border-neutral-200 px-2 py-1.5 text-xs font-medium last:border-r-0 transition ${
-                        disabled
-                          ? "cursor-not-allowed bg-neutral-50 text-neutral-300"
-                          : active
-                          ? "bg-neutral-900 text-white"
-                          : "bg-white text-neutral-600 hover:bg-neutral-50"
-                      }`}
-                    >
-                      {f.label}
-                    </button>
-                  );
-                })}
-              </div>
+            {/* Output spec — stated, not chosen.
+                Aspect, Resolution and Format used to be pickers here. All
+                three were inert: every request hardcodes 4:5 and 4K, and
+                /api/finalize-image hardcodes JPEG, so a "PNG" choice produced
+                JPEG bytes in a .png filename. The size and format are
+                properties of the Image Studio standard, not preferences, so
+                they are reported rather than offered. */}
+            <div className="rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2.5">
+              <div className="mb-1.5 text-[10px] font-medium text-neutral-500">Output</div>
+              <dl className="space-y-1 text-[11px]">
+                <div className="flex items-center justify-between gap-2">
+                  <dt className="text-neutral-500">Size</dt>
+                  <dd className="font-mono text-neutral-800 tabular-nums">
+                    {IMAGE_STUDIO_OUTPUT_SIZE.width}×{IMAGE_STUDIO_OUTPUT_SIZE.height}
+                  </dd>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <dt className="text-neutral-500">Aspect</dt>
+                  <dd className="font-mono text-neutral-800 tabular-nums">4:5</dd>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <dt className="text-neutral-500">Format</dt>
+                  <dd className="font-mono text-neutral-800">JPEG</dd>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <dt className="text-neutral-500">Background</dt>
+                  <dd className="font-mono text-neutral-800">{STUDIO_BACKGROUND_HEX}</dd>
+                </div>
+              </dl>
             </div>
           </div>
         )}
