@@ -72,6 +72,29 @@ export interface CanvasSummary {
   category: GarmentCategory;
 }
 
+/**
+ * The rail's canvas row, derived from an /api/analyze response.
+ *
+ * Extracted because it is now computed in two places — once when the plan is
+ * resolved before Generate, and once from the run's own analyze call — and two
+ * copies of this would drift. The pre-flight rail showing a different canvas
+ * from the one the run actually used is worse than no pre-flight rail at all.
+ *
+ * Returns null when the user has uploaded their own canvas: that upload
+ * outranks routing entirely (see resolveSelectedReferenceUrl in the studio),
+ * so there is no routed canvas to report.
+ */
+export function canvasSummaryFrom(
+  canvasByView: Partial<Record<"front" | "back", CanvasSummary>> | undefined,
+  view: "front" | "back",
+  overriddenByUpload: boolean
+): CanvasSummary | null {
+  if (overriddenByUpload) return null;
+  const choice = canvasByView?.[view];
+  if (!choice) return null;
+  return { path: choice.path, isFallback: choice.isFallback, category: choice.category };
+}
+
 export function summarizeRouting(
   routing: RoutingPayload | null | undefined,
   canvas: CanvasSummary | null | undefined

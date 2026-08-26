@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { categoryLabel, routingHeadline, summarizeRouting, type RoutingPayload } from "./routing-summary";
+import { canvasSummaryFrom, categoryLabel, routingHeadline, summarizeRouting, type RoutingPayload } from "./routing-summary";
 
 /** The live DWTS67099 case: ERP says outerwear, the style code says set. */
 const PONCHO_SET: RoutingPayload = {
@@ -139,5 +139,42 @@ describe("category labels", () => {
 describe("nothing to summarize", () => {
   it("returns no rows rather than empty placeholders", () => {
     expect(summarizeRouting(null, null)).toEqual([]);
+  });
+});
+
+describe("canvasSummaryFrom", () => {
+  const front = { path: "/product-shots/canvas-top-front.png", isFallback: false, category: "top" as const };
+  const back = { path: "/product-shots/canvas-outerwear-back.png", isFallback: false, category: "outerwear" as const };
+
+  it("reads the requested view", () => {
+    expect(canvasSummaryFrom({ front, back }, "front")?.path).toContain("top-front");
+    expect(canvasSummaryFrom({ front, back }, "back")?.path).toContain("outerwear-back");
+  });
+
+  it("returns null when the user's own canvas outranks routing", () => {
+    // An uploaded canvas beats the routed one, so there is no routed canvas to
+    // report and the rail drops the row rather than naming one that lost.
+    expect(canvasSummaryFrom({ front, back }, "front", true)).toBeNull();
+  });
+
+  it("returns null when the analyzer sent no canvas for that view", () => {
+    expect(canvasSummaryFrom({ front }, "back")).toBeNull();
+    expect(canvasSummaryFrom(undefined, "front")).toBeNull();
+  });
+
+  it("carries the fallback flag through", () => {
+    // Pants have no approved flat lay, so they land on the empty sweep. That
+    // is the single most important thing the rail says, and dropping it here
+    // would silently promote a fallback to an approved canvas.
+    const sweep = { path: "/product-shots/studio-backdrop-empty.png", isFallback: true, category: "pants" as const };
+    expect(canvasSummaryFrom({ front: sweep }, "front")?.isFallback).toBe(true);
+  });
+
+  it("does not alias the caller's object", () => {
+    // The summary is persisted onto history items; sharing a reference with
+    // live analyze state would let a later run mutate a finished run's record.
+    const result = canvasSummaryFrom({ front }, "front");
+    expect(result).not.toBe(front);
+    expect(result).toEqual(front);
   });
 });

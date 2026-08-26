@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { HistoryItem } from "./types";
 import ImageLightbox, { ZoomButton } from "./ImageLightbox";
 import { FEEDBACK_ISSUES, type FeedbackIssueKey } from "@/lib/feedback-memory";
+import RoutingPanel from "./RoutingPanel";
 
 type FitRepairMode =
   | "all"
@@ -309,6 +310,19 @@ export default function OutputPanel({
   // fall back to 0 rather than showing undefined.
   const safeIndex =
     current && index < current.imageUrls.length ? index : 0;
+
+  /**
+   * How the run that produced the image on screen was routed.
+   *
+   * Batch stores one entry per photo because it routes each separately; every
+   * other run has a single answer. Undefined for runs recorded before this was
+   * stored, and for studios that never set it — the block below renders only
+   * when there is something to say, so Model Studio and Faire SEO are
+   * unaffected.
+   */
+  const provenance =
+    current?.routings?.[safeIndex] ??
+    (current?.routing ? { routing: current.routing, canvas: current.routingCanvas ?? null } : null);
   const active = current?.imageUrls[safeIndex] ?? null;
 
   // For batch runs we store one prompt + one source URL per result at the same
@@ -1603,6 +1617,15 @@ export default function OutputPanel({
                   </button>
                 </div>
               )}
+            </div>
+          )}
+
+          {provenance?.routing && (
+            <div className="mb-3 rounded-xl border border-neutral-200 bg-neutral-50 p-3">
+              <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-neutral-500">
+                How this was routed
+              </div>
+              <RoutingPanel routing={provenance.routing} canvas={provenance.canvas} />
             </div>
           )}
 

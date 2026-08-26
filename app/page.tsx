@@ -11,7 +11,7 @@ import { STUDIO_BACKDROP_PATH } from "@/lib/studio-background";
 import { IMAGE_STUDIO_OUTPUT_FORMAT as OUTPUT_FORMAT } from "@/lib/output-sizes";
 import { styleNumberSurvives } from "@/lib/style-number-lifetime";
 import { batchEligibility } from "@/lib/batch-eligibility";
-import type { CanvasSummary, RoutingPayload } from "@/lib/routing-summary";
+import { canvasSummaryFrom, type CanvasSummary, type RoutingPayload } from "@/lib/routing-summary";
 import { styleNumbersForQueue } from "@/lib/style-from-filename";
 import { buildBatchSummary } from "@/lib/batch-summary";
 import type { CanvasChoice } from "@/lib/canvas-registry";
@@ -239,6 +239,13 @@ export default function StudioPage() {
   const [notice, setNotice] = useState<string | null>(null);
   const [routing, setRouting] = useState<RoutingPayload | null>(null);
   const [routingCanvas, setRoutingCanvas] = useState<CanvasSummary | null>(null);
+  /**
+   * True while the pre-flight analyze is in flight. Its own flag rather than
+   * `analyzing`, which is written only by analyzeProduct() — a function with no
+   * call sites — so the panel's "Working out the category and canvas…" state
+   * was unreachable.
+   */
+  const [routingPending, setRoutingPending] = useState(false);
   const [referenceImageUrl, setReferenceImageUrl] = useState<string | null>(null);
   const [referenceUploading, setReferenceUploading] = useState(false);
   // NOTE: team-saved canvas presets went with the preset grid. /api/user-references
@@ -256,15 +263,33 @@ export default function StudioPage() {
   // route Analyze through the four-field coordinated-set analyzer in lib/fal.
   const [twoPiece, setTwoPiece] = useState<boolean>(false);
 
-  // Speculative analyze warmup: the analysis only depends on the intake
-  // photos + options, all known well before Generate is clicked. Firing the
-  // analyze endpoint here (debounced, fire-and-forget) populates the
-  // server-side vision cache while the user is still picking settings, so
-  // the Generate click's own analyze call returns near-instantly. The
-  // response is deliberately ignored — the cache is the delivery mechanism.
+  /**
+   * Resolve the plan BEFORE Generate, and show it.
+   *
+   * This began as a fire-and-forget cache warmer: it called /api/analyze on a
+   * debounce and threw the response away, because the server-side vision cache
+   * was the only thing it wanted. But the response is the entire routing
+   * decision — category, who decided it, described-from, canvas, fallbacks —
+   * and discarding it is why the centre pane could tell people to "check the
+   * routing" against a panel that was empty until after they had generated.
+   * Step two of a three-step instruction could only happen after step three.
+   *
+   * So the response is kept. The cache still gets warmed; that was never in
+   * conflict with reading the body.
+   *
+   * styleNumber is in the dependency list, which it was not before. The body
+   * already sent it, so typing a style number changed what the server would
+   * answer while the effect never re-ran — the entry primed into the cache was
+   * the style-less one, and that is the entry that decides which extractor
+   * runs. The warmer was priming the wrong answer.
+   *
+   * The plan is deliberately NOT a gate. Generate re-analyzes on click and uses
+   * that result; this only decides what the rail shows. A pre-flight that could
+   * block Generate would turn a debounce race into an unpressable button.
+   */
+  const planRequestSeq = useRef(0);
   useEffect(() => {
-    if (!frontIntakeUrl && !backIntakeUrl) return;
-    const warmUrls =
+    const planUrls =
       productShotMode === "front-back-contract"
         ? [frontIntakeUrl, backIntakeUrl].filter((url): url is string => !!url)
         : [
@@ -272,23 +297,65 @@ export default function StudioPage() {
               ? backIntakeUrl || frontIntakeUrl
               : frontIntakeUrl || backIntakeUrl,
           ].filter((url): url is string => !!url);
-    if (!warmUrls.length) return;
+
+    if (!planUrls.length) {
+      // No photo, no plan. Clear rather than leaving the previous garment's
+      // routing on screen next to an empty intake.
+      planRequestSeq.current += 1;
+      setRouting(null);
+      setRoutingCanvas(null);
+      setRoutingPending(false);
+      return;
+    }
+
     const timer = setTimeout(() => {
+      // Every request claims a sequence number and only the newest may write.
+      // The effect re-fires on each keystroke in the style field, so responses
+      // can and do land out of order; without this the rail can settle on the
+      // answer for a style number the user has already finished editing.
+      const seq = ++planRequestSeq.current;
+      setRoutingPending(true);
       fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          imageUrl: warmUrls[0],
-          imageUrls: warmUrls,
+          imageUrl: planUrls[0],
+          imageUrls: planUrls,
           twoPiece,
           // Lets /api/analyze settle the category from the ERP
           // instead of inferring it from the photo (lib/erp-category.ts).
           styleNumber: styleNumber.trim() || undefined,
         }),
-      }).catch(() => {});
+      })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (seq !== planRequestSeq.current) return;
+          if (!data?.ok) {
+            // A failed pre-flight is not a failed run — Generate re-analyzes
+            // and reports its own errors. Drop the stale plan and say nothing.
+            setRouting(null);
+            setRoutingCanvas(null);
+            return;
+          }
+          const view: "front" | "back" =
+            productShotMode === "single-back" ? "back" : "front";
+          setRouting((data.routing as RoutingPayload | undefined) ?? null);
+          setRoutingCanvas(
+            canvasSummaryFrom(
+              data.canvas as Partial<Record<"front" | "back", CanvasSummary>> | undefined,
+              view,
+              Boolean(resolveSelectedReferenceUrl())
+            )
+          );
+        })
+        .catch(() => {})
+        .finally(() => {
+          if (seq === planRequestSeq.current) setRoutingPending(false);
+        });
     }, 1200);
     return () => clearTimeout(timer);
-  }, [frontIntakeUrl, backIntakeUrl, productShotMode, twoPiece]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [frontIntakeUrl, backIntakeUrl, productShotMode, twoPiece, styleNumber, referenceImageUrl]);
 
   // Image Studio's analyze route only handles single-image two-piece extraction
   // (one photo of the full coordinated outfit). The "two separate photos"
@@ -650,18 +717,14 @@ export default function StudioPage() {
           // Feed the Routing panel. These five values were already being
           // computed on every analyze and thrown into console.log; the rail is
           // the only place they were ever going to be useful.
-          setRouting((analyzeData.routing as RoutingPayload | undefined) ?? null);
-          setRoutingCanvas(
-            overrideUrl
-              ? null
-              : canvasFor(primaryView)
-              ? {
-                  path: canvasFor(primaryView)!.path,
-                  isFallback: canvasFor(primaryView)!.isFallback,
-                  category: canvasFor(primaryView)!.category,
-                }
-              : null
+          const runRouting = (analyzeData.routing as RoutingPayload | undefined) ?? null;
+          const runCanvasSummary = canvasSummaryFrom(
+            routed,
+            primaryView,
+            Boolean(overrideUrl)
           );
+          setRouting(runRouting);
+          setRoutingCanvas(runCanvasSummary);
 
           const studioFeedbackMemory = feedbackMemorySuffix("image");
           const promptWithSideDirective = `${activePrompt}${productShotViewDirective(productShotMode)}`;
@@ -780,6 +843,12 @@ export default function StudioPage() {
             resolution: "4K",
             format: IMAGE_STUDIO_OUTPUT_FORMAT,
             styleNumber: styleNumber.trim() || undefined,
+            // Provenance. Previously the rail rendered these live and the next
+            // run overwrote them, so a finished image carried no record of the
+            // canvas it landed on or whether it was described from the ERP
+            // gallery. Stored with the run that produced it.
+            routing: runRouting,
+            routingCanvas: runCanvasSummary,
             prompts: contractMode ? [leftPromptUsed, rightPromptUsed] : [promptUsed, promptUsed],
             viewLabels: contractMode
               ? ["Front", "Back"]
@@ -1022,6 +1091,8 @@ export default function StudioPage() {
       // Routed per image, not once for the batch: a batch can mix a bomber, a
       // dress and a skirt, and each needs its own canvas.
       let imageCanvasUrl: string | null = null;
+      let itemRouting: RoutingPayload | null = null;
+      let itemCanvasSummary: CanvasSummary | null = null;
       try {
         const analyzeData = await fetchJson("Analyze", "/api/analyze", {
           method: "POST",
@@ -1042,6 +1113,13 @@ export default function StudioPage() {
         if (demoted) {
           conflicts.push({ filename, wanted: demoted.wanted, kept: demoted.kept });
         }
+        // Batch routes every photo separately, so the provenance is per photo.
+        itemRouting = (analyzeData.routing as RoutingPayload | undefined) ?? null;
+        itemCanvasSummary = canvasSummaryFrom(
+          analyzeData.canvas as Partial<Record<"front" | "back", CanvasSummary>> | undefined,
+          "front",
+          Boolean(resolveSelectedReferenceUrl())
+        );
         const batchFront = (analyzeData.canvas as { front?: CanvasChoice } | undefined)?.front;
         const batchByMode = analyzeData.promptByMode as
           | Record<"preserve" | "backdrop", string>
@@ -1125,6 +1203,13 @@ export default function StudioPage() {
                   imageUrls: [...item.imageUrls, ...outputUrls],
                   referenceUrls: [...item.referenceUrls, sourceUrl],
                   prompts: [...(item.prompts ?? []), promptForDisplay],
+                  // Kept parallel to imageUrls, like prompts. A batch can mix a
+                  // bomber, a dress and a skirt, so a run-level answer would be
+                  // wrong for most rows.
+                  routings: [
+                    ...(item.routings ?? []),
+                    { routing: itemRouting, canvas: itemCanvasSummary },
+                  ],
                 }
               : item
           )
@@ -1207,7 +1292,7 @@ export default function StudioPage() {
             defaultReferencePreview={routingCanvas?.path || STUDIO_BACKDROP_PATH}
             routing={routing}
             routingCanvas={routingCanvas}
-            routingPending={analyzing}
+            routingPending={routingPending}
             onReferenceReplace={replaceReferenceImage}
             onReferenceReset={resetReferenceImage}
             referenceUploading={referenceUploading}

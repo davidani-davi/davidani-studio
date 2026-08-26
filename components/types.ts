@@ -1,4 +1,5 @@
 import type { FeedbackIssueKey } from "@/lib/feedback-memory";
+import type { CanvasSummary, RoutingPayload } from "@/lib/routing-summary";
 
 export interface UploadedImage {
   url: string;
@@ -83,6 +84,24 @@ export interface HistoryItem {
      */
     picksByView?: Partial<Record<"front" | "side" | "back" | "full", 0 | 1 | 2>>;
   };
+  /**
+   * How the studio routed this run — category, who decided it, described-from,
+   * and the canvas that fell out of it.
+   *
+   * Every one of these values was already computed on every analyze and then
+   * dropped: the rail rendered them live and the next run overwrote it, so
+   * looking at a finished image there was no way to tell which canvas it landed
+   * on, whether it fell back to the empty sweep, or whether the garment was
+   * described from the ERP gallery or from a single photo. Those are different
+   * quality tiers, and the difference was invisible the moment the run ended.
+   */
+  routing?: RoutingPayload | null;
+  routingCanvas?: CanvasSummary | null;
+  /**
+   * Batch routes every queued photo separately, so one run-level answer would
+   * be a lie. Parallel to imageUrls, same convention as `prompts`.
+   */
+  routings?: Array<{ routing: RoutingPayload | null; canvas: CanvasSummary | null } | null>;
   // Marks a run as produced by Batch so we can label it distinctly in the UI.
   batch?: boolean;
 }
