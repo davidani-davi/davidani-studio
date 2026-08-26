@@ -5,6 +5,7 @@ import { MODELS, type ModelId } from "@/lib/models";
 import { IMAGE_STUDIO_OUTPUT_SIZE } from "@/lib/output-sizes";
 import { STUDIO_BACKGROUND_HEX } from "@/lib/studio-background";
 import RoutingPanel from "./RoutingPanel";
+import type { RoutingControls } from "./RoutingPanel";
 import type { CanvasSummary, RoutingPayload } from "@/lib/routing-summary";
 import type { UploadedImage } from "./types";
 import ImageLightbox, { ZoomButton } from "./ImageLightbox";
@@ -38,6 +39,8 @@ interface Props {
   routing: RoutingPayload | null;
   routingCanvas: CanvasSummary | null;
   routingPending: boolean;
+  /** Side and garment-mode rows, moved here from the prompt panel. */
+  routingControls?: RoutingControls;
 }
 
 /* ---------- Reusable section header ---------- */
@@ -413,11 +416,16 @@ export default function Sidebar(p: Props) {
 
       {/* ========== ROUTING ========== */}
       <section className="image-sidebar-card border-b border-neutral-100 p-5">
-        <SectionHeader icon={IconRoute} title="Routing" hint="automatic" />
+        <SectionHeader
+          icon={IconRoute}
+          title="Routing"
+          hint={p.routingControls ? "read from your photo" : "automatic"}
+        />
         <RoutingPanel
           routing={p.routing}
           canvas={p.routingCanvas}
           pending={p.routingPending}
+          controls={p.routingControls}
         />
       </section>
 

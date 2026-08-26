@@ -12,6 +12,12 @@ import { IMAGE_STUDIO_OUTPUT_FORMAT as OUTPUT_FORMAT } from "@/lib/output-sizes"
 import { styleNumberSurvives } from "@/lib/style-number-lifetime";
 import { batchEligibility } from "@/lib/batch-eligibility";
 import { canvasSummaryFrom, type CanvasSummary, type RoutingPayload } from "@/lib/routing-summary";
+import {
+  parseGarmentView,
+  resolveShotMode,
+  viewRowState,
+  type GarmentView,
+} from "@/lib/garment-view";
 import type { BackgroundSnapReport } from "@/lib/background-snap";
 import { styleNumbersForQueue } from "@/lib/style-from-filename";
 import { buildBatchSummary } from "@/lib/batch-summary";
@@ -192,7 +198,10 @@ export default function StudioPage() {
   // hardcodes 4:5 / 4K, /api/finalize-image hardcodes JPEG, and both variants
   // are always numImages: 1. The controls are gone; the values below are the
   // Image Studio standard, written once.
-  const [productShotMode, setProductShotMode] = useState<ProductShotMode>("single-front");
+  // productShotMode is no longer state. It was three cards above the prompt
+  // asking for decisions that are properties of the upload; it is derived
+  // below and shown as a correctable row in the routing rail instead. See
+  // lib/garment-view.ts.
 
   // Style number — the ERP routing key, typed in the Style section.
   const [styleNumber, setStyleNumber] = useState<string>("");
@@ -230,6 +239,18 @@ export default function StudioPage() {
     if (frontIntakeUrl) styleNumberPhoto.current = frontIntakeUrl;
   }, [frontIntakeUrl]);
 
+  /** Which side the analyzer read off the intake photo. */
+  const [detectedView, setDetectedView] = useState<GarmentView>("unknown");
+  /**
+   * Set only when the operator corrects the rail's Side row.
+   *
+   * This is the one decision the photo cannot supply: "I gave you a front
+   * photo, render me the back" is a supported run — the side directive tells
+   * the model to infer the hidden side — so detection alone would remove a
+   * real capability.
+   */
+  const [viewOverride, setViewOverride] = useState<"front" | "back" | null>(null);
+
   // Style reference (image 2). Image Studio presets live under
   // public/product-shots; custom uploads override the selected preset.
   // How the studio arrived at this render, straight from /api/analyze. Drives
@@ -239,7 +260,16 @@ export default function StudioPage() {
   // so they get their own neutral toast rather than the red one.
   const [notice, setNotice] = useState<string | null>(null);
   const [routing, setRouting] = useState<RoutingPayload | null>(null);
-  const [routingCanvas, setRoutingCanvas] = useState<CanvasSummary | null>(null);
+  /**
+   * The analyze response's canvas map, kept whole.
+   *
+   * Stored rather than reduced on arrival because the Side row can now change
+   * after the analyze: reducing early meant toggling Front/Back either showed
+   * a stale canvas or forced a second analyze of the same photo.
+   */
+  const [canvasByView, setCanvasByView] = useState<
+    Partial<Record<"front" | "back", CanvasSummary>> | null
+  >(null);
   /**
    * True while the pre-flight analyze is in flight. Its own flag rather than
    * `analyzing`, which is written only by analyzeProduct() — a function with no
@@ -290,21 +320,22 @@ export default function StudioPage() {
    */
   const planRequestSeq = useRef(0);
   useEffect(() => {
-    const planUrls =
-      productShotMode === "front-back-contract"
-        ? [frontIntakeUrl, backIntakeUrl].filter((url): url is string => !!url)
-        : [
-            productShotMode === "single-back"
-              ? backIntakeUrl || frontIntakeUrl
-              : frontIntakeUrl || backIntakeUrl,
-          ].filter((url): url is string => !!url);
+    // Every uploaded photo, regardless of side. This used to select urls by
+    // productShotMode, which is now derived FROM this call's answer — feeding
+    // it back in here would re-analyze the same photo the moment a back was
+    // detected.
+    const planUrls = [frontIntakeUrl, backIntakeUrl].filter(
+      (url): url is string => !!url
+    );
 
     if (!planUrls.length) {
       // No photo, no plan. Clear rather than leaving the previous garment's
       // routing on screen next to an empty intake.
       planRequestSeq.current += 1;
       setRouting(null);
-      setRoutingCanvas(null);
+      setCanvasByView(null);
+      setDetectedView("unknown");
+      setViewOverride(null);
       setRoutingPending(false);
       return;
     }
@@ -335,19 +366,14 @@ export default function StudioPage() {
             // A failed pre-flight is not a failed run — Generate re-analyzes
             // and reports its own errors. Drop the stale plan and say nothing.
             setRouting(null);
-            setRoutingCanvas(null);
+            setCanvasByView(null);
             return;
           }
-          const view: "front" | "back" =
-            productShotMode === "single-back" ? "back" : "front";
           setRouting((data.routing as RoutingPayload | undefined) ?? null);
-          setRoutingCanvas(
-            canvasSummaryFrom(
-              data.canvas as Partial<Record<"front" | "back", CanvasSummary>> | undefined,
-              view,
-              Boolean(resolveSelectedReferenceUrl())
-            )
+          setCanvasByView(
+            (data.canvas as Partial<Record<"front" | "back", CanvasSummary>> | undefined) ?? null
           );
+          setDetectedView(parseGarmentView(data.detected?.view));
         })
         .catch(() => {})
         .finally(() => {
@@ -356,18 +382,31 @@ export default function StudioPage() {
     }, 1200);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [frontIntakeUrl, backIntakeUrl, productShotMode, twoPiece, styleNumber, referenceImageUrl]);
+  }, [frontIntakeUrl, backIntakeUrl, twoPiece, styleNumber, referenceImageUrl]);
 
-  // Image Studio's analyze route only handles single-image two-piece extraction
-  // (one photo of the full coordinated outfit). The "two separate photos"
-  // variant from Single Model Studio isn't supported here, so we expose just
-  // two radio options. State shape is kept identical to Model Studio for
-  // consistency.
-  type GarmentMode = "single" | "set-single-image" | "set-separate-images";
-  const garmentMode: GarmentMode = twoPiece ? "set-single-image" : "single";
-  function handleGarmentModeChange(mode: GarmentMode) {
-    setTwoPiece(mode === "set-single-image");
-  }
+  /**
+   * The mode the run will use, and what the rail's Side row says about it.
+   *
+   * Derived, not stored: two photos means a contract run and one photo means
+   * whichever side the analyzer saw, unless the operator corrected it.
+   */
+  const shotModeInputs = {
+    hasFrontPhoto: Boolean(frontIntakeUrl),
+    hasBackPhoto: Boolean(backIntakeUrl),
+    detected: detectedView,
+    override: viewOverride,
+  };
+  const productShotMode = resolveShotMode(shotModeInputs);
+  const viewRow = viewRowState(shotModeInputs);
+  const routingCanvas = useMemo(
+    () => canvasSummaryFrom(canvasByView ?? undefined, viewRow.view, Boolean(referenceImageUrl)),
+    [canvasByView, viewRow.view, referenceImageUrl]
+  );
+
+  // The three-value GarmentMode alias is gone with the pills that rendered it.
+  // Image Studio only ever had two of the three (one photo of a coordinated
+  // outfit, or one garment), which is the boolean `twoPiece` already is; the
+  // rail's Garment row sets it directly.
 
   // History (client-only, localStorage)
   const [history, setHistory] = useState<HistoryItem[]>([]);
@@ -725,7 +764,9 @@ export default function StudioPage() {
             Boolean(overrideUrl)
           );
           setRouting(runRouting);
-          setRoutingCanvas(runCanvasSummary);
+          setCanvasByView(
+            (analyzeData.canvas as Partial<Record<"front" | "back", CanvasSummary>>) ?? null
+          );
 
           const studioFeedbackMemory = feedbackMemorySuffix("image");
           const promptWithSideDirective = `${activePrompt}${productShotViewDirective(productShotMode)}`;
@@ -1314,6 +1355,24 @@ export default function StudioPage() {
             routing={routing}
             routingCanvas={routingCanvas}
             routingPending={routingPending}
+            routingControls={{
+              mode: productShotMode,
+              view: viewRow.view,
+              viewSource: viewRow.source,
+              viewEditable: viewRow.editable,
+              onViewChange: (view) => {
+                setViewOverride(view);
+                // The prompt carries the side directive, so a side change
+                // invalidates it. Generate re-analyzes and rebuilds.
+                setPrompt("");
+              },
+              isSet: twoPiece,
+              onSetChange: (isSet) => {
+                setTwoPiece(isSet);
+                setPrompt("");
+              },
+              disabled: loading || uploading,
+            }}
             onReferenceReplace={replaceReferenceImage}
             onReferenceReset={resetReferenceImage}
             referenceUploading={referenceUploading}
@@ -1339,16 +1398,12 @@ export default function StudioPage() {
             batchProgress={batchProgress}
             twoPiece={twoPiece}
             onTwoPieceChange={setTwoPiece}
-            garmentMode={garmentMode}
-            onGarmentModeChange={handleGarmentModeChange}
-            garmentModeOptions={["single", "set-single-image"]}
             hideAdvancedPrompt
             hideVariantControl
-            productShotMode={productShotMode}
-            onProductShotModeChange={(mode) => {
-              setProductShotMode(mode);
-              setPrompt("");
-            }}
+            // The workflow cards and garment-mode pills moved into the routing
+            // rail — they describe the upload, so they belong beside the other
+            // facts read from it rather than above the prompt.
+            hideTwoPieceToggle
             generateLabel={
               productShotMode === "single-front"
                 ? "Generate Single Front"

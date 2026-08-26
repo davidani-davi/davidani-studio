@@ -12,6 +12,7 @@ import { fetchErpCategory, mapErpCategory } from "@/lib/erp-category";
 import { decodeStyleCode, reconcileStyleCode } from "@/lib/style-code";
 import { buildGalleryContactSheet } from "@/lib/erp-gallery";
 import { cachedVision } from "@/lib/vision-cache";
+import type { GarmentView } from "@/lib/garment-view";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -181,6 +182,13 @@ export async function POST(req: Request) {
     // leaves this function, so it ships as a structured object rather than a
     // source string the client would have to parse back apart.
     const styleCode = decodeStyleCode(styleNumber);
+    // Which side of the garment the intake photo shows. Only the single-photo
+    // path can answer it: the two-piece extractor describes a set, the
+    // contract path already has both sides by construction, and the gallery
+    // hero reads a contact sheet of mixed views.
+    const detectedView: GarmentView =
+      extracted.kind === "single" && !gallery ? extracted.single.view ?? "unknown" : "unknown";
+
     const routing = {
       styleCode: styleCode
         ? { prefix: styleCode.prefix, category: styleCode.category, authority: styleCode.authority }
@@ -224,6 +232,9 @@ export async function POST(req: Request) {
       garmentSource: gallery ? `erp-gallery:${gallery.frames}` : "intake-photo",
       routing,
       canvas: { front: frontCanvas, back: backCanvas },
+      // Facts about the upload that used to be controls the operator set
+      // before uploading. See lib/garment-view.ts.
+      detected: { view: detectedView },
     });
   } catch (err: any) {
     console.error("[analyze] error:", err);

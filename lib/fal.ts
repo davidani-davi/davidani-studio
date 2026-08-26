@@ -14,6 +14,7 @@ import {
 } from "./kie-image-compat";
 import { STUDIO_BACKGROUND_HEX, type BackgroundCanvasMode } from "./studio-background";
 import type { BackgroundSnapReport } from "./background-snap";
+import { parseGarmentView, type GarmentView } from "./garment-view";
 import { flatlayFramingClause } from "./flatlay-spec";
 
 export { STUDIO_BACKGROUND_HEX, type BackgroundCanvasMode };
@@ -510,10 +511,12 @@ function sanitizeAnalyzerText(text: string, alreadyUsed: Set<string>): string {
  * which instructs the image model to preserve the primary studio scene while
  * rendering the user's garment (described here) fresh on top of it.
  */
-const ANALYSIS_SYSTEM_PROMPT = `You are a product catalog analyzer. You see a single garment photograph and must output exactly two lines, in this exact format, with no preamble, no markdown, and no extra lines:
+const ANALYSIS_SYSTEM_PROMPT = `You are a product catalog analyzer. You see a single garment photograph and must output exactly three lines, in this exact format, with no preamble, no markdown, and no extra lines:
 
 GARMENT: <a short noun phrase describing the garment — include primary color, fabric/texture, an EXPLICIT SILHOUETTE / CUT / FIT descriptor (e.g. barrel-fit, wide-leg, straight-leg, slim, skinny, tapered, flared, bootcut, boxy, oversized, cropped, fitted, relaxed, A-line, bodycon), and the garment type. Examples: "soft fuzzy knit baby blue oversized cardigan", "barrel-fit dark indigo denim jeans", "cropped white ribbed cotton tank top", "boxy black cotton hoodie", "wide-leg hot pink leopard print sweatpants">
 FEATURES: <comma-separated noun phrases enumerating clearly visible structural details. ALWAYS begin with a silhouette clause that restates the cut/fit/leg-shape/body-shape in concrete visual terms (e.g. "a rounded barrel-shaped leg that curves outward through the thigh and knee then tapers to a narrow ankle cuff", "a straight leg of even width from hip to ankle", "a boxy torso that hangs loose from shoulder to hip without tapering", "a fitted torso that follows the body closely through the waist"). Then enumerate the remaining details. Examples: "a rounded barrel-shaped leg that curves outward through the thigh and knee then tapers to a narrow ankle cuff, a drawstring waistband, two side pockets, a back patch pocket" or "a boxy torso that hangs loose from shoulder to hip, a crew neckline, ribbed collar, cuffs, and hem, five small round white buttons aligned vertically down the center placket, long sleeves">
+
+VIEW: <exactly one word, either "front" or "back", naming which side of the garment faces the camera. Judge it from construction, not from the pose: a front placket, buttons or a zip running down the centre, a front neckline scoop or V, chest pockets, and printed chest graphics mean FRONT. A centre-back seam, a back yoke, a shoulder-to-shoulder seam with no opening below it, a collar seen from behind, and a plain unbroken panel where a placket would be mean BACK. If the garment is genuinely ambiguous, answer "front".>
 
 PICK EXACTLY ONE GARMENT — do this FIRST, before describing anything:
 
@@ -563,7 +566,7 @@ DESCRIPTOR DISCIPLINE — these rules come from controlled prompt tests and are 
 - Pick fabric-consistent adjectives. Do NOT describe a knit as "crisp", a denim as "drapey", a silk as "stiff" — cross-domain words contradict the material and degrade the output.
 
 OUTPUT FORMAT RULES:
-- Output exactly two lines: one starting with "GARMENT:", one starting with "FEATURES:".
+- Output exactly three lines: one starting with "GARMENT:", one starting with "FEATURES:", one starting with "VIEW:".
 - No preamble, no markdown, no code fences, no extra commentary.`;
 
 export interface AnalyzeOptions {
@@ -585,18 +588,26 @@ export interface AnalyzedGarment {
   features: string;
 }
 
-function parseGarmentAnalysisOutput(output: string, label: string): { garment: string; features: string } {
+function parseGarmentAnalysisOutput(
+  output: string,
+  label: string
+): { garment: string; features: string; view: GarmentView } {
   const garmentMatch = output.match(/GARMENT:\s*(.+?)\s*(?:\r?\n|$)/i);
   const featuresMatch = output.match(/FEATURES:\s*([\s\S]+?)\s*(?:\r?\n(?=[A-Z ]+:)|$)/i);
+  const viewMatch = output.match(/VIEW:\s*(.+?)\s*(?:\r?\n|$)/i);
   const garment = (garmentMatch?.[1] || "").trim().replace(/\.$/, "");
   const features = (featuresMatch?.[1] || "").trim().replace(/\.$/, "");
+  // Absent on the gallery and two-piece extractors, and on any older cached
+  // vision response. "unknown" is a real answer here — the rail says Front and
+  // marks it a default rather than claiming it read the photograph.
+  const view = parseGarmentView(viewMatch?.[1]);
 
   if (!garment) {
     console.error(`[${label}] could not parse GARMENT from output:`, output.slice(0, 400));
     throw new Error("Analyzer did not return a GARMENT line.");
   }
 
-  return { garment, features };
+  return { garment, features, view };
 }
 
 /**

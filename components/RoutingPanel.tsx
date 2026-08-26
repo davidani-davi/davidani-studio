@@ -1,5 +1,6 @@
 "use client";
 
+import type { ProductShotMode } from "./PromptPanel";
 import {
   summarizeRouting,
   type CanvasSummary,
@@ -25,15 +26,85 @@ const STATE_DOT: Record<RoutingRow["state"], string> = {
   muted: "bg-neutral-300",
 };
 
+/**
+ * The two facts the rail can show instead of asking for them up front.
+ *
+ * These replace the "Product shot workflow" cards and the garment-mode pills,
+ * which sat above the prompt and asked for decisions before there was a photo
+ * to read them from. Supplied only by Image Studio; OutputPanel renders this
+ * same component for run provenance and passes neither, so it stays read-only
+ * there.
+ */
+export interface RoutingControls {
+  mode: ProductShotMode;
+  view: "front" | "back";
+  /** Where `view` came from — changes the wording, not the value. */
+  viewSource: "contract" | "override" | "detected" | "default";
+  viewEditable: boolean;
+  onViewChange: (view: "front" | "back") => void;
+  isSet: boolean;
+  onSetChange: (isSet: boolean) => void;
+  disabled?: boolean;
+}
+
+const VIEW_NOTE: Record<RoutingControls["viewSource"], string> = {
+  contract: "Two photos define one SKU, so both sides render together.",
+  override: "You set this. It overrides what the photo shows.",
+  detected: "Read from your photo. Change it to render the other side instead.",
+  default: "Not readable from the photo — assuming front.",
+};
+
+function Segmented<T extends string>({
+  label,
+  value,
+  options,
+  disabled,
+  onChange,
+}: {
+  label: string;
+  value: T;
+  options: Array<{ value: T; label: string }>;
+  disabled?: boolean;
+  onChange: (value: T) => void;
+}) {
+  return (
+    <div role="radiogroup" aria-label={label} className="mt-1 flex gap-1">
+      {options.map((option) => {
+        const active = option.value === value;
+        return (
+          <button
+            key={option.value}
+            type="button"
+            role="radio"
+            aria-checked={active}
+            disabled={disabled}
+            onClick={() => onChange(option.value)}
+            className={`rounded-md border px-2 py-1 text-[11px] font-semibold transition disabled:cursor-not-allowed disabled:opacity-45 ${
+              active
+                ? "border-neutral-900 bg-neutral-900 text-white"
+                : "border-neutral-200 bg-white text-neutral-600 hover:border-neutral-400"
+            }`}
+          >
+            {option.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function RoutingPanel({
   routing,
   canvas,
   pending,
+  controls,
 }: {
   routing: RoutingPayload | null;
   canvas: CanvasSummary | null;
   /** True while an analyze call is in flight, so the panel can hold its shape. */
   pending?: boolean;
+  /** Omitted for run provenance, where nothing is correctable any more. */
+  controls?: RoutingControls;
 }) {
   const rows = summarizeRouting(routing, canvas);
 
@@ -53,7 +124,54 @@ export default function RoutingPanel({
   }
 
   return (
-    <ol className="space-y-0">
+    <>
+      {controls && (
+        <div className="mb-1 border-b border-neutral-100 pb-2">
+          <div className="py-2">
+            <span className="block text-[9px] font-semibold uppercase tracking-widest text-neutral-400">
+              Side
+            </span>
+            {controls.mode === "front-back-contract" ? (
+              <span className="mt-0.5 block text-[12px] font-semibold leading-snug text-neutral-800">
+                Front + back contract
+              </span>
+            ) : (
+              <Segmented
+                label="Product shot side"
+                value={controls.view}
+                disabled={controls.disabled || !controls.viewEditable}
+                onChange={controls.onViewChange}
+                options={[
+                  { value: "front", label: "Front" },
+                  { value: "back", label: "Back" },
+                ]}
+              />
+            )}
+            <span className="mt-1 block text-[10px] leading-snug text-neutral-500">
+              {VIEW_NOTE[controls.viewSource]}
+            </span>
+          </div>
+          <div className="py-2">
+            <span className="block text-[9px] font-semibold uppercase tracking-widest text-neutral-400">
+              Garment
+            </span>
+            <Segmented
+              label="Garment mode"
+              value={controls.isSet ? "set" : "single"}
+              disabled={controls.disabled}
+              onChange={(value) => controls.onSetChange(value === "set")}
+              options={[
+                { value: "single", label: "Single garment" },
+                { value: "set", label: "Coordinated set" },
+              ]}
+            />
+            <span className="mt-1 block text-[10px] leading-snug text-neutral-500">
+              Coordinated set describes a top and a bottom separately from one photo.
+            </span>
+          </div>
+        </div>
+      )}
+      <ol className="space-y-0">
       {rows.map((row, i) => (
         <li
           key={row.key}
@@ -85,6 +203,7 @@ export default function RoutingPanel({
           </div>
         </li>
       ))}
-    </ol>
+      </ol>
+    </>
   );
 }
