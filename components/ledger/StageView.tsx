@@ -16,8 +16,6 @@ import { runPipeline, runSubtitle, runTitle } from "@/lib/run-pipeline";
  * deliberately thin so the images get the rest.
  */
 
-type Mode = "compare" | "solo";
-
 function ShotFrame({
   url,
   label,
@@ -26,6 +24,7 @@ function ShotFrame({
   onKeep,
   onOpen,
   hotkey,
+  soloed,
 }: {
   url: string;
   label: string;
@@ -34,6 +33,7 @@ function ShotFrame({
   onKeep?: () => void;
   onOpen: () => void;
   hotkey: string;
+  soloed: boolean;
 }) {
   return (
     <figure className="flex min-h-0 w-full flex-1 flex-col items-center gap-2">
@@ -48,7 +48,7 @@ function ShotFrame({
       <button
         type="button"
         onClick={onOpen}
-        title="Open full size"
+        title={soloed ? "Back to both variants" : "Fill the stage with this variant"}
         className="flex min-h-0 w-full flex-1 items-center justify-center"
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -99,20 +99,27 @@ export default function StageView({
   onDownload: (url: string, index: number) => void;
   onOpenDetails: () => void;
 }) {
-  const [mode, setMode] = useState<Mode>("compare");
-  const [solo, setSolo] = useState(0);
+  /**
+   * Which variant, if any, has the stage to itself.
+   *
+   * This used to be a Compare/Solo pair plus a 1/2 slot picker — four buttons
+   * in the header to say which picture to look at, above the pictures. The
+   * picture is the control now: press one to fill the stage with it, press it
+   * again to get both back. Same two states, no chrome.
+   */
+  const [soloed, setSoloed] = useState<number | null>(null);
   const picked = run?.abTest?.selectedImage;
   const shots = run?.imageUrls ?? [];
   const canKeep = Boolean(onKeep) && shots.length === 2 && Boolean(run?.abTest);
 
-  // Reset the solo slot whenever the run changes, so switching runs never
-  // lands on a slot the new run doesn't have.
+  // Switching runs always comes back to both variants — a new run has not been
+  // compared yet, so soloing one of it makes no sense.
   useEffect(() => {
-    setSolo(0);
+    setSoloed(null);
   }, [run?.id]);
 
-  // 1 / 2 keep a variant, C and S switch mode. Skipped whenever the operator is
-  // typing — the composer's style-number field sits one tab away.
+  // 1 and 2 keep a variant, Escape leaves solo. Skipped whenever the operator
+  // is typing — the composer's style-number field sits one tab away.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
@@ -120,8 +127,7 @@ export default function StageView({
       if (el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName))) return;
       if (e.key === "1" && canKeep) onKeep?.("left");
       else if (e.key === "2" && canKeep) onKeep?.("right");
-      else if (e.key.toLowerCase() === "c") setMode("compare");
-      else if (e.key.toLowerCase() === "s") setMode("solo");
+      else if (e.key === "Escape") setSoloed(null);
       else return;
       e.preventDefault();
     }
@@ -142,7 +148,8 @@ export default function StageView({
   }
 
   const labels = run.viewLabels ?? [];
-  const visible = mode === "solo" ? [shots[Math.min(solo, shots.length - 1)]] : shots;
+  const soloIndex = soloed !== null && soloed < shots.length ? soloed : null;
+  const visible = soloIndex !== null ? [shots[soloIndex]] : shots;
 
   return (
     <section className="flex h-full min-h-0 flex-col bg-neutral-50">
@@ -164,47 +171,6 @@ export default function StageView({
           <PipelineStrip steps={runPipeline(run)} size="md" />
         </div>
         <span className="flex-1" />
-
-        {shots.length > 1 && (
-          <div role="radiogroup" aria-label="Stage mode" className="flex gap-1">
-            {(["compare", "solo"] as Mode[]).map((m) => (
-              <button
-                key={m}
-                type="button"
-                role="radio"
-                aria-checked={mode === m}
-                onClick={() => setMode(m)}
-                className={`rounded-md border px-2 py-1 text-[10px] font-bold capitalize transition ${
-                  mode === m
-                    ? "border-neutral-900 bg-neutral-900 text-white"
-                    : "border-neutral-200 bg-white text-neutral-600 hover:border-neutral-400"
-                }`}
-              >
-                {m}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {mode === "solo" && shots.length > 1 && (
-          <div className="flex gap-1">
-            {shots.map((_, i) => (
-              <button
-                key={i}
-                type="button"
-                onClick={() => setSolo(i)}
-                aria-label={`Show variant ${i + 1}`}
-                className={`h-6 w-6 rounded-md border font-mono text-[10px] font-bold transition ${
-                  solo === i
-                    ? "border-neutral-900 bg-neutral-900 text-white"
-                    : "border-neutral-200 bg-white text-neutral-600 hover:border-neutral-400"
-                }`}
-              >
-                {i + 1}
-              </button>
-            ))}
-          </div>
-        )}
 
         <button
           type="button"
@@ -230,7 +196,7 @@ export default function StageView({
         }`}
       >
         {visible.map((url, i) => {
-          const slotIndex = mode === "solo" ? Math.min(solo, shots.length - 1) : i;
+          const slotIndex = soloIndex !== null ? soloIndex : i;
           const kept =
             (picked === "left" && slotIndex === 0) || (picked === "right" && slotIndex === 1);
           return (
@@ -246,7 +212,8 @@ export default function StageView({
                     ? () => onKeep?.(slotIndex === 0 ? "left" : "right")
                     : undefined
                 }
-                onOpen={() => onDownload(url, slotIndex)}
+                soloed={soloIndex !== null}
+                onOpen={() => setSoloed(soloIndex !== null ? null : slotIndex)}
               />
             </div>
           );

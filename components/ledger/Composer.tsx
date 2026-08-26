@@ -109,42 +109,47 @@ function IntakeSlot({
   );
 }
 
-function Segmented<T extends string>({
+/**
+ * A binary choice as one control instead of two.
+ *
+ * The side and the garment mode were a pair of segmented controls: four pills
+ * for two yes/no questions, all four permanently lit, in a bar whose job is to
+ * get out of the way. Both are now facts read from the photo rather than
+ * decisions the operator makes up front — so each states its current value and
+ * flips when pressed, which is one button, and reads as a fact rather than a
+ * form.
+ */
+function Flip({
   label,
   value,
-  options,
+  other,
   disabled,
-  onChange,
+  onFlip,
 }: {
   label: string;
-  value: T;
-  options: Array<{ value: T; label: string }>;
+  value: string;
+  /** What pressing it will change the value to — announced, not drawn. */
+  other: string;
   disabled?: boolean;
-  onChange: (value: T) => void;
+  onFlip: () => void;
 }) {
   return (
-    <div role="radiogroup" aria-label={label} className="flex gap-1">
-      {options.map((option) => {
-        const active = option.value === value;
-        return (
-          <button
-            key={option.value}
-            type="button"
-            role="radio"
-            aria-checked={active}
-            disabled={disabled}
-            onClick={() => onChange(option.value)}
-            className={`rounded-md border px-2 py-1 text-[10px] font-bold transition disabled:cursor-not-allowed disabled:opacity-45 ${
-              active
-                ? "border-neutral-900 bg-neutral-900 text-white"
-                : "border-neutral-200 bg-white text-neutral-600 hover:border-neutral-400"
-            }`}
-          >
-            {option.label}
-          </button>
-        );
-      })}
-    </div>
+    <button
+      type="button"
+      onClick={onFlip}
+      disabled={disabled}
+      aria-label={`${label}: ${value}. Change to ${other}.`}
+      title={disabled ? undefined : `Change to ${other.toLowerCase()}`}
+      className="group inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-bold text-neutral-800 transition hover:bg-neutral-100 disabled:cursor-not-allowed disabled:font-semibold disabled:text-neutral-500 disabled:hover:bg-transparent"
+    >
+      {value}
+      <span
+        aria-hidden="true"
+        className="text-[9px] text-neutral-300 transition group-hover:text-neutral-500 group-disabled:opacity-0"
+      >
+        ⇄
+      </span>
+    </button>
   );
 }
 
@@ -239,57 +244,52 @@ export default function Composer({
         </p>
       )}
 
-      <div className="mb-2.5 flex flex-wrap items-center gap-x-2 gap-y-1.5">
+      {/*
+        One line, read as a sentence: what this run is, and where that came
+        from. It replaces four segmented pills and a separate note underneath.
+      */}
+      <div className="mb-2.5 flex flex-wrap items-baseline gap-x-1 gap-y-1 text-[11px] text-neutral-500">
         {contract ? (
-          <span className="rounded-md border border-neutral-900 bg-neutral-900 px-2 py-1 text-[10px] font-bold text-white">
-            Front + back
-          </span>
+          <span className="font-bold text-neutral-800">Front + back</span>
         ) : (
-          <Segmented
+          <Flip
             label="Product shot side"
-            value={controls.view}
+            value={controls.view === "back" ? "Back" : "Front"}
+            other={controls.view === "back" ? "Front" : "Back"}
             disabled={controls.disabled || !controls.viewEditable}
-            onChange={controls.onViewChange}
-            options={[
-              { value: "front", label: "Front" },
-              { value: "back", label: "Back" },
-            ]}
+            onFlip={() => controls.onViewChange(controls.view === "back" ? "front" : "back")}
           />
         )}
-        <Segmented
+        <span>·</span>
+        <Flip
           label="Garment mode"
-          value={controls.isSet ? "set" : "single"}
+          value={controls.isSet ? "Coordinated set" : "Single garment"}
+          other={controls.isSet ? "Single garment" : "Coordinated set"}
           disabled={controls.disabled}
-          onChange={(value) => controls.onSetChange(value === "set")}
-          options={[
-            { value: "single", label: "Single" },
-            { value: "set", label: "Set" },
-          ]}
+          onFlip={() => controls.onSetChange(!controls.isSet)}
         />
-        <span className="flex-1" />
-        <button
-          type="button"
-          onClick={onOpenSetup}
-          className="rounded-md border border-neutral-200 bg-white px-2 py-1 text-[10px] font-bold text-neutral-600 transition hover:border-neutral-400"
-        >
-          Setup
-        </button>
+        <span className="ml-0.5">— {VIEW_NOTE[controls.viewSource]}</span>
       </div>
 
-      <p className="mb-2.5 text-[9.5px] leading-snug text-neutral-500">
-        {VIEW_NOTE[controls.viewSource]}
-      </p>
-
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3">
         <span className="min-w-0 flex-1 truncate font-mono text-[8px] uppercase tracking-[0.12em] text-neutral-400">
           {modelLabel}
         </span>
+        {/* Quiet text, not bordered buttons. Neither is pressed on a normal
+            run, and drawn as buttons they competed with the one that is. */}
+        <button
+          type="button"
+          onClick={onOpenSetup}
+          className="shrink-0 text-[10px] font-semibold text-neutral-500 underline-offset-2 transition hover:text-neutral-900 hover:underline"
+        >
+          Setup
+        </button>
         <button
           type="button"
           onClick={onBatch}
           disabled={!canBatch || busy}
           title={batchDisabledReason}
-          className="rounded-md border border-neutral-200 bg-white px-2.5 py-1.5 text-[10px] font-bold text-neutral-700 transition hover:border-neutral-400 disabled:cursor-not-allowed disabled:opacity-40"
+          className="shrink-0 text-[10px] font-semibold text-neutral-500 underline-offset-2 transition hover:text-neutral-900 hover:underline disabled:cursor-not-allowed disabled:text-neutral-300 disabled:no-underline"
         >
           Batch
         </button>
@@ -297,7 +297,7 @@ export default function Composer({
           type="button"
           onClick={onGenerate}
           disabled={generateDisabled || busy}
-          className="flex items-center gap-1.5 rounded-lg bg-neutral-900 px-4 py-2 text-[11px] font-bold text-white transition hover:bg-neutral-700 disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex shrink-0 items-center gap-1.5 rounded-lg bg-neutral-900 px-4 py-2 text-[11px] font-bold text-white transition hover:bg-neutral-700 disabled:cursor-not-allowed disabled:opacity-40"
         >
           {analyzing ? "Analyzing…" : busy ? "Generating…" : generateLabel}
           {!busy && !analyzing && (

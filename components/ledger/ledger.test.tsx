@@ -187,11 +187,33 @@ describe("stage", () => {
     expect(screen.getByText("Front · Variant 2")).toBeInTheDocument();
   });
 
-  it("drops to one variant in solo mode", () => {
+  // The picture is the control. This replaced a Compare/Solo pair plus a 1/2
+  // slot picker — four buttons above the images to say which image to look at.
+  it("fills the stage with a variant when that variant is pressed", () => {
     renderStage();
-    fireEvent.click(screen.getByRole("radio", { name: /solo/i }));
-    expect(screen.getByText("Front · Variant 1")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /variant 2/i }));
+    expect(screen.getByText("Front · Variant 2")).toBeInTheDocument();
+    expect(screen.queryByText("Front · Variant 1")).not.toBeInTheDocument();
+  });
+
+  it("brings both variants back when the soloed one is pressed again", () => {
+    renderStage();
+    fireEvent.click(screen.getByRole("button", { name: /variant 1/i }));
     expect(screen.queryByText("Front · Variant 2")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /variant 1/i }));
+    expect(screen.getByText("Front · Variant 2")).toBeInTheDocument();
+  });
+
+  it("leaves solo on Escape", () => {
+    renderStage();
+    fireEvent.click(screen.getByRole("button", { name: /variant 2/i }));
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.getByText("Front · Variant 1")).toBeInTheDocument();
+  });
+
+  it("carries no mode switcher in the header at all", () => {
+    renderStage();
+    expect(screen.queryByRole("radiogroup", { name: /stage mode/i })).not.toBeInTheDocument();
   });
 
   it("keeps a variant from its button", () => {
@@ -234,6 +256,7 @@ describe("composer", () => {
   function renderComposer(over: Partial<Parameters<typeof Composer>[0]> = {}) {
     const onGenerate = vi.fn();
     const onAddFiles = vi.fn();
+    const onFlipView = vi.fn();
     const utils = render(
       <Composer
         frontIntakeUrl={null}
@@ -242,7 +265,7 @@ describe("composer", () => {
         onClearIntake={() => {}}
         styleNumber=""
         onStyleNumberChange={() => {}}
-        controls={CONTROLS}
+        controls={{ ...CONTROLS, onViewChange: onFlipView }}
         modelLabel="GPT Image 2 · 2160×2700 · JPEG"
         onGenerate={onGenerate}
         generateLabel="Generate front"
@@ -256,7 +279,7 @@ describe("composer", () => {
         {...over}
       />
     );
-    return { ...utils, onGenerate, onAddFiles };
+    return { ...utils, onGenerate, onAddFiles, onFlipView };
   }
 
   it("puts the warning about an inferred canvas next to the field that fixes it", () => {
@@ -276,12 +299,21 @@ describe("composer", () => {
   it("collapses the side control into one label for a contract run", () => {
     renderComposer({ controls: { ...CONTROLS, mode: "front-back-contract", viewSource: "contract" } });
     expect(screen.getByText("Front + back")).toBeInTheDocument();
-    expect(screen.queryByRole("radiogroup", { name: /side/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /product shot side/i })).not.toBeInTheDocument();
+  });
+
+  // Two binary choices used to be four permanently-lit pills.
+  it("states the side and the garment mode as one control each", () => {
+    const { onFlipView } = renderComposer();
+    const side = screen.getByRole("button", { name: /product shot side: front/i });
+    fireEvent.click(side);
+    expect(onFlipView).toHaveBeenCalledWith("back");
+    expect(screen.getByRole("button", { name: /garment mode: single garment/i })).toBeInTheDocument();
   });
 
   it("locks the side control when the run has no side to choose", () => {
     renderComposer({ controls: { ...CONTROLS, viewEditable: false } });
-    expect(screen.getByRole("radio", { name: "Back" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /product shot side/i })).toBeDisabled();
   });
 
   it("will not generate while a run is in flight", () => {
