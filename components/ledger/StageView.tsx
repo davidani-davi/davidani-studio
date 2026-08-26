@@ -4,7 +4,14 @@ import { useEffect, useState } from "react";
 import { ImageGeneration } from "@/components/agents/image-generation";
 import PipelineStrip from "./PipelineStrip";
 import type { HistoryItem } from "../types";
-import { runPipeline, runSubtitle, runTitle, slotClock } from "@/lib/run-pipeline";
+import {
+  intakeShots,
+  runPipeline,
+  runSubtitle,
+  runTitle,
+  slotClock,
+  type IntakeShot,
+} from "@/lib/run-pipeline";
 
 /**
  * The right half: whichever run the ledger is pointing at, as large as the
@@ -26,15 +33,19 @@ function ShotFrame({
   onOpen,
   hotkey,
   soloed,
+  openTitle,
 }: {
   url: string;
   label: string;
   alt: string;
-  kept: boolean;
+  /** Absent for an intake photo, which is a reference and not a take. */
+  kept?: boolean;
   onKeep?: () => void;
   onOpen: () => void;
-  hotkey: string;
+  hotkey?: string;
   soloed: boolean;
+  /** Overrides the click hint, which otherwise talks about variants. */
+  openTitle?: string;
 }) {
   return (
     <figure className="flex min-h-0 w-full flex-1 flex-col items-center gap-2">
@@ -49,7 +60,7 @@ function ShotFrame({
       <button
         type="button"
         onClick={onOpen}
-        title={soloed ? "Back to both variants" : "Fill the stage with this variant"}
+        title={openTitle ?? (soloed ? "Back to both variants" : "Fill the stage with this variant")}
         className="flex min-h-0 w-full flex-1 items-center justify-center"
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -158,6 +169,63 @@ function PaintingFrame({
   );
 }
 
+/**
+ * The photos that went in, kept beside the photos that came out.
+ *
+ * A rail rather than a third pane: the renders are what the operator is
+ * judging and they get the room. But "is this still the same garment" cannot
+ * be answered from memory, and until this the source was nowhere on the screen
+ * once a run finished. Clicking one opens it at full stage size, because the
+ * details that decide it — a trim, a pocket, a print's placement — are not
+ * visible at rail width either.
+ */
+function IntakeRail({
+  shots,
+  opened,
+  onOpen,
+}: {
+  shots: IntakeShot[];
+  opened: number | null;
+  onOpen: (index: number | null) => void;
+}) {
+  return (
+    <div
+      role="region"
+      aria-label="Intake photos"
+      className="flex w-[124px] shrink-0 flex-col gap-2 overflow-y-auto border-r border-neutral-200 bg-white p-2.5"
+    >
+      <span className="shrink-0 font-mono text-[9px] font-bold uppercase tracking-[0.15em] text-neutral-400">
+        Intake
+      </span>
+      {shots.map((shot, i) => (
+        <button
+          key={shot.url}
+          type="button"
+          onClick={() => onOpen(opened === i ? null : i)}
+          aria-pressed={opened === i}
+          title={opened === i ? "Back to the renders" : `Open the ${shot.label.toLowerCase()} photo`}
+          className={`group relative shrink-0 overflow-hidden rounded-lg border bg-[#edeeee] transition ${
+            opened === i
+              ? "border-neutral-900 ring-1 ring-neutral-900"
+              : "border-neutral-200 hover:border-neutral-400"
+          }`}
+          style={{ aspectRatio: "4 / 5" }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={shot.url}
+            alt={`${shot.label} intake photo`}
+            className="h-full w-full object-contain"
+          />
+          <span className="absolute inset-x-0 bottom-0 bg-white/85 py-0.5 text-center font-mono text-[8px] font-bold uppercase tracking-[0.1em] text-neutral-600">
+            {shot.label}
+          </span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export default function StageView({
   run,
   running,
@@ -181,6 +249,8 @@ export default function StageView({
    * again to get both back. Same two states, no chrome.
    */
   const [soloed, setSoloed] = useState<number | null>(null);
+  /** Which intake photo, if any, has taken over the stage. */
+  const [openedIntake, setOpenedIntake] = useState<number | null>(null);
   const picked = run?.abTest?.selectedImage;
   const shots = run?.imageUrls ?? [];
   const canKeep = Boolean(onKeep) && shots.length === 2 && Boolean(run?.abTest);
@@ -189,6 +259,7 @@ export default function StageView({
   // compared yet, so soloing one of it makes no sense.
   useEffect(() => {
     setSoloed(null);
+    setOpenedIntake(null);
   }, [run?.id]);
 
   // 1 and 2 keep a variant, Escape leaves solo. Skipped whenever the operator
@@ -200,7 +271,10 @@ export default function StageView({
       if (el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName))) return;
       if (e.key === "1" && canKeep) onKeep?.("left");
       else if (e.key === "2" && canKeep) onKeep?.("right");
-      else if (e.key === "Escape") setSoloed(null);
+      else if (e.key === "Escape") {
+        setSoloed(null);
+        setOpenedIntake(null);
+      }
       else return;
       e.preventDefault();
     }
@@ -220,6 +294,8 @@ export default function StageView({
     );
   }
 
+  const intake = intakeShots(run);
+  const openedShot = openedIntake !== null ? intake[openedIntake] : undefined;
   const labels = run.viewLabels ?? [];
   const soloIndex = soloed !== null && soloed < shots.length ? soloed : null;
   const visible = soloIndex !== null ? [shots[soloIndex]] : shots;
@@ -270,11 +346,28 @@ export default function StageView({
       </div>
 
       {/* the stage */}
-      <div
-        className={`grid min-h-0 flex-1 gap-px bg-neutral-200 ${
-          visible.length + awaited.length > 1 ? "grid-cols-2" : "grid-cols-1"
-        }`}
-      >
+      <div className="flex min-h-0 flex-1">
+        {intake.length > 0 && (
+          <IntakeRail shots={intake} opened={openedIntake} onOpen={setOpenedIntake} />
+        )}
+
+        {openedShot ? (
+          <div className="flex min-h-0 flex-1 justify-center bg-neutral-50 p-4">
+            <ShotFrame
+              url={openedShot.url}
+              alt={`${openedShot.label} intake photo`}
+              label={`Intake · ${openedShot.label}`}
+              openTitle="Back to the renders"
+              soloed
+              onOpen={() => setOpenedIntake(null)}
+            />
+          </div>
+        ) : (
+          <div
+            className={`grid min-h-0 flex-1 gap-px bg-neutral-200 ${
+              visible.length + awaited.length > 1 ? "grid-cols-2" : "grid-cols-1"
+            }`}
+          >
         {visible.map((url, i) => {
           const slotIndex = soloIndex !== null ? soloIndex : i;
           const kept =
@@ -307,9 +400,11 @@ export default function StageView({
             />
           </div>
         ))}
-        {visible.length === 0 && awaited.length === 0 && (
-          <div className="flex items-center justify-center text-[12px] text-neutral-500">
-            {running ? "Painting variants…" : "This run produced no images."}
+            {visible.length === 0 && awaited.length === 0 && (
+              <div className="flex items-center justify-center text-[12px] text-neutral-500">
+                {running ? "Painting variants…" : "This run produced no images."}
+              </div>
+            )}
           </div>
         )}
       </div>

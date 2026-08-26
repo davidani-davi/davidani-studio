@@ -3,6 +3,7 @@ import {
   DEFAULT_EXPECTED_SECONDS,
   filterRuns,
   garmentNameFromPrompt,
+  intakeShots,
   runPipeline,
   runSide,
   runSubtitle,
@@ -333,5 +334,32 @@ describe("slot clock", () => {
     const facts = run({ imageUrls: [], pending: { variants: 1, startedAt: 1000 } });
     expect(slotClock(facts, 0).expectedSeconds).toBe(DEFAULT_EXPECTED_SECONDS);
     expect(slotClock(run(), 0).expectedSeconds).toBe(DEFAULT_EXPECTED_SECONDS);
+  });
+});
+
+describe("intake shots", () => {
+  it("pairs two uploads as front and back, in composer order", () => {
+    expect(intakeShots(run({ sourceImageUrls: ["f.jpg", "b.jpg"] }))).toEqual([
+      { url: "f.jpg", label: "Front" },
+      { url: "b.jpg", label: "Back" },
+    ]);
+  });
+
+  // A single-back run's one upload is the back photo, not a front one.
+  it("labels a lone upload with the side the run actually rendered", () => {
+    expect(
+      intakeShots(run({ sourceImageUrls: ["one.jpg"], viewLabels: ["Back · Variant 1"] }))[0].label
+    ).toBe("Back");
+    expect(intakeShots(run({ sourceImageUrls: ["one.jpg"] }))[0].label).toBe("Front");
+  });
+
+  it("shows nothing rather than an empty frame for a run with no uploads", () => {
+    expect(intakeShots(run({ sourceImageUrls: [] }))).toEqual([]);
+    expect(intakeShots(run({ sourceImageUrls: undefined }))).toEqual([]);
+    expect(intakeShots(run({ sourceImageUrls: ["", "b.jpg"] }))).toHaveLength(1);
+  });
+
+  it("does not pretend a third photo is a side", () => {
+    expect(intakeShots(run({ sourceImageUrls: ["a", "b", "c"] }))[2].label).toBe("Photo 3");
   });
 });

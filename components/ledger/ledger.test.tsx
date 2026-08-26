@@ -300,6 +300,28 @@ describe("stage", () => {
     expect(screen.getByText(/longer than usual/i)).toBeInTheDocument();
   });
 
+  it("shows the photos that went in beside the ones that came out", () => {
+    renderStage({ run: makeRun({ sourceImageUrls: ["in-front.jpg", "in-back.jpg"] }) });
+    expect(screen.getByAltText(/front intake photo/i)).toBeInTheDocument();
+    expect(screen.getByAltText(/back intake photo/i)).toBeInTheDocument();
+  });
+
+  it("opens an intake photo at stage size and gives it back", () => {
+    renderStage({ run: makeRun({ sourceImageUrls: ["in-front.jpg"] }) });
+    const thumb = screen.getByAltText(/front intake photo/i).closest("button")!;
+    fireEvent.click(thumb);
+    // Stage-size copy plus the rail thumb, and the renders have stood down.
+    expect(screen.getAllByAltText(/front intake photo/i)).toHaveLength(2);
+    expect(screen.queryByAltText(/variant 1/i)).not.toBeInTheDocument();
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.getByAltText(/variant 1/i)).toBeInTheDocument();
+  });
+
+  it("shows no rail for a run that recorded no uploads", () => {
+    renderStage({ run: makeRun({ sourceImageUrls: [] }) });
+    expect(screen.queryByRole("region", { name: /intake photos/i })).not.toBeInTheDocument();
+  });
+
   // The contract run's back render is chained behind the front, so before the
   // slot clock it inherited the front's wait and cried "longer than usual"
   // seconds after its own call went out.

@@ -4,6 +4,7 @@ import { AnimatedBadge, type AnimatedBadgeStatus } from "@/components/motion/ani
 import PipelineStrip from "./PipelineStrip";
 import type { HistoryItem } from "../types";
 import {
+  intakeShots,
   runPipeline,
   runSubtitle,
   runTitle,
@@ -56,6 +57,7 @@ export default function RunCard({
    */
   const slotCount = Math.min(2, Math.max(run.imageUrls.length, run.pending?.variants ?? 0));
   const slots = Array.from({ length: slotCount }, (_, i) => run.imageUrls[i] ?? null);
+  const intake = intakeShots(run);
   const time = new Date(run.timestamp).toLocaleTimeString([], {
     hour: "numeric",
     minute: "2-digit",
@@ -99,14 +101,55 @@ export default function RunCard({
         )}
       </div>
 
-      <div className="mb-2.5 flex gap-1.5">
+      {/* Its own line. Sharing the row with the thumbnails it had about
+          fourteen characters and clamped almost every garment name. */}
+      <div className="mb-2.5">
+        <div className="line-clamp-2 text-[12px] font-bold leading-tight">{runTitle(run)}</div>
+        <div className="mt-0.5 font-mono text-[9.5px] text-neutral-500">{runSubtitle(run)}</div>
+      </div>
+
+      {/*
+        Source on the left, results on the right, with the arrow the pipeline
+        strip already uses between them. The one question worth asking of a
+        finished render is whether it is still the same garment, and until this
+        the card showed only the answer, never the question.
+      */}
+      <div className="mb-2.5 flex items-center gap-1.5">
+        {intake.length > 0 && (
+          <>
+            <div className="flex gap-1">
+              {intake.slice(0, 2).map((shot) => (
+                <div
+                  key={shot.url}
+                  className="relative h-[76px] w-[58px] shrink-0 overflow-hidden rounded-md border border-neutral-200 bg-[#edeeee]"
+                >
+                  {/* Contain, because an intake photo is whatever shape the
+                      phone took it in — cover cropped the hem off. */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={shot.url}
+                    alt={`${shot.label} intake photo`}
+                    className="h-full w-full object-contain"
+                  />
+                  <span className="absolute inset-x-0 bottom-0 bg-white/85 py-px text-center font-mono text-[7.5px] font-bold uppercase tracking-[0.1em] text-neutral-500">
+                    {shot.label}
+                  </span>
+                </div>
+              ))}
+            </div>
+            {/* A rule, not an arrow: four boxes of the same size in a row
+                read as four takes. The intake pair is also drawn smaller, so
+                the size says which side of the rule you are on. */}
+            <span aria-hidden="true" className="mx-1 h-14 w-px shrink-0 bg-neutral-200" />
+          </>
+        )}
         {slots.map((url, i) => {
           if (!url) {
             return (
               <div
                 key={`awaited-${i}`}
                 aria-label={`Variant ${i + 1} is being generated`}
-                className="h-20 w-16 shrink-0 animate-pulse rounded-md border border-dashed border-neutral-300 bg-neutral-100"
+                className="h-24 w-[76px] shrink-0 animate-pulse rounded-md border border-dashed border-neutral-300 bg-neutral-100"
               />
             );
           }
@@ -115,7 +158,7 @@ export default function RunCard({
           return (
             <div
               key={`${url}-${i}`}
-              className={`h-20 w-16 shrink-0 overflow-hidden rounded-md border bg-[#edeeee] ${
+              className={`h-24 w-[76px] shrink-0 overflow-hidden rounded-md border bg-[#edeeee] ${
                 isPick ? "border-neutral-900 ring-1 ring-neutral-900" : "border-neutral-200"
               } ${dimmed ? "opacity-50" : ""}`}
             >
@@ -129,14 +172,10 @@ export default function RunCard({
           );
         })}
         {slotCount === 0 && (
-          <div className="flex h-20 w-16 items-center justify-center rounded-md border border-dashed border-neutral-300 text-[9px] text-neutral-400">
+          <div className="flex h-24 w-[76px] items-center justify-center rounded-md border border-dashed border-neutral-300 text-[9px] text-neutral-400">
             —
           </div>
         )}
-        <div className="min-w-0 flex-1 pl-1">
-          <div className="line-clamp-2 text-[11px] font-bold leading-tight">{runTitle(run)}</div>
-          <div className="mt-1 font-mono text-[9px] text-neutral-500">{runSubtitle(run)}</div>
-        </div>
       </div>
 
       <PipelineStrip steps={runPipeline(run)} />

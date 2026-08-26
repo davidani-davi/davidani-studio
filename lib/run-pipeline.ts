@@ -30,6 +30,7 @@ export interface RunFacts {
   styleNumber?: string;
   styleName?: string;
   imageUrls: string[];
+  sourceImageUrls?: string[];
   viewLabels?: string[];
   routing?: RoutingPayload | null;
   routingCanvas?: CanvasSummary | null;
@@ -96,6 +97,35 @@ export function runSide(run: RunFacts): string | null {
   if (sides.size === 0) return null;
   if (sides.size > 1) return "Front + back";
   return sides.has("back") ? "Back" : "Front";
+}
+
+/** One intake photo, with the side it stands for. */
+export interface IntakeShot {
+  url: string;
+  label: string;
+}
+
+/**
+ * The photos that went IN to this run.
+ *
+ * Already stored on every run as `sourceImageUrls` — the retry path has used
+ * them since Multi Model Studio — but never shown. The one question worth
+ * asking of a finished render is whether it is still the same garment, and
+ * answering it meant remembering what you had uploaded.
+ *
+ * Two photos are a front/back pair in composer order. One is whichever side
+ * the run rendered.
+ */
+export function intakeShots(run: RunFacts): IntakeShot[] {
+  const urls = (run.sourceImageUrls ?? []).filter((url): url is string => Boolean(url));
+  if (urls.length === 0) return [];
+  if (urls.length === 1) {
+    return [{ url: urls[0], label: runSide(run) === "Back" ? "Back" : "Front" }];
+  }
+  return urls.map((url, i) => ({
+    url,
+    label: i === 0 ? "Front" : i === 1 ? "Back" : `Photo ${i + 1}`,
+  }));
 }
 
 /** Shorten a canvas path to the name the rail already prints. */
