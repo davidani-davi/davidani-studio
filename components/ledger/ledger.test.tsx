@@ -421,6 +421,7 @@ describe("composer", () => {
         backIntakeUrl={null}
         onAddFiles={onAddFiles}
         onClearIntake={() => {}}
+        onSearchErp={() => {}}
         styleNumber=""
         onStyleNumberChange={() => {}}
         controls={{ ...CONTROLS, onViewChange: onFlipView }}

@@ -33,6 +33,7 @@ function IntakeSlot({
   disabled,
   onFiles,
   onClear,
+  onSearchErp,
 }: {
   url: string | null;
   label: string;
@@ -40,6 +41,8 @@ function IntakeSlot({
   disabled?: boolean;
   onFiles: (files: FileList) => void;
   onClear?: () => void;
+  /** Opens the ERP gallery search targeted at this slot. */
+  onSearchErp: () => void;
 }) {
   const input = useRef<HTMLInputElement>(null);
   const [over, setOver] = useState(false);
@@ -89,6 +92,25 @@ function IntakeSlot({
             <span className="text-[11px] font-medium text-neutral-400">Drop or click</span>
           </>
         )}
+      </button>
+
+      {/*
+        Per slot, not one control for the pair: front and back are different
+        photos of the same style and are chosen separately, so each carries its
+        own search. Sits below the drop target so it never eats a drop.
+      */}
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={onSearchErp}
+        aria-label={`Search ERP style photos for the ${label.toLowerCase()}`}
+        title={`Search the ERP gallery for the ${label.toLowerCase()}`}
+        className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-1 bg-white/85 py-1 text-[9.5px] font-bold text-neutral-600 transition hover:bg-white hover:text-neutral-900 disabled:cursor-not-allowed disabled:text-neutral-300"
+      >
+        <span aria-hidden="true" className="text-[10px] leading-none">
+          ⌕
+        </span>
+        ERP photos
       </button>
 
       {/* The slot's name sits on the tile rather than under it — under it, at
@@ -190,6 +212,7 @@ export default function Composer({
   canBatch,
   batchDisabledReason,
   onOpenSetup,
+  onSearchErp,
   /** Set when routing declined the approved flat lay for want of a style number. */
   canvasNeedsStyleNumber,
 }: {
@@ -210,6 +233,7 @@ export default function Composer({
   canBatch: boolean;
   batchDisabledReason?: string;
   onOpenSetup: () => void;
+  onSearchErp: (slot: "front" | "back") => void;
   canvasNeedsStyleNumber: boolean;
 }) {
   const contract = controls.mode === "front-back-contract";
@@ -231,6 +255,7 @@ export default function Composer({
           disabled={busy}
           onFiles={(files) => onAddFiles(files, "front")}
           onClear={frontIntakeUrl ? () => onClearIntake(frontIntakeUrl) : undefined}
+          onSearchErp={() => onSearchErp("front")}
         />
         <IntakeSlot
           url={backIntakeUrl}
@@ -238,6 +263,7 @@ export default function Composer({
           disabled={busy}
           onFiles={(files) => onAddFiles(files, "back")}
           onClear={backIntakeUrl ? () => onClearIntake(backIntakeUrl) : undefined}
+          onSearchErp={() => onSearchErp("back")}
         />
       </div>
 

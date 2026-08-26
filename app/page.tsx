@@ -8,6 +8,7 @@ import OutputPanel from "@/components/OutputPanel";
 import RunLedger from "@/components/ledger/RunLedger";
 import StageView from "@/components/ledger/StageView";
 import Composer from "@/components/ledger/Composer";
+import ErpPicker, { type ErpPhotoOption } from "@/components/ledger/ErpPicker";
 import PaneSplitter from "@/components/ledger/PaneSplitter";
 import { LEDGER_DEFAULT, clampLedgerWidth, readLedgerWidth } from "@/lib/pane-size";
 import StudioDrawer from "@/components/ledger/StudioDrawer";
@@ -471,6 +472,8 @@ export default function StudioPage() {
    * the first client render disagree with the markup it is hydrating.
    */
   const [ledgerWidth, setLedgerWidth] = useState(LEDGER_DEFAULT);
+  /** Which intake slot the ERP gallery search is open for, if any. */
+  const [erpSlot, setErpSlot] = useState<"front" | "back" | null>(null);
 
   useEffect(() => {
     const saved = readLedgerWidth(localStorage.getItem(LEDGER_WIDTH_KEY));
@@ -684,6 +687,34 @@ export default function StudioPage() {
     } finally {
       setUploading(false);
     }
+  }
+
+  /**
+   * Take a photo out of the ERP gallery and into an intake slot.
+   *
+   * The chosen frame is fetched at full resolution server-side and uploaded to
+   * fal, so it becomes an ordinary intake URL — the generation path hands image
+   * URLs to the model, and an ERP URL behind a session cookie is not one it
+   * could fetch.
+   *
+   * The style number comes along with it. That is half the point: a photo
+   * dragged in from the desktop loses the code on the way, and the code is
+   * what buys the approved flat lay instead of the empty sweep.
+   */
+  async function importErpPhoto(slot: "front" | "back", photo: ErpPhotoOption, style: string) {
+    const data = await fetchJson("ERP photo", "/api/erp/import", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ src: photo.full }),
+    });
+    const added: UploadedImage = { url: data.url, name: data.name };
+    setUploads((list) => [...list, added]);
+    setSelected((list) => [...list, added.url]);
+    if (slot === "front") setFrontIntakeUrl(added.url);
+    else setBackIntakeUrl(added.url);
+    if (!styleNumber.trim()) setStyleNumber(style);
+    setPrompt("");
+    setError(null);
   }
 
   async function analyzeProduct() {
@@ -1659,6 +1690,7 @@ export default function StudioPage() {
                   batchEligibility(productShotMode, selected.length).reason ?? undefined
                 }
                 onOpenSetup={() => setSetupOpen(true)}
+              onSearchErp={setErpSlot}
                 canvasNeedsStyleNumber={routingCanvas?.fallbackReason === "category-inferred"}
               />
             </>
@@ -1687,6 +1719,26 @@ export default function StudioPage() {
           onOpenDetails={() => setDetailsOpen(true)}
         />
       </div>
+
+      <StudioDrawer
+        open={erpSlot !== null}
+        title={`ERP photos · ${erpSlot === "back" ? "Back" : "Front"}`}
+        subtitle="Every frame the ERP holds for a style, with the one the Faire square thumbnail is built from marked."
+        wide
+        onClose={() => setErpSlot(null)}
+      >
+        {erpSlot && (
+          <ErpPicker
+            slot={erpSlot}
+            initialStyle={styleNumber}
+            onPick={async (photo, style) => {
+              await importErpPhoto(erpSlot, photo, style);
+              setErpSlot(null);
+            }}
+            onClose={() => setErpSlot(null)}
+          />
+        )}
+      </StudioDrawer>
 
       <StudioDrawer
         open={setupOpen}
