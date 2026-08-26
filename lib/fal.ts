@@ -13,6 +13,7 @@ import {
   KIE_SUPPORTED_IMAGE_MIME_TYPES,
 } from "./kie-image-compat";
 import { STUDIO_BACKGROUND_HEX, type BackgroundCanvasMode } from "./studio-background";
+import { flatlayFramingClause } from "./flatlay-spec";
 
 export { STUDIO_BACKGROUND_HEX, type BackgroundCanvasMode };
 
@@ -874,8 +875,7 @@ export function buildTwoImagePrompt(
         ? `STUDIO COMPOSITION STANDARD: this is a locked visual requirement. Place the garment alone on the empty ` +
           `backdrop as a single centered catalog product shot. The full garment must be visible from the top ` +
           `(collar, hang point, or shoulder line) to the bottom hem — nothing cropped, nothing cut off at the ` +
-          `edges — with comfortable, even margins on all four sides. The garment is centered horizontally with ` +
-          `equal left and right margins and sits at the vertical center of the frame. Camera is straight-on and ` +
+          `edges. ${flatlayFramingClause()} Camera is straight-on and ` +
           `perpendicular to the backdrop plane — no tilt, no perspective shift, no barrel distortion. Re-center ` +
           `and straighten the garment rather than copying its position, angle, or scale from the reference ` +
           `photograph. Output a single product image, not a collage and not a side-by-side layout. `
