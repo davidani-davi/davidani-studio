@@ -192,7 +192,18 @@ function getOrCreateUserId(): string {
 
 export default function StudioPage() {
   // Controls
-  const [modelId, setModelId] = useState<ModelId>("nano-banana");
+  /**
+   * GPT Image 2, not Nano Banana.
+   *
+   * Measured on six back-mode runs of one SKU, same input, prompt and canvas:
+   * Nano Banana put the garment on a masonry ledge copied from the intake
+   * photo's wall in 5 of 6; GPT Image 2 was clean 6 of 6, with the correct
+   * back view in all six. Seedream rendered the FRONT in all six and burned
+   * prompt text into two of them. The cost is speed — roughly 110s a variant
+   * against 45s — which is the right trade when the fast one needs a reshoot
+   * five times out of six.
+   */
+  const [modelId, setModelId] = useState<ModelId>("gpt-image");
   // Aspect, resolution, format and variant-count state used to live here and
   // back four sidebar controls. None of them reached a request: every call
   // hardcodes 4:5 / 4K, /api/finalize-image hardcodes JPEG, and both variants
