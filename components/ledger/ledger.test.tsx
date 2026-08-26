@@ -557,3 +557,80 @@ describe("PaneSplitter", () => {
     expect(onWidth).not.toHaveBeenCalled();
   });
 });
+
+describe("composer dock", () => {
+  function renderLedger(runs: HistoryItem[]) {
+    return render(
+      <RunLedger
+        runs={runs}
+        currentId={runs[0]?.id ?? null}
+        filter="all"
+        onFilterChange={() => {}}
+        onSelect={() => {}}
+        onClearHistory={() => {}}
+        composer={<button type="button">Generate</button>}
+      />
+    );
+  }
+
+  /** jsdom lays nothing out, so the feed's scroll metrics are stubbed. */
+  function scrollFeed(feed: HTMLElement, to: number, overflow = 2000) {
+    Object.defineProperty(feed, "scrollHeight", { value: overflow + 500, configurable: true });
+    Object.defineProperty(feed, "clientHeight", { value: 500, configurable: true });
+    feed.scrollTop = to;
+    fireEvent.scroll(feed);
+  }
+
+  function parts() {
+    const dock = screen.getByText("Generate").parentElement!;
+    // By text, not by role: while the composer is up the reveal is
+    // aria-hidden, which is the point — it is not in the accessibility tree.
+    const reveal = screen.getByText("New run").closest("button")!;
+    return { dock, reveal };
+  }
+
+  it("ducks the composer away as the ledger scrolls back, and offers it back", () => {
+    const { container } = renderLedger([makeRun()]);
+    const feed = container.querySelector(".overflow-y-auto") as HTMLElement;
+    expect(parts().dock).toHaveClass("translate-y-0");
+
+    scrollFeed(feed, 400);
+    expect(parts().dock).toHaveClass("translate-y-full");
+    expect(parts().reveal).toHaveClass("opacity-100");
+
+    fireEvent.click(parts().reveal);
+    expect(parts().dock).toHaveClass("translate-y-0");
+  });
+
+  it("does not duck away from a feed that only overflows by its own padding", () => {
+    const { container } = renderLedger([makeRun()]);
+    const feed = container.querySelector(".overflow-y-auto") as HTMLElement;
+    // Everything that can be scrolled is the space reserved for the composer.
+    scrollFeed(feed, 40, 8);
+    expect(parts().dock).toHaveClass("translate-y-0");
+  });
+
+  it("brings it back on a scroll up", () => {
+    const { container } = renderLedger([makeRun()]);
+    const feed = container.querySelector(".overflow-y-auto") as HTMLElement;
+    scrollFeed(feed, 400);
+    scrollFeed(feed, 300);
+    expect(parts().dock).toHaveClass("translate-y-0");
+  });
+
+  // Tabbing into a control that is off the bottom of the column is the one way
+  // this could strand someone.
+  it("brings it back when something inside it takes focus", () => {
+    const { container } = renderLedger([makeRun()]);
+    const feed = container.querySelector(".overflow-y-auto") as HTMLElement;
+    scrollFeed(feed, 400);
+    fireEvent.focus(screen.getByRole("button", { name: "Generate" }));
+    expect(parts().dock).toHaveClass("translate-y-0");
+  });
+
+  it("keeps the reveal out of the tab order while the composer is up", () => {
+    renderLedger([makeRun()]);
+    expect(parts().reveal).toHaveAttribute("tabindex", "-1");
+    expect(parts().reveal).toHaveAttribute("aria-hidden", "true");
+  });
+});
