@@ -70,6 +70,8 @@ export interface CanvasSummary {
   path: string;
   isFallback: boolean;
   category: GarmentCategory;
+  /** Which of the two reasons produced the sweep. See resolveCanvas. */
+  fallbackReason?: "no-canvas" | "category-inferred";
 }
 
 /**
@@ -94,7 +96,12 @@ export function canvasSummaryFrom(
   if (overriddenByUpload) return null;
   const choice = canvasByView?.[view];
   if (!choice) return null;
-  return { path: choice.path, isFallback: choice.isFallback, category: choice.category };
+  return {
+    path: choice.path,
+    isFallback: choice.isFallback,
+    category: choice.category,
+    fallbackReason: choice.fallbackReason,
+  };
 }
 
 export function summarizeRouting(
@@ -171,9 +178,18 @@ export function summarizeRouting(
       label: "Canvas",
       value: canvas.isFallback ? "Empty sweep" : name.replace(/\.png$/, ""),
       state: canvas.isFallback ? "fallback" : "decided",
-      note: canvas.isFallback
-        ? `No approved flat lay for ${categoryLabel(canvas.category).toLowerCase()} yet — framing is described in words instead`
-        : undefined,
+      // Two different facts, and the operator can act on only one of them: a
+      // missing flat lay is a shoot to schedule, an unbacked category is a
+      // style number to type in.
+      note: !canvas.isFallback
+        ? undefined
+        : canvas.fallbackReason === "category-inferred"
+        ? `Category read from the photo alone — add a style number to render on the approved ${categoryLabel(
+            canvas.category
+          ).toLowerCase()} flat lay`
+        : `No approved flat lay for ${categoryLabel(
+            canvas.category
+          ).toLowerCase()} yet — framing is described in words instead`,
     });
   }
 

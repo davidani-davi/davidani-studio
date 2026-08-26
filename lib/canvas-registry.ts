@@ -63,7 +63,21 @@ export interface CanvasChoice {
   category: GarmentCategory;
   /** True when this is the empty sweep rather than an approved flat lay. */
   isFallback: boolean;
+  /**
+   * Why the sweep came back. "no-canvas" means the category has no approved
+   * flat lay yet; "category-inferred" means it has one and we declined to use
+   * it — see the trust argument on resolveCanvas.
+   */
+  fallbackReason?: "no-canvas" | "category-inferred";
 }
+
+/**
+ * Whether anything other than the photo settled the category.
+ *
+ * "asserted" - the ERP record or the style code named it.
+ * "inferred" - vision read it off the garment, and nothing corroborated it.
+ */
+export type CategoryTrust = "asserted" | "inferred";
 
 interface CanvasEntry {
   front: string;
@@ -102,6 +116,28 @@ const CANVASES: Partial<Record<GarmentCategory, CanvasEntry>> = {
  * the original pants-only inference: no bare "short" (matches "short sleeve"),
  * no bare "denim" (matches "denim jacket"), no bare "pant".
  */
+/**
+ * Compound phrases whose category is the OPPOSITE of what the ordered scan
+ * below would give them, checked first.
+ *
+ * "dress shirt" is the one that has actually cost a render: IMG_7755 is a
+ * lavender button-down that vision described as "a lavender ribbed cotton
+ * dress shirt", and the word "dress" inside it routed the shirt to the maxi
+ * dress canvas. First-match-wins ordering cannot fix this on its own — the
+ * head noun is the last word, and the modifier is the one that matches.
+ *
+ * Deliberately a short list of real garment names, not a general
+ * head-noun parser. Every entry here is a phrase whose modifier names a
+ * different category from its head.
+ */
+const COMPOUND_OVERRIDES: Array<{ category: GarmentCategory; phrases: string[] }> = [
+  { category: "top", phrases: ["dress shirt", "dress shirts", "dress blouse"] },
+  {
+    category: "pants",
+    phrases: ["dress pants", "dress trousers", "dress slacks", "dress shorts"],
+  },
+];
+
 const CATEGORY_PATTERNS: Array<{ category: GarmentCategory; words: string[] }> = [
   {
     category: "set",
@@ -154,6 +190,11 @@ const CATEGORY_PATTERNS: Array<{ category: GarmentCategory; words: string[] }> =
  */
 export function inferCategory(text: string): GarmentCategory {
   if (!text) return "unknown";
+  for (const { category, phrases } of COMPOUND_OVERRIDES) {
+    for (const phrase of phrases) {
+      if (new RegExp(`\\b${phrase}\\b`, "i").test(text)) return category;
+    }
+  }
   for (const { category, words } of CATEGORY_PATTERNS) {
     for (const w of words) {
       // Escape regex metacharacters (hyphens are fine, but "t-shirt" and any
@@ -173,12 +214,45 @@ export function inferCategory(text: string): GarmentCategory {
  */
 export function resolveCanvas(
   category: GarmentCategory,
-  view: "front" | "back" = "front"
+  view: "front" | "back" = "front",
+  // Defaults to "asserted" so the many callers that already know their
+  // category is corroborated read unchanged.
+  trust: CategoryTrust = "asserted"
 ): CanvasChoice {
   const entry = CANVASES[category];
   const path = view === "back" ? entry?.back : entry?.front;
   if (!path) {
-    return { path: STUDIO_BACKDROP_PATH, mode: "backdrop", category, isFallback: true };
+    return {
+      path: STUDIO_BACKDROP_PATH,
+      mode: "backdrop",
+      category,
+      isFallback: true,
+      fallbackReason: "no-canvas",
+    };
+  }
+  // An approved canvas is not a background — it is a garment, and in
+  // "preserve" mode the prompt tells the model to match its composition. When
+  // the category is wrong the canvas does not merely frame the render badly,
+  // it replaces the product.
+  //
+  // Measured on IMG_7756, a lightweight camo-yoke shirt that vision filed as
+  // outerwear: on canvas-outerwear-front (the black rodeo bomber) it came back
+  // as a bomber, with ribbed collar, ribbed cuffs, ribbed hem and welt
+  // pockets. Same photo, same prompt, same model on the empty sweep returned
+  // the correct shirt. IMG_7757 moved the same way.
+  //
+  // So the canvas is spent only where the category has external backing. The
+  // sweep still pins background, ratio and colour exactly; it just specifies
+  // framing in words instead of copying it from a garment that might be the
+  // wrong one.
+  if (trust === "inferred") {
+    return {
+      path: STUDIO_BACKDROP_PATH,
+      mode: "backdrop",
+      category,
+      isFallback: true,
+      fallbackReason: "category-inferred",
+    };
   }
   return { path, mode: "preserve", category, isFallback: false };
 }
@@ -186,9 +260,10 @@ export function resolveCanvas(
 /** Convenience: infer then resolve in one step. */
 export function canvasForGarment(
   text: string,
-  view: "front" | "back" = "front"
+  view: "front" | "back" = "front",
+  trust: CategoryTrust = "asserted"
 ): CanvasChoice {
-  return resolveCanvas(inferCategory(text), view);
+  return resolveCanvas(inferCategory(text), view, trust);
 }
 
 /** Categories that currently have an approved canvas, for UI and diagnostics. */

@@ -40,6 +40,27 @@ describe("category inference", () => {
     expect(inferCategory("striped cotton shirt dress")).toBe("dress");
   });
 
+  // The reverse collision: here the modifier names the wrong category and the
+  // head noun is right. Measured on IMG_7755, a button-down that vision called
+  // a "dress shirt" and that routed to the maxi dress canvas as a result.
+  it("reads 'dress shirt' as a top, not a dress", () => {
+    expect(inferCategory("a lavender ribbed cotton dress shirt with burgundy piping")).toBe(
+      "top"
+    );
+    expect(inferCategory("crisp white dress shirts")).toBe("top");
+  });
+
+  it("reads 'dress pants' as pants, not a dress", () => {
+    expect(inferCategory("charcoal wool dress pants")).toBe("pants");
+    expect(inferCategory("navy dress trousers")).toBe("pants");
+  });
+
+  // The compound list must not swallow the plain cases it sits in front of.
+  it("still reads an ordinary dress as a dress", () => {
+    expect(inferCategory("a floral cotton midi dress")).toBe("dress");
+    expect(inferCategory("striped cotton shirt dress")).toBe("dress");
+  });
+
   it("reads a matching set as a set, not its component piece", () => {
     expect(inferCategory("matching set of a knit top and a mini skirt")).toBe("set");
   });
@@ -51,6 +72,47 @@ describe("category inference", () => {
   it("returns unknown rather than guessing", () => {
     expect(inferCategory("hand-beaded ceremonial garment")).toBe("unknown");
     expect(inferCategory("")).toBe("unknown");
+  });
+});
+
+describe("category trust gates the canvas", () => {
+  // An approved canvas is a garment, and "preserve" mode tells the model to
+  // match its composition. On a wrong category it replaces the product rather
+  // than framing it — IMG_7756, a camo-yoke shirt filed as outerwear, came
+  // back as the bomber that is on canvas-outerwear-front.
+  it("declines the approved canvas when only the photo named the category", () => {
+    const choice = resolveCanvas("outerwear", "front", "inferred");
+    expect(choice.isFallback).toBe(true);
+    expect(choice.mode).toBe("backdrop");
+    expect(choice.fallbackReason).toBe("category-inferred");
+    // The category is still reported, so the rail can name what was declined.
+    expect(choice.category).toBe("outerwear");
+  });
+
+  it("spends the canvas when the ERP or a style code asserted the category", () => {
+    const choice = resolveCanvas("outerwear", "front", "asserted");
+    expect(choice.isFallback).toBe(false);
+    expect(choice.mode).toBe("preserve");
+    expect(choice.fallbackReason).toBeUndefined();
+  });
+
+  it("defaults to asserted so existing callers are unchanged", () => {
+    expect(resolveCanvas("outerwear", "front")).toEqual(
+      resolveCanvas("outerwear", "front", "asserted")
+    );
+  });
+
+  // The two fallbacks are different facts: one is a shoot to schedule, the
+  // other is a style number to type in.
+  it("distinguishes a missing flat lay from a distrusted category", () => {
+    expect(resolveCanvas("pants", "front", "asserted").fallbackReason).toBe("no-canvas");
+    expect(resolveCanvas("pants", "front", "inferred").fallbackReason).toBe("no-canvas");
+    expect(resolveCanvas("top", "front", "inferred").fallbackReason).toBe("category-inferred");
+  });
+
+  it("passes trust through canvasForGarment", () => {
+    expect(canvasForGarment("oversized denim jacket", "front", "inferred").isFallback).toBe(true);
+    expect(canvasForGarment("oversized denim jacket", "front", "asserted").isFallback).toBe(false);
   });
 });
 

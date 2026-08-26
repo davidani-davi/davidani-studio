@@ -7,7 +7,12 @@ import {
   extractHeroGarmentFields,
   extractTwoPieceFields,
 } from "@/lib/fal";
-import { inferCategory, resolveCanvas, type GarmentCategory } from "@/lib/canvas-registry";
+import {
+  inferCategory,
+  resolveCanvas,
+  type CategoryTrust,
+  type GarmentCategory,
+} from "@/lib/canvas-registry";
 import { fetchErpCategory, mapErpCategory } from "@/lib/erp-category";
 import { decodeStyleCode, reconcileStyleCode } from "@/lib/style-code";
 import { buildGalleryContactSheet } from "@/lib/erp-gallery";
@@ -173,8 +178,13 @@ export async function POST(req: Request) {
     };
     const promptByMode = { preserve: assemble("preserve"), backdrop: assemble("backdrop") };
 
-    const frontCanvas = resolveCanvas(category, "front");
-    const backCanvas = resolveCanvas(category, "back");
+    // The canvas is spent only on a category something other than the photo
+    // asserted. `erpMapped` is non-null exactly when the ERP record or the
+    // style code settled it (see reconcileStyleCode), so this is that test.
+    // See resolveCanvas for the run that motivated it.
+    const categoryTrust: CategoryTrust = erpMapped ? "asserted" : "inferred";
+    const frontCanvas = resolveCanvas(category, "front", categoryTrust);
+    const backCanvas = resolveCanvas(category, "back", categoryTrust);
 
     // --- routing, as data rather than a log line ----------------------------
     // Every decision below was already being computed and thrown away into
@@ -216,8 +226,10 @@ export async function POST(req: Request) {
     console.log(
       `[analyze] category=${category} (${categorySource}; vision said ${visionCategory}) ` +
         `garmentSource=${gallery ? `erp-gallery:${gallery.frames}frames` : "intake-photo"} ` +
+        `categoryTrust=${categoryTrust} ` +
         `front=${frontCanvas.path} back=${backCanvas.path} ` +
-        `fallback(front=${frontCanvas.isFallback}, back=${backCanvas.isFallback})`
+        `fallback(front=${frontCanvas.fallbackReason ?? "none"}, ` +
+        `back=${backCanvas.fallbackReason ?? "none"})`
     );
 
     return NextResponse.json({

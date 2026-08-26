@@ -76,6 +76,49 @@ describe("missing inputs are named, not hidden", () => {
     { path: "/product-shots/studio-backdrop-empty.png", isFallback: true, category: "pants" }
   );
 
+  // The canvas row now carries two different fallbacks, and only one of them
+  // is something the operator can act on from this screen.
+  it("names a missing flat lay as a missing flat lay", () => {
+    const note = rowFor(rows, "canvas").note ?? "";
+    expect(note).toMatch(/no approved flat lay for pants/i);
+    expect(note).not.toMatch(/style number/i);
+  });
+
+  it("tells the operator a style number would buy the approved canvas", () => {
+    const gated = summarizeRouting(
+      {
+        styleCode: null,
+        erp: null,
+        vision: { category: "outerwear" },
+        decidedBy: "none",
+        overrode: null,
+        describedFrom: { kind: "intake-photo" },
+      },
+      {
+        path: "/product-shots/studio-backdrop-empty.png",
+        isFallback: true,
+        category: "outerwear",
+        fallbackReason: "category-inferred",
+      }
+    );
+    const note = rowFor(gated, "canvas").note ?? "";
+    expect(note).toMatch(/read from the photo alone/i);
+    expect(note).toMatch(/style number/i);
+    expect(note).toMatch(/outerwear/i);
+  });
+
+  it("carries the fallback reason through canvasSummaryFrom", () => {
+    const sweep = {
+      path: "/product-shots/studio-backdrop-empty.png",
+      isFallback: true,
+      category: "top" as const,
+      fallbackReason: "category-inferred" as const,
+    };
+    expect(canvasSummaryFrom({ front: sweep }, "front")?.fallbackReason).toBe(
+      "category-inferred"
+    );
+  });
+
   it("says there is no style number rather than showing a blank", () => {
     expect(rowFor(rows, "erp").state).toBe("fallback");
     expect(rowFor(rows, "erp").value).toBe("No style number");
