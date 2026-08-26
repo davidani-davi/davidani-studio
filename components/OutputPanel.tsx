@@ -5,6 +5,7 @@ import type { HistoryItem } from "./types";
 import ImageLightbox, { ZoomButton } from "./ImageLightbox";
 import { FEEDBACK_ISSUES, type FeedbackIssueKey } from "@/lib/feedback-memory";
 import RoutingPanel from "./RoutingPanel";
+import BackgroundSnapNote from "./BackgroundSnapNote";
 
 type FitRepairMode =
   | "all"
@@ -320,6 +321,10 @@ export default function OutputPanel({
    * when there is something to say, so Model Studio and Faire SEO are
    * unaffected.
    */
+  // Parallel to imageUrls, so it follows the variant picker rather than the
+  // run. Gated the same way the routing block is: the two other studios that
+  // share this panel never populate it and see nothing.
+  const backgroundSnap = current?.backgroundSnaps?.[safeIndex] ?? null;
   const provenance =
     current?.routings?.[safeIndex] ??
     (current?.routing ? { routing: current.routing, canvas: current.routingCanvas ?? null } : null);
@@ -1628,6 +1633,8 @@ export default function OutputPanel({
               <RoutingPanel routing={provenance.routing} canvas={provenance.canvas} />
             </div>
           )}
+
+          {backgroundSnap && <BackgroundSnapNote snap={backgroundSnap} />}
 
           <div className="flex items-center gap-2">
             <button

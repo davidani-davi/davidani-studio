@@ -12,6 +12,7 @@ import { IMAGE_STUDIO_OUTPUT_FORMAT as OUTPUT_FORMAT } from "@/lib/output-sizes"
 import { styleNumberSurvives } from "@/lib/style-number-lifetime";
 import { batchEligibility } from "@/lib/batch-eligibility";
 import { canvasSummaryFrom, type CanvasSummary, type RoutingPayload } from "@/lib/routing-summary";
+import type { BackgroundSnapReport } from "@/lib/background-snap";
 import { styleNumbersForQueue } from "@/lib/style-from-filename";
 import { buildBatchSummary } from "@/lib/batch-summary";
 import type { CanvasChoice } from "@/lib/canvas-registry";
@@ -868,19 +869,31 @@ export default function StudioPage() {
           setHistory((existing) => [item, ...existing.filter((run) => run.id !== item.id)].slice(0, 50));
           setCurrentId(jobId);
           localStorage.setItem(CURRENT_ID_KEY, jobId);
-          const finalize = (url: string) =>
+          // Finalize now also carries back what the #edeeee snap did. The
+          // report is produced during this pass and nowhere else, so it has to
+          // ride along here or it stays in the server log.
+          const finalize = (url: string): Promise<{ url: string; snap: BackgroundSnapReport | null }> =>
             fetchJson("Finalize image", "/api/finalize-image", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ imageUrl: url }),
             })
-              .then((d) => (typeof d.url === "string" && d.url ? d.url : url))
-              .catch(() => url);
+              .then((d) => ({
+                url: typeof d.url === "string" && d.url ? d.url : url,
+                snap: (d.snap as BackgroundSnapReport | null) ?? null,
+              }))
+              // Finalize failing is already handled by keeping the native
+              // image; a null snap says "not measured" rather than "fine".
+              .catch(() => ({ url, snap: null }));
           const [finalLeft, finalRight] = await Promise.all([
             finalize(leftUrl),
             finalize(rightUrl),
           ]);
-          const finalItem: HistoryItem = { ...item, imageUrls: [finalLeft, finalRight] };
+          const finalItem: HistoryItem = {
+            ...item,
+            imageUrls: [finalLeft.url, finalRight.url],
+            backgroundSnaps: [finalLeft.snap, finalRight.snap],
+          };
           setHistory((existing) =>
             existing.map((run) => (run.id === jobId ? finalItem : run))
           );
@@ -1191,6 +1204,13 @@ export default function StudioPage() {
         });
 
         const outputUrls: string[] = data.images.map((x: any) => x.url);
+        // Batch resizes inside /api/generate, so its reports come back on the
+        // generate response rather than from finalize. Padded to the image
+        // count so the array stays index-aligned even if the server sends
+        // fewer (a non-normalized model would send none at all).
+        const outputSnaps: Array<BackgroundSnapReport | null> = outputUrls.map(
+          (_, i) => (data.backgroundSnaps as BackgroundSnapReport[] | undefined)?.[i] ?? null
+        );
         // Append the new output(s) to the shared batch run. Using the
         // functional setHistory form ensures we don't clobber earlier
         // appends from this same loop.
@@ -1210,6 +1230,7 @@ export default function StudioPage() {
                     ...(item.routings ?? []),
                     { routing: itemRouting, canvas: itemCanvasSummary },
                   ],
+                  backgroundSnaps: [...(item.backgroundSnaps ?? []), ...outputSnaps],
                 }
               : item
           )

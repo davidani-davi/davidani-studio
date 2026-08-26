@@ -87,7 +87,9 @@ export interface CanvasSummary {
 export function canvasSummaryFrom(
   canvasByView: Partial<Record<"front" | "back", CanvasSummary>> | undefined,
   view: "front" | "back",
-  overriddenByUpload: boolean
+  // Defaulted: "no upload override" is the ordinary case, and a required flag
+  // here made every caller restate the absence of one.
+  overriddenByUpload = false
 ): CanvasSummary | null {
   if (overriddenByUpload) return null;
   const choice = canvasByView?.[view];

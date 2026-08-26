@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { resizeGeneratedImages } from "@/lib/fal";
 import { IMAGE_STUDIO_OUTPUT_SIZE } from "@/lib/output-sizes";
+import type { BackgroundSnapReport } from "@/lib/background-snap";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -19,13 +20,24 @@ export async function POST(req: Request) {
     // normalizeBackground: the model lands a few levels off #edeeee even with
     // a pixel-exact canvas (measured #dfe2e9 on a real run). Snapped here,
     // deterministically, rather than by asking the prompt more nicely.
+    //
+    // The snap report comes back with the URL rather than only reaching the
+    // server log. "border not neutral" means this render is not sitting on a
+    // studio sweep at all, which is precisely the failure that is invisible
+    // in the finished image at thumbnail size.
+    let snap: BackgroundSnapReport | null = null;
     const [finalized] = await resizeGeneratedImages(
       [{ url: imageUrl }],
       IMAGE_STUDIO_OUTPUT_SIZE,
       "jpeg",
-      { normalizeBackground: true }
+      {
+        normalizeBackground: true,
+        onNormalize: (report) => {
+          snap = report;
+        },
+      }
     );
-    return NextResponse.json({ ok: true, url: finalized.url });
+    return NextResponse.json({ ok: true, url: finalized.url, snap });
   } catch (err: any) {
     console.error("[finalize-image] error:", err);
     return NextResponse.json(

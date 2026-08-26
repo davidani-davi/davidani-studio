@@ -1,5 +1,6 @@
 import type { FeedbackIssueKey } from "@/lib/feedback-memory";
 import type { CanvasSummary, RoutingPayload } from "@/lib/routing-summary";
+import type { BackgroundSnapReport } from "@/lib/background-snap";
 
 export interface UploadedImage {
   url: string;
@@ -102,6 +103,16 @@ export interface HistoryItem {
    * be a lie. Parallel to imageUrls, same convention as `prompts`.
    */
   routings?: Array<{ routing: RoutingPayload | null; canvas: CanvasSummary | null } | null>;
+  /**
+   * What the #edeeee backdrop snap did to each finished image, parallel to
+   * imageUrls.
+   *
+   * Stored per image rather than per run because two variants of one prompt
+   * routinely disagree: the run that motivated this had variant 1 land on a
+   * clean sweep and variant 2 on a painted cinderblock ledge. A run-level
+   * answer would have described one of them wrongly.
+   */
+  backgroundSnaps?: Array<BackgroundSnapReport | null>;
   // Marks a run as produced by Batch so we can label it distinctly in the UI.
   batch?: boolean;
 }

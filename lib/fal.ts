@@ -13,6 +13,7 @@ import {
   KIE_SUPPORTED_IMAGE_MIME_TYPES,
 } from "./kie-image-compat";
 import { STUDIO_BACKGROUND_HEX, type BackgroundCanvasMode } from "./studio-background";
+import type { BackgroundSnapReport } from "./background-snap";
 import { flatlayFramingClause } from "./flatlay-spec";
 
 export { STUDIO_BACKGROUND_HEX, type BackgroundCanvasMode };
@@ -3093,6 +3094,12 @@ export interface GenerationResult {
   modelId: ModelId;
   cost?: number;
   fallbackFrom?: ModelId;
+  /**
+   * What the backdrop snap did, parallel to `images`. Only present when the
+   * caller asked for normalizeBackground — i.e. Image Studio. Optional and
+   * additive so the studios that share this type are unaffected.
+   */
+  backgroundSnaps?: BackgroundSnapReport[];
 }
 
 export function buildGptImageOptions(params: {
@@ -3163,7 +3170,19 @@ export async function resizeGeneratedImages(
   images: GenerationResult["images"],
   size: { width: number; height: number } | null,
   format: "png" | "jpeg" = "jpeg",
-  opts: { normalizeBackground?: boolean } = {}
+  opts: {
+    normalizeBackground?: boolean;
+    /**
+     * Called once per image whenever the backdrop snap runs, applied or not.
+     *
+     * A callback rather than a richer return type on purpose: this function's
+     * result is consumed by Model Studio and the photoshoot flows as well, and
+     * widening it there to carry a signal only Image Studio can act on would
+     * make every caller pay for one caller's telemetry. Studios that do not
+     * pass this see no change at all.
+     */
+    onNormalize?: (report: BackgroundSnapReport, index: number) => void;
+  } = {}
 ): Promise<GenerationResult["images"]> {
   if (!size) return images;
 
@@ -3200,9 +3219,33 @@ export async function resizeGeneratedImages(
           } else {
             console.log(`[normalize-bg] skipped: ${normalized.skipReason}`);
           }
+          opts.onNormalize?.(
+            {
+              applied: normalized.applied,
+              coverage: normalized.coverage,
+              // Copied, not aliased: this crosses a JSON boundary and lands on
+              // a persisted history item.
+              sampled: normalized.sampled ? { ...normalized.sampled } : null,
+              skipReason: normalized.skipReason,
+            },
+            index
+          );
         } catch (err) {
           // A cosmetic pass must never cost the user a finished render.
           console.warn("[normalize-bg] failed; using un-normalized image:", err);
+          // Reported rather than swallowed. The render ships either way, but
+          // "we could not check this one" is not the same as "this one is
+          // fine", and the operator is the only one who can tell them apart.
+          opts.onNormalize?.(
+            {
+              applied: false,
+              coverage: 0,
+              sampled: null,
+              skipReason: err instanceof Error ? err.message : String(err),
+              failed: true,
+            },
+            index
+          );
         }
       }
       const extension = format === "png" ? "png" : "jpg";
@@ -3463,6 +3506,15 @@ export async function generate(params: GenerateParams): Promise<GenerationResult
   const resMultiplier = resolution === "4K" ? 2 : resolution === "2K" ? 1.5 : 1;
   const outputSize = defaultOutputSize(params, resolution);
 
+  // Collected by index so a multi-variant call keeps each report beside the
+  // image it describes, whatever order the resizes finish in.
+  const backgroundSnaps: BackgroundSnapReport[] = [];
+  const collectSnap = (report: BackgroundSnapReport, index: number) => {
+    backgroundSnaps[index] = report;
+  };
+  /** Undefined when nothing was collected, so the field stays absent for other studios. */
+  const snapsForResult = () => (backgroundSnaps.length ? backgroundSnaps : undefined);
+
   // kie.ai branch — short-circuit the fal.ai payload build and dispatcher.
   // Nano Banana 2 is served via kie.ai's async task API rather than fal's
   // synchronous `subscribe`. Return directly here to skip everything below.
@@ -3482,12 +3534,13 @@ export async function generate(params: GenerateParams): Promise<GenerationResult
       kieResult.images,
       outputSize,
       params.format,
-      { normalizeBackground: params.normalizeBackground }
+      { normalizeBackground: params.normalizeBackground, onNormalize: collectSnap }
     );
     return {
       images,
       requestId: kieResult.taskIds[0],
       modelId: params.modelId,
+      backgroundSnaps: snapsForResult(),
     };
   }
 
@@ -3580,11 +3633,13 @@ export async function generate(params: GenerateParams): Promise<GenerationResult
 
   const resizedImages = await resizeGeneratedImages(images, outputSize, params.format, {
     normalizeBackground: params.normalizeBackground,
+    onNormalize: collectSnap,
   });
 
   return {
     images: resizedImages,
     requestId: result?.requestId,
     modelId: params.modelId,
+    backgroundSnaps: snapsForResult(),
   };
 }
