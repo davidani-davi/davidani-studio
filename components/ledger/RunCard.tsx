@@ -1,5 +1,6 @@
 "use client";
 
+import { AnimatedBadge, type AnimatedBadgeStatus } from "@/components/motion/animated-badge";
 import PipelineStrip from "./PipelineStrip";
 import type { HistoryItem } from "../types";
 import {
@@ -19,11 +20,18 @@ import {
  * with a ring and the other is dimmed, so the pick reads without a label.
  */
 
-const VERDICT_CHIP: Record<RunTone, string> = {
-  running: "border-brand-300 bg-brand-50 text-brand-700",
-  kept: "border-emerald-300 bg-emerald-50 text-emerald-700",
-  check: "border-amber-300 bg-amber-50 text-amber-800",
-  clean: "border-neutral-200 bg-neutral-50 text-neutral-500",
+/**
+ * Verdict tone -> beUI badge status.
+ *
+ * "loading" is not a spelling of "running" here, it is the whole point: the
+ * badge spins its own icon and pulses for that status, so a run in flight
+ * announces itself from the feed without this component owning an animation.
+ */
+const VERDICT_STATUS: Record<RunTone, AnimatedBadgeStatus> = {
+  running: "loading",
+  kept: "success",
+  check: "warning",
+  clean: "neutral",
 };
 
 export default function RunCard({
@@ -69,17 +77,17 @@ export default function RunCard({
           </span>
         )}
         <span className="flex-1" />
-        {/* No chip for an unremarkable run. A badge on every card is not a
+        {/* No badge for an unremarkable run. A badge on every card is not a
             signal, and "Clean" collided with the backdrop step's own "Clean"
             in the strip below — two different meanings, one word, one card. */}
         {verdict.tone !== "clean" && (
-          <span
-            className={`rounded-full border px-2 py-0.5 text-[8.5px] font-bold uppercase tracking-wider ${
-              VERDICT_CHIP[verdict.tone]
-            }`}
+          <AnimatedBadge
+            status={VERDICT_STATUS[verdict.tone]}
+            size="sm"
+            className="h-5 px-1.5 text-[8.5px] font-bold uppercase tracking-wider"
           >
             {verdict.label}
-          </span>
+          </AnimatedBadge>
         )}
       </div>
 

@@ -143,7 +143,8 @@ describe("ledger", () => {
       makeRun({ id: "two", routingCanvas: INFERRED_SWEEP }),
       makeRun({ id: "three" }),
     ]);
-    const check = screen.getByRole("radio", { name: /check/i });
+    // beUI Tabs — role is tab, not radio.
+    const check = screen.getByRole("tab", { name: /check/i });
     expect(within(check).getByText("2")).toBeInTheDocument();
   });
 

@@ -4,6 +4,26 @@
 
 :root {
   color-scheme: light;
+  /*
+   * beUI token bridge. See the colors block in tailwind.config.ts for why
+   * these exist and why they are channel triples rather than hex.
+   *
+   * The values are the studio's, not shadcn's defaults: primary is the ink the
+   * Generate button already uses, card is the neutral-50 the run cards sit on,
+   * and muted-foreground is the same soft ink the rail's notes are set in. A
+   * beUI component dropped in anywhere reads as part of this app.
+   */
+  --ui-background: 255 255 255;        /* white — panels and drawers */
+  --ui-foreground: 28 24 20;           /* --polieco-ink */
+  --ui-card: 250 250 249;              /* neutral-50 */
+  --ui-muted: 245 245 244;
+  --ui-muted-foreground: 115 115 112;  /* reads as --polieco-soft on white */
+  --ui-primary: 23 23 23;              /* neutral-900, the Generate button */
+  --ui-primary-foreground: 255 255 255;
+  --ui-border: 229 229 228;            /* neutral-200 */
+  --ui-destructive: 185 60 40;
+  --ui-ring: 181 83 42;                /* brand-500 */
+
   --polieco-bg: #f4f0e8;
   --polieco-panel: #fffdf8;
   --polieco-panel-strong: #ffffff;
@@ -1129,12 +1149,13 @@ select {
   background: var(--polieco-bg);
 }
 
-@media (max-width: 900px) {
-  .image-studio-layout {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
-  }
-}
+/*
+ * No stacking rule here on purpose. The studio shell already collapses to a
+ * flex column below 1023px (see the media block further down, shared with
+ * Model Studio), and a second breakpoint at 900px was dead code sitting
+ * underneath it — it never matched a width the 1023px rule had not already
+ * claimed.
+ */
 
 .model-studio-setup,
 .image-studio-setup {

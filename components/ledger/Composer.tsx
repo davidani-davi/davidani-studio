@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { StatefulButton, type ButtonState } from "@/components/motion/button";
 import type { RoutingControls } from "../RoutingPanel";
 
 /**
@@ -194,6 +195,7 @@ export default function Composer({
   canvasNeedsStyleNumber: boolean;
 }) {
   const contract = controls.mode === "front-back-contract";
+  const buttonState: ButtonState = analyzing || busy ? "loading" : "idle";
 
   return (
     <div className="shrink-0 border-t border-neutral-200 bg-white px-3 pb-3 pt-2.5">
@@ -293,19 +295,27 @@ export default function Composer({
         >
           Batch
         </button>
-        <button
-          type="button"
+        {/*
+          beUI StatefulButton. Generate is a ~110 second action, so its label
+          is the only place the interface can say so continuously — the button
+          carries analyzing -> generating itself, spinner and all, instead of
+          this bar owning a separate progress affordance.
+        */}
+        <StatefulButton
+          state={buttonState}
           onClick={onGenerate}
-          disabled={generateDisabled || busy}
-          className="flex shrink-0 items-center gap-1.5 rounded-lg bg-neutral-900 px-4 py-2 text-[11px] font-bold text-white transition hover:bg-neutral-700 disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          {analyzing ? "Analyzing…" : busy ? "Generating…" : generateLabel}
-          {!busy && !analyzing && (
+          disabled={generateDisabled}
+          size="sm"
+          loadingText={analyzing ? "Analyzing" : "Generating"}
+          icon={
             <kbd className="rounded border border-white/30 px-1 font-mono text-[8px] opacity-80">
               ⌘↵
             </kbd>
-          )}
-        </button>
+          }
+          className="h-9 shrink-0 rounded-lg px-4 text-[11px] font-bold"
+        >
+          {generateLabel}
+        </StatefulButton>
       </div>
     </div>
   );

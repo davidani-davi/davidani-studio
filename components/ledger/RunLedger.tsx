@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { Tabs, TabsList, TabsTrigger } from "@/components/motion/tabs";
 import RunCard from "./RunCard";
 import type { HistoryItem } from "../types";
 import { filterRuns, wantsSecondLook, type LedgerFilter } from "@/lib/run-pipeline";
@@ -51,37 +52,34 @@ export default function RunLedger({
           Run ledger
         </span>
         <span className="flex-1" />
-        <div role="radiogroup" aria-label="Filter runs" className="flex gap-1">
-          {FILTERS.map((f) => {
-            const active = f.value === filter;
-            const count = f.value === "check" ? flagged : null;
-            return (
-              <button
+        {/*
+          beUI Tabs, segment variant: the active chip is a shared-layout
+          element, so switching filters glides the black pill across instead of
+          repainting two buttons. Controlled — the filter lives in page state
+          because the ledger is not the only thing that reads it.
+        */}
+        <Tabs value={filter} onValueChange={(v) => onFilterChange(v as LedgerFilter)} variant="segment">
+          <TabsList className="border border-neutral-200 bg-neutral-100/70">
+            {FILTERS.map((f) => (
+              <TabsTrigger
                 key={f.value}
-                type="button"
-                role="radio"
-                aria-checked={active}
-                onClick={() => onFilterChange(f.value)}
-                className={`flex items-center gap-1 rounded-md border px-2 py-1 text-[10px] font-bold transition ${
-                  active
-                    ? "border-neutral-900 bg-neutral-900 text-white"
-                    : "border-neutral-200 bg-white text-neutral-600 hover:border-neutral-400"
-                }`}
+                value={f.value}
+                className="gap-1 px-2.5 py-1 text-[10px] font-bold"
               >
                 {f.label}
-                {count ? (
+                {f.value === "check" && flagged ? (
                   <span
                     className={`font-mono text-[9px] ${
-                      active ? "text-white/70" : "text-amber-600"
+                      filter === "check" ? "text-white/70" : "text-amber-600"
                     }`}
                   >
-                    {count}
+                    {flagged}
                   </span>
                 ) : null}
-              </button>
-            );
-          })}
-        </div>
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto p-3">
