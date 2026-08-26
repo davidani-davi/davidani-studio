@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ImageGeneration } from "@/components/agents/image-generation";
 import PipelineStrip from "./PipelineStrip";
 import type { HistoryItem } from "../types";
 import { runPipeline, runSubtitle, runTitle } from "@/lib/run-pipeline";
@@ -85,6 +86,74 @@ function ShotFrame({
   );
 }
 
+/**
+ * Seconds since the run started, ticking once a second.
+ *
+ * A ~110 second wait with no visible clock reads as a hang. Showing elapsed
+ * against what this model usually takes turns it into a wait with an end.
+ */
+function useElapsed(startedAt: number | undefined) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!startedAt) return;
+    const id = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, [startedAt]);
+  if (!startedAt) return 0;
+  return Math.max(0, Math.round((now - startedAt) / 1000));
+}
+
+/**
+ * One slot on the stage while its image is still being painted.
+ *
+ * Sized exactly like ShotFrame — a height-driven box at the render's own 4:5,
+ * with the caption underneath rather than inside — so the frame does not
+ * change size or position at the moment the image lands. beUI's status line is
+ * turned off for the same reason: it would add height the finished frame does
+ * not have.
+ */
+function PaintingFrame({
+  label,
+  elapsed,
+  expected,
+}: {
+  label: string;
+  elapsed: number;
+  expected: number;
+}) {
+  const over = elapsed > expected;
+  return (
+    <figure className="flex min-h-0 w-full flex-1 flex-col items-center gap-2">
+      <div className="flex min-h-0 w-full flex-1 items-center justify-center">
+        <div className="h-full max-w-full" style={{ aspectRatio: "2160 / 2700" }}>
+          <ImageGeneration
+            size="fluid"
+            status="generating"
+            aspectRatio="2160 / 2700"
+            resolution="2160 × 2700"
+            showStatus={false}
+            label={`${label} is being generated`}
+            className="h-full"
+          />
+        </div>
+      </div>
+      <figcaption className="flex shrink-0 items-center gap-2">
+        <span className="font-mono text-[9px] font-medium uppercase tracking-[0.15em] text-neutral-400">
+          {label}
+        </span>
+        <span
+          aria-live="polite"
+          className={`font-mono text-[10px] font-semibold tabular-nums ${
+            over ? "text-amber-700" : "text-neutral-500"
+          }`}
+        >
+          {over ? `${elapsed}s · longer than usual` : `${elapsed}s of about ${expected}s`}
+        </span>
+      </figcaption>
+    </figure>
+  );
+}
+
 export default function StageView({
   run,
   running,
@@ -108,6 +177,7 @@ export default function StageView({
    * again to get both back. Same two states, no chrome.
    */
   const [soloed, setSoloed] = useState<number | null>(null);
+  const elapsed = useElapsed(run?.pending?.startedAt);
   const picked = run?.abTest?.selectedImage;
   const shots = run?.imageUrls ?? [];
   const canKeep = Boolean(onKeep) && shots.length === 2 && Boolean(run?.abTest);
@@ -151,6 +221,13 @@ export default function StageView({
   const soloIndex = soloed !== null && soloed < shots.length ? soloed : null;
   const visible = soloIndex !== null ? [shots[soloIndex]] : shots;
 
+  // Slots reserved for variants that have not landed yet. Space is held from
+  // the start so nothing reflows when an image arrives — a variant that
+  // finishes early sits beside its sibling still painting.
+  const awaited = run.pending
+    ? Array.from({ length: run.pending.variants }, (_, i) => i).filter((i) => !shots[i])
+    : [];
+
   return (
     <section className="flex h-full min-h-0 flex-col bg-neutral-50">
       {/* header — one line, because the images need the rest */}
@@ -192,7 +269,7 @@ export default function StageView({
       {/* the stage */}
       <div
         className={`grid min-h-0 flex-1 gap-px bg-neutral-200 ${
-          visible.length > 1 ? "grid-cols-2" : "grid-cols-1"
+          visible.length + awaited.length > 1 ? "grid-cols-2" : "grid-cols-1"
         }`}
       >
         {visible.map((url, i) => {
@@ -218,7 +295,16 @@ export default function StageView({
             </div>
           );
         })}
-        {visible.length === 0 && (
+        {awaited.map((slot) => (
+          <div key={`awaited-${slot}`} className="flex min-h-0 justify-center bg-neutral-50 p-4">
+            <PaintingFrame
+              label={labels[slot] ?? `Variant ${slot + 1}`}
+              elapsed={elapsed}
+              expected={run.pending?.expectedSeconds ?? 110}
+            />
+          </div>
+        ))}
+        {visible.length === 0 && awaited.length === 0 && (
           <div className="flex items-center justify-center text-[12px] text-neutral-500">
             {running ? "Painting variants…" : "This run produced no images."}
           </div>

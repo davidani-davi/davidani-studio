@@ -113,6 +113,26 @@ export interface HistoryItem {
    * answer would have described one of them wrongly.
    */
   backgroundSnaps?: Array<BackgroundSnapReport | null>;
+  /**
+   * Set from the moment Generate is pressed until every variant has landed.
+   *
+   * A run used to enter history only once BOTH variants returned, which left
+   * the ~110 seconds in between with nothing to show: the ledger's newest card
+   * was the previous run, the stage was still displaying its images, and the
+   * only sign anything was happening was the Generate button. Worse, the
+   * running badge attached to whichever run happened to be selected — so the
+   * last finished run wore "Painting" while a different one was painting.
+   *
+   * Creating the item up front makes the run in flight a real row: its own
+   * card, its own slot on the stage, its own progress. `variants` is how many
+   * images to reserve space for, so the frames do not reflow when they land.
+   */
+  pending?: {
+    variants: number;
+    startedAt: number;
+    /** Roughly how long this model takes, for the elapsed-vs-expected read. */
+    expectedSeconds?: number;
+  };
   // Marks a run as produced by Batch so we can label it distinctly in the UI.
   batch?: boolean;
 }

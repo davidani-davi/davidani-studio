@@ -47,7 +47,15 @@ export default function RunCard({
 }) {
   const verdict = runVerdict(run, { running });
   const picked = run.abTest?.selectedImage;
-  const shots = run.imageUrls.slice(0, 2);
+  /**
+   * One entry per slot this run will end up with, in order.
+   *
+   * By slot rather than "images then placeholders": variant 1 can land while
+   * variant 2 is still painting, and rendering all the placeholders first put
+   * the empty box to the LEFT of the image that had already arrived.
+   */
+  const slotCount = Math.min(2, Math.max(run.imageUrls.length, run.pending?.variants ?? 0));
+  const slots = Array.from({ length: slotCount }, (_, i) => run.imageUrls[i] ?? null);
   const time = new Date(run.timestamp).toLocaleTimeString([], {
     hour: "numeric",
     minute: "2-digit",
@@ -92,7 +100,16 @@ export default function RunCard({
       </div>
 
       <div className="mb-2.5 flex gap-1.5">
-        {shots.map((url, i) => {
+        {slots.map((url, i) => {
+          if (!url) {
+            return (
+              <div
+                key={`awaited-${i}`}
+                aria-label={`Variant ${i + 1} is being generated`}
+                className="h-20 w-16 shrink-0 animate-pulse rounded-md border border-dashed border-neutral-300 bg-neutral-100"
+              />
+            );
+          }
           const isPick = (picked === "left" && i === 0) || (picked === "right" && i === 1);
           const dimmed = Boolean(picked) && !isPick;
           return (
@@ -111,7 +128,7 @@ export default function RunCard({
             </div>
           );
         })}
-        {shots.length === 0 && (
+        {slotCount === 0 && (
           <div className="flex h-20 w-16 items-center justify-center rounded-md border border-dashed border-neutral-300 text-[9px] text-neutral-400">
             —
           </div>

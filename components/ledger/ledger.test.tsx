@@ -130,6 +130,37 @@ describe("run card", () => {
     expect(first.className).toContain("opacity-50");
   });
 
+  // The run in flight is a real row now: it enters history when Generate is
+  // pressed, not when both variants land.
+  it("reserves a placeholder for every variant still painting", () => {
+    render(
+      <RunCard
+        run={makeRun({ imageUrls: [], pending: { variants: 2, startedAt: Date.now() } })}
+        active={false}
+        onSelect={() => {}}
+      />
+    );
+    expect(screen.getByText("Painting")).toBeInTheDocument();
+    expect(screen.getByLabelText(/variant 1 is being generated/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/variant 2 is being generated/i)).toBeInTheDocument();
+  });
+
+  it("shows a landed variant beside its sibling still painting", () => {
+    render(
+      <RunCard
+        run={makeRun({
+          imageUrls: ["https://example.test/v1.jpg"],
+          pending: { variants: 2, startedAt: Date.now() },
+        })}
+        active={false}
+        onSelect={() => {}}
+      />
+    );
+    expect(screen.getAllByRole("img")).toHaveLength(1);
+    expect(screen.getByLabelText(/variant 2 is being generated/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/variant 1 is being generated/i)).not.toBeInTheDocument();
+  });
+
   it("does not crash on a run that produced no images", () => {
     render(<RunCard run={makeRun({ imageUrls: [] })} active={false} onSelect={() => {}} />);
     expect(screen.queryAllByRole("img")).toHaveLength(0);
@@ -238,6 +269,46 @@ describe("stage", () => {
     fireEvent.keyDown(input, { key: "1" });
     expect(onKeep).not.toHaveBeenCalled();
     input.remove();
+  });
+
+  it("paints a generating frame for each variant not yet in hand", () => {
+    renderStage({
+      run: makeRun({ imageUrls: [], pending: { variants: 2, startedAt: Date.now() } }),
+    });
+    expect(screen.getByLabelText(/front · variant 1 is being generated/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/front · variant 2 is being generated/i)).toBeInTheDocument();
+  });
+
+  // A ~110s wait with no clock reads as a hang.
+  it("counts the wait against what this model usually takes", () => {
+    renderStage({
+      run: makeRun({
+        imageUrls: [],
+        pending: { variants: 1, startedAt: Date.now(), expectedSeconds: 120 },
+      }),
+    });
+    expect(screen.getByText(/of about 120s/i)).toBeInTheDocument();
+  });
+
+  it("says so when a run has gone past its usual time", () => {
+    renderStage({
+      run: makeRun({
+        imageUrls: [],
+        pending: { variants: 1, startedAt: Date.now() - 200_000, expectedSeconds: 120 },
+      }),
+    });
+    expect(screen.getByText(/longer than usual/i)).toBeInTheDocument();
+  });
+
+  it("keeps a landed variant on the stage while its sibling paints", () => {
+    renderStage({
+      run: makeRun({
+        imageUrls: ["https://example.test/v1.jpg"],
+        pending: { variants: 2, startedAt: Date.now() },
+      }),
+    });
+    expect(screen.getByText("Front · Variant 1")).toBeInTheDocument();
+    expect(screen.getByLabelText(/front · variant 2 is being generated/i)).toBeInTheDocument();
   });
 
   it("tells a new operator what to do instead of showing an empty frame", () => {

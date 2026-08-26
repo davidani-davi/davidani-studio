@@ -222,6 +222,32 @@ describe("verdict", () => {
     expect(runVerdict(run(), { running: true }).tone).toBe("running");
   });
 
+  // The run knows. `opts.running` used to be the only signal, and it was fed
+  // "is this the selected run and is the studio busy" — so the last FINISHED
+  // run wore Painting while a different one was actually painting.
+  it("reads in-flight off the run rather than off what is selected", () => {
+    const inFlight = run({ imageUrls: [], pending: { variants: 2, startedAt: 1 } });
+    expect(runVerdict(inFlight).tone).toBe("running");
+    // ...and a finished run stays finished even while the studio is busy.
+    expect(runVerdict(run({ abTest: { selectedImage: "left" } })).tone).toBe("kept");
+  });
+
+  it("does not flag a run that has not produced anything yet", () => {
+    const inFlight = run({
+      imageUrls: [],
+      backgroundSnaps: undefined,
+      routingCanvas: {
+        path: "/product-shots/studio-backdrop-empty.png",
+        isFallback: true,
+        category: "top",
+        fallbackReason: "category-inferred",
+      },
+      pending: { variants: 2, startedAt: 1 },
+    });
+    expect(wantsSecondLook(inFlight)).toBe(false);
+    expect(filterRuns([inFlight], "check")).toHaveLength(0);
+  });
+
   it("calls a measured, approved, unpicked run clean", () => {
     expect(runVerdict(run()).tone).toBe("clean");
   });

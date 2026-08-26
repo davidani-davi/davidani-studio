@@ -35,6 +35,7 @@ export interface RunFacts {
   routingCanvas?: CanvasSummary | null;
   backgroundSnaps?: Array<BackgroundSnapReport | null>;
   abTest?: { selectedImage?: "left" | "right" | "no_preference" };
+  pending?: { variants: number; startedAt: number; expectedSeconds?: number };
   batch?: boolean;
 }
 
@@ -194,12 +195,17 @@ export interface RunVerdict {
  * measure, and says nothing about the rest.
  */
 export function wantsSecondLook(run: RunFacts): boolean {
+  // Nothing to look at twice until it exists.
+  if (run.pending) return false;
   if (run.routingCanvas?.fallbackReason === "category-inferred") return true;
   return worstSnap(run.backgroundSnaps)?.tone === "warn";
 }
 
 export function runVerdict(run: RunFacts, opts: { running?: boolean } = {}): RunVerdict {
-  if (opts.running) return { tone: "running", label: "Painting" };
+  // The run says so itself. `opts.running` used to be the only signal and was
+  // passed as "is this the selected run and is the studio busy", which badged
+  // the last FINISHED run as painting whenever a new one started.
+  if (run.pending || opts.running) return { tone: "running", label: "Painting" };
   const picked = run.abTest?.selectedImage;
   if (picked === "left" || picked === "right") {
     return { tone: "kept", label: `Kept · V${picked === "left" ? 1 : 2}` };

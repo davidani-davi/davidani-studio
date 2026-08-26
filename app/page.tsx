@@ -58,6 +58,18 @@ const IMAGE_STUDIO_VERSION = "2.3";
 // cover-resize in lib/fal.ts to crop the image (clipped sleeve tips).
 const IMAGE_STUDIO_OUTPUT_SIZE = { width: 2160, height: 2700 } as const;
 
+/**
+ * How long a variant takes, per model, so a run in flight can show elapsed
+ * against expected rather than an unbounded spinner. Measured over the 26 Aug
+ * test set — GPT Image 2 was 112-136s across eleven runs; Nano Banana is the
+ * fast one and is the reason the trade was worth stating.
+ */
+const EXPECTED_RUN_SECONDS: Partial<Record<ModelId, number>> = {
+  "gpt-image": 120,
+  "nano-banana": 50,
+  "seedream-4": 60,
+};
+
 /** What actually ships — see lib/output-sizes.ts. */
 const IMAGE_STUDIO_OUTPUT_FORMAT = OUTPUT_FORMAT;
 
@@ -862,6 +874,53 @@ export default function StudioPage() {
               )
             : promptUsed;
 
+          // The run enters history NOW, not when both variants land. See
+          // HistoryItem.pending: the ~110 seconds in between used to have
+          // nothing to show, and the ledger's newest card was the previous run.
+          const pendingItem: HistoryItem = {
+            id: jobId,
+            timestamp: Date.now(),
+            modelId,
+            prompt: promptUsed,
+            imageUrls: [],
+            referenceUrls: [...selectedUrls],
+            sourceImageUrls: [...selectedUrls],
+            aspect: "4:5",
+            resolution: "4K",
+            format: IMAGE_STUDIO_OUTPUT_FORMAT,
+            styleNumber: styleNumber.trim() || undefined,
+            routing: runRouting,
+            routingCanvas: runCanvasSummary,
+            viewLabels: contractMode
+              ? ["Front", "Back"]
+              : [
+                  singleBackMode ? "Back · Variant 1" : "Front · Variant 1",
+                  singleBackMode ? "Back · Variant 2" : "Front · Variant 2",
+                ],
+            pending: {
+              variants: 2,
+              startedAt: Date.now(),
+              expectedSeconds: EXPECTED_RUN_SECONDS[modelId] ?? 110,
+            },
+          };
+          setHistory((existing) => [
+            pendingItem,
+            ...existing.filter((run) => run.id !== jobId),
+          ].slice(0, 50));
+          setCurrentId(jobId);
+          localStorage.setItem(CURRENT_ID_KEY, jobId);
+
+          /** Show a variant on the stage the moment it lands, not when its sibling does. */
+          const landVariant = (index: number, url: string) =>
+            setHistory((existing) =>
+              existing.map((run) => {
+                if (run.id !== jobId) return run;
+                const imageUrls = [...run.imageUrls];
+                imageUrls[index] = url;
+                return { ...run, imageUrls };
+              })
+            );
+
           const generateVariant = (label: string, body: Record<string, unknown>) =>
             fetchJson(label, "/api/generate", {
               method: "POST",
@@ -878,6 +937,7 @@ export default function StudioPage() {
             // pairs that read as one shoot instead of two independent samples.
             leftData = await generateVariant("Generate front", { prompt: leftPrompt });
             const frontUrl = leftData.images?.[0]?.url;
+            if (frontUrl) landVariant(0, frontUrl);
             rightData = await generateVariant("Generate back", {
               // Contract mode's second call is the BACK render, so it needs the
               // back canvas. It was inheriting generationBase's front canvas,
@@ -892,8 +952,16 @@ export default function StudioPage() {
           } else {
             // Two independent takes of one prompt — genuinely parallel.
             [leftData, rightData] = await Promise.all([
-              generateVariant("Generate variant 1", { prompt: leftPrompt }),
-              generateVariant("Generate variant 2", { prompt: rightPrompt }),
+              generateVariant("Generate variant 1", { prompt: leftPrompt }).then((d) => {
+                const url = d.images?.[0]?.url;
+                if (url) landVariant(0, url);
+                return d;
+              }),
+              generateVariant("Generate variant 2", { prompt: rightPrompt }).then((d) => {
+                const url = d.images?.[0]?.url;
+                if (url) landVariant(1, url);
+                return d;
+              }),
             ]);
           }
 
@@ -934,6 +1002,9 @@ export default function StudioPage() {
             abTest: {
               version: "2.3",
             },
+            // Both variants are in hand — the finalize pass below only swaps
+            // the URLs for locked-size ones.
+            pending: undefined,
           };
           // Native images render right away; the locked-size finals swap in
           // silently once /api/finalize-image returns (fallback: keep native).
@@ -964,6 +1035,9 @@ export default function StudioPage() {
             ...item,
             imageUrls: [finalLeft.url, finalRight.url],
             backgroundSnaps: [finalLeft.snap, finalRight.snap],
+            // The run is no longer in flight; drop the placeholder marker so
+            // the ledger stops badging it and the stage stops dithering.
+            pending: undefined,
           };
           setHistory((existing) =>
             existing.map((run) => (run.id === jobId ? finalItem : run))
@@ -974,6 +1048,12 @@ export default function StudioPage() {
         } catch (err: any) {
           const message = err.message || "Generation failed";
           setError(message);
+          // Drop the placeholder. A run that never produced an image is not a
+          // run worth keeping in the ledger, and leaving it would strand a card
+          // painting forever.
+          setHistory((existing) =>
+            existing.filter((run) => !(run.id === jobId && run.pending))
+          );
           updateImageJob(jobId, { status: "failed", error: message });
           setBackgroundJobs(readImageJobs());
           throw err;
@@ -1160,6 +1240,14 @@ export default function StudioPage() {
       styleNumber: styleNumber.trim() || undefined,
       prompts: [],
       batch: true,
+      // Batch already created its row up front; this is what makes the row
+      // say so. One slot per queued photo, so the card fills in as the queue
+      // drains rather than staying empty until the last one lands.
+      pending: {
+        variants: queue.length,
+        startedAt: Date.now(),
+        expectedSeconds: (EXPECTED_RUN_SECONDS[modelId] ?? 110) * queue.length,
+      },
     };
     setHistory((h) => [batchItem, ...h]);
     setCurrentId(batchId);
@@ -1325,7 +1413,8 @@ export default function StudioPage() {
       if (run && run.imageUrls.length === 0) {
         return h.filter((item) => item.id !== batchId);
       }
-      return h;
+      // The queue has drained; the row is a finished run now.
+      return h.map((item) => (item.id === batchId ? { ...item, pending: undefined } : item));
     });
 
     // Clear the progress strip, then say anything worth saying. Failures are
@@ -1469,7 +1558,7 @@ export default function StudioPage() {
         <RunLedger
           runs={history}
           currentId={currentId}
-          runningId={loading ? currentId : null}
+          runningId={history.find((run) => run.pending)?.id ?? null}
           filter={ledgerFilter}
           onFilterChange={setLedgerFilter}
           onSelect={(id) => {
