@@ -764,8 +764,19 @@ function garmentIsolationClause(g: string): string {
     `SINGLE PRODUCT: the finished frame holds exactly one object — the ${g} — resting alone on the studio ` +
     `background. Every pixel that is not this ${g} is the flat, unbroken studio sweep: clean, empty, and free ` +
     `of any other subject, mark, text, graphic, or watermark. Wherever the attached reference photograph shows ` +
-    `anything other than this ${g}, read that area as empty studio background and render it as such. This one ` +
-    `garment is the entire content of the image.`
+    `anything other than this ${g}, read that area as empty studio background and render it as such. ` +
+    // SUPPORT SURFACE. BACKGROUND_SOURCE_FIREWALL is a *source* firewall: it
+    // forbids the reference photo's environment surviving into the output. It
+    // does not forbid inventing one. A back-mode camo jacket came back sitting
+    // on a painted cinderblock ledge that appears in neither input — and the
+    // filled-flat-lay clause above asks for a garment "slightly proud of the
+    // background", an elevation cue with nothing stating what is underneath.
+    // Stated positively on purpose; the negative version of this idea would
+    // have to name a plinth, ledge and step to forbid them, and this file's
+    // own history is that naming unwanted content draws it.
+    `The sweep is the only surface in the frame: it continues unbroken behind and beneath the ${g}, meeting ` +
+    `the garment directly along its entire outline. The ${g} lies flat on that sweep and is held up by ` +
+    `nothing else. This one garment is the entire content of the image.`
   );
 }
 
