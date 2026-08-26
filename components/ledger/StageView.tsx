@@ -30,6 +30,7 @@ function ShotFrame({
   alt,
   kept,
   onKeep,
+  onDownload,
   onOpen,
   hotkey,
   soloed,
@@ -41,6 +42,8 @@ function ShotFrame({
   /** Absent for an intake photo, which is a reference and not a take. */
   kept?: boolean;
   onKeep?: () => void;
+  /** Absent for an intake photo, which is not an export. */
+  onDownload?: () => void;
   onOpen: () => void;
   hotkey?: string;
   soloed: boolean;
@@ -90,6 +93,22 @@ function ShotFrame({
             <kbd className="rounded border border-current/30 px-1 font-mono text-[8px] opacity-70">
               {hotkey}
             </kbd>
+          </button>
+        )}
+        {/* Under the render it belongs to, rather than only in the header's
+            Export, which downloads whatever happens to be visible. Most exports
+            are of one take — usually the kept one — and this is where the
+            operator is already looking when they decide that. */}
+        {onDownload && (
+          <button
+            type="button"
+            onClick={onDownload}
+            className="flex items-center gap-1 rounded-md border border-neutral-200 bg-white px-2 py-1 text-[10px] font-bold text-neutral-700 transition hover:border-neutral-400 hover:text-neutral-900"
+          >
+            <span aria-hidden="true" className="text-[11px] leading-none">
+              ↓
+            </span>
+            Download
           </button>
         )}
       </figcaption>
@@ -284,7 +303,7 @@ export default function StageView({
 
   if (!run) {
     return (
-      <section className="flex h-full flex-col items-center justify-center gap-3 bg-neutral-50 p-8 text-center">
+      <section className="image-studio-stage flex h-full flex-col items-center justify-center gap-3 bg-neutral-50 p-8 text-center">
         <div className="h-16 w-12 rounded border border-dashed border-neutral-300 bg-[#edeeee]" />
         <p className="max-w-xs text-[12px] leading-relaxed text-neutral-500">
           Upload a product photo and press Generate. Finished runs land here at full size, and
@@ -308,7 +327,7 @@ export default function StageView({
     : [];
 
   return (
-    <section className="flex h-full min-h-0 flex-col bg-neutral-50">
+    <section className="image-studio-stage flex h-full min-h-0 flex-col bg-neutral-50">
       {/* header — one line, because the images need the rest */}
       <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1.5 border-b border-neutral-200 bg-white px-4 py-2.5">
         {/* min-w-0 + truncate on the title so a long garment name shortens
@@ -337,8 +356,14 @@ export default function StageView({
         </button>
         <button
           type="button"
-          onClick={() => visible.forEach((url, i) => url && onDownload(url, i))}
-          disabled={visible.length === 0}
+          /* By slot, not by position in `visible`: soloed on variant 2 the
+             list is one long, so this used to export it named "...-1". */
+          onClick={() =>
+            visible.forEach((url, i) => {
+              if (url) onDownload(url, soloIndex !== null ? soloIndex : i);
+            })
+          }
+          disabled={visible.length === 0 || Boolean(openedShot)}
           className="rounded-md border border-neutral-200 bg-white px-2 py-1 text-[10px] font-bold text-neutral-700 transition hover:border-neutral-400 disabled:opacity-40"
         >
           Export
@@ -385,6 +410,7 @@ export default function StageView({
                     ? () => onKeep?.(slotIndex === 0 ? "left" : "right")
                     : undefined
                 }
+                onDownload={() => onDownload(url, slotIndex)}
                 soloed={soloIndex !== null}
                 onOpen={() => setSoloed(soloIndex !== null ? null : slotIndex)}
               />

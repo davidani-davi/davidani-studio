@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import { type BatchProgress, type ProductShotMode } from "@/components/PromptPanel";
 import type { RoutingControls } from "@/components/RoutingPanel";
@@ -8,6 +8,8 @@ import OutputPanel from "@/components/OutputPanel";
 import RunLedger from "@/components/ledger/RunLedger";
 import StageView from "@/components/ledger/StageView";
 import Composer from "@/components/ledger/Composer";
+import PaneSplitter from "@/components/ledger/PaneSplitter";
+import { LEDGER_DEFAULT, clampLedgerWidth, readLedgerWidth } from "@/lib/pane-size";
 import StudioDrawer from "@/components/ledger/StudioDrawer";
 import { wantsSecondLook, type LedgerFilter } from "@/lib/run-pipeline";
 import StudioHeader from "@/components/StudioHeader";
@@ -48,6 +50,7 @@ import {
 
 const HISTORY_KEY = "davidani_history_v1";
 const CURRENT_ID_KEY = "davidani_image_current_run_v1";
+const LEDGER_WIDTH_KEY = "image-studio:ledger-width";
 const IMAGE_JOBS_KEY = "davidani_image_jobs_v1";
 const USER_ID_KEY = "davidani_user_id_v1";
 const IMAGE_STUDIO_VERSION = "2.3";
@@ -460,6 +463,20 @@ export default function StudioPage() {
    * space between the operator and the render.
    */
   const [ledgerFilter, setLedgerFilter] = useState<LedgerFilter>("all");
+  /**
+   * How wide the operator has dragged the ledger.
+   *
+   * Starts at the default rather than reading localStorage during render:
+   * the server has no localStorage, so seeding from it directly would make
+   * the first client render disagree with the markup it is hydrating.
+   */
+  const [ledgerWidth, setLedgerWidth] = useState(LEDGER_DEFAULT);
+
+  useEffect(() => {
+    const saved = readLedgerWidth(localStorage.getItem(LEDGER_WIDTH_KEY));
+    if (saved !== null) setLedgerWidth(clampLedgerWidth(saved, window.innerWidth));
+  }, []);
+
   const [setupOpen, setSetupOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
 
@@ -1545,17 +1562,24 @@ export default function StudioPage() {
     });
   }
 
-  /** Stage export. Same filename convention the details drawer uses. */
+  /**
+   * Stage export. Same filename convention the details drawer uses.
+   *
+   * Routed through /api/download rather than pointed straight at the render.
+   * The renders live on fal's CDN, and `<a download>` is ignored for a
+   * cross-origin href — the old version opened the image in a new tab and left
+   * the operator to right-click-save it. Same-origin, with the server setting
+   * Content-Disposition, it is an actual download with the studio's own name.
+   */
   function downloadOutput(url: string, index: number) {
     const stem = [styleNumber.trim() || "davidani", currentRun?.id.slice(0, 4)]
       .filter(Boolean)
       .join("-");
-    const a = document.createElement("a");
-    a.href = url;
     // OUTPUT_FORMAT is the locked Image Studio export format, currently jpeg.
-    a.download = `${stem}-${index + 1}.${OUTPUT_FORMAT === "jpeg" ? "jpg" : OUTPUT_FORMAT}`;
-    a.target = "_blank";
-    a.rel = "noopener";
+    const name = `${stem}-${index + 1}.${OUTPUT_FORMAT === "jpeg" ? "jpg" : OUTPUT_FORMAT}`;
+    const a = document.createElement("a");
+    a.href = `/api/download?url=${encodeURIComponent(url)}&name=${encodeURIComponent(name)}`;
+    a.download = name;
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -1577,7 +1601,10 @@ export default function StudioPage() {
         ]}
       />
 
-      <div className="image-studio-layout min-h-0 flex-1">
+      <div
+        className="image-studio-layout min-h-0 flex-1"
+        style={{ "--ledger-w": `${ledgerWidth}px` } as CSSProperties}
+      >
         <RunLedger
           runs={history}
           currentId={currentId}
@@ -1637,6 +1664,12 @@ export default function StudioPage() {
             </>
           }
         />
+        <PaneSplitter
+          width={ledgerWidth}
+          onWidth={setLedgerWidth}
+          onCommit={(width) => localStorage.setItem(LEDGER_WIDTH_KEY, String(width))}
+        />
+
         <StageView
           run={currentRun ?? null}
           running={loading}

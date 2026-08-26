@@ -1143,12 +1143,26 @@ select {
  * strip wraps to three lines and the column stops being scannable. Everything
  * left over goes to the stage, which is the point of the shell.
  */
+/*
+ * Flex rather than grid because the seam between the two panes is draggable
+ * now: the ledger carries an explicit width the operator set, and the stage
+ * takes whatever is left. A grid template would have to be rewritten on every
+ * pointermove; a flex-basis is just a number.
+ */
 .image-studio-layout {
-  display: grid;
-  /* Widened with the composer: two intake tiles at a size that shows the
-     garment need the room, and the stage still keeps the large majority. */
-  grid-template-columns: minmax(376px, 428px) minmax(0, 1fr);
+  display: flex;
   background: var(--polieco-bg);
+}
+
+.image-studio-ledger {
+  flex: 0 0 auto;
+  width: var(--ledger-w, 428px);
+  min-width: 0;
+}
+
+.image-studio-stage {
+  flex: 1 1 0%;
+  min-width: 0;
 }
 
 /*
@@ -1283,6 +1297,12 @@ select {
   .image-studio-workbench {
     display: flex;
     flex-direction: column;
+  }
+
+  /* Stacked, a width the operator dragged on a wide window is meaningless —
+     and would pin the ledger to a fraction of a phone screen. */
+  .image-studio-ledger {
+    width: auto;
   }
 
   .model-studio-setup,

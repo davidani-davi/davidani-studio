@@ -4,6 +4,8 @@ import RunLedger from "./RunLedger";
 import RunCard from "./RunCard";
 import StageView from "./StageView";
 import Composer from "./Composer";
+import PaneSplitter from "./PaneSplitter";
+import { LEDGER_DEFAULT } from "@/lib/pane-size";
 import type { HistoryItem } from "../types";
 import type { RoutingControls } from "../RoutingPanel";
 
@@ -300,6 +302,31 @@ describe("stage", () => {
     expect(screen.getByText(/longer than usual/i)).toBeInTheDocument();
   });
 
+  it("puts a download under each render, naming it by its own slot", () => {
+    const onDownload = vi.fn();
+    renderStage({ onDownload });
+    const buttons = screen.getAllByRole("button", { name: /download/i });
+    expect(buttons).toHaveLength(2);
+    fireEvent.click(buttons[1]);
+    expect(onDownload).toHaveBeenCalledWith("https://example.test/v2.jpg", 1);
+  });
+
+  // Soloed, `visible` is one long, so exporting by position named variant 2
+  // "...-1" — the wrong file under the right name.
+  it("exports a soloed variant under its own number", () => {
+    const onDownload = vi.fn();
+    renderStage({ onDownload });
+    fireEvent.click(screen.getByAltText(/variant 2/i).closest("button")!);
+    fireEvent.click(screen.getByRole("button", { name: /^export$/i }));
+    expect(onDownload).toHaveBeenCalledWith("https://example.test/v2.jpg", 1);
+  });
+
+  it("offers no download on an intake photo, which is not an export", () => {
+    renderStage({ run: makeRun({ sourceImageUrls: ["in.jpg"] }) });
+    fireEvent.click(screen.getByAltText(/front intake photo/i).closest("button")!);
+    expect(screen.queryByRole("button", { name: /download/i })).not.toBeInTheDocument();
+  });
+
   it("shows the photos that went in beside the ones that came out", () => {
     renderStage({ run: makeRun({ sourceImageUrls: ["in-front.jpg", "in-back.jpg"] }) });
     expect(screen.getByAltText(/front intake photo/i)).toBeInTheDocument();
@@ -441,5 +468,75 @@ describe("composer", () => {
   it("says where the side came from", () => {
     renderComposer();
     expect(screen.getByText(/read from your photo/i)).toBeInTheDocument();
+  });
+});
+
+describe("PaneSplitter", () => {
+  function renderSplitter(over: { width?: number } = {}) {
+    const onWidth = vi.fn();
+    const onCommit = vi.fn();
+    render(
+      <div>
+        <PaneSplitter width={over.width ?? 428} onWidth={onWidth} onCommit={onCommit} />
+      </div>
+    );
+    return { onWidth, onCommit, handle: screen.getByRole("separator", { name: /resize/i }) };
+  }
+
+  it("is a real separator, not a mouse-only affordance", () => {
+    const { handle, onWidth, onCommit } = renderSplitter();
+    expect(handle).toHaveAttribute("aria-orientation", "vertical");
+    expect(handle).toHaveAttribute("aria-valuenow", "428");
+    fireEvent.keyDown(handle, { key: "ArrowRight" });
+    expect(onWidth).toHaveBeenCalledWith(444);
+    // Committed per keystroke, so a keyboard resize persists like a drag does.
+    expect(onCommit).toHaveBeenCalledWith(444);
+  });
+
+  it("takes a bigger step with shift", () => {
+    const { handle, onWidth } = renderSplitter();
+    fireEvent.keyDown(handle, { key: "ArrowLeft", shiftKey: true });
+    expect(onWidth).toHaveBeenCalledWith(428 - 64);
+  });
+
+  it("will not let the ledger past its bounds", () => {
+    const { handle, onWidth } = renderSplitter({ width: 336 });
+    fireEvent.keyDown(handle, { key: "ArrowLeft" });
+    expect(onWidth).toHaveBeenCalledWith(336);
+  });
+
+  it("resets on Home and on a double click", () => {
+    const { handle, onCommit } = renderSplitter({ width: 600 });
+    fireEvent.keyDown(handle, { key: "Home" });
+    expect(onCommit).toHaveBeenCalledWith(LEDGER_DEFAULT);
+    fireEvent.doubleClick(handle);
+    expect(onCommit).toHaveBeenLastCalledWith(LEDGER_DEFAULT);
+  });
+
+  it("follows the pointer and commits once, at the end", () => {
+    const { handle, onWidth, onCommit } = renderSplitter();
+    fireEvent.pointerDown(handle, { pointerId: 1 });
+    expect(document.body.style.userSelect).toBe("none");
+    fireEvent.pointerMove(handle, { pointerId: 1, clientX: 520 });
+    fireEvent.pointerMove(handle, { pointerId: 1, clientX: 560 });
+    expect(onWidth).toHaveBeenLastCalledWith(560);
+    // Not once per pixel — persistence is written when the drag ends.
+    expect(onCommit).not.toHaveBeenCalled();
+    fireEvent.pointerUp(handle, { pointerId: 1 });
+    expect(onCommit).toHaveBeenCalledTimes(1);
+    expect(onCommit).toHaveBeenCalledWith(560);
+    expect(document.body.style.userSelect).toBe("");
+  });
+
+  it("does nothing on a pointer move that is not part of a drag", () => {
+    const { handle, onWidth } = renderSplitter();
+    fireEvent.pointerMove(handle, { pointerId: 1, clientX: 800 });
+    expect(onWidth).not.toHaveBeenCalled();
+  });
+
+  it("ignores keys that are not a resize", () => {
+    const { handle, onWidth } = renderSplitter();
+    fireEvent.keyDown(handle, { key: "a" });
+    expect(onWidth).not.toHaveBeenCalled();
   });
 });

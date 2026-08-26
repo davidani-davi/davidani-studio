@@ -46,7 +46,7 @@ export default function RunLedger({
   const flagged = runs.filter(wantsSecondLook).length;
 
   return (
-    <aside className="flex h-full min-h-0 flex-col border-r border-neutral-200 bg-neutral-50">
+    <aside className="image-studio-ledger flex h-full min-h-0 flex-col bg-neutral-50">
       <div className="flex shrink-0 items-center gap-2 border-b border-neutral-200 bg-white px-3 py-2.5">
         <span className="font-mono text-[9px] font-semibold uppercase tracking-[0.15em] text-neutral-500">
           Run ledger
