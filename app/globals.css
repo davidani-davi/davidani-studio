@@ -1117,10 +1117,23 @@ select {
 }
 
 .model-studio-layout,
+/*
+ * Split Ledger. The ledger column is wide enough to show both variants of a
+ * run as thumbnails plus its four-step pipeline strip — below about 360px the
+ * strip wraps to three lines and the column stops being scannable. Everything
+ * left over goes to the stage, which is the point of the shell.
+ */
 .image-studio-layout {
   display: grid;
-  grid-template-columns: minmax(300px, 354px) minmax(0, 1fr);
+  grid-template-columns: minmax(340px, 394px) minmax(0, 1fr);
   background: var(--polieco-bg);
+}
+
+@media (max-width: 900px) {
+  .image-studio-layout {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+  }
 }
 
 .model-studio-setup,

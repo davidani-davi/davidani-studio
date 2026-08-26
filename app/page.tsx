@@ -2,11 +2,17 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Sidebar from "@/components/Sidebar";
-import PromptPanel, { type BatchProgress, type ProductShotMode } from "@/components/PromptPanel";
+import { type BatchProgress, type ProductShotMode } from "@/components/PromptPanel";
+import type { RoutingControls } from "@/components/RoutingPanel";
 import OutputPanel from "@/components/OutputPanel";
+import RunLedger from "@/components/ledger/RunLedger";
+import StageView from "@/components/ledger/StageView";
+import Composer from "@/components/ledger/Composer";
+import StudioDrawer from "@/components/ledger/StudioDrawer";
+import { wantsSecondLook, type LedgerFilter } from "@/lib/run-pipeline";
 import StudioHeader from "@/components/StudioHeader";
 import type { HistoryItem, UploadedImage } from "@/components/types";
-import type { ModelId } from "@/lib/models";
+import { MODELS, type ModelId } from "@/lib/models";
 import { STUDIO_BACKDROP_PATH } from "@/lib/studio-background";
 import { IMAGE_STUDIO_OUTPUT_FORMAT as OUTPUT_FORMAT } from "@/lib/output-sizes";
 import { styleNumberSurvives } from "@/lib/style-number-lifetime";
@@ -431,6 +437,19 @@ export default function StudioPage() {
   // progress bar and disable the single-image actions. Goes back to null
   // once all images have been processed.
   const [batchProgress, setBatchProgress] = useState<BatchProgress | null>(null);
+
+  /**
+   * Split Ledger shell state.
+   *
+   * The rail and the output panel are still mounted — as drawers. Everything
+   * they do that the ledger does not (canvas override, output settings,
+   * feedback regeneration, batch grids) is real work that would be lost by
+   * deleting them, and neither is touched often enough to hold permanent
+   * space between the operator and the render.
+   */
+  const [ledgerFilter, setLedgerFilter] = useState<LedgerFilter>("all");
+  const [setupOpen, setSetupOpen] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
   // Load history on mount
   useEffect(() => {
@@ -1323,6 +1342,113 @@ export default function StudioPage() {
     if (summary) setNotice(summary);
   }
 
+  /**
+   * ⌘↵ generates from anywhere, including the composer's style-number field —
+   * typing a style code and firing the run is one gesture, and that field is
+   * the fix for the warning printed directly above it.
+   */
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key !== "Enter" || !(e.metaKey || e.ctrlKey)) return;
+      if (loading || uploading || analyzing) return;
+      if ((!frontIntakeUrl && !backIntakeUrl)) return;
+      e.preventDefault();
+      void runGeneration();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
+
+  /**
+   * The controls the rail and the composer both drive. One object because two
+   * copies of this drifting would let the composer and the Setup drawer
+   * disagree about which side is about to render.
+   */
+  const routingControls: RoutingControls = {
+    mode: productShotMode,
+    view: viewRow.view,
+    viewSource: viewRow.source,
+    viewEditable: viewRow.editable,
+    onViewChange: (view) => {
+      setViewOverride(view);
+      // The prompt carries the side directive, so a side change invalidates
+      // it. Generate re-analyzes and rebuilds.
+      setPrompt("");
+    },
+    isSet: twoPiece,
+    onSetChange: (isSet) => {
+      setTwoPiece(isSet);
+      setPrompt("");
+    },
+    disabled: loading || uploading,
+  };
+
+  const generateLabel =
+    productShotMode === "single-front"
+      ? "Generate front"
+      : productShotMode === "single-back"
+      ? "Generate back"
+      : "Generate front + back";
+
+  const generateDisabled =
+    (!frontIntakeUrl && !backIntakeUrl) ||
+    (productShotMode === "front-back-contract" && (!frontIntakeUrl || !backIntakeUrl));
+
+  /** Records which take the operator kept. Used by the stage and the details drawer. */
+  async function recordPick({
+    generationId,
+    selectedImage,
+    promptUsed,
+  }: {
+    generationId: string;
+    selectedImage: "left" | "right" | "no_preference";
+    promptUsed?: string;
+  }) {
+    await fetchJson("Save A/B preference", "/api/ab-events", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        user_id: getOrCreateUserId(),
+        generation_id: generationId,
+        selected_image: selectedImage,
+        prompt_used: promptUsed,
+        version: IMAGE_STUDIO_VERSION,
+      }),
+    });
+    setHistory((existing) =>
+      existing.map((item) =>
+        item.id === generationId && item.abTest
+          ? { ...item, abTest: { ...item.abTest, selectedImage } }
+          : item
+      )
+    );
+  }
+
+  function clearHistory() {
+    setHistory([]);
+    setCurrentId(null);
+    localStorage.removeItem(CURRENT_ID_KEY);
+    clearCloudHistory("image").catch((err) => {
+      console.warn("[cloud-history] clear failed:", err);
+    });
+  }
+
+  /** Stage export. Same filename convention the details drawer uses. */
+  function downloadOutput(url: string, index: number) {
+    const stem = [styleNumber.trim() || "davidani", currentRun?.id.slice(0, 4)]
+      .filter(Boolean)
+      .join("-");
+    const a = document.createElement("a");
+    a.href = url;
+    // OUTPUT_FORMAT is the locked Image Studio export format, currently jpeg.
+    a.download = `${stem}-${index + 1}.${OUTPUT_FORMAT === "jpeg" ? "jpg" : OUTPUT_FORMAT}`;
+    a.target = "_blank";
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+
   return (
     <main className="flex min-h-screen flex-col bg-neutral-50 lg:h-screen">
       <StudioHeader
@@ -1340,7 +1466,89 @@ export default function StudioPage() {
       />
 
       <div className="image-studio-layout min-h-0 flex-1">
-        <div className="image-studio-setup min-h-0">
+        <RunLedger
+          runs={history}
+          currentId={currentId}
+          runningId={loading ? currentId : null}
+          filter={ledgerFilter}
+          onFilterChange={setLedgerFilter}
+          onSelect={(id) => {
+            setCurrentId(id);
+            localStorage.setItem(CURRENT_ID_KEY, id);
+          }}
+          onClearHistory={clearHistory}
+          composer={
+            <>
+              {batchProgress && (
+                <div className="shrink-0 border-t border-neutral-200 bg-brand-50/60 px-3 py-2">
+                  <div className="mb-1 flex items-center justify-between text-[9.5px] font-semibold text-brand-800">
+                    <span>
+                      Batch · {batchProgress.done}/{batchProgress.total}
+                      {batchProgress.failed > 0 ? ` · ${batchProgress.failed} failed` : ""}
+                    </span>
+                    <span className="capitalize text-brand-600">{batchProgress.stage}</span>
+                  </div>
+                  <div className="h-1 overflow-hidden rounded-full bg-brand-100">
+                    <div
+                      className="h-full rounded-full bg-brand-500 transition-all"
+                      style={{
+                        width: `${Math.round(
+                          (batchProgress.done / Math.max(1, batchProgress.total)) * 100
+                        )}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+              <Composer
+                frontIntakeUrl={frontIntakeUrl}
+                backIntakeUrl={backIntakeUrl}
+                onAddFiles={addFiles}
+                onClearIntake={removeUpload}
+                styleNumber={styleNumber}
+                onStyleNumberChange={setStyleNumber}
+                controls={routingControls}
+                modelLabel={`${MODELS[modelId].label} · ${IMAGE_STUDIO_OUTPUT_SIZE.width}×${IMAGE_STUDIO_OUTPUT_SIZE.height}`}
+                onGenerate={runGeneration}
+                generateLabel={generateLabel}
+                generateDisabled={generateDisabled}
+                busy={loading || uploading}
+                analyzing={analyzing}
+                onBatch={runBatchGeneration}
+                canBatch={batchEligibility(productShotMode, selected.length).enabled}
+                batchDisabledReason={
+                  batchEligibility(productShotMode, selected.length).reason ?? undefined
+                }
+                onOpenSetup={() => setSetupOpen(true)}
+                canvasNeedsStyleNumber={routingCanvas?.fallbackReason === "category-inferred"}
+              />
+            </>
+          }
+        />
+        <StageView
+          run={currentRun ?? null}
+          running={loading}
+          onKeep={
+            currentRun?.abTest
+              ? (slot) =>
+                  recordPick({
+                    generationId: currentRun.id,
+                    selectedImage: slot,
+                    promptUsed: currentRun.prompt,
+                  })
+              : undefined
+          }
+          onDownload={downloadOutput}
+          onOpenDetails={() => setDetailsOpen(true)}
+        />
+      </div>
+
+      <StudioDrawer
+        open={setupOpen}
+        title="Setup"
+        subtitle="Canvas, model and export — the controls a run does not usually need."
+        onClose={() => setSetupOpen(false)}
+      >
           <Sidebar
             modelId={modelId}
             // Used to also force format back to PNG for Nano Banana. The
@@ -1366,105 +1574,28 @@ export default function StudioPage() {
             routing={routing}
             routingCanvas={routingCanvas}
             routingPending={routingPending}
-            routingControls={{
-              mode: productShotMode,
-              view: viewRow.view,
-              viewSource: viewRow.source,
-              viewEditable: viewRow.editable,
-              onViewChange: (view) => {
-                setViewOverride(view);
-                // The prompt carries the side directive, so a side change
-                // invalidates it. Generate re-analyzes and rebuilds.
-                setPrompt("");
-              },
-              isSet: twoPiece,
-              onSetChange: (isSet) => {
-                setTwoPiece(isSet);
-                setPrompt("");
-              },
-              disabled: loading || uploading,
-            }}
+            routingControls={routingControls}
             onReferenceReplace={replaceReferenceImage}
             onReferenceReset={resetReferenceImage}
             referenceUploading={referenceUploading}
           />
-        </div>
-        <div className="image-studio-workbench min-h-0">
-          <div className="image-studio-brief min-h-0">
-          <PromptPanel
-            prompt={prompt}
-            onPromptChange={setPrompt}
-            onGenerate={runGeneration}
-            analyzing={analyzing}
-            loading={loading || uploading}
-            disabled={
-              (!frontIntakeUrl && !backIntakeUrl) ||
-              (productShotMode === "front-back-contract" && (!frontIntakeUrl || !backIntakeUrl))
-            }
-            onBatchGenerate={runBatchGeneration}
-            canBatch={batchEligibility(productShotMode, selected.length).enabled}
-            batchDisabledReason={
-              batchEligibility(productShotMode, selected.length).reason ?? undefined
-            }
-            batchProgress={batchProgress}
-            twoPiece={twoPiece}
-            onTwoPieceChange={setTwoPiece}
-            hideAdvancedPrompt
-            hideVariantControl
-            // The workflow cards and garment-mode pills moved into the routing
-            // rail — they describe the upload, so they belong beside the other
-            // facts read from it rather than above the prompt.
-            hideTwoPieceToggle
-            generateLabel={
-              productShotMode === "single-front"
-                ? "Generate Single Front"
-                : productShotMode === "single-back"
-                ? "Generate Single Back"
-                : "Generate Front + Back"
-            }
-          />
-          </div>
-          <div className="image-studio-output min-h-0">
+      </StudioDrawer>
+
+      <StudioDrawer
+        open={detailsOpen}
+        title="Run details"
+        subtitle="Feedback, batch grids and the full routing trail for this run."
+        wide
+        onClose={() => setDetailsOpen(false)}
+      >
           <OutputPanel
             current={currentRun}
             history={history}
             onSelectHistory={setCurrentId}
             onFeedbackRegenerate={runFeedbackRegeneration}
-            onAbPreferenceSelect={async ({ generationId, selectedImage, promptUsed }) => {
-              await fetchJson("Save A/B preference", "/api/ab-events", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  user_id: getOrCreateUserId(),
-                  generation_id: generationId,
-                  selected_image: selectedImage,
-                  prompt_used: promptUsed,
-                  version: IMAGE_STUDIO_VERSION,
-                }),
-              });
-              setHistory((existing) =>
-                existing.map((item) =>
-                  item.id === generationId && item.abTest
-                    ? {
-                        ...item,
-                        abTest: {
-                          ...item.abTest,
-                          selectedImage,
-                        },
-                      }
-                    : item
-                )
-              );
-            }}
+            onAbPreferenceSelect={recordPick}
             uploadNames={uploadNames}
-            onClearHistory={() => {
-              setHistory([]);
-              setCurrentId(null);
-              localStorage.removeItem(CURRENT_ID_KEY);
-              clearCloudHistory("image").catch((err) => {
-                console.warn("[cloud-history] clear failed:", err);
-              });
-            }}
+            onClearHistory={clearHistory}
             // "Regenerate this" from a batch thumbnail: drop the prompt into
             // the PromptPanel, put the batch-slot's source image back into the
             // selection, and scroll the user back to the prompt so they can
@@ -1493,9 +1624,7 @@ export default function StudioPage() {
               // don't click Generate, which matches the rest of the flow.
             }}
           />
-          </div>
-        </div>
-      </div>
+      </StudioDrawer>
 
       {/* Batch report — informational, so it is not styled as a failure.
           whitespace-pre-line so the multi-line summary renders correctly. */}
