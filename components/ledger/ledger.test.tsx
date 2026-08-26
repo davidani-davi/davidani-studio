@@ -300,6 +300,26 @@ describe("stage", () => {
     expect(screen.getByText(/longer than usual/i)).toBeInTheDocument();
   });
 
+  // The contract run's back render is chained behind the front, so before the
+  // slot clock it inherited the front's wait and cried "longer than usual"
+  // seconds after its own call went out.
+  it("counts a chained back render from when its own call went out", () => {
+    renderStage({
+      run: makeRun({
+        imageUrls: ["front.jpg"],
+        viewLabels: ["Front", "Back"],
+        pending: {
+          variants: 2,
+          startedAt: Date.now() - 200_000,
+          expectedSeconds: 240,
+          slots: [null, { startedAt: Date.now() - 10_000, expectedSeconds: 120 }],
+        },
+      }),
+    });
+    expect(screen.getByText(/10s of about 120s/i)).toBeInTheDocument();
+    expect(screen.queryByText(/longer than usual/i)).not.toBeInTheDocument();
+  });
+
   it("keeps a landed variant on the stage while its sibling paints", () => {
     renderStage({
       run: makeRun({

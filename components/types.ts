@@ -132,6 +132,17 @@ export interface HistoryItem {
     startedAt: number;
     /** Roughly how long this model takes, for the elapsed-vs-expected read. */
     expectedSeconds?: number;
+    /**
+     * Per-slot clock, for runs whose variants do not start together.
+     *
+     * A front/back contract run is chained, not parallel: the back call is
+     * issued only once the front has landed so it can match its colour. Read
+     * off the run-level `startedAt`, the back looked like it had been painting
+     * for the whole run and tripped "longer than usual" before it had begun.
+     * Absent slots fall back to the run-level clock, which is right for the
+     * usual case of two variants fired at once.
+     */
+    slots?: Array<{ startedAt: number; expectedSeconds?: number } | null>;
   };
   // Marks a run as produced by Batch so we can label it distinctly in the UI.
   batch?: boolean;

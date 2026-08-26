@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  DEFAULT_EXPECTED_SECONDS,
   filterRuns,
   garmentNameFromPrompt,
   runPipeline,
@@ -7,6 +8,7 @@ import {
   runSubtitle,
   runTitle,
   runVerdict,
+  slotClock,
   wantsSecondLook,
   type RunFacts,
 } from "./run-pipeline";
@@ -289,5 +291,47 @@ describe("ledger filter", () => {
     const copy = [...all];
     filterRuns(all, "check");
     expect(all).toEqual(copy);
+  });
+});
+
+describe("slot clock", () => {
+  it("gives every slot the run clock when the variants started together", () => {
+    const facts = run({
+      imageUrls: [],
+      pending: { variants: 2, startedAt: 1000, expectedSeconds: 120 },
+    });
+    expect(slotClock(facts, 0)).toEqual({ startedAt: 1000, expectedSeconds: 120 });
+    expect(slotClock(facts, 1)).toEqual({ startedAt: 1000, expectedSeconds: 120 });
+  });
+
+  // The bug this exists for: a contract run chains the back behind the front,
+  // so read off the run clock the back showed the front's wait as its own and
+  // said "longer than usual" before its call had been issued.
+  it("counts a restamped slot from its own start", () => {
+    const facts = run({
+      imageUrls: ["front.jpg"],
+      pending: {
+        variants: 2,
+        startedAt: 1000,
+        expectedSeconds: 240,
+        slots: [null, { startedAt: 130_000, expectedSeconds: 120 }],
+      },
+    });
+    expect(slotClock(facts, 0).startedAt).toBe(1000);
+    expect(slotClock(facts, 1)).toEqual({ startedAt: 130_000, expectedSeconds: 120 });
+  });
+
+  it("falls back to the run expectation for a slot that only restamped its start", () => {
+    const facts = run({
+      imageUrls: [],
+      pending: { variants: 2, startedAt: 1000, expectedSeconds: 90, slots: [{ startedAt: 5000 }] },
+    });
+    expect(slotClock(facts, 0)).toEqual({ startedAt: 5000, expectedSeconds: 90 });
+  });
+
+  it("does not divide by an absent expectation", () => {
+    const facts = run({ imageUrls: [], pending: { variants: 1, startedAt: 1000 } });
+    expect(slotClock(facts, 0).expectedSeconds).toBe(DEFAULT_EXPECTED_SECONDS);
+    expect(slotClock(run(), 0).expectedSeconds).toBe(DEFAULT_EXPECTED_SECONDS);
   });
 });

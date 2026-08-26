@@ -35,7 +35,12 @@ export interface RunFacts {
   routingCanvas?: CanvasSummary | null;
   backgroundSnaps?: Array<BackgroundSnapReport | null>;
   abTest?: { selectedImage?: "left" | "right" | "no_preference" };
-  pending?: { variants: number; startedAt: number; expectedSeconds?: number };
+  pending?: {
+    variants: number;
+    startedAt: number;
+    expectedSeconds?: number;
+    slots?: Array<{ startedAt: number; expectedSeconds?: number } | null>;
+  };
   batch?: boolean;
 }
 
@@ -175,6 +180,34 @@ export function runPipeline(run: RunFacts): PipelineStep[] {
   }
 
   return steps;
+}
+
+/** When a slot started painting and how long it should take. */
+export interface SlotClock {
+  startedAt: number;
+  expectedSeconds: number;
+}
+
+/** Fallback if a run never recorded what its model costs. */
+export const DEFAULT_EXPECTED_SECONDS = 110;
+
+/**
+ * The clock for one painting slot.
+ *
+ * Usually every variant of a run is fired at once and the run-level clock is
+ * the answer for all of them. A front/back contract run is the exception: the
+ * back call waits for the front, so once the front lands its slot is restamped
+ * and this returns that slot's own start instead of the run's.
+ */
+export function slotClock(run: RunFacts, slot: number): SlotClock {
+  const pending = run.pending;
+  if (!pending) return { startedAt: 0, expectedSeconds: DEFAULT_EXPECTED_SECONDS };
+  const own = pending.slots?.[slot] ?? null;
+  return {
+    startedAt: own?.startedAt ?? pending.startedAt,
+    expectedSeconds:
+      own?.expectedSeconds ?? pending.expectedSeconds ?? DEFAULT_EXPECTED_SECONDS,
+  };
 }
 
 export type RunTone = "running" | "kept" | "check" | "clean";

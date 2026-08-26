@@ -900,7 +900,10 @@ export default function StudioPage() {
             pending: {
               variants: 2,
               startedAt: Date.now(),
-              expectedSeconds: EXPECTED_RUN_SECONDS[modelId] ?? 110,
+              // Contract runs pay for two renders end to end, because the back
+              // call waits for the front. One model's worth of budget made the
+              // back trip "longer than usual" at roughly the halfway mark.
+              expectedSeconds: (EXPECTED_RUN_SECONDS[modelId] ?? 110) * (contractMode ? 2 : 1),
             },
           };
           setHistory((existing) => [
@@ -921,6 +924,23 @@ export default function StudioPage() {
               })
             );
 
+          /**
+           * Start a chained slot's clock at the moment its call is issued.
+           *
+           * Only contract mode needs this. Its back render is queued behind the
+           * front, so until this it was counting the front's wait as its own.
+           */
+          const startSlotClock = (index: number, expectedSeconds: number) =>
+            setHistory((existing) =>
+              existing.map((run) => {
+                if (run.id !== jobId || !run.pending) return run;
+                const slots = [...(run.pending.slots ?? [])];
+                while (slots.length <= index) slots.push(null);
+                slots[index] = { startedAt: Date.now(), expectedSeconds };
+                return { ...run, pending: { ...run.pending, slots } };
+              })
+            );
+
           const generateVariant = (label: string, body: Record<string, unknown>) =>
             fetchJson(label, "/api/generate", {
               method: "POST",
@@ -938,6 +958,9 @@ export default function StudioPage() {
             leftData = await generateVariant("Generate front", { prompt: leftPrompt });
             const frontUrl = leftData.images?.[0]?.url;
             if (frontUrl) landVariant(0, frontUrl);
+            // The back call goes out now, so its clock starts now — and from
+            // here it is one render, not two.
+            startSlotClock(1, EXPECTED_RUN_SECONDS[modelId] ?? 110);
             rightData = await generateVariant("Generate back", {
               // Contract mode's second call is the BACK render, so it needs the
               // back canvas. It was inheriting generationBase's front canvas,

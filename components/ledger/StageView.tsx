@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { ImageGeneration } from "@/components/agents/image-generation";
 import PipelineStrip from "./PipelineStrip";
 import type { HistoryItem } from "../types";
-import { runPipeline, runSubtitle, runTitle } from "@/lib/run-pipeline";
+import { runPipeline, runSubtitle, runTitle, slotClock } from "@/lib/run-pipeline";
 
 /**
  * The right half: whichever run the ledger is pointing at, as large as the
@@ -114,13 +114,17 @@ function useElapsed(startedAt: number | undefined) {
  */
 function PaintingFrame({
   label,
-  elapsed,
+  startedAt,
   expected,
 }: {
   label: string;
-  elapsed: number;
+  /** This slot's own start, which is not the run's when the calls are chained. */
+  startedAt: number;
   expected: number;
 }) {
+  // Ticked here rather than in StageView because slots no longer share a
+  // clock: a contract run's back slot starts when the front lands.
+  const elapsed = useElapsed(startedAt);
   const over = elapsed > expected;
   return (
     <figure className="flex min-h-0 w-full flex-1 flex-col items-center gap-2">
@@ -177,7 +181,6 @@ export default function StageView({
    * again to get both back. Same two states, no chrome.
    */
   const [soloed, setSoloed] = useState<number | null>(null);
-  const elapsed = useElapsed(run?.pending?.startedAt);
   const picked = run?.abTest?.selectedImage;
   const shots = run?.imageUrls ?? [];
   const canKeep = Boolean(onKeep) && shots.length === 2 && Boolean(run?.abTest);
@@ -299,8 +302,8 @@ export default function StageView({
           <div key={`awaited-${slot}`} className="flex min-h-0 justify-center bg-neutral-50 p-4">
             <PaintingFrame
               label={labels[slot] ?? `Variant ${slot + 1}`}
-              elapsed={elapsed}
-              expected={run.pending?.expectedSeconds ?? 110}
+              startedAt={slotClock(run, slot).startedAt}
+              expected={slotClock(run, slot).expectedSeconds}
             />
           </div>
         ))}
