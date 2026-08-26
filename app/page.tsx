@@ -10,6 +10,7 @@ import type { ModelId } from "@/lib/models";
 import { STUDIO_BACKDROP_PATH } from "@/lib/studio-background";
 import { IMAGE_STUDIO_OUTPUT_FORMAT as OUTPUT_FORMAT } from "@/lib/output-sizes";
 import { styleNumberSurvives } from "@/lib/style-number-lifetime";
+import { batchEligibility } from "@/lib/batch-eligibility";
 import type { CanvasSummary, RoutingPayload } from "@/lib/routing-summary";
 import { styleNumbersForQueue } from "@/lib/style-from-filename";
 import { buildBatchSummary } from "@/lib/batch-summary";
@@ -958,7 +959,15 @@ export default function StudioPage() {
    *      "everything's pending → everything's done"
    */
   async function runBatchGeneration() {
-    if (selected.length < 2) return;
+    // Checked here as well as on the button. The button is the only way in
+    // today, but batch produces silently-wrong output in the modes it blocks
+    // (front shots for a back run), and that is not a failure mode worth
+    // leaving one prop-wiring mistake away from happening.
+    const eligibility = batchEligibility(productShotMode, selected.length);
+    if (!eligibility.enabled) {
+      if (eligibility.reason) setError(eligibility.reason);
+      return;
+    }
 
     // Per-item style numbers, read from each upload's original filename. One
     // shared style field is why batch ran on the pre-ERP path: stamping every
@@ -1056,6 +1065,16 @@ export default function StudioPage() {
         // mode (single-run mode has always sent the raw prompt and let the
         // server do it once). The optimized string is display-only, matching
         // what single-run mode records in history.
+        // Batch is gated to single-front, so the directive is the front one —
+        // but it is derived from the mode rather than hardcoded, so that if
+        // batch ever unlocks another mode this line does not quietly stay
+        // wrong. Feedback memory was missing entirely: single runs append it
+        // and batch did not, so batch reproduced corrections the studio had
+        // already been taught. That is why an operator ends up back on
+        // one-at-a-time runs after any correction.
+        imagePrompt = `${imagePrompt}${productShotViewDirective(productShotMode)}${feedbackMemorySuffix(
+          "image"
+        )}`;
         promptForDisplay = optimizePromptForModel(modelId, imagePrompt, "product-shot");
       } catch (err: any) {
         failures.push({ url: sourceUrl, error: err?.message || "Analyze failed" });
@@ -1207,7 +1226,10 @@ export default function StudioPage() {
               (productShotMode === "front-back-contract" && (!frontIntakeUrl || !backIntakeUrl))
             }
             onBatchGenerate={runBatchGeneration}
-            canBatch={selected.length >= 2}
+            canBatch={batchEligibility(productShotMode, selected.length).enabled}
+            batchDisabledReason={
+              batchEligibility(productShotMode, selected.length).reason ?? undefined
+            }
             batchProgress={batchProgress}
             twoPiece={twoPiece}
             onTwoPieceChange={setTwoPiece}

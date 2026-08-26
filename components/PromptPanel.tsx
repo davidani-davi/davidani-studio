@@ -60,6 +60,12 @@ interface Props {
   /** Optional batch wiring — only Image Studio passes these. */
   onBatchGenerate?: () => void;
   canBatch?: boolean;
+  /**
+   * Why Batch is unavailable, shown on the disabled button. The old hardcoded
+   * copy told the user to "select 2 or more images" in a UI with no image
+   * selection — the parent knows the real reason, so it supplies it.
+   */
+  batchDisabledReason?: string;
   batchProgress?: BatchProgress | null;
 
   /**
@@ -779,8 +785,8 @@ export default function PromptPanel(p: Props) {
               }
               title={
                 p.canBatch
-                  ? "Analyze + generate one output per selected image"
-                  : "Select 2 or more images to enable"
+                  ? "Analyze + generate one output per uploaded photo"
+                  : p.batchDisabledReason ?? "Batch is unavailable right now"
               }
               className={`group relative inline-flex items-center gap-2 rounded-xl border px-4 py-3 text-sm font-semibold transition disabled:cursor-not-allowed ${
                 !p.canBatch || p.loading || p.analyzing || batchActive
