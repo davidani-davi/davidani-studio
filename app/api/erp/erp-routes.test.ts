@@ -6,22 +6,6 @@ vi.mock("@/lib/erp-category", () => ({
 }));
 vi.mock("@/lib/erp-gallery", () => ({ fetchGalleryUrls: vi.fn() }));
 vi.mock("@/lib/fal", () => ({ uploadToFal: vi.fn() }));
-// sharp is only used to measure a thumbnail's shape; the measurement itself is
-// tested in lib/erp-square.test.ts against the ported weights.
-vi.mock("sharp", () => {
-  // A 4x5 portrait with flat edges — the shape the scoring reads. The
-  // measurement itself is tested in lib/erp-square.test.ts.
-  const api: any = {
-    greyscale: () => api,
-    raw: () => api,
-    toBuffer: async () => ({
-      data: new Uint8Array(20).fill(200),
-      info: { width: 4, height: 5, channels: 1 },
-    }),
-  };
-  return { default: () => api };
-});
-
 const { erpFetchBytes } = await import("@/lib/erp-category");
 const { fetchGalleryUrls } = await import("@/lib/erp-gallery");
 const { uploadToFal } = await import("@/lib/fal");
@@ -85,40 +69,6 @@ describe("style listing", () => {
     expect(body.groups[0].photos[0].full).toBe(FULL);
   });
 
-  // The square thumbnail is not an ERP asset — it is generated from one frame.
-  // Marking a different frame than the Faire tool would is worse than none.
-  it("marks the frame the Faire square thumbnail would be built from", async () => {
-    vi.mocked(erpFetchBytes).mockResolvedValue(Buffer.from("PNG"));
-    vi.mocked(fetchGalleryUrls).mockResolvedValue([
-      `${DIR}T_DWTS67099 CHARCOAL_1.png`,
-      `${DIR}T_DWTS67099 CHARCOAL_2.png`,
-    ]);
-    const res = await getPhotos(new Request("https://s.test/api/erp/photos?style=DWTS67099"));
-    const body = await res.json();
-    expect(body.squareThumbnail).toMatchObject({
-      name: "DWTS67099 Square.png",
-      colorway: "CHARCOAL",
-      index: 1,
-    });
-    expect(body.squareThumbnail.strengths).toContain("clean edges — fills invisibly");
-    expect(body.squareThumbnail.warnings).toEqual([]);
-    expect(body.groups[0].photos[0].isSquareHero).toBe(true);
-    expect(body.groups[0].photos[1].isSquareHero).toBe(false);
-  });
-
-  // Better no mark than a guessed one: the point of the mark is that it agrees
-  // with the tool that actually builds the square.
-  it("marks nothing when the thumbnails could not be measured", async () => {
-    vi.mocked(erpFetchBytes).mockResolvedValue(null);
-    vi.mocked(fetchGalleryUrls).mockResolvedValue([`${DIR}T_DWTS67099 CHARCOAL_1.png`]);
-    const res = await getPhotos(new Request("https://s.test/api/erp/photos?style=DWTS67099"));
-    const body = await res.json();
-    expect(body.squareThumbnail).toBeNull();
-    // The frames are still listed and still pickable.
-    expect(body.groups[0].photos).toHaveLength(1);
-    expect(body.groups[0].photos[0].isSquareHero).toBe(false);
-  });
-
   // Photos live on the regular twin, so a Plus code otherwise looks empty.
   it("sends a Plus code to its regular twin and says it did", async () => {
     vi.mocked(fetchGalleryUrls).mockResolvedValue([]);
@@ -127,7 +77,6 @@ describe("style listing", () => {
     expect(fetchGalleryUrls).toHaveBeenCalledWith("DEP42167");
     expect(body.style).toBe("DEP42167");
     expect(body.regularizedFrom).toBe("PEP42167");
-    expect(body.squareThumbnail).toBeNull();
   });
 
   it("asks for a style rather than crawling for nothing", async () => {

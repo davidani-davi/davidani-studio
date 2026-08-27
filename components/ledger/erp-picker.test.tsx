@@ -19,20 +19,13 @@ const BODY = {
   ok: true,
   style: "DWTS67099",
   regularizedFrom: null,
-  squareThumbnail: {
-    name: "DWTS67099 Square.png",
-    colorway: "CHARCOAL",
-    index: 1,
-    strengths: ["named for this style", "portrait crop"],
-    warnings: ["busy edges — the fill will ghost"],
-  },
   groups: [
     {
       colorway: "CHARCOAL",
       foreign: false,
       photos: [
-        { index: 1, label: "1", thumb: "/api/erp/photo?src=a", full: "https://erp/a.png", isSquareHero: true, strengths: [], warnings: [] },
-        { index: 2, label: "2", thumb: "/api/erp/photo?src=b", full: "https://erp/b.png", isSquareHero: false, strengths: [], warnings: [] },
+        { index: 1, label: "1", thumb: "/api/erp/photo?src=a", full: "https://erp/a.png" },
+        { index: 2, label: "2", thumb: "/api/erp/photo?src=b", full: "https://erp/b.png" },
       ],
     },
   ],
@@ -102,26 +95,6 @@ describe("ErpPicker", () => {
     expect(screen.getByText(/search a style number/i)).toBeInTheDocument();
   });
 
-  // The square thumbnail is generated FROM one of these frames, not stored in
-  // the ERP — so the picker has to say which frame and why.
-  it("names the frame the Faire square thumbnail is built from", async () => {
-    open({ initialStyle: "DWTS67099" });
-    await waitFor(() => expect(screen.getByText(/faire square thumbnail/i)).toBeInTheDocument());
-    expect(
-      screen.getByText(/DWTS67099 Square\.png would be built from this frame/i)
-    ).toBeInTheDocument();
-    expect(screen.getByText("Square")).toBeInTheDocument();
-  });
-
-  // The winner is often only the best of what is filed. Listed among the
-  // merits, the caveat reads as praise for what will spoil the square.
-  it("shows a caveat as a caveat, not as another merit", async () => {
-    open({ initialStyle: "DWTS67099" });
-    await waitFor(() => expect(screen.getByText(/faire square thumbnail/i)).toBeInTheDocument());
-    expect(screen.getByText(/named for this style, portrait crop/i)).toBeInTheDocument();
-    expect(screen.getByText(/^But: busy edges/i)).toBeInTheDocument();
-  });
-
   it("hands back the original, not the thumbnail it displayed", async () => {
     const onPick = vi.fn().mockResolvedValue(undefined);
     open({ initialStyle: "DWTS67099", onPick });
@@ -137,7 +110,7 @@ describe("ErpPicker", () => {
 
   it("says so when the ERP has nothing filed under that style", async () => {
     vi.mocked(fetch).mockResolvedValue(
-      new Response(JSON.stringify({ ...BODY, groups: [], squareThumbnail: null }))
+      new Response(JSON.stringify({ ...BODY, groups: [] }))
     );
     open({ initialStyle: "NOPE1" });
     await waitFor(() =>

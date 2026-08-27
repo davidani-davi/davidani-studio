@@ -28,21 +28,11 @@ export interface ErpPhotoOption {
   thumb: string;
   /** The ERP original. Sent back on pick; never loaded by the browser. */
   full: string;
-  isSquareHero: boolean;
-  strengths: string[];
-  warnings: string[];
 }
 
 export interface ErpStyleResult {
   style: string;
   regularizedFrom: string | null;
-  squareThumbnail: {
-    name: string;
-    colorway: string;
-    index: number | null;
-    strengths: string[];
-    warnings: string[];
-  } | null;
   groups: Array<{ colorway: string; foreign: boolean; photos: ErpPhotoOption[] }>;
 }
 
@@ -166,35 +156,6 @@ export default function ErpPicker({
           </p>
         )}
 
-        {/*
-          The square thumbnail is not an ERP asset: Faire's catalogue tiles are
-          square, so "<STYLE> Square.png" is generated from ONE of these frames.
-          Which one is scored, not chosen, and this says which and why — using
-          the same weights as the tool that builds it.
-        */}
-        {result?.squareThumbnail && (
-          <div className="mb-3 rounded-lg border border-brand-200 bg-brand-50/60 px-3 py-2">
-            <p className="text-[11px] font-bold text-brand-900">
-              Faire square thumbnail · {result.squareThumbnail.colorway}
-              {result.squareThumbnail.index !== null ? ` frame ${result.squareThumbnail.index}` : ""}
-            </p>
-            <p className="mt-0.5 text-[10.5px] leading-snug text-brand-800">
-              {result.squareThumbnail.name} would be built from this frame
-              {result.squareThumbnail.strengths.length
-                ? ` — ${result.squareThumbnail.strengths.join(", ")}`
-                : ""}
-              .
-            </p>
-            {/* The winner is often only the best of what is filed, so the
-                caveat has to read as a caveat rather than as another merit. */}
-            {result.squareThumbnail.warnings.length > 0 && (
-              <p className="mt-1 text-[10.5px] leading-snug text-amber-800">
-                But: {result.squareThumbnail.warnings.join(", ")}.
-              </p>
-            )}
-          </div>
-        )}
-
         {result?.groups.map((group) => (
           <section key={group.colorway} className="mb-4">
             <h3
@@ -227,12 +188,7 @@ export default function ErpPicker({
                         setPicking(null);
                       }
                     }}
-                    title={[...photo.strengths, ...photo.warnings].join(" · ")}
-                    className={`group relative overflow-hidden rounded-lg border bg-[#edeeee] transition disabled:cursor-wait ${
-                      photo.isSquareHero
-                        ? "border-brand-500 ring-1 ring-brand-500"
-                        : "border-neutral-200 hover:border-neutral-500"
-                    }`}
+                    className="group relative overflow-hidden rounded-lg border border-neutral-200 bg-[#edeeee] transition hover:border-neutral-500 disabled:cursor-wait"
                     style={{ aspectRatio: "4 / 5" }}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -242,15 +198,6 @@ export default function ErpPicker({
                       loading="lazy"
                       className="h-full w-full object-contain"
                     />
-                    {photo.isSquareHero && (
-                      <AnimatedBadge
-                        status="info"
-                        size="sm"
-                        className="absolute left-1 top-1 h-5 px-1.5 text-[8px] font-bold uppercase tracking-wider"
-                      >
-                        Square
-                      </AnimatedBadge>
-                    )}
                     <span className="absolute inset-x-0 bottom-0 bg-white/85 py-0.5 text-center font-mono text-[8.5px] font-bold text-neutral-600">
                       {busy ? "Adding…" : photo.label}
                     </span>

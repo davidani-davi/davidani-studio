@@ -115,6 +115,18 @@ export function parseErpPhoto(url: string, style?: string): ErpPhoto | null {
   };
 }
 
+/**
+ * Plus twin -> regular twin.
+ *
+ * A P-style has no photos of its own; they are filed against the D-style.
+ * Without this a Plus code returns an empty gallery and the ERP looks like it
+ * holds nothing for the style.
+ */
+export function regularizeStyle(code: string): string {
+  const key = code.trim().toUpperCase();
+  return key.startsWith("P") ? `D${key.slice(1)}` : key;
+}
+
 /** Whether this frame is named for the style whose gallery it appeared in. */
 export function namedForStyle(photo: ErpPhoto, style: string): boolean {
   return photo.tokens.includes(style.trim().toUpperCase());

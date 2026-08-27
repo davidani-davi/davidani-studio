@@ -6,6 +6,7 @@ import {
   groupForDisplay,
   isErpPhotoUrl,
   namedForStyle,
+  regularizeStyle,
   nameTokens,
   parseErpPhoto,
   thumbUrl,
@@ -160,5 +161,19 @@ describe("grouping", () => {
     const copy = [...input];
     groupForDisplay(input, "DDT9040");
     expect(input).toEqual(copy);
+  });
+});
+
+describe("plus twins", () => {
+  // A P-style has no photos of its own; they are filed against the D-style,
+  // so without this its gallery comes back empty and the ERP looks bare.
+  it("sends a Plus code to its regular twin", () => {
+    expect(regularizeStyle("PEP42167")).toBe("DEP42167");
+    expect(regularizeStyle("pep42167")).toBe("DEP42167");
+  });
+
+  it("leaves every other code alone", () => {
+    expect(regularizeStyle("DWTS67099")).toBe("DWTS67099");
+    expect(regularizeStyle(" ddt9040 ")).toBe("DDT9040");
   });
 });
