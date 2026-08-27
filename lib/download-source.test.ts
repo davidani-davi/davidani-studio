@@ -34,6 +34,21 @@ describe("download source allowlist", () => {
     expect(resolveDownloadSource("https://fal.media.evil.test/x.jpg").ok).toBe(false);
   });
 
+  it("allows kie.ai's tempfile host, where every Model Studio render lives", () => {
+    // generate-model passes outputSize: null, so resizeGeneratedImages hands
+    // kie's URL back untouched — these are never re-hosted onto fal.
+    const real =
+      "https://tempfile.aiquickdraw.com/h/9b1d464aeae6c794cdbd28855bf8f9cb_1786723589.png";
+    expect(resolveDownloadSource(real).ok).toBe(true);
+  });
+
+  it("does not let a lookalike host ride in on the kie entry", () => {
+    expect(resolveDownloadSource("https://tempfile.aiquickdraw.com.evil.test/x.png").ok).toBe(
+      false
+    );
+    expect(resolveDownloadSource("https://eviltempfile.aiquickdraw.com/x.png").ok).toBe(false);
+  });
+
   it("refuses nothing at all", () => {
     expect(resolveDownloadSource(null).ok).toBe(false);
     expect(resolveDownloadSource("").ok).toBe(false);

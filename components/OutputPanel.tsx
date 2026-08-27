@@ -741,11 +741,20 @@ export default function OutputPanel({
     return `${stem}${suffix}.${outputExtension(resultIndex)}`;
   }
 
+  /**
+   * Hand the render to the browser as a file.
+   *
+   * Routed through /api/download rather than pointed straight at the render:
+   * Model Studio results are served from kie.ai's CDN, and the `download`
+   * attribute is ignored for cross-origin hrefs, so the name filenameFor()
+   * just derived was discarded and the operator got the CDN's content hash.
+   * The proxy makes the response same-origin and sets Content-Disposition.
+   */
   function download(url: string, resultIndex: number) {
+    const name = filenameFor(resultIndex);
     const a = document.createElement("a");
-    a.href = url;
-    a.download = filenameFor(resultIndex);
-    a.target = "_blank";
+    a.href = `/api/download?url=${encodeURIComponent(url)}&name=${encodeURIComponent(name)}`;
+    a.download = name;
     a.rel = "noopener";
     document.body.appendChild(a);
     a.click();

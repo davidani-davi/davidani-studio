@@ -6,13 +6,17 @@
  * the deploy's network. So this is an allowlist of the hosts that actually
  * serve studio renders, matching next.config.js's remotePatterns, plus the
  * blob store the rest of the app writes to.
+ *
+ * kie.ai's tempfile host is here because Model Studio renders never touch
+ * fal: generate-model passes outputSize: null, so resizeGeneratedImages
+ * returns kie's URLs untouched and every Model Studio result lives there.
  */
 const ALLOWED_SUFFIXES = [
   ".fal.media",
   ".fal.ai",
   ".public.blob.vercel-storage.com",
 ];
-const ALLOWED_HOSTS = ["fal.media", "fal.ai"];
+const ALLOWED_HOSTS = ["fal.media", "fal.ai", "tempfile.aiquickdraw.com"];
 
 export type DownloadSource =
   | { ok: true; url: URL }
