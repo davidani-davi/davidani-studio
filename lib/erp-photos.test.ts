@@ -5,6 +5,7 @@ import {
   fullSizeUrl,
   groupForDisplay,
   isErpPhotoUrl,
+  looksLikeStyleCode,
   namedForStyle,
   regularizeStyle,
   nameTokens,
@@ -55,8 +56,10 @@ describe("reading a frame's identity", () => {
       colorway: null,
       index: 7,
     });
+    // "IMAGE012" carries digits, so it reads as a code rather than a colour.
     expect(parseErpPhoto(`${DIR}T_image012(58).png`, "DT42174H")).toMatchObject({
-      colorway: "IMAGE012",
+      colorway: null,
+      coStyled: ["IMAGE012"],
       index: 58,
     });
   });
@@ -67,7 +70,9 @@ describe("reading a frame's identity", () => {
     const photo = parseErpPhoto(`${DIR}T_DT42174H, DP58531_13.jpg`, "DT42174H")!;
     expect(photo.tokens).toEqual(["DT42174H", "DP58531"]);
     expect(namedForStyle(photo, "DT42174H")).toBe(true);
-    expect(photo.colorway).toBe("DP58531");
+    // The second code is a garment styled with this one, not its colourway.
+    expect(photo.colorway).toBeNull();
+    expect(photo.coStyled).toEqual(["DP58531"]);
     expect(photo.index).toBe(13);
   });
 
@@ -75,6 +80,16 @@ describe("reading a frame's identity", () => {
     expect(parseErpPhoto(`${DIR}T_DT42174H.jpg`, "DT42174H")).toMatchObject({
       colorway: null,
       index: null,
+    });
+  });
+
+  // Real names carry stray numbers: "DT42174H, DP50188 4_2.jpg" was heading a
+  // group "4", which is not a colourway.
+  it("does not read a bare number as a colourway", () => {
+    expect(parseErpPhoto(`${DIR}T_DT42174H, DP50188 4_2.jpg`, "DT42174H")).toMatchObject({
+      colorway: null,
+      coStyled: ["DP50188"],
+      index: 2,
     });
   });
 
@@ -94,8 +109,11 @@ describe("reading a frame's identity", () => {
   it("refuses only what is not an image", () => {
     expect(parseErpPhoto(`${DIR}notes.pdf`)).toBeNull();
     expect(parseErpPhoto("not a url")).toBeNull();
-    // ...and without a style, every token is part of the label.
-    expect(parseErpPhoto(THUMB)?.colorway).toBe("DWTS67099 CHARCOAL");
+    // ...and without a style to strip, the code still reads as a code.
+    expect(parseErpPhoto(THUMB)).toMatchObject({
+      colorway: "CHARCOAL",
+      coStyled: ["DWTS67099"],
+    });
   });
 
   it("tokenises on every separator the ERP uses", () => {
@@ -126,12 +144,13 @@ describe("proxy allowlist", () => {
 });
 
 describe("grouping", () => {
-  const p = (file: string): ErpPhoto => parseErpPhoto(`${DIR}T_${file}`, "DDT9040")!;
+  const p = (file: string, style = "DDT9040"): ErpPhoto =>
+    parseErpPhoto(`${DIR}T_${file}`, style)!;
 
   it("puts every untagged frame of a style in one group, not one group each", () => {
     const groups = groupForDisplay([p("DDT9040 (2).JPG"), p("DDT9040 (1).JPG")], "DDT9040");
     expect(groups).toHaveLength(1);
-    expect(groups[0].colorway).toBe(UNTAGGED_GROUP);
+    expect(groups[0]).toMatchObject({ label: UNTAGGED_GROUP, kind: "all" });
     expect(groups[0].photos.map((x) => x.index)).toEqual([1, 2]);
   });
 
@@ -140,15 +159,43 @@ describe("grouping", () => {
       [p("DDT9040 BLACK_1.png"), p("DDT9040 CREAM_1.png"), p("DDT9040 BLACK_2.png")],
       "DDT9040"
     );
-    expect(groups.map((g) => g.colorway)).toEqual(["BLACK", "CREAM"]);
+    expect(groups.map((g) => g.label)).toEqual(["BLACK", "CREAM"]);
+    expect(groups[0].kind).toBe("colorway");
+  });
+
+  // DJ52056's frames are one green bomber shot over a top and jeans that have
+  // their own codes. Read as a colourway, eleven frames of the bomber were
+  // headed "DT52025 DP50116" — two garments that are not the product.
+  it("says a styled look is a styled look, not a colourway", () => {
+    const groups = groupForDisplay(
+      [
+        p("DJ52056 DT52025 DP50116_1.jpg", "DJ52056"),
+        p("DJ52056 DT52025 DP50116_2.jpg", "DJ52056"),
+        p("DJ52056 DWT52362 DP40212A_1.jpg", "DJ52056"),
+      ],
+      "DJ52056"
+    );
+    expect(groups.map((g) => g.label)).toEqual([
+      "Styled with DT52025 · DP50116",
+      "Styled with DWT52362 · DP40212A",
+    ]);
+    expect(groups[0].kind).toBe("styled");
+    expect(groups[0].styledWith).toEqual(["DT52025", "DP50116"]);
+    // The split itself is worth keeping — those really are two looks.
+    expect(groups[0].photos).toHaveLength(2);
+  });
+
+  it("prefers a real colourway over the codes beside it", () => {
+    const [group] = groupForDisplay([p("DJ52056 ARMY GREEN DT52025_1.jpg", "DJ52056")], "DJ52056");
+    expect(group).toMatchObject({ label: "ARMY GREEN", kind: "colorway", styledWith: [] });
   });
 
   // Foreign files do leak into shared galleries — "T_2597.png" really sits in
   // DWJ62171's. Mixed in with the style's own frames the gallery looks wrong.
   it("separates files not named for this style, and puts them last", () => {
     const groups = groupForDisplay([p("2597.png"), p("DDT9040 (1).JPG")], "DDT9040");
-    expect(groups.map((g) => g.colorway)).toEqual([UNTAGGED_GROUP, FOREIGN_GROUP]);
-    expect(groups[1].foreign).toBe(true);
+    expect(groups.map((g) => g.label)).toEqual([UNTAGGED_GROUP, FOREIGN_GROUP]);
+    expect(groups[1].kind).toBe("foreign");
   });
 
   it("sorts an unnumbered frame last rather than first", () => {
@@ -164,16 +211,17 @@ describe("grouping", () => {
   });
 });
 
-describe("plus twins", () => {
-  // A P-style has no photos of its own; they are filed against the D-style,
-  // so without this its gallery comes back empty and the ERP looks bare.
-  it("sends a Plus code to its regular twin", () => {
-    expect(regularizeStyle("PEP42167")).toBe("DEP42167");
-    expect(regularizeStyle("pep42167")).toBe("DEP42167");
+describe("telling a style code from a colour name", () => {
+  it("knows the codes that appear beside a style", () => {
+    for (const t of ["DT52025", "DP40212A", "DWT52362", "DJ52056D"]) {
+      expect(looksLikeStyleCode(t)).toBe(true);
+    }
   });
 
-  it("leaves every other code alone", () => {
-    expect(regularizeStyle("DWTS67099")).toBe("DWTS67099");
-    expect(regularizeStyle(" ddt9040 ")).toBe("DDT9040");
+  // Colour names carry no digits, which is what makes this reliable.
+  it("does not mistake a colourway for one", () => {
+    for (const t of ["CHARCOAL", "MOCHA", "BEIGE", "ARMY", "GREEN", "BUTTER"]) {
+      expect(looksLikeStyleCode(t)).toBe(false);
+    }
   });
 });

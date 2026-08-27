@@ -57,12 +57,12 @@ describe("style listing", () => {
     expect(body.style).toBe("DWTS67099");
     // "logo.png" is not named for this style — foreign files really do leak
     // into shared galleries, and mixed in they make the gallery look wrong.
-    expect(body.groups.map((g: any) => g.colorway)).toEqual([
+    expect(body.groups.map((g: any) => g.label)).toEqual([
       "CHARCOAL",
       "BLACK",
       "Other files in this gallery",
     ]);
-    expect(body.groups[2].foreign).toBe(true);
+    expect(body.groups[2].kind).toBe("foreign");
     // Frames in the ERP's own order, and the stray non-frame file dropped.
     expect(body.groups[0].photos.map((p: any) => p.index)).toEqual([1, 2]);
     expect(body.groups[0].photos[0].thumb).toBe(
@@ -144,7 +144,7 @@ describe("import", () => {
     expect(await res.json()).toMatchObject({
       ok: true,
       url: "https://fal.media/x.png",
-      colorway: "DWTS67099 CHARCOAL",
+      colorway: "CHARCOAL",
       index: 1,
     });
     // Keeps the ERP's own filename, so the intake is traceable to its frame.

@@ -23,8 +23,9 @@ const BODY = {
   candidates: [],
   groups: [
     {
-      colorway: "CHARCOAL",
-      foreign: false,
+      label: "CHARCOAL",
+      kind: "colorway",
+      styledWith: [],
       photos: [
         { index: 1, label: "1", thumb: "/api/erp/photo?src=a", full: "https://erp/a.png" },
         { index: 2, label: "2", thumb: "/api/erp/photo?src=b", full: "https://erp/b.png" },

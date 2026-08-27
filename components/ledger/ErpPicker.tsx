@@ -43,7 +43,12 @@ export interface ErpStyleResult {
   resolvedFrom: string | null;
   /** Set when it could have meant several. */
   candidates: ErpStyleCandidate[];
-  groups: Array<{ colorway: string; foreign: boolean; photos: ErpPhotoOption[] }>;
+  groups: Array<{
+    label: string;
+    kind: "colorway" | "styled" | "all" | "foreign";
+    styledWith: string[];
+    photos: ErpPhotoOption[];
+  }>;
 }
 
 export default function ErpPicker({
@@ -210,20 +215,31 @@ export default function ErpPicker({
         )}
 
         {result?.groups.map((group) => (
-          <section key={group.colorway} className="mb-4">
-            <h3
-              className={`mb-1.5 font-mono text-[9.5px] font-bold uppercase tracking-[0.15em] ${
-                group.foreign ? "text-amber-700" : "text-neutral-500"
-              }`}
-            >
-              {group.colorway}
-              <span className="ml-1.5 font-sans font-medium normal-case tracking-normal text-neutral-400">
+          <section key={group.label} className="mb-4">
+            {/*
+              Its own line, with the count under it rather than butted against
+              it — run together, "DT52025 DP50116" and "11 frames" read as one
+              string, "DT52025 DP5011611 frames".
+            */}
+            <h3 className="mb-1.5">
+              <span
+                className={`font-mono text-[9.5px] font-bold uppercase tracking-[0.15em] ${
+                  group.kind === "foreign"
+                    ? "text-amber-700"
+                    : group.kind === "styled"
+                    ? "text-neutral-400"
+                    : "text-neutral-500"
+                }`}
+              >
+                {group.label}
+              </span>
+              <span className="ml-2 text-[10px] font-medium text-neutral-400">
                 {group.photos.length} frame{group.photos.length === 1 ? "" : "s"}
               </span>
             </h3>
             <div className="grid grid-cols-3 gap-2">
               {group.photos.map((photo) => {
-                const id = `${group.colorway}-${photo.label}`;
+                const id = `${group.label}-${photo.label}`;
                 const busy = picking === id;
                 return (
                   <button
@@ -247,7 +263,7 @@ export default function ErpPicker({
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={photo.thumb}
-                      alt={`${result.style} ${group.colorway} frame ${photo.label}`}
+                      alt={`${result.style} ${group.label} frame ${photo.label}`}
                       loading="lazy"
                       className="h-full w-full object-contain"
                     />

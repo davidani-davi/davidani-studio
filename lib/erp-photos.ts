@@ -38,14 +38,16 @@ export interface ErpPhoto {
   thumbUrl: string;
   /** Uppercased words in the filename, minus the trailing index. */
   tokens: string[];
-  /**
-   * What is left of the name after the style code.
-   *
-   * Usually a colourway. Not always: a styled look names the other garments in
-   * the shot, so DJ52056's frames come back grouped under "DT52025 DP50116".
-   * That is what the ERP filed, so it is what gets shown.
-   */
+  /** Word tokens left after the style code — the colourway, when named. */
   colorway: string | null;
+  /**
+   * Other style codes in the filename: the garments styled WITH this one.
+   *
+   * DJ52056's frames are named "DJ52056 DT52025 DP50116_1.jpg" — one green
+   * bomber shot over a top and jeans that have their own codes. Read as part
+   * of the colourway they made a nonsense heading out of two SKUs.
+   */
+  coStyled: string[];
   /** Trailing number in either `_N` or `(N)` form, when the name carries one. */
   index: number | null;
 }
@@ -75,6 +77,17 @@ export function thumbUrl(url: string): string {
   const parts = splitUrl(url);
   if (!parts) return url;
   return parts.file.startsWith(THUMB_PREFIX) ? url : `${parts.dir}${THUMB_PREFIX}${parts.file}`;
+}
+
+/**
+ * Whether a filename token is a style code rather than a word.
+ *
+ * Style codes carry digits — DT52025, DP40212A, DWT52362 — and colourways do
+ * not: CHARCOAL, MOCHA BEIGE, BUTTER YELLOW, ARMY GREEN. That is the whole
+ * distinction, and it is reliable in both directions.
+ */
+export function looksLikeStyleCode(token: string): boolean {
+  return /^[A-Z]{1,5}\d{3,}[A-Z]?$/.test(token);
 }
 
 /**
@@ -112,11 +125,15 @@ export function parseErpPhoto(url: string, style?: string): ErpPhoto | null {
 
   const key = style?.trim().toUpperCase();
   const rest = key ? tokens.filter((t) => t !== key) : tokens;
+  // A colour name has letters in it. Bare numbers turn up as stray tokens in
+  // names like "DT42174H, DP50188 4" and were heading groups "4" and "15".
+  const words = rest.filter((t) => /[A-Z]/.test(t) && !looksLikeStyleCode(t));
   return {
     fullUrl: fullSizeUrl(url),
     thumbUrl: thumbUrl(url),
     tokens,
-    colorway: rest.length ? rest.join(" ") : null,
+    colorway: words.length ? words.join(" ") : null,
+    coStyled: rest.filter(looksLikeStyleCode),
     index,
   };
 }
@@ -163,31 +180,61 @@ export function isErpPhotoUrl(url: string | null | undefined): boolean {
 export const UNTAGGED_GROUP = "All frames";
 export const FOREIGN_GROUP = "Other files in this gallery";
 
+export interface ErpPhotoGroup {
+  /** The heading, already readable. */
+  label: string;
+  /** Which kind of heading it is, so the UI can say what it means. */
+  kind: "colorway" | "styled" | "all" | "foreign";
+  /** Set for a styled group: the other garments in the shot. */
+  styledWith: string[];
+  photos: ErpPhoto[];
+}
+
 /**
  * Group a style's frames for display.
  *
- * By whatever the name says besides the style code — a colourway, or the other
- * garments in a styled look. Everything named for the style but carrying
- * nothing else falls into one group rather than one group each. Files
- * NOT named for the style are separated out — foreign files do leak into
- * shared galleries (real cases: "T_2597.png", "T_4 Polka Horse Dark Brown.png"),
- * and mixing them in makes the gallery look wrong.
+ * By colourway where the names carry one. Where they instead name the other
+ * garments in the shot, the split is still worth keeping — those are separate
+ * looks — but it is labelled as what it is. Reading those codes as a colourway
+ * headed eleven frames of one green bomber "DT52025 DP50116", which names two
+ * garments that are not the product.
+ *
+ * Files NOT named for the style are separated out — foreign files do leak into
+ * shared galleries (real cases: "T_2597.png", "T_4 Polka Horse Dark Brown.png")
+ * — and mixing them in makes the gallery look wrong.
  */
-export function groupForDisplay(
-  photos: ErpPhoto[],
-  style: string
-): Array<{ colorway: string; foreign: boolean; photos: ErpPhoto[] }> {
-  const groups = new Map<string, { colorway: string; foreign: boolean; photos: ErpPhoto[] }>();
+export function groupForDisplay(photos: ErpPhoto[], style: string): ErpPhotoGroup[] {
+  const groups = new Map<string, ErpPhotoGroup>();
   for (const photo of photos) {
-    const own = namedForStyle(photo, style);
-    const label = !own ? FOREIGN_GROUP : photo.colorway ?? UNTAGGED_GROUP;
-    const group = groups.get(label);
-    if (group) group.photos.push(photo);
-    else groups.set(label, { colorway: label, foreign: !own, photos: [photo] });
+    if (!namedForStyle(photo, style)) {
+      const found = groups.get(FOREIGN_GROUP);
+      if (found) found.photos.push(photo);
+      else
+        groups.set(FOREIGN_GROUP, {
+          label: FOREIGN_GROUP,
+          kind: "foreign",
+          styledWith: [],
+          photos: [photo],
+        });
+      continue;
+    }
+    const styled = photo.coStyled.join(" ");
+    const key = photo.colorway ?? (styled || UNTAGGED_GROUP);
+    const found = groups.get(key);
+    if (found) {
+      found.photos.push(photo);
+      continue;
+    }
+    groups.set(key, {
+      label: photo.colorway ?? (styled ? `Styled with ${photo.coStyled.join(" · ")}` : UNTAGGED_GROUP),
+      kind: photo.colorway ? "colorway" : styled ? "styled" : "all",
+      styledWith: photo.colorway ? [] : photo.coStyled,
+      photos: [photo],
+    });
   }
   const byIndex = (a: ErpPhoto, b: ErpPhoto) =>
     (a.index ?? Number.MAX_SAFE_INTEGER) - (b.index ?? Number.MAX_SAFE_INTEGER);
   const all = [...groups.values()].map((g) => ({ ...g, photos: [...g.photos].sort(byIndex) }));
   // Foreign files last, whatever order they appeared in.
-  return [...all.filter((g) => !g.foreign), ...all.filter((g) => g.foreign)];
+  return [...all.filter((g) => g.kind !== "foreign"), ...all.filter((g) => g.kind === "foreign")];
 }

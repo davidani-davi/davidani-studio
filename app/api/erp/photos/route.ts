@@ -73,8 +73,9 @@ export async function GET(req: Request) {
     /** More than one style matched; the UI offers them rather than guessing. */
     candidates,
     groups: groupForDisplay(photos, style).map((group) => ({
-      colorway: group.colorway,
-      foreign: group.foreign,
+      label: group.label,
+      kind: group.kind,
+      styledWith: group.styledWith,
       photos: group.photos.map((photo) => ({
         index: photo.index,
         label: photo.index === null ? "—" : String(photo.index),
