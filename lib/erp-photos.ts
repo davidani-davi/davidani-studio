@@ -38,7 +38,13 @@ export interface ErpPhoto {
   thumbUrl: string;
   /** Uppercased words in the filename, minus the trailing index. */
   tokens: string[];
-  /** What is left after the style code — a colourway when there is one. */
+  /**
+   * What is left of the name after the style code.
+   *
+   * Usually a colourway. Not always: a styled look names the other garments in
+   * the shot, so DJ52056's frames come back grouped under "DT52025 DP50116".
+   * That is what the ERP filed, so it is what gets shown.
+   */
   colorway: string | null;
   /** Trailing number in either `_N` or `(N)` form, when the name carries one. */
   index: number | null;
@@ -160,8 +166,9 @@ export const FOREIGN_GROUP = "Other files in this gallery";
 /**
  * Group a style's frames for display.
  *
- * By colourway where the names carry one; everything named for the style but
- * without a colourway falls into one group rather than one group each. Files
+ * By whatever the name says besides the style code — a colourway, or the other
+ * garments in a styled look. Everything named for the style but carrying
+ * nothing else falls into one group rather than one group each. Files
  * NOT named for the style are separated out — foreign files do leak into
  * shared galleries (real cases: "T_2597.png", "T_4 Polka Horse Dark Brown.png"),
  * and mixing them in makes the gallery look wrong.

@@ -30,9 +30,19 @@ export interface ErpPhotoOption {
   full: string;
 }
 
+export interface ErpStyleCandidate {
+  style: string;
+  category: string | null;
+  colorways: number;
+}
+
 export interface ErpStyleResult {
   style: string;
   regularizedFrom: string | null;
+  /** Set when we searched a fragment and it meant exactly one style. */
+  resolvedFrom: string | null;
+  /** Set when it could have meant several. */
+  candidates: ErpStyleCandidate[];
   groups: Array<{ colorway: string; foreign: boolean; photos: ErpPhotoOption[] }>;
 }
 
@@ -81,7 +91,7 @@ export default function ErpPicker({
     if (initialStyle.trim()) void search(initialStyle);
   }, [initialStyle, search]);
 
-  const empty = result && result.groups.length === 0;
+  const empty = result && result.groups.length === 0 && result.candidates.length === 0;
 
   return (
     <div className="flex h-full flex-col">
@@ -149,7 +159,50 @@ export default function ErpPicker({
           </p>
         )}
 
-        {result && result.regularizedFrom && (
+        {/*
+          Typed a number off a tag rather than a whole code, and it meant more
+          than one style. Offering them beats guessing, and beats the dead end
+          this used to be: "the ERP has no photos filed under 52056", for a
+          number the ERP has four codes for.
+        */}
+        {result && result.candidates.length > 0 && (
+          <div className="mb-3">
+            <p className="mb-2 text-[11px] leading-snug text-neutral-600">
+              {result.candidates.length} styles match{" "}
+              <b className="font-mono text-neutral-900">{query.trim().toUpperCase()}</b>. Which one?
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {result.candidates.map((candidate) => (
+                <button
+                  key={candidate.style}
+                  type="button"
+                  onClick={() => {
+                    setQuery(candidate.style);
+                    void search(candidate.style);
+                  }}
+                  className="rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5 text-left transition hover:border-neutral-500"
+                >
+                  <span className="block font-mono text-[12px] font-bold">{candidate.style}</span>
+                  <span className="block text-[10px] text-neutral-500">
+                    {[candidate.category, `${candidate.colorways} colourway${candidate.colorways === 1 ? "" : "s"}`]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* One match, so it was searched outright rather than offered. */}
+        {result?.resolvedFrom && (
+          <p className="mb-3 text-[11px] leading-snug text-neutral-500">
+            <b className="font-mono text-neutral-700">{result.resolvedFrom}</b> matched one style —
+            showing <b className="font-mono text-neutral-700">{result.style}</b>.
+          </p>
+        )}
+
+        {result && result.regularizedFrom && !result.resolvedFrom && (
           <p className="mb-3 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-[11px] leading-snug text-neutral-600">
             {result.regularizedFrom} is a Plus twin and has no photos of its own — showing{" "}
             {result.style}, where they live.

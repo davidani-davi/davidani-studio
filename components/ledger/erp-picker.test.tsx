@@ -19,6 +19,8 @@ const BODY = {
   ok: true,
   style: "DWTS67099",
   regularizedFrom: null,
+  resolvedFrom: null,
+  candidates: [],
   groups: [
     {
       colorway: "CHARCOAL",
@@ -110,7 +112,7 @@ describe("ErpPicker", () => {
 
   it("says so when the ERP has nothing filed under that style", async () => {
     vi.mocked(fetch).mockResolvedValue(
-      new Response(JSON.stringify({ ...BODY, groups: [] }))
+      new Response(JSON.stringify({ ...BODY, groups: [], candidates: [] }))
     );
     open({ initialStyle: "NOPE1" });
     await waitFor(() =>
@@ -126,9 +128,61 @@ describe("ErpPicker", () => {
     await waitFor(() => expect(screen.getByText("fal upload failed")).toBeInTheDocument());
   });
 
+  // "52056" is a real one: the ERP has four codes for it, and the picker used
+  // to report that it held no photos at all.
+  it("offers the matching styles when a typed fragment is ambiguous", async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          ...BODY,
+          style: "52056",
+          groups: [],
+          candidates: [
+            { style: "DJ52056D", category: "JACKET", colorways: 2 },
+            { style: "DJ52056", category: "JACKET", colorways: 8 },
+          ],
+        })
+      )
+    );
+    open({ initialStyle: "52056" });
+    await waitFor(() => expect(screen.getByText("DJ52056D")).toBeInTheDocument());
+    expect(screen.getByText(/2 styles match/i)).toBeInTheDocument();
+    // Not a dead end any more.
+    expect(screen.queryByText(/has no photos filed under/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/8 colourways/i)).toBeInTheDocument();
+  });
+
+  it("searches a candidate when it is chosen", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          ...BODY,
+          groups: [],
+          candidates: [{ style: "DJ52056", category: "JACKET", colorways: 8 }],
+        })
+      )
+    );
+    open({ initialStyle: "52056" });
+    await waitFor(() => expect(screen.getByText("DJ52056")).toBeInTheDocument());
+    fireEvent.click(screen.getByText("DJ52056").closest("button")!);
+    await waitFor(() =>
+      expect(vi.mocked(fetch).mock.calls[1][0]).toBe("/api/erp/photos?style=DJ52056")
+    );
+  });
+
+  it("says which style a one-match fragment resolved to", async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(JSON.stringify({ ...BODY, style: "DJ52056", resolvedFrom: "52056" }))
+    );
+    open({ initialStyle: "52056" });
+    await waitFor(() => expect(screen.getByText(/matched one style/i)).toBeInTheDocument());
+  });
+
   it("explains a Plus twin rather than showing an empty gallery", async () => {
     vi.mocked(fetch).mockResolvedValue(
-      new Response(JSON.stringify({ ...BODY, style: "DEP42167", regularizedFrom: "PEP42167" }))
+      new Response(
+        JSON.stringify({ ...BODY, style: "DEP42167", regularizedFrom: "PEP42167" })
+      )
     );
     open({ initialStyle: "PEP42167" });
     await waitFor(() =>

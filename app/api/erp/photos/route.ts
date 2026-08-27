@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { fetchGalleryUrls } from "@/lib/erp-gallery";
+import { searchStyles, type StyleCandidate } from "@/lib/erp-style-search";
 import {
   groupForDisplay,
   parseErpPhoto,
@@ -18,6 +19,13 @@ function proxied(url: string): string {
   return `/api/erp/photo?src=${encodeURIComponent(url)}`;
 }
 
+async function crawl(style: string): Promise<ErpPhoto[]> {
+  return (await fetchGalleryUrls(style))
+    .map((url) => parseErpPhoto(url, style))
+    .filter((p): p is ErpPhoto => p !== null)
+    .slice(0, MAX_FRAMES);
+}
+
 /**
  * Every photo the ERP holds for a style, grouped for a picker.
  *
@@ -31,18 +39,39 @@ export async function GET(req: Request) {
     return NextResponse.json({ ok: false, error: "A style number is required." }, { status: 400 });
   }
   // A Plus code has no photos of its own — they live on the regular twin.
-  const style = regularizeStyle(asked);
+  let style = regularizeStyle(asked);
+  let resolvedFrom: string | null = null;
+  let candidates: StyleCandidate[] = [];
 
-  const photos = (await fetchGalleryUrls(style))
-    .map((url) => parseErpPhoto(url, style))
-    .filter((p): p is ErpPhoto => p !== null)
-    .slice(0, MAX_FRAMES);
+  let photos = await crawl(style);
+
+  /*
+   * Nothing under what was typed? Ask the ERP what it could have meant.
+   *
+   * Operators type the number off a tag — "52056" — not the whole code, and
+   * the gallery crawl needs the exact one. Before this, a style the ERP has
+   * four codes for reported that it held no photos at all.
+   *
+   * Only on the empty path, so an exact code still costs one request.
+   */
+  if (photos.length === 0) {
+    candidates = await searchStyles(asked);
+    if (candidates.length === 1) {
+      resolvedFrom = asked.toUpperCase();
+      style = candidates[0].style;
+      candidates = [];
+      photos = await crawl(style);
+    }
+  }
 
   return NextResponse.json({
     ok: true,
     style,
-    /** Set when the asked-for code was a Plus twin, so the UI can say so. */
+    /** Set when the typed code was a Plus twin or a fragment we resolved. */
     regularizedFrom: style === asked.toUpperCase() ? null : asked.toUpperCase(),
+    resolvedFrom,
+    /** More than one style matched; the UI offers them rather than guessing. */
+    candidates,
     groups: groupForDisplay(photos, style).map((group) => ({
       colorway: group.colorway,
       foreign: group.foreign,

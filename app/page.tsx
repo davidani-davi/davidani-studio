@@ -1723,7 +1723,7 @@ export default function StudioPage() {
       <StudioDrawer
         open={erpSlot !== null}
         title={`ERP photos · ${erpSlot === "back" ? "Back" : "Front"}`}
-        subtitle="Every photo the ERP holds for a style, grouped by colourway."
+        subtitle="Every photo the ERP holds for a style, grouped as the ERP files them."
         wide
         onClose={() => setErpSlot(null)}
       >

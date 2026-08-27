@@ -5,9 +5,11 @@ vi.mock("@/lib/erp-category", () => ({
   erpFetchBytes: vi.fn(),
 }));
 vi.mock("@/lib/erp-gallery", () => ({ fetchGalleryUrls: vi.fn() }));
+vi.mock("@/lib/erp-style-search", () => ({ searchStyles: vi.fn() }));
 vi.mock("@/lib/fal", () => ({ uploadToFal: vi.fn() }));
 const { erpFetchBytes } = await import("@/lib/erp-category");
 const { fetchGalleryUrls } = await import("@/lib/erp-gallery");
+const { searchStyles } = await import("@/lib/erp-style-search");
 const { uploadToFal } = await import("@/lib/fal");
 const { GET: getPhoto } = await import("./photo/route");
 const { GET: getPhotos } = await import("./photos/route");
@@ -69,9 +71,49 @@ describe("style listing", () => {
     expect(body.groups[0].photos[0].full).toBe(FULL);
   });
 
+  // Operators type the number off a tag, not the whole code. "52056" is a
+  // real one: the ERP has four codes for it, and this used to report that it
+  // held no photos at all.
+  it("resolves a typed fragment that means exactly one style", async () => {
+    vi.mocked(fetchGalleryUrls)
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([`${DIR}T_DJ52056 BLACK_1.png`]);
+    vi.mocked(searchStyles).mockResolvedValue([
+      { style: "DJ52056", category: "JACKET", colorways: 8 },
+    ]);
+    const res = await getPhotos(new Request("https://s.test/api/erp/photos?style=52056"));
+    const body = await res.json();
+    expect(body.style).toBe("DJ52056");
+    expect(body.resolvedFrom).toBe("52056");
+    expect(body.groups[0].photos).toHaveLength(1);
+  });
+
+  it("offers the choices rather than guessing when a fragment is ambiguous", async () => {
+    vi.mocked(fetchGalleryUrls).mockResolvedValue([]);
+    vi.mocked(searchStyles).mockResolvedValue([
+      { style: "DJ52056D", category: "JACKET", colorways: 2 },
+      { style: "DJ52056", category: "JACKET", colorways: 8 },
+    ]);
+    const body = await (
+      await getPhotos(new Request("https://s.test/api/erp/photos?style=52056"))
+    ).json();
+    expect(body.candidates.map((c: any) => c.style)).toEqual(["DJ52056D", "DJ52056"]);
+    expect(body.resolvedFrom).toBeNull();
+    // Only the one crawl for what was typed — no speculative crawling.
+    expect(fetchGalleryUrls).toHaveBeenCalledTimes(1);
+  });
+
+  // An exact code must not pay for a search it does not need.
+  it("does not search when the typed code already has a gallery", async () => {
+    vi.mocked(fetchGalleryUrls).mockResolvedValue([`${DIR}T_DWTS67099 CHARCOAL_1.png`]);
+    await getPhotos(new Request("https://s.test/api/erp/photos?style=DWTS67099"));
+    expect(searchStyles).not.toHaveBeenCalled();
+  });
+
   // Photos live on the regular twin, so a Plus code otherwise looks empty.
   it("sends a Plus code to its regular twin and says it did", async () => {
     vi.mocked(fetchGalleryUrls).mockResolvedValue([]);
+    vi.mocked(searchStyles).mockResolvedValue([]);
     const res = await getPhotos(new Request("https://s.test/api/erp/photos?style=PEP42167"));
     const body = await res.json();
     expect(fetchGalleryUrls).toHaveBeenCalledWith("DEP42167");
