@@ -1,6 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Search } from "lucide-react";
+import { AnimatedBadge } from "@/components/motion/animated-badge";
+import { StatefulButton } from "@/components/motion/button";
+import { Input } from "@/components/motion/input";
 
 /**
  * Choose an intake photo from a style's own ERP gallery.
@@ -99,24 +103,39 @@ export default function ErpPicker({
           }}
           className="flex items-center gap-2"
         >
-          <input
+          {/*
+            beUI Input and StatefulButton, same as the composer's Generate:
+            the search is a round trip to the ERP that takes about a second,
+            and the button carries that itself rather than this panel owning a
+            separate spinner. The error rides the field, where it shakes it.
+          */}
+          <Input
             ref={field}
-            type="text"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={setQuery}
+            error={error ?? false}
+            leftIcon={<Search />}
             placeholder="DWTS67099"
             spellCheck={false}
             autoCapitalize="characters"
             aria-label={`Style number to search for the ${slot} photo`}
-            className="h-10 min-w-0 flex-1 rounded-lg border border-neutral-200 bg-white px-3 font-mono text-[13px] uppercase tracking-wide outline-none transition placeholder:text-neutral-300 focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+            className="min-w-0 flex-1"
+            classNames={{
+              field: "h-10 rounded-lg bg-white",
+              input: "font-mono text-[13px] uppercase tracking-wide",
+              errorMessage: "text-[11px]",
+            }}
           />
-          <button
+          <StatefulButton
             type="submit"
-            disabled={loading || !query.trim()}
-            className="h-10 shrink-0 rounded-lg bg-neutral-900 px-4 text-[12px] font-bold text-white transition hover:bg-neutral-700 disabled:opacity-40"
+            state={loading ? "loading" : "idle"}
+            disabled={!query.trim()}
+            size="sm"
+            loadingText="Searching"
+            className="h-10 shrink-0 rounded-lg px-4 text-[12px] font-bold"
           >
-            {loading ? "Searching…" : "Search"}
-          </button>
+            Search
+          </StatefulButton>
         </form>
         <p className="mt-2 text-[11px] leading-snug text-neutral-500">
           Choosing a photo puts it in the <b className="text-neutral-800">{slot}</b> slot and fills
@@ -125,16 +144,12 @@ export default function ErpPicker({
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
-        {error && (
-          <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-[11px] text-red-800">
-            {error}
-          </p>
-        )}
-
         {loading && (
-          <p className="py-8 text-center text-[12px] text-neutral-500">
-            Reading the gallery from the ERP…
-          </p>
+          <div className="flex justify-center py-8">
+            <AnimatedBadge status="loading" size="md">
+              Reading the gallery from the ERP
+            </AnimatedBadge>
+          </div>
         )}
 
         {empty && (
@@ -228,9 +243,13 @@ export default function ErpPicker({
                       className="h-full w-full object-contain"
                     />
                     {photo.isSquareHero && (
-                      <span className="absolute left-0 top-0 rounded-br-lg bg-brand-500 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider text-white">
+                      <AnimatedBadge
+                        status="info"
+                        size="sm"
+                        className="absolute left-1 top-1 h-5 px-1.5 text-[8px] font-bold uppercase tracking-wider"
+                      >
                         Square
-                      </span>
+                      </AnimatedBadge>
                     )}
                     <span className="absolute inset-x-0 bottom-0 bg-white/85 py-0.5 text-center font-mono text-[8.5px] font-bold text-neutral-600">
                       {busy ? "Adding…" : photo.label}

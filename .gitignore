@@ -13,3 +13,7 @@ node_modules/
 
 # user-assets dev fallback (Blob substitute when no BLOB_READ_WRITE_TOKEN)
 /public/user-assets/
+
+# Local mockup renders (real ERP product photos, regenerated on demand)
+/public/mockup/
+/public/mockup-*.html

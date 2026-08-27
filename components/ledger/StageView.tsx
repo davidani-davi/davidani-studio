@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ImageGeneration } from "@/components/agents/image-generation";
+import { Button } from "@/components/motion/button";
 import PipelineStrip from "./PipelineStrip";
 import type { HistoryItem } from "../types";
 import {
@@ -355,13 +356,15 @@ export default function StageView({
           stage read as a dead end with the renders gone and Export greyed out.
         */}
         {(openedShot || (soloIndex !== null && shots.length > 1)) && (
-          <button
+          <Button
             type="button"
+            variant="primary"
+            size="sm"
             onClick={() => {
               setOpenedIntake(null);
               setSoloed(null);
             }}
-            className="flex items-center gap-1.5 rounded-md bg-neutral-900 px-2.5 py-1 text-[10px] font-bold text-white transition hover:bg-neutral-700"
+            className="h-auto gap-1.5 rounded-md px-2.5 py-1 text-[10px] font-bold"
           >
             <span aria-hidden="true" className="text-[11px] leading-none">
               ←
@@ -370,7 +373,7 @@ export default function StageView({
             <kbd className="rounded border border-white/30 px-1 font-mono text-[8px] opacity-80">
               Esc
             </kbd>
-          </button>
+          </Button>
         )}
 
         <button

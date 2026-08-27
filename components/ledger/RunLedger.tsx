@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { Button } from "@/components/motion/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/motion/tabs";
 import RunCard from "./RunCard";
 import type { HistoryItem } from "../types";
@@ -172,12 +173,16 @@ export default function RunLedger({
         gesture nobody is told about. A run ledger you cannot get the composer
         back from is the same dead end the opened intake photo was.
       */}
-      <button
+      {/* beUI Button, primary: it is the one thing to press on a ledger whose
+          composer has left the screen, and it presses like every other. */}
+      <Button
         type="button"
+        variant="primary"
+        size="sm"
         onClick={() => setDucked(false)}
         tabIndex={ducked ? 0 : -1}
         aria-hidden={!ducked}
-        className={`absolute inset-x-0 bottom-3 z-30 mx-auto flex w-fit items-center gap-1.5 rounded-full bg-neutral-900 px-3.5 py-2 text-[11px] font-bold text-white shadow-lg transition-all duration-200 hover:bg-neutral-700 motion-reduce:transition-none ${
+        className={`absolute inset-x-0 bottom-3 z-30 mx-auto w-fit gap-1.5 rounded-full px-3.5 text-[11px] font-bold shadow-lg transition-[opacity,transform] duration-200 motion-reduce:transition-none ${
           ducked ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-2 opacity-0"
         }`}
       >
@@ -185,7 +190,7 @@ export default function RunLedger({
           ↑
         </span>
         New run
-      </button>
+      </Button>
 
       {/*
         Focus brings it back: hidden it is still in the tab order, and tabbing
