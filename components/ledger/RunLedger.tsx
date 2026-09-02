@@ -32,6 +32,7 @@ export default function RunLedger({
   onFilterChange,
   onSelect,
   onClearHistory,
+  onNewRun,
   composer,
 }: {
   runs: HistoryItem[];
@@ -42,6 +43,8 @@ export default function RunLedger({
   onFilterChange: (filter: LedgerFilter) => void;
   onSelect: (id: string) => void;
   onClearHistory: () => void;
+  /** Empty the composer and abandon any run still marked pending. */
+  onNewRun?: () => void;
   composer: ReactNode;
 }) {
   const shown = filterRuns(runs, filter);
@@ -99,6 +102,16 @@ export default function RunLedger({
           Run ledger
         </span>
         <span className="flex-1" />
+        {onNewRun && (
+          <button
+            type="button"
+            onClick={onNewRun}
+            title="Clear the composer and start a fresh run"
+            className="rounded-[3px] border border-neutral-200 bg-white px-2 py-1 text-[10px] font-bold text-neutral-700 transition hover:border-neutral-400 hover:text-black"
+          >
+            New
+          </button>
+        )}
         {/*
           beUI Tabs, segment variant: the active chip is a shared-layout
           element, so switching filters glides the black pill across instead of

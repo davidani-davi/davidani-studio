@@ -12,7 +12,7 @@ import ErpPicker, { type ErpPhotoOption } from "@/components/ledger/ErpPicker";
 import PaneSplitter from "@/components/ledger/PaneSplitter";
 import { LEDGER_DEFAULT, clampLedgerWidth, readLedgerWidth } from "@/lib/pane-size";
 import StudioDrawer from "@/components/ledger/StudioDrawer";
-import { wantsSecondLook, type LedgerFilter } from "@/lib/run-pipeline";
+import { dropStrandedRuns, wantsSecondLook, type LedgerFilter } from "@/lib/run-pipeline";
 import StudioHeader from "@/components/StudioHeader";
 import type { HistoryItem, UploadedImage } from "@/components/types";
 import { MODELS, type ModelId } from "@/lib/models";
@@ -128,8 +128,26 @@ interface ImageJob {
  * route crashed or middleware redirected), surface the first 200 chars of the
  * raw body in the thrown error so we can actually diagnose what failed.
  */
+/**
+ * How long the browser waits on one generate call before giving up on it.
+ *
+ * The route caps itself at 300s, so anything past that is a connection nobody
+ * is going to answer — a laptop that slept mid-run, a tab the browser paused.
+ * Without this the placeholder card painted forever; with it the call fails
+ * through the same path as any other error and the card is dropped.
+ */
+const GENERATE_TIMEOUT_MS = 330_000;
+
 async function fetchJson(label: string, input: string, init?: RequestInit): Promise<any> {
-  const res = await fetch(input, init);
+  let res: Response;
+  try {
+    res = await fetch(input, init);
+  } catch (err: any) {
+    if (err?.name === "TimeoutError" || err?.name === "AbortError") {
+      throw new Error(`${label}: no answer after ${Math.round(GENERATE_TIMEOUT_MS / 1000)}s. Try again.`);
+    }
+    throw err;
+  }
   const raw = await res.text();
   let data: any;
   try {
@@ -486,7 +504,10 @@ export default function StudioPage() {
   // Load history on mount
   useEffect(() => {
     try {
-      const parsed = readHistory();
+      // Anything still pending in storage has no request behind it: the call
+      // died with the previous page. Sweep it rather than restore a card that
+      // would paint forever.
+      const parsed = dropStrandedRuns(readHistory());
       setHistory(parsed);
       const savedCurrent = localStorage.getItem(CURRENT_ID_KEY);
       if (savedCurrent && parsed.some((item) => item.id === savedCurrent)) {
@@ -527,7 +548,7 @@ export default function StudioPage() {
     const refresh = (event?: Event) => {
       const detail = (event as CustomEvent | undefined)?.detail;
       if (detail && detail.historyKey !== HISTORY_KEY) return;
-      const parsed = readHistory();
+      const parsed = dropStrandedRuns(readHistory());
       setHistory(parsed);
       const nextCurrent = detail?.currentId || localStorage.getItem(CURRENT_ID_KEY);
       if (nextCurrent && parsed.some((item) => item.id === nextCurrent)) {
@@ -551,6 +572,14 @@ export default function StudioPage() {
       window.clearInterval(timer);
       window.removeEventListener("focus", refresh);
     };
+  }, []);
+
+  // A tab left open through a sleep never remounts, so the load-time sweep
+  // never runs for it. Re-check whenever the tab comes back into focus.
+  useEffect(() => {
+    const sweep = () => setHistory((existing) => dropStrandedRuns(existing));
+    window.addEventListener("focus", sweep);
+    return () => window.removeEventListener("focus", sweep);
   }, []);
 
   useEffect(() => {
@@ -994,6 +1023,7 @@ export default function StudioPage() {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ ...generationBase, ...body }),
+              signal: AbortSignal.timeout(GENERATE_TIMEOUT_MS),
             });
 
           let leftData: any;
@@ -1584,6 +1614,31 @@ export default function StudioPage() {
     );
   }
 
+  /**
+   * Back to an empty composer with nothing on the stage.
+   *
+   * Also the manual way out of a stuck card: any run still marked pending is
+   * abandoned. If its call is in fact still running it lands in history on
+   * its own when it finishes, so nothing real is lost.
+   */
+  function startNewRun() {
+    setHistory((existing) => existing.filter((run) => !run.pending));
+    setCurrentId(null);
+    localStorage.removeItem(CURRENT_ID_KEY);
+    setUploads([]);
+    setSelected([]);
+    setFrontIntakeUrl(null);
+    setBackIntakeUrl(null);
+    setStyleNumber("");
+    setPrompt("");
+    setDetectedView("unknown");
+    setViewOverride(null);
+    setRouting(null);
+    setReferenceImageUrl(null);
+    setError(null);
+    setNotice(null);
+  }
+
   function clearHistory() {
     setHistory([]);
     setCurrentId(null);
@@ -1647,6 +1702,7 @@ export default function StudioPage() {
             localStorage.setItem(CURRENT_ID_KEY, id);
           }}
           onClearHistory={clearHistory}
+          onNewRun={startNewRun}
           composer={
             <>
               {batchProgress && (

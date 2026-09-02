@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_EXPECTED_SECONDS,
+  dropStrandedRuns,
+  isStrandedRun,
   filterRuns,
   garmentNameFromPrompt,
   intakeShots,
@@ -334,6 +336,58 @@ describe("slot clock", () => {
     const facts = run({ imageUrls: [], pending: { variants: 1, startedAt: 1000 } });
     expect(slotClock(facts, 0).expectedSeconds).toBe(DEFAULT_EXPECTED_SECONDS);
     expect(slotClock(run(), 0).expectedSeconds).toBe(DEFAULT_EXPECTED_SECONDS);
+  });
+});
+
+describe("stranded runs", () => {
+  // The bug this exists for: a placeholder restored from storage after a
+  // reload sat "painting" for 42 hours, because the request that would have
+  // cleared it died with the previous page.
+  it("sweeps a pending run whose clock is hours past any expectation", () => {
+    const facts = run({
+      imageUrls: [],
+      pending: { variants: 2, startedAt: 0, expectedSeconds: 110 },
+    });
+    expect(isStrandedRun(facts, 42 * 3600 * 1000)).toBe(true);
+  });
+
+  it("leaves a run that is merely slow alone", () => {
+    const facts = run({
+      imageUrls: [],
+      pending: { variants: 2, startedAt: 0, expectedSeconds: 110 },
+    });
+    // Twice the expectation is "longer than usual", not dead.
+    expect(isStrandedRun(facts, 220_000)).toBe(false);
+  });
+
+  it("never sweeps inside ten minutes, however fast the model claims to be", () => {
+    const facts = run({ imageUrls: [], pending: { variants: 1, startedAt: 0, expectedSeconds: 20 } });
+    expect(isStrandedRun(facts, 9 * 60 * 1000)).toBe(false);
+    expect(isStrandedRun(facts, 11 * 60 * 1000)).toBe(true);
+  });
+
+  it("judges a chained back slot by its own restamped start", () => {
+    const facts = run({
+      imageUrls: ["front.jpg"],
+      pending: {
+        variants: 2,
+        startedAt: 0,
+        expectedSeconds: 110,
+        slots: [null, { startedAt: 600_000, expectedSeconds: 110 }],
+      },
+    });
+    expect(isStrandedRun(facts, 700_000)).toBe(false);
+  });
+
+  it("ignores finished runs", () => {
+    expect(isStrandedRun(run(), Number.MAX_SAFE_INTEGER)).toBe(false);
+  });
+
+  it("returns the same array when there is nothing to drop, so state does not churn", () => {
+    const runs = [run({ id: "a" }), run({ id: "b" })];
+    expect(dropStrandedRuns(runs, Number.MAX_SAFE_INTEGER)).toBe(runs);
+    const dead = run({ id: "dead", imageUrls: [], pending: { variants: 2, startedAt: 0 } });
+    expect(dropStrandedRuns([dead, ...runs], Number.MAX_SAFE_INTEGER).map((r) => r.id)).toEqual(["a", "b"]);
   });
 });
 

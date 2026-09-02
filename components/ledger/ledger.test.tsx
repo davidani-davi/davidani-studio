@@ -181,6 +181,13 @@ describe("ledger", () => {
     expect(within(check).getByText("2")).toBeInTheDocument();
   });
 
+  it("offers a way to start over, which is also the way out of a stuck card", () => {
+    const onNewRun = vi.fn();
+    renderLedger([makeRun()], { onNewRun });
+    fireEvent.click(screen.getByRole("button", { name: /^new$/i }));
+    expect(onNewRun).toHaveBeenCalled();
+  });
+
   it("selects a run when its card is pressed", () => {
     const { onSelect } = renderLedger([makeRun({ id: "abcd1234" })]);
     fireEvent.click(screen.getByRole("button", { name: /camo yoke/i }));

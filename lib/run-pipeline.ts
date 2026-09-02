@@ -240,6 +240,41 @@ export function slotClock(run: RunFacts, slot: number): SlotClock {
   };
 }
 
+/**
+ * A pending run with no request behind it any more.
+ *
+ * The placeholder card is written to history the moment a run starts, and the
+ * only things that clear it are the generate call landing or failing. Reload
+ * the tab, close it, let the Mac sleep, restart the dev server — the call dies
+ * with the page, the card comes back out of storage still marked pending, and
+ * it sits there "painting" with a clock counting from a start hours ago.
+ *
+ * The grace window is generous on purpose: a run that is merely slow must not
+ * be swept out from under a call that is still going to land.
+ */
+export const STRANDED_GRACE_MULTIPLIER = 3;
+export const STRANDED_GRACE_FLOOR_MS = 10 * 60 * 1000;
+
+export function isStrandedRun(run: RunFacts, now = Date.now()): boolean {
+  const pending = run.pending;
+  if (!pending) return false;
+  // A chained back slot restamps its own start; count from the latest one so
+  // the sweep does not judge the back by the front's clock.
+  const startedAt = Math.max(
+    pending.startedAt,
+    ...(pending.slots ?? []).map((slot) => slot?.startedAt ?? 0)
+  );
+  const expected = pending.expectedSeconds ?? DEFAULT_EXPECTED_SECONDS;
+  const grace = Math.max(expected * 1000 * STRANDED_GRACE_MULTIPLIER, STRANDED_GRACE_FLOOR_MS);
+  return now - startedAt > grace;
+}
+
+/** History with stranded placeholders removed. Returns the same array when nothing changed. */
+export function dropStrandedRuns<T extends RunFacts>(runs: T[], now = Date.now()): T[] {
+  const kept = runs.filter((run) => !isStrandedRun(run, now));
+  return kept.length === runs.length ? runs : kept;
+}
+
 export type RunTone = "running" | "kept" | "check" | "clean";
 
 export interface RunVerdict {
