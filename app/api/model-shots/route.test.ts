@@ -85,3 +85,16 @@ describe("/api/model-shots request validation", () => {
     expect(res.headers.get("Access-Control-Allow-Headers")).toContain("X-DDTO-TOKEN");
   });
 });
+
+describe("/api/model-shots known-facts contract", () => {
+  beforeEach(() => {
+    process.env.MODEL_SHOTS_TOKEN = "s3cret";
+  });
+
+  it("only overrides vision when there is something to override with", async () => {
+    const { hasKnownFacts } = await import("@/lib/garment-contract");
+    expect(hasKnownFacts({ type: "Cardigan - Women's" })).toBe(true);
+    expect(hasKnownFacts({ styleCode: "DWJ62218" })).toBe(false);
+    expect(hasKnownFacts(undefined)).toBe(false);
+  });
+});

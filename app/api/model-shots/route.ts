@@ -11,6 +11,7 @@ import {
   multiModelPoseVariantIndex,
 } from "@/lib/multi-model-prompt";
 import { optimizePromptForModel } from "@/lib/prompt-strategy";
+import { buildGarmentContract, hasKnownFacts, type KnownGarment } from "@/lib/garment-contract";
 import type { ModelId } from "@/lib/models";
 
 export const runtime = "nodejs";
@@ -116,6 +117,10 @@ export async function POST(req: Request) {
   const view: PresetView = MULTI_MODEL_VIEWS.includes(body.view) ? body.view : "front";
   const modelId: ModelId = body.modelId || "nano-banana";
   const resolution: string = body.resolution || "4K";
+  // What the caller already knows about this style — style code, garment type,
+  // the listing title we approved, ERP fabric and colourway. Optional: without
+  // it the run behaves exactly as before, on vision alone.
+  const known: KnownGarment = (body.known && typeof body.known === "object" ? body.known : {}) as KnownGarment;
 
   if (!garmentImageUrls.length) return json({ ok: false, error: "garmentImageUrls is required" }, 400);
   if (!humanModelId || !poseId) return json({ ok: false, error: "humanModelId and poseId are required" }, 400);
@@ -144,15 +149,41 @@ export async function POST(req: Request) {
     // of ONE garment, not two garments.
     const hasBackReference = garmentImageUrls.length > 1;
 
-    const analyzeData = await call(analyzeModel, "/api/analyze-model", {
+    const analyzeBody = {
       modelId: humanModelId,
       poseId,
       view,
       garmentImageUrl: garmentImageUrls[0],
       garmentImageUrls,
       twoPiece: false,
-      promptMode: "classic",
-    });
+      promptMode: "classic" as const,
+    };
+    let analyzeData = await call(analyzeModel, "/api/analyze-model", analyzeBody);
+
+    /**
+     * Correct the vision read with what we already know, then rebuild the
+     * prompt around the corrected garment.
+     *
+     * The garment is 13 words of a 1,348-word prompt and everything the render
+     * knows about the product rides on them — on DWJ62218 vision read an open
+     * placket as a "keyhole cutout" and the cardigan came back a pullover. The
+     * style code, the listing title and the ERP already held the answer.
+     *
+     * The second analyze call is cheap: garmentOverride skips the garment
+     * vision pass entirely and the pose read is cached, so this is prompt
+     * assembly, not a second look at the photographs.
+     */
+    let contract: ReturnType<typeof buildGarmentContract> | null = null;
+    if (hasKnownFacts(known)) {
+      contract = buildGarmentContract(known, {
+        garment: String(analyzeData.garment || ""),
+        features: String(analyzeData.features || ""),
+      });
+      analyzeData = await call(analyzeModel, "/api/analyze-model", {
+        ...analyzeBody,
+        garmentOverride: { garment: contract.garment, features: contract.features },
+      });
+    }
 
     const basePrompt = String(analyzeData.prompt || "").trim();
     if (!basePrompt) throw new Error(`analyzer returned an empty ${view} prompt`);
@@ -182,7 +213,13 @@ export async function POST(req: Request) {
     const url = generated?.images?.[0]?.url;
     if (typeof url !== "string") throw new Error(`${view} view did not return an image`);
 
-    return json({ ok: true, view, url, prompt, garment: identity.garment });
+    return json({
+      ok: true, view, url, prompt,
+      garment: identity.garment,
+      // What the known facts changed, so a wrong contract is visible in the
+      // panel and countable in the eval rather than silent.
+      corrections: contract?.corrections ?? [],
+    });
   } catch (err: any) {
     return json({ ok: false, view, error: String(err?.message || err) }, 502);
   }
