@@ -1,8 +1,18 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import ModelSidebar from "@/components/ModelSidebar";
+import RunLedger from "@/components/ledger/RunLedger";
+import StageView from "@/components/ledger/StageView";
+import ModelComposer from "@/components/ledger/ModelComposer";
+import ErpPicker, { type ErpPhotoOption } from "@/components/ledger/ErpPicker";
+import PaneSplitter from "@/components/ledger/PaneSplitter";
+import StudioDrawer from "@/components/ledger/StudioDrawer";
+import { LEDGER_DEFAULT, clampLedgerWidth, readLedgerWidth } from "@/lib/pane-size";
+import { dropStrandedRuns, type LedgerFilter } from "@/lib/run-pipeline";
+import { modelComposerSlots } from "@/lib/model-composer-slots";
+import { modelRunPipeline, modelRunTitle } from "@/lib/model-run-pipeline";
 import PromptPanel, {
   type AnalysisReview,
   type BatchProgress,
@@ -18,7 +28,7 @@ import type {
 } from "@/lib/fal";
 import { resizeIfNeeded } from "@/lib/image-resize";
 import { uploadWithProgress } from "@/components/RunProgress";
-import type { ModelId } from "@/lib/models";
+import { MODELS, type ModelId } from "@/lib/models";
 import type { HumanModel, PresetView } from "@/lib/models-registry";
 import { optimizePromptForModel } from "@/lib/prompt-strategy";
 import {
@@ -52,6 +62,29 @@ const BETA_HISTORY_KEY = "davidani_model_beta_history_v1";
 const CURRENT_ID_KEY = "davidani_model_current_run_v1";
 const BETA_CURRENT_ID_KEY = "davidani_model_beta_current_run_v1";
 const MODEL_STUDIO_IMPORT_KEY = "davidani:model-studio:library-import";
+// The pane split the operator dragged, kept per studio: Single and Multi show
+// different runs and get read at different widths.
+const LEDGER_WIDTH_KEY = "model-studio:ledger-width";
+const BETA_LEDGER_WIDTH_KEY = "model-studio-beta:ledger-width";
+
+/**
+ * Roughly how long each backend takes for one on-model render.
+ *
+ * Two jobs: the stage prints elapsed against it while a slot paints, and the
+ * stranded sweep multiplies it to decide when a pending card left behind by a
+ * dead tab has stopped being merely slow. Measured on 2:3 4K output, which is
+ * slower than Image Studio's 4:5 — hence its own table rather than reusing
+ * that one.
+ */
+const EXPECTED_RUN_SECONDS: Partial<Record<ModelId, number>> = {
+  "nano-banana": 60,
+  "seedream-4": 75,
+  "gpt-image": 140,
+};
+
+function expectedSecondsFor(modelId: ModelId): number {
+  return EXPECTED_RUN_SECONDS[modelId] ?? 110;
+}
 
 const POSE_VARIATION_NOTES = [
   "Keep the selected preset as the clear pose anchor, but introduce a subtle variation: a tiny head-angle shift and a slightly softer shoulder line.",
@@ -525,6 +558,14 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
   const [currentId, setCurrentId] = useState<string | null>(null);
   const [batchProgress, setBatchProgress] = useState<BatchProgress | null>(null);
   const [localHistoryHydrated, setLocalHistoryHydrated] = useState(false);
+
+  /* ---------- Split Ledger shell ---------- */
+  const [ledgerFilter, setLedgerFilter] = useState<LedgerFilter>("all");
+  const [ledgerWidth, setLedgerWidth] = useState(LEDGER_DEFAULT);
+  /** Which intake slot the ERP gallery drawer is filling, if it is open. */
+  const [erpSlot, setErpSlot] = useState<number | null>(null);
+  const [setupOpen, setSetupOpen] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const [cloudHistoryHydrated, setCloudHistoryHydrated] = useState(false);
   const lastSyncedHistoryRef = useRef("");
 
@@ -565,6 +606,31 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
       setLocalHistoryHydrated(true);
     }
   }, [historyKey, currentIdKey]);
+
+  const ledgerWidthKey = beta ? BETA_LEDGER_WIDTH_KEY : LEDGER_WIDTH_KEY;
+  useEffect(() => {
+    const saved = readLedgerWidth(localStorage.getItem(ledgerWidthKey));
+    setLedgerWidth(clampLedgerWidth(saved ?? LEDGER_DEFAULT, window.innerWidth));
+  }, [ledgerWidthKey]);
+
+  /**
+   * Drop run cards that are still marked pending with nothing behind them.
+   *
+   * The placeholder is written the moment a run starts and only the call
+   * landing or failing clears it, so a reloaded tab, a closed window or a
+   * sleeping Mac leaves a card painting forever — Image Studio had one
+   * spinning for 42 hours before the sweep was written. Same three moments as
+   * there: mount, every history change, and coming back to the tab.
+   */
+  useEffect(() => {
+    setHistory((runs) => dropStrandedRuns(runs));
+  }, [localHistoryHydrated, cloudHistoryHydrated]);
+
+  useEffect(() => {
+    const sweep = () => setHistory((runs) => dropStrandedRuns(runs));
+    window.addEventListener("focus", sweep);
+    return () => window.removeEventListener("focus", sweep);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -750,7 +816,16 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
     setSelected((s) => s.filter((u) => u !== url));
   }
 
-  async function addFiles(files: FileList) {
+  /**
+   * Upload garment photos.
+   *
+   * `slot` is the composer's tile index. Without it (the Setup sidebar's
+   * uploader, and the library import) the drop replaces the selection
+   * outright, which is what a fresh batch of photos means there. With it, only
+   * that tile changes — the pair on the composer is a top and a bottom, or a
+   * front and a back, and dropping a new bottom must not throw away the top.
+   */
+  async function addFiles(files: FileList, slot?: number) {
     setUploading(true);
     setUploadFraction(0);
     setError(null);
@@ -767,7 +842,11 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
       );
       const added: UploadedImage[] = data.uploads;
       setUploads((list) => [...list, ...added]);
-      setSelected(added.map((a) => a.url));
+      if (typeof slot === "number" && added[0]) {
+        setSelectedSlot(slot, added[0].url);
+      } else {
+        setSelected(added.map((a) => a.url));
+      }
       setPrompt("");
       setAnalysisReview(null);
     } catch (err: any) {
@@ -775,6 +854,79 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
     } finally {
       setUploading(false);
     }
+  }
+
+  /** Put one URL in one composer tile, leaving the other tile alone. */
+  function setSelectedSlot(slot: number, url: string) {
+    setSelected((list) => {
+      const next = [...list];
+      while (next.length < slot) next.push("");
+      next[slot] = url;
+      return next.filter(Boolean);
+    });
+  }
+
+  /**
+   * Take a photo out of the ERP gallery and into a composer tile.
+   *
+   * Fetched at full resolution server-side and re-uploaded, so it becomes an
+   * ordinary intake URL — the generation path hands image URLs to the model,
+   * and an ERP URL behind a session cookie is not one it could fetch. The
+   * style number rides along, which is half the point: a photo dragged off the
+   * desktop loses the code, and the code is what names the export.
+   */
+  async function importErpPhoto(slot: number, photo: ErpPhotoOption, style: string) {
+    try {
+      const res = await fetch("/api/erp/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ src: photo.full }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data?.url) throw new Error(data?.error || `HTTP ${res.status}`);
+      const added: UploadedImage = { url: data.url, name: data.name };
+      setUploads((list) => [...list, added]);
+      setSelectedSlot(slot, added.url);
+      if (!styleNumber.trim()) setStyleNumber(style);
+      setPrompt("");
+      setAnalysisReview(null);
+      setError(null);
+    } catch (err: any) {
+      setError(`ERP photo: ${err.message || "import failed"}`);
+    }
+  }
+
+  /**
+   * Download one render.
+   *
+   * Through /api/download rather than a bare href: the provider's URL is
+   * cross-origin, so `download` on a plain anchor is ignored and the browser
+   * navigates to the image instead of saving it. The route also names the file
+   * after the style, which is what makes a folder of exports readable.
+   */
+  function downloadOutput(url: string, index: number) {
+    const stem = [styleNumber.trim() || "davidani", currentRun?.id.slice(0, 4)]
+      .filter(Boolean)
+      .join("-");
+    const label = currentRun?.viewLabels?.[index]?.split("·")[0]?.trim().toLowerCase();
+    const name = `${stem}${label ? `-${label}` : ""}-${index + 1}.${format === "jpeg" ? "jpg" : "png"}`;
+    const a = document.createElement("a");
+    a.href = `/api/download?url=${encodeURIComponent(url)}&name=${encodeURIComponent(name)}`;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+
+  /** Empty the composer and abandon any card still marked pending. */
+  function startNewRun() {
+    setSelected([]);
+    setPrompt("");
+    setAnalysisReview(null);
+    setError(null);
+    setHistory((runs) => runs.filter((run) => !run.pending));
+    setCurrentId(null);
+    localStorage.removeItem(currentIdKey);
   }
 
   function handleHumanModelChange(id: string) {
@@ -1100,6 +1252,15 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
               view,
               prompts: optimizedTrio,
               multiOption: { version: "v1" },
+              // The stage holds three frames from the start and prints each
+              // one's clock against what this backend usually costs; the
+              // stranded sweep reads the same field to decide when a card left
+              // behind by a dead tab has stopped being merely slow.
+              pending: {
+                variants: 3,
+                startedAt: Date.now(),
+                expectedSeconds: expectedSecondsFor(modelId),
+              },
             };
             setHistory((existing) => [seedItem, ...existing.filter((run) => run.id !== id)].slice(0, 50));
             setCurrentId(id);
@@ -1194,6 +1355,35 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
             );
             poseUrl = slotPoseUrls.find((url): url is string => typeof url === "string") || poseUrl;
           } else {
+            // A card in the ledger before the call, not after it: a single
+            // render is a ~60 second wait, and until this the run existed
+            // nowhere on screen for all of it.
+            const seedItem: HistoryItem = {
+              id,
+              timestamp: Date.now(),
+              modelId,
+              prompt: promptUsed,
+              imageUrls: [],
+              referenceUrls: [...garmentUrls].filter(Boolean) as string[],
+              sourceImageUrls: garmentUrls,
+              aspect,
+              resolution,
+              format,
+              styleNumber: styleNumber.trim() || undefined,
+              humanModelId,
+              poseId,
+              view,
+              viewLabels: Array.from({ length: numImages }, () => view),
+              pending: {
+                variants: numImages,
+                startedAt: Date.now(),
+                expectedSeconds: expectedSecondsFor(modelId),
+              },
+            };
+            setHistory((existing) => [seedItem, ...existing.filter((run) => run.id !== id)].slice(0, 50));
+            setCurrentId(id);
+            localStorage.setItem(currentIdKey, id);
+
             const data = await fetchJson("Generate", "/api/generate-model", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -1232,6 +1422,11 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
           setError(err.message || "Generation failed");
           throw err;
         } finally {
+          // The run is over either way: a card left marked pending would paint
+          // a spinner until the stranded sweep noticed it minutes later.
+          setHistory((runs) =>
+            runs.map((run) => (run.id === id && run.pending ? { ...run, pending: undefined } : run))
+          );
           setLoading(false);
         }
       }
@@ -1274,6 +1469,12 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
       prompts: [],
       viewLabels: [...MULTI_MODEL_VIEWS],
       multiModelViews: seedMultiModelViews,
+      // Four frames, one per view, held from the start.
+      pending: {
+        variants: MULTI_MODEL_VIEWS.length,
+        startedAt: Date.now(),
+        expectedSeconds: expectedSecondsFor(modelId),
+      },
     };
     // flushSync forces React to synchronously commit the seed item to the DOM
     // before startStudioJob fires — React 18 automatic batching otherwise
@@ -1613,6 +1814,11 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
           setError(err.message || "Multi Model Studio generation failed");
           throw err;
         } finally {
+          // The run is over either way: a card left marked pending would paint
+          // a spinner until the stranded sweep noticed it minutes later.
+          setHistory((runs) =>
+            runs.map((run) => (run.id === id && run.pending ? { ...run, pending: undefined } : run))
+          );
           setLoading(false);
         }
       }
@@ -2725,6 +2931,24 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
   const canAnalyze =
     activeGarmentUrls.length > 0 && !!selectedHumanModelId && !!selectedPoseId;
 
+  const selectedHumanModel = humanModels.find((m) => m.id === selectedHumanModelId) ?? null;
+  const selectedPose =
+    selectedHumanModel?.poses.find((pose) => pose.id === selectedPoseId) ?? null;
+
+  // Which tiles the composer shows, and what they are called. Pure and
+  // tested — the labels carry the top/bottom order the set extractor relies on.
+  const composerSlots = modelComposerSlots(selected, twoPiece, coordinatedSetMode);
+
+  /** Empty the ledger, here and in the cloud mirror. */
+  function clearHistory() {
+    setHistory([]);
+    setCurrentId(null);
+    localStorage.removeItem(currentIdKey);
+    clearCloudHistory(cloudHistoryStudio).catch((err) => {
+      console.warn("[cloud-history] clear failed:", err);
+    });
+  }
+
   return (
     <main className="flex min-h-screen flex-col bg-neutral-50 lg:h-screen">
       <StudioHeader
@@ -2741,56 +2965,211 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
         ]}
       />
 
-      <div className="model-studio-layout min-h-0 flex-1">
-        <div className="model-studio-setup min-h-0">
-          <ModelSidebar
-            modelId={modelId}
-            onModelChange={(nextModelId) => {
-              setModelId(nextModelId);
-              if (nextModelId === "nano-banana") setFormat("png");
+      <div
+        className="model-studio-layout min-h-0 flex-1"
+        style={{ "--ledger-w": `${ledgerWidth}px` } as CSSProperties}
+      >
+        <RunLedger
+          runs={history}
+          currentId={currentId}
+          runningId={history.find((run) => run.pending)?.id ?? null}
+          filter={ledgerFilter}
+          onFilterChange={setLedgerFilter}
+          onSelect={(id) => {
+            setCurrentId(id);
+            localStorage.setItem(currentIdKey, id);
+          }}
+          onClearHistory={clearHistory}
+          onNewRun={startNewRun}
+          // A model run is read differently from a flat lay: see
+          // lib/model-run-pipeline.ts. Four thumbnails, because a Multi run
+          // is four views and two of them is half a run.
+          card={{ pipeline: modelRunPipeline, title: modelRunTitle, maxSlots: 4 }}
+          emptyHint="No runs yet. Drop a garment photo below and press Generate."
+          checkHint="Nothing is flagged. Every run came back with all the views it asked for."
+          composer={
+            <>
+              {batchProgress && (
+                <div className="shrink-0 border-t border-neutral-200 bg-brand-50/60 px-3 py-2">
+                  <div className="mb-1 flex items-center justify-between text-[9.5px] font-semibold text-brand-800">
+                    <span>
+                      Batch · {batchProgress.done}/{batchProgress.total}
+                      {batchProgress.failed > 0 ? ` · ${batchProgress.failed} failed` : ""}
+                    </span>
+                    <span className="capitalize text-brand-600">{batchProgress.stage}</span>
+                  </div>
+                  <div className="h-1 overflow-hidden rounded-full bg-brand-100">
+                    <div
+                      className="h-full rounded-full bg-brand-500 transition-all"
+                      style={{
+                        width: `${Math.round(
+                          (batchProgress.done / Math.max(1, batchProgress.total)) * 100
+                        )}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+              <ModelComposer
+                slots={composerSlots}
+                onAddFiles={(files, slot) => addFiles(files, slot)}
+                onClearSlot={(slot) => {
+                  const url = composerSlots[slot]?.url;
+                  if (url) removeUpload(url);
+                }}
+                onSearchErp={setErpSlot}
+                styleNumber={styleNumber}
+                onStyleNumberChange={setStyleNumber}
+                modelName={selectedHumanModel?.name ?? "No model"}
+                poseName={selectedPose?.label ?? "No pose"}
+                view={selectedView}
+                onViewChange={handleViewChange}
+                multiView={beta}
+                isSet={twoPiece}
+                onSetChange={handleTwoPieceChange}
+                setNote={
+                  twoPiece
+                    ? coordinatedSetMode === "single-image"
+                      ? "One photo holding both pieces."
+                      : "Two photos — top, then bottom."
+                    : ""
+                }
+                modelLabel={`${MODELS[modelId].label} · ${resolution} · ${aspect}`}
+                onGenerate={runGeneration}
+                generateLabel={beta ? "Generate 4 views" : "Generate"}
+                generateDisabled={!canAnalyze || loading || uploading}
+                busy={loading || uploading}
+                analyzing={analyzing}
+                onBatch={beta ? undefined : runBatchGeneration}
+                canBatch={!beta && canAnalyze && selected.length >= 2}
+                batchDisabledReason={
+                  beta
+                    ? undefined
+                    : selected.length < 2
+                    ? "Batch needs at least two garment photos."
+                    : undefined
+                }
+                onOpenSetup={() => setSetupOpen(true)}
+                needsModel={!selectedHumanModelId || !selectedPoseId}
+              />
+            </>
+          }
+        />
+
+        <PaneSplitter
+          width={ledgerWidth}
+          onWidth={setLedgerWidth}
+          onCommit={(width) => localStorage.setItem(ledgerWidthKey, String(width))}
+        />
+
+        <StageView
+          run={currentRun}
+          running={loading}
+          // On-model output is 2:3, not Image Studio's 4:5 — the painting
+          // placeholder has to be the shape of the render that replaces it or
+          // the stage jumps the moment an image lands.
+          frameAspect={{ width: 2000, height: 3000 }}
+          pipeline={modelRunPipeline}
+          title={modelRunTitle}
+          emptyHint="Drop a garment photo and press Generate. Finished runs land here at full size, and stack up in the ledger on the left."
+          onDownload={downloadOutput}
+          onOpenDetails={() => setDetailsOpen(true)}
+        />
+      </div>
+
+      {/*
+        The ERP gallery, per tile. Same drawer Image Studio uses — the photos
+        a Model Studio run starts from are the same ERP photos, and a second
+        picker would be a second place for the import to go wrong.
+      */}
+      <StudioDrawer
+        open={erpSlot !== null}
+        title={`ERP photos · ${erpSlot !== null ? composerSlots[erpSlot]?.label ?? "Garment" : ""}`}
+        subtitle="Every photo the ERP holds for a style, grouped as the ERP files them."
+        wide
+        onClose={() => setErpSlot(null)}
+      >
+        {erpSlot !== null && (
+          <ErpPicker
+            slot={String(erpSlot)}
+            slotLabel={(composerSlots[erpSlot]?.label ?? "garment").toLowerCase()}
+            reason="which names the exports"
+            initialStyle={styleNumber}
+            onPick={async (photo, style) => {
+              await importErpPhoto(erpSlot, photo, style);
+              setErpSlot(null);
             }}
-            aspect={aspect}
-            onAspectChange={setAspect}
-            resolution={resolution}
-            onResolutionChange={setResolution}
-            format={format}
-            onFormatChange={setFormat}
-            uploads={uploads}
-            selectedUrls={selected}
-            onToggleSelect={toggleSelect}
-            onAddFiles={addFiles}
-            uploading={uploading}
-            uploadFraction={uploadFraction}
-            onRemoveUpload={removeUpload}
-            humanModels={humanModels}
-            selectedHumanModelId={selectedHumanModelId}
-            onHumanModelChange={handleHumanModelChange}
-            onModelAdded={handleModelAdded}
-            onModelDeleted={handleModelDeleted}
-            selectedPoseId={selectedPoseId}
-            onPoseChange={handlePoseChange}
-            selectedView={selectedView}
-            onViewChange={handleViewChange}
-            modelsLoading={modelsLoading}
-            colorName={colorName}
-            onColorNameChange={setColorName}
-            styleNumber={styleNumber}
-            onStyleNumberChange={setStyleNumber}
-            showName={showName}
-            onShowNameChange={setShowName}
-            showNumber={showNumber}
-            onShowNumberChange={setShowNumber}
-            overlayPlacement={overlayPlacement}
-            onOverlayPlacementChange={setOverlayPlacement}
-            fontFamily={fontFamily}
-            onFontFamilyChange={setFontFamily}
-            fontSize={fontSize}
-            onFontSizeChange={setFontSize}
-            multiModelMode={beta}
+            onClose={() => setErpSlot(null)}
           />
-        </div>
-        <div className="model-studio-workbench min-h-0">
-          <div className="model-studio-brief min-h-0">
+        )}
+      </StudioDrawer>
+
+      {/* Setup — the model catalog, poses, output settings and text overlay:
+          everything a run does not usually need touched. */}
+      <StudioDrawer
+        open={setupOpen}
+        title="Setup"
+        subtitle="Model, pose, output and overlay — the controls a run does not usually need."
+        wide
+        onClose={() => setSetupOpen(false)}
+      >
+        <ModelSidebar
+          modelId={modelId}
+          onModelChange={(nextModelId) => {
+            setModelId(nextModelId);
+            if (nextModelId === "nano-banana") setFormat("png");
+          }}
+          aspect={aspect}
+          onAspectChange={setAspect}
+          resolution={resolution}
+          onResolutionChange={setResolution}
+          format={format}
+          onFormatChange={setFormat}
+          uploads={uploads}
+          selectedUrls={selected}
+          onToggleSelect={toggleSelect}
+          onAddFiles={addFiles}
+          uploading={uploading}
+          uploadFraction={uploadFraction}
+          onRemoveUpload={removeUpload}
+          humanModels={humanModels}
+          selectedHumanModelId={selectedHumanModelId}
+          onHumanModelChange={handleHumanModelChange}
+          onModelAdded={handleModelAdded}
+          onModelDeleted={handleModelDeleted}
+          selectedPoseId={selectedPoseId}
+          onPoseChange={handlePoseChange}
+          selectedView={selectedView}
+          onViewChange={handleViewChange}
+          modelsLoading={modelsLoading}
+          colorName={colorName}
+          onColorNameChange={setColorName}
+          styleNumber={styleNumber}
+          onStyleNumberChange={setStyleNumber}
+          showName={showName}
+          onShowNameChange={setShowName}
+          showNumber={showNumber}
+          onShowNumberChange={setShowNumber}
+          overlayPlacement={overlayPlacement}
+          onOverlayPlacementChange={setOverlayPlacement}
+          fontFamily={fontFamily}
+          onFontFamilyChange={setFontFamily}
+          fontSize={fontSize}
+          onFontSizeChange={setFontSize}
+          multiModelMode={beta}
+        />
+      </StudioDrawer>
+
+      {/* Run details — the prompt brief and everything the run produced:
+          feedback repair, quality control, per-view retries, batch grids. */}
+      <StudioDrawer
+        open={detailsOpen}
+        title="Run details"
+        subtitle="The brief that was sent, and the repairs available on what came back."
+        wide
+        onClose={() => setDetailsOpen(false)}
+      >
+        <div className="mb-4">
           <PromptPanel
             prompt={prompt}
             onPromptChange={setPrompt}
@@ -2832,60 +3211,50 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
             hideVariantControl={beta}
             generateLabel={beta ? "Generate 4 views" : undefined}
           />
-          </div>
-          <div className="model-studio-output min-h-0">
-          <OutputPanel
-            current={currentRun}
-            history={history}
-            onSelectHistory={setCurrentId}
-            onFeedbackRegenerate={runFeedbackRegeneration}
-            onQualityControl={runQualityControl}
-            onMultiOptionSelect={({ generationId, selectedIndex, view }) => {
-              setHistory((existing) =>
-                existing.map((run) =>
-                  run.id === generationId && run.multiOption
-                    ? {
-                        ...run,
-                        multiOption: {
-                          ...run.multiOption,
-                          selectedIndex: view && view !== "front" ? run.multiOption.selectedIndex : selectedIndex,
-                          picksByView: {
-                            ...(run.multiOption.picksByView ?? {}),
-                            [view || "front"]: selectedIndex,
-                          },
-                        },
-                      }
-                    : run
-                )
-              );
-            }}
-            onRetryMultiModelView={
-              beta
-                ? ({ view }) => {
-                    void retryMultiModelViews([view]);
-                  }
-                : undefined
-            }
-            onRetryFailedMultiModelViews={
-              beta
-                ? () => {
-                    void retryMultiModelViews();
-                  }
-                : undefined
-            }
-            uploadNames={uploadNames}
-            onClearHistory={() => {
-              setHistory([]);
-              setCurrentId(null);
-              localStorage.removeItem(currentIdKey);
-              clearCloudHistory(cloudHistoryStudio).catch((err) => {
-                console.warn("[cloud-history] clear failed:", err);
-              });
-            }}
-          />
-          </div>
         </div>
-      </div>
+        <OutputPanel
+          current={currentRun}
+          history={history}
+          onSelectHistory={setCurrentId}
+          onFeedbackRegenerate={runFeedbackRegeneration}
+          onQualityControl={runQualityControl}
+          onMultiOptionSelect={({ generationId, selectedIndex, view }) => {
+            setHistory((existing) =>
+              existing.map((run) =>
+                run.id === generationId && run.multiOption
+                  ? {
+                      ...run,
+                      multiOption: {
+                        ...run.multiOption,
+                        selectedIndex: view && view !== "front" ? run.multiOption.selectedIndex : selectedIndex,
+                        picksByView: {
+                          ...(run.multiOption.picksByView ?? {}),
+                          [view || "front"]: selectedIndex,
+                        },
+                      },
+                    }
+                  : run
+              )
+            );
+          }}
+          onRetryMultiModelView={
+            beta
+              ? ({ view }) => {
+                  void retryMultiModelViews([view]);
+                }
+              : undefined
+          }
+          onRetryFailedMultiModelViews={
+            beta
+              ? () => {
+                  void retryMultiModelViews();
+                }
+              : undefined
+          }
+          uploadNames={uploadNames}
+          onClearHistory={clearHistory}
+        />
+      </StudioDrawer>
 
       {/* Error toast */}
       {error && (

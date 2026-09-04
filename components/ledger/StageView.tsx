@@ -12,6 +12,7 @@ import {
   runTitle,
   slotClock,
   type IntakeShot,
+  type PipelineStep,
 } from "@/lib/run-pipeline";
 
 /**
@@ -147,11 +148,14 @@ function PaintingFrame({
   label,
   startedAt,
   expected,
+  aspect,
 }: {
   label: string;
   /** This slot's own start, which is not the run's when the calls are chained. */
   startedAt: number;
   expected: number;
+  /** The render's own shape — 4:5 flat lay, 2:3 on-model. */
+  aspect: { width: number; height: number };
 }) {
   // Ticked here rather than in StageView because slots no longer share a
   // clock: a contract run's back slot starts when the front lands.
@@ -160,12 +164,12 @@ function PaintingFrame({
   return (
     <figure className="flex min-h-0 w-full flex-1 flex-col items-center gap-2">
       <div className="flex min-h-0 w-full flex-1 items-center justify-center">
-        <div className="h-full max-w-full" style={{ aspectRatio: "2160 / 2700" }}>
+        <div className="h-full max-w-full" style={{ aspectRatio: `${aspect.width} / ${aspect.height}` }}>
           <ImageGeneration
             size="fluid"
             status="generating"
-            aspectRatio="2160 / 2700"
-            resolution="2160 × 2700"
+            aspectRatio={`${aspect.width} / ${aspect.height}`}
+            resolution={`${aspect.width} × ${aspect.height}`}
             showStatus={false}
             label={`${label} is being generated`}
             className="h-full"
@@ -252,6 +256,10 @@ export default function StageView({
   onKeep,
   onDownload,
   onOpenDetails,
+  frameAspect = { width: 2160, height: 2700 },
+  emptyHint = "Upload a product photo and press Generate. Finished runs land here at full size, and stack up in the ledger on the left.",
+  pipeline = runPipeline,
+  title = runTitle,
 }: {
   run: HistoryItem | null;
   running?: boolean;
@@ -259,6 +267,17 @@ export default function StageView({
   onKeep?: (slot: "left" | "right") => void;
   onDownload: (url: string, index: number) => void;
   onOpenDetails: () => void;
+  /**
+   * The shape of this studio's output. Image Studio delivers 2160x2700 (4:5),
+   * the Model Studios 2000x3000 (2:3); the painting placeholder is drawn at it
+   * so the frame does not resize when the render lands.
+   */
+  frameAspect?: { width: number; height: number };
+  /** What the stage says before the first run. */
+  emptyHint?: string;
+  /** How this studio reads a run — the header strip and the run's name. */
+  pipeline?: (run: HistoryItem) => PipelineStep[];
+  title?: (run: HistoryItem) => string;
 }) {
   /**
    * Which variant, if any, has the stage to itself.
@@ -306,10 +325,7 @@ export default function StageView({
     return (
       <section className="image-studio-stage flex h-full flex-col items-center justify-center gap-3 bg-neutral-50 p-8 text-center">
         <div className="h-16 w-12 rounded border border-dashed border-neutral-300 bg-[#edeeee]" />
-        <p className="max-w-xs text-[12px] leading-relaxed text-neutral-500">
-          Upload a product photo and press Generate. Finished runs land here at full size, and
-          stack up in the ledger on the left.
-        </p>
+        <p className="max-w-xs text-[12px] leading-relaxed text-neutral-500">{emptyHint}</p>
       </section>
     );
   }
@@ -337,14 +353,14 @@ export default function StageView({
           Run #{run.id.slice(0, 4)}
         </span>
         <span className="min-w-0 max-w-[22ch] truncate text-[11px] font-semibold">
-          {runTitle(run)}
+          {title(run)}
         </span>
         <span className="font-mono text-[9.5px] text-neutral-500">{runSubtitle(run)}</span>
         {/* 2xl, not lg: at ~880px of stage the strip pushed Export onto a
             second row, and a two-line header costs the images the height. The
             run card carries the same strip, so this one is a convenience. */}
         <div className="hidden 2xl:block">
-          <PipelineStrip steps={runPipeline(run)} size="md" />
+          <PipelineStrip steps={pipeline(run)} size="md" />
         </div>
         <span className="flex-1" />
 
@@ -431,7 +447,7 @@ export default function StageView({
             <div key={`${url}-${slotIndex}`} className="flex min-h-0 justify-center bg-neutral-50 p-4">
               <ShotFrame
                 url={url}
-                alt={labels[slotIndex] ?? `${runTitle(run)} variant ${slotIndex + 1}`}
+                alt={labels[slotIndex] ?? `${title(run)} variant ${slotIndex + 1}`}
                 label={labels[slotIndex] ?? `Variant ${slotIndex + 1}`}
                 kept={kept}
                 hotkey={String(slotIndex + 1)}
@@ -453,6 +469,7 @@ export default function StageView({
               label={labels[slot] ?? `Variant ${slot + 1}`}
               startedAt={slotClock(run, slot).startedAt}
               expected={slotClock(run, slot).expectedSeconds}
+              aspect={frameAspect}
             />
           </div>
         ))}

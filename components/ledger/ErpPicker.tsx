@@ -53,11 +53,22 @@ export interface ErpStyleResult {
 
 export default function ErpPicker({
   slot,
+  slotLabel,
+  reason = "which is what buys the approved flat lay",
   initialStyle,
   onPick,
   onClose,
 }: {
-  slot: "front" | "back";
+  slot: string;
+  /**
+   * What this slot is called on screen. Image Studio's slots are the sides of
+   * a garment ("front", "back"); Model Studio's are the pieces being worn
+   * ("garment", "top", "bottom"), and telling an operator their top photo
+   * landed in the "front" slot names a slot that studio does not have.
+   */
+  slotLabel?: string;
+  /** Why the style number matters here — it is not the same in both studios. */
+  reason?: string;
   initialStyle: string;
   /** Resolves once the photo is in the studio, so the picker can close itself. */
   onPick: (photo: ErpPhotoOption, style: string) => Promise<void>;
@@ -123,7 +134,7 @@ export default function ErpPicker({
             placeholder="DWTS67099"
             spellCheck={false}
             autoCapitalize="characters"
-            aria-label={`Style number to search for the ${slot} photo`}
+            aria-label={`Style number to search for the ${slotLabel ?? slot} photo`}
             className="min-w-0 flex-1"
             classNames={{
               field: "h-10 rounded-lg bg-white",
@@ -143,8 +154,9 @@ export default function ErpPicker({
           </StatefulButton>
         </form>
         <p className="mt-2 text-[11px] leading-snug text-neutral-500">
-          Choosing a photo puts it in the <b className="text-neutral-800">{slot}</b> slot and fills
-          in the style number, which is what buys the approved flat lay.
+          Choosing a photo puts it in the{" "}
+          <b className="text-neutral-800">{slotLabel ?? slot}</b> slot and fills in the style
+          number, {reason}.
         </p>
       </div>
 

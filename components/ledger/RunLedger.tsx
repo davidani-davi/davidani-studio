@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Button } from "@/components/motion/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/motion/tabs";
-import RunCard from "./RunCard";
+import RunCard, { type RunCardProps } from "./RunCard";
 import type { HistoryItem } from "../types";
 import { filterRuns, wantsSecondLook, type LedgerFilter } from "@/lib/run-pipeline";
 import { nextDockHidden } from "@/lib/scroll-dock";
@@ -34,6 +34,9 @@ export default function RunLedger({
   onClearHistory,
   onNewRun,
   composer,
+  card,
+  emptyHint = "No runs yet. Add a product photo below and press Generate.",
+  checkHint = "Nothing is flagged. Every run landed on a canvas something backed, with a clean backdrop.",
 }: {
   runs: HistoryItem[];
   currentId: string | null;
@@ -46,6 +49,12 @@ export default function RunLedger({
   /** Empty the composer and abandon any run still marked pending. */
   onNewRun?: () => void;
   composer: ReactNode;
+  /** How this studio reads a run — see RunCard. Image Studio's default. */
+  card?: { pipeline?: RunCardProps["pipeline"]; title?: RunCardProps["title"]; maxSlots?: number };
+  /** What an empty ledger says. The default speaks of product photos. */
+  emptyHint?: string;
+  /** What an empty "Check" filter says — the checks differ per studio. */
+  checkHint?: string;
 }) {
   const shown = filterRuns(runs, filter);
   const flagged = runs.filter(wantsSecondLook).length;
@@ -155,15 +164,16 @@ export default function RunLedger({
             active={run.id === currentId}
             running={run.id === runningId}
             onSelect={() => onSelect(run.id)}
+            {...card}
           />
         ))}
 
         {shown.length === 0 && (
           <p className="px-1 py-6 text-center text-[11px] leading-relaxed text-neutral-500">
             {runs.length === 0
-              ? "No runs yet. Add a product photo below and press Generate."
+              ? emptyHint
               : filter === "check"
-              ? "Nothing is flagged. Every run landed on a canvas something backed, with a clean backdrop."
+              ? checkHint
               : "No kept runs yet. Press Keep on a variant to mark it."}
           </p>
         )}

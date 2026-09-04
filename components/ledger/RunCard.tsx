@@ -9,6 +9,7 @@ import {
   runSubtitle,
   runTitle,
   runVerdict,
+  type PipelineStep,
   type RunTone,
 } from "@/lib/run-pipeline";
 
@@ -35,17 +36,32 @@ const VERDICT_STATUS: Record<RunTone, AnimatedBadgeStatus> = {
   clean: "neutral",
 };
 
+export interface RunCardProps {
+  run: HistoryItem;
+  active: boolean;
+  running?: boolean;
+  onSelect: () => void;
+  /**
+   * How this studio reads a run. Image Studio's four steps are about a flat
+   * lay on an approved canvas; a Model Studio run has no canvas and can shoot
+   * four views, so it passes its own reader rather than being described in
+   * words that do not apply to it.
+   */
+  pipeline?: (run: HistoryItem) => PipelineStep[];
+  title?: (run: HistoryItem) => string;
+  /** Thumbnails to show. Two variants here, four views in Model Studio. */
+  maxSlots?: number;
+}
+
 export default function RunCard({
   run,
   active,
   running,
   onSelect,
-}: {
-  run: HistoryItem;
-  active: boolean;
-  running?: boolean;
-  onSelect: () => void;
-}) {
+  pipeline = runPipeline,
+  title = runTitle,
+  maxSlots = 2,
+}: RunCardProps) {
   const verdict = runVerdict(run, { running });
   const picked = run.abTest?.selectedImage;
   /**
@@ -55,7 +71,7 @@ export default function RunCard({
    * variant 2 is still painting, and rendering all the placeholders first put
    * the empty box to the LEFT of the image that had already arrived.
    */
-  const slotCount = Math.min(2, Math.max(run.imageUrls.length, run.pending?.variants ?? 0));
+  const slotCount = Math.min(maxSlots, Math.max(run.imageUrls.length, run.pending?.variants ?? 0));
   const slots = Array.from({ length: slotCount }, (_, i) => run.imageUrls[i] ?? null);
   const intake = intakeShots(run);
   const time = new Date(run.timestamp).toLocaleTimeString([], {
@@ -104,7 +120,7 @@ export default function RunCard({
       {/* Its own line. Sharing the row with the thumbnails it had about
           fourteen characters and clamped almost every garment name. */}
       <div className="mb-2.5">
-        <div className="line-clamp-2 text-[12px] font-bold leading-tight">{runTitle(run)}</div>
+        <div className="line-clamp-2 text-[12px] font-bold leading-tight">{title(run)}</div>
         <div className="mt-0.5 font-mono text-[9.5px] text-neutral-500">{runSubtitle(run)}</div>
       </div>
 
@@ -113,6 +129,10 @@ export default function RunCard({
         strip already uses between them. The one question worth asking of a
         finished render is whether it is still the same garment, and until this
         the card showed only the answer, never the question.
+
+        The result tiles flex rather than sitting at a fixed width: two takes
+        fill the row at their natural size, and a Model Studio run's four views
+        share it instead of running off the edge of the card.
       */}
       <div className="mb-2.5 flex items-center gap-1.5">
         {intake.length > 0 && (
@@ -149,7 +169,7 @@ export default function RunCard({
               <div
                 key={`awaited-${i}`}
                 aria-label={`Variant ${i + 1} is being generated`}
-                className="h-24 w-[76px] shrink-0 animate-pulse rounded-md border border-dashed border-neutral-300 bg-neutral-100"
+                className="h-24 min-w-0 max-w-[76px] flex-1 animate-pulse rounded-md border border-dashed border-neutral-300 bg-neutral-100"
               />
             );
           }
@@ -158,14 +178,14 @@ export default function RunCard({
           return (
             <div
               key={`${url}-${i}`}
-              className={`h-24 w-[76px] shrink-0 overflow-hidden rounded-md border bg-[#edeeee] ${
+              className={`h-24 min-w-0 max-w-[76px] flex-1 overflow-hidden rounded-md border bg-[#edeeee] ${
                 isPick ? "border-neutral-900 ring-1 ring-neutral-900" : "border-neutral-200"
               } ${dimmed ? "opacity-50" : ""}`}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={url}
-                alt={`${runTitle(run)} variant ${i + 1}`}
+                alt={`${title(run)} variant ${i + 1}`}
                 className="h-full w-full object-cover"
               />
             </div>
@@ -178,7 +198,7 @@ export default function RunCard({
         )}
       </div>
 
-      <PipelineStrip steps={runPipeline(run)} />
+      <PipelineStrip steps={pipeline(run)} />
     </button>
   );
 }
