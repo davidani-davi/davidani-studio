@@ -1230,6 +1230,10 @@ export const STATIC_HUMAN_MODELS = [
           "full": {
             "filename": "full.jpg",
             "publicPath": "/models/studio 24/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 24/side.jpg"
           }
         }
       }
