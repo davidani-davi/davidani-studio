@@ -22,6 +22,23 @@
    Auth: `X-DDTO-TOKEN` vs `MODEL_SHOTS_TOKEN`, falling back to `APP_PASSWORD`,
    or a valid session cookie. Fails closed. `vercel.json` gives it maxDuration 800.
 
+## Plates (2026-09-04, later)
+The "big head / same model every time" work. Measured: house photography puts
+the head at 9-11% of frame on a full-body 2:3 frame over rgb(249,237,226); every
+old plate (kylie/celine/sydney) is a head-to-thigh crop at 19-23%. That IS the
+big head, and the canvas decides it — no prompt reaches it.
+
+- `docs/MODEL_PLATE_STANDARD.md` — the measured standard and where plates come from.
+- `public/models/studio 01..12` — twelve new plate sets. Front = a real photograph
+  harvested from our own ERP galleries; side/back/full derived from that front so
+  it stays the same woman. `plates.json` records provenance.
+- `lib/plate-assign.ts` — the plate is assigned from the style code:
+  deterministic (a style always returns on the same model, and a Plus twin takes
+  its regular twin's) and spread across the set. `/api/model-shots` defaults to
+  `humanModelId: "auto"` and reports `assigned`.
+- Tooling lives in faire-management: `plate_harvest.py` (scan/adopt),
+  `plate_derive.py`, `plate_install.py`.
+
 ## Next steps
 - A real four-view generation through `/api/model-shots` has NOT been run yet
   (needs the studio password; it is not on this machine). Once
