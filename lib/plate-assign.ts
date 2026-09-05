@@ -15,6 +15,19 @@
  * press the button on the same garment, which is worse than one model.
  */
 
+/**
+ * The plates that meet the house standard (docs/MODEL_PLATE_STANDARD.md).
+ *
+ * The old kylie/celine/sydney plates are still installed — nothing is deleted
+ * until the eval says so — but they are head-to-thigh crops at 19-23% head,
+ * which is the framing every render inherits and the reason this work exists.
+ * So automatic assignment draws only from the house set; naming one of the old
+ * plates explicitly still works.
+ */
+export function housePlates<T extends { id: string }>(plates: T[]): T[] {
+  return (plates || []).filter((p) => /^studio\s*\d+$/i.test(p.id.trim()));
+}
+
 export interface PlateChoice {
   humanModelId: string;
   poseId: string;
@@ -50,10 +63,12 @@ export function assignPlate(
   const usable = (plates || []).filter((p) => p.poses && p.poses.length);
   if (!usable.length) return null;
 
-  const pool = opts.preferPrefix
+  // Explicit preference first, then the house set, then whatever exists —
+  // never nothing, because a missing plate is a failed run.
+  const preferred = opts.preferPrefix
     ? usable.filter((p) => p.id.toLowerCase().startsWith(opts.preferPrefix!.toLowerCase()))
-    : usable;
-  const list = pool.length ? pool : usable;
+    : housePlates(usable);
+  const list = preferred.length ? preferred : usable;
 
   // A Plus twin is the same garment: strip the leading P so the pair lands on
   // the same model.

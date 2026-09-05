@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { assignPlate, plateHash, spread } from "./plate-assign";
+import { assignPlate, housePlates, plateHash, spread } from "./plate-assign";
 
 const PLATES = Array.from({ length: 8 }, (_, i) => ({
   id: `studio ${String(i + 1).padStart(2, "0")}`,
@@ -42,5 +42,25 @@ describe("assignPlate", () => {
   it("hashes stably, because the extension must agree with the server", () => {
     expect(plateHash("DWJ62218")).toBe(plateHash("dwj62218"));
     expect(plateHash("DWJ62218")).not.toBe(plateHash("DWJ62219"));
+  });
+
+  it("assigns only from the house set, never the old head-to-thigh plates", () => {
+    // The first plate-comparison run assigned DCT58018A to "kylie 1" and
+    // DET60356 to "sydney" — the exact plates the new set replaces.
+    const mixed = [
+      { id: "kylie 1", poses: [{ id: "kylie 1" }] },
+      { id: "sydney", poses: [{ id: "sydney" }] },
+      ...PLATES,
+    ];
+    const codes = ["DCT58018A", "DET60356", "DWJ62218", "DD60433", "DET62209"];
+    for (const code of codes) {
+      expect(assignPlate(code, mixed)!.humanModelId).toMatch(/^studio /);
+    }
+    expect(housePlates(mixed).map((p) => p.id)).toEqual(PLATES.map((p) => p.id));
+  });
+
+  it("still uses whatever exists when no house plate is installed", () => {
+    const old = [{ id: "kylie 1", poses: [{ id: "kylie 1" }] }];
+    expect(assignPlate("DA1", old)!.humanModelId).toBe("kylie 1");
   });
 });
