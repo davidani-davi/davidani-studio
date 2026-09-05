@@ -156,7 +156,12 @@ export async function POST(req: Request) {
   let humanModelId: string = body.humanModelId || "";
   let poseId: string = body.poseId || "";
   const view: PresetView = MULTI_MODEL_VIEWS.includes(body.view) ? body.view : "front";
-  const modelId: ModelId = body.modelId || "nano-banana";
+  // Default engine since 2026-09-05: GPT Image 2 at native 2048x3072. David
+  // judged the six-style bake-off (GPT "the clear winner") and round two
+  // (native size holds the frame the auto size broke on a low plate). Pass
+  // modelId: "nano-banana" for the pre-change editor, gptVariant: "auto" for
+  // the 1200x1792 benchmark, engine: "tryon" for FASHN.
+  const modelId: ModelId = body.modelId || "gpt-image";
   const resolution: string = body.resolution || "4K";
   // What the caller already knows about this style — style code, garment type,
   // the listing title we approved, ERP fabric and colourway. Optional: without
@@ -311,7 +316,7 @@ export async function POST(req: Request) {
 
     // GPT Image 2 variants (lib/gpt-variants.ts). Each isolates one change
     // against the v1 run: the output size, the prompt, or a repaint mask.
-    const gptVariant = modelId === "gpt-image" ? gptVariantOf(body.gptVariant) : "auto";
+    const gptVariant = modelId === "gpt-image" ? gptVariantOf(body.gptVariant ?? "native4k") : "auto";
     let prompt = v1Prompt;
     let rawPrompt = false;
     let imageSize: { width: number; height: number } | undefined;
