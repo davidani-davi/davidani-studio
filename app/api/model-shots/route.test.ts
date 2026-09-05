@@ -67,15 +67,29 @@ describe("/api/model-shots request validation", () => {
     process.env.MODEL_SHOTS_TOKEN = "s3cret";
   });
 
-  it("needs a garment photo and a model to put it on", async () => {
+  it("needs a garment photo, and something to choose a model with", async () => {
     const { POST } = await load();
     const auth = { "X-DDTO-TOKEN": "s3cret" };
     const noPhoto = await POST(req(auth, { humanModelId: "kylie 1", poseId: "kylie 1" }));
     expect(noPhoto.status).toBe(400);
     expect((await noPhoto.json()).error).toMatch(/garmentImageUrls/);
-    const noModel = await POST(req(auth, { garmentImageUrls: ["https://x/a.jpg"] }));
-    expect(noModel.status).toBe(400);
-    expect((await noModel.json()).error).toMatch(/humanModelId/);
+
+    // No model named means "auto", which assigns from the style code — so the
+    // thing it complains about is the style code, not the model.
+    const nothingToAssignFrom = await POST(req(auth, { garmentImageUrls: ["https://x/a.jpg"] }));
+    expect(nothingToAssignFrom.status).toBe(400);
+    expect((await nothingToAssignFrom.json()).error).toMatch(/styleCode/);
+  });
+
+  it("assigns the same plate to a style every time, and to its Plus twin", async () => {
+    const { assignPlate } = await import("@/lib/plate-assign");
+    const plates = [
+      { id: "studio 01", poses: [{ id: "front" }] },
+      { id: "studio 02", poses: [{ id: "front" }] },
+      { id: "studio 03", poses: [{ id: "front" }] },
+    ];
+    expect(assignPlate("DWJ62218", plates)).toEqual(assignPlate("DWJ62218", plates));
+    expect(assignPlate("PWJ62218", plates)).toEqual(assignPlate("DWJ62218", plates));
   });
 
   it("answers a preflight, since the caller is an extension service worker", async () => {

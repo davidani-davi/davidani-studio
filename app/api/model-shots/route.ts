@@ -12,6 +12,7 @@ import {
 } from "@/lib/multi-model-prompt";
 import { optimizePromptForModel } from "@/lib/prompt-strategy";
 import { buildGarmentContract, hasKnownFacts, type KnownGarment } from "@/lib/garment-contract";
+import { assignPlate } from "@/lib/plate-assign";
 import type { ModelId } from "@/lib/models";
 
 export const runtime = "nodejs";
@@ -112,8 +113,8 @@ export async function POST(req: Request) {
   const garmentImageUrls: string[] = (body.garmentImageUrls || []).filter(
     (u: unknown): u is string => typeof u === "string" && u.length > 0
   );
-  const humanModelId: string = body.humanModelId || "";
-  const poseId: string = body.poseId || "";
+  let humanModelId: string = body.humanModelId || "";
+  let poseId: string = body.poseId || "";
   const view: PresetView = MULTI_MODEL_VIEWS.includes(body.view) ? body.view : "front";
   const modelId: ModelId = body.modelId || "nano-banana";
   const resolution: string = body.resolution || "4K";
@@ -123,6 +124,25 @@ export async function POST(req: Request) {
   const known: KnownGarment = (body.known && typeof body.known === "object" ? body.known : {}) as KnownGarment;
 
   if (!garmentImageUrls.length) return json({ ok: false, error: "garmentImageUrls is required" }, 400);
+
+  /**
+   * "auto" assigns the plate from the style code (lib/plate-assign.ts):
+   * deterministic, so a style always comes back on the same model, and spread,
+   * so the catalogue stops being one woman in one stance under every garment.
+   */
+  let assigned: string | null = null;
+  if (!humanModelId || humanModelId === "auto") {
+    const styleCode = String(known.styleCode || body.styleCode || "").trim();
+    if (!styleCode) {
+      return json({ ok: false, error: "auto model needs a styleCode to assign from" }, 400);
+    }
+    const catalogue = (await listAllHumanModels()).filter((m) => !m.id.startsWith("pants"));
+    const choice = assignPlate(styleCode, catalogue, { preferPrefix: body.platePrefix });
+    if (!choice) return json({ ok: false, error: "no plates installed" }, 500);
+    humanModelId = choice.humanModelId;
+    poseId = choice.poseId;
+    assigned = `${humanModelId} · ${poseId}`;
+  }
   if (!humanModelId || !poseId) return json({ ok: false, error: "humanModelId and poseId are required" }, 400);
 
   const origin = new URL(req.url).origin;
@@ -216,6 +236,7 @@ export async function POST(req: Request) {
     return json({
       ok: true, view, url, prompt,
       garment: identity.garment,
+      humanModelId, poseId, assigned,
       // What the known facts changed, so a wrong contract is visible in the
       // panel and countable in the eval rather than silent.
       corrections: contract?.corrections ?? [],
