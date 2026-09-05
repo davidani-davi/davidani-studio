@@ -20,6 +20,174 @@
  "plates": [
   {
    "name": "studio 01",
+   "source_style": "DETP60186",
+   "pose": "standing, one hand behind back, weight slightly shifted",
+   "head_pct": 11,
+   "views": [
+    "back",
+    "front",
+    "full",
+    "side"
+   ],
+   "front_is": "real studio photograph",
+   "others_are": "generated from the front plate, same model"
+  },
+  {
+   "name": "studio 02",
+   "source_style": "DETP67306A",
+   "pose": "standing side-on, weight even, arms relaxed down",
+   "head_pct": 11,
+   "views": [
+    "back",
+    "front",
+    "full",
+    "side"
+   ],
+   "front_is": "real studio photograph",
+   "others_are": "generated from the front plate, same model"
+  },
+  {
+   "name": "studio 03",
+   "source_style": "DJ40155LS",
+   "pose": "standing straight, arms relaxed at sides, feet apart",
+   "head_pct": 9,
+   "views": [
+    "back",
+    "front",
+    "full",
+    "side"
+   ],
+   "front_is": "real studio photograph",
+   "others_are": "generated from the front plate, same model"
+  },
+  {
+   "name": "studio 04",
+   "source_style": "DJ60276",
+   "pose": "standing straight, arms relaxed at sides, feet apart",
+   "head_pct": 10,
+   "views": [
+    "back",
+    "front",
+    "full",
+    "side"
+   ],
+   "front_is": "real studio photograph",
+   "others_are": "generated from the front plate, same model"
+  },
+  {
+   "name": "studio 05",
+   "source_style": "DP62140AP",
+   "pose": "standing straight, both thumbs hooked in front pockets",
+   "head_pct": 9,
+   "views": [
+    "back",
+    "front",
+    "full",
+    "side"
+   ],
+   "front_is": "real studio photograph",
+   "others_are": "generated from the front plate, same model"
+  },
+  {
+   "name": "studio 06",
+   "source_style": "DP67160",
+   "pose": "standing straight, one hand in pocket",
+   "head_pct": 10,
+   "views": [
+    "back",
+    "front",
+    "full",
+    "side"
+   ],
+   "front_is": "real studio photograph",
+   "others_are": "generated from the front plate, same model"
+  },
+  {
+   "name": "studio 07",
+   "source_style": "DTP70045A",
+   "pose": "standing straight, arms relaxed at sides, feet apart",
+   "head_pct": 10,
+   "views": [
+    "back",
+    "front",
+    "full",
+    "side"
+   ],
+   "front_is": "real studio photograph",
+   "others_are": "generated from the front plate, same model"
+  },
+  {
+   "name": "studio 08",
+   "source_style": "DWJ62218",
+   "pose": "standing upright, arms relaxed at sides",
+   "head_pct": 11,
+   "views": [
+    "back",
+    "front",
+    "full",
+    "side"
+   ],
+   "front_is": "real studio photograph",
+   "others_are": "generated from the front plate, same model"
+  },
+  {
+   "name": "studio 09",
+   "source_style": "DWJ68152",
+   "pose": "standing upright, hands in pockets, feet slightly apart",
+   "head_pct": 11,
+   "views": [
+    "back",
+    "front",
+    "full",
+    "side"
+   ],
+   "front_is": "real studio photograph",
+   "others_are": "generated from the front plate, same model"
+  },
+  {
+   "name": "studio 10",
+   "source_style": "DWT58109",
+   "pose": "standing straight, arms relaxed at sides",
+   "head_pct": 10,
+   "views": [
+    "back",
+    "front",
+    "full",
+    "side"
+   ],
+   "front_is": "real studio photograph",
+   "others_are": "generated from the front plate, same model"
+  },
+  {
+   "name": "studio 11",
+   "source_style": "DWT67159",
+   "pose": "standing straight, arms at sides, feet slightly apart",
+   "head_pct": 11,
+   "views": [
+    "back",
+    "front",
+    "full",
+    "side"
+   ],
+   "front_is": "real studio photograph",
+   "others_are": "generated from the front plate, same model"
+  },
+  {
+   "name": "studio 12",
+   "source_style": "DWT68181",
+   "pose": "standing relaxed, hands clasped at waist, legs crossed",
+   "head_pct": 9,
+   "views": [
+    "back",
+    "front",
+    "full",
+    "side"
+   ],
+   "front_is": "real studio photograph",
+   "others_are": "generated from the front plate, same model"
+  },
+  {
+   "name": "studio 13",
    "source_style": "DET50304T",
    "pose": "standing straight, arms relaxed at sides",
    "head_pct": 11,
@@ -33,7 +201,7 @@
    "others_are": "generated from the front plate, same model"
   },
   {
-   "name": "studio 02",
+   "name": "studio 14",
    "source_style": "DET60166",
    "pose": "standing straight, arms at sides, head turned right",
    "head_pct": 10,
@@ -47,7 +215,7 @@
    "others_are": "generated from the front plate, same model"
   },
   {
-   "name": "studio 03",
+   "name": "studio 15",
    "source_style": "DET60395",
    "pose": "standing straight, arms relaxed at sides",
    "head_pct": 10,
@@ -61,7 +229,7 @@
    "others_are": "generated from the front plate, same model"
   },
   {
-   "name": "studio 04",
+   "name": "studio 16",
    "source_style": "DET66003",
    "pose": "standing straight, arms relaxed at sides, smiling",
    "head_pct": 11,
@@ -75,7 +243,7 @@
    "others_are": "generated from the front plate, same model"
   },
   {
-   "name": "studio 05",
+   "name": "studio 17",
    "source_style": "DETP58027",
    "pose": "standing straight, arms relaxed at sides",
    "head_pct": 10,
@@ -89,7 +257,7 @@
    "others_are": "generated from the front plate, same model"
   },
   {
-   "name": "studio 06",
+   "name": "studio 18",
    "source_style": "DP60023A",
    "pose": "standing straight, arms at sides, feet together",
    "head_pct": 10,
@@ -103,7 +271,7 @@
    "others_are": "generated from the front plate, same model"
   },
   {
-   "name": "studio 07",
+   "name": "studio 19",
    "source_style": "DP60197B",
    "pose": "standing, right hand on hip, feet apart",
    "head_pct": 9,
@@ -117,7 +285,7 @@
    "others_are": "generated from the front plate, same model"
   },
   {
-   "name": "studio 08",
+   "name": "studio 20",
    "source_style": "DP67097",
    "pose": "standing, weight on one leg, arms relaxed",
    "head_pct": 10,
@@ -131,7 +299,7 @@
    "others_are": "generated from the front plate, same model"
   },
   {
-   "name": "studio 09",
+   "name": "studio 21",
    "source_style": "DP67305",
    "pose": "standing upright, arms relaxed at sides, feet apart",
    "head_pct": 10,
@@ -145,7 +313,7 @@
    "others_are": "generated from the front plate, same model"
   },
   {
-   "name": "studio 10",
+   "name": "studio 22",
    "source_style": "DS42505S",
    "pose": "standing upright, arms at sides, feet slightly apart",
    "head_pct": 9,
@@ -159,7 +327,7 @@
    "others_are": "generated from the front plate, same model"
   },
   {
-   "name": "studio 11",
+   "name": "studio 23",
    "source_style": "DS60087",
    "pose": "standing straight, arms relaxed at sides",
    "head_pct": 10,
@@ -173,7 +341,7 @@
    "others_are": "generated from the front plate, same model"
   },
   {
-   "name": "studio 12",
+   "name": "studio 24",
    "source_style": "DT60014",
    "pose": "standing straight, arms relaxed at sides",
    "head_pct": 9,
@@ -186,7 +354,7 @@
    "others_are": "generated from the front plate, same model"
   },
   {
-   "name": "studio 13",
+   "name": "studio 25",
    "source_style": "DT62115",
    "pose": "Standing straight, one hand in pocket, feet apart",
    "head_pct": 10,
@@ -200,7 +368,7 @@
    "others_are": "generated from the front plate, same model"
   },
   {
-   "name": "studio 14",
+   "name": "studio 26",
    "source_style": "DWT60361",
    "pose": "standing, hands in pockets, feet slightly apart",
    "head_pct": 10,
@@ -214,7 +382,7 @@
    "others_are": "generated from the front plate, same model"
   },
   {
-   "name": "studio 15",
+   "name": "studio 27",
    "source_style": "DWT69027",
    "pose": "standing straight, hands tucked in front pockets",
    "head_pct": 10,

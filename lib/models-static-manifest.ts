@@ -959,5 +959,373 @@ export const STATIC_HUMAN_MODELS = [
         }
       }
     ]
+  },
+  {
+    "id": "studio 16",
+    "name": "Studio 16",
+    "poses": [
+      {
+        "id": "studio 16",
+        "label": "Studio 16",
+        "publicPath": "/models/studio 16/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 16/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 16/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 16/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 16/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "studio 17",
+    "name": "Studio 17",
+    "poses": [
+      {
+        "id": "studio 17",
+        "label": "Studio 17",
+        "publicPath": "/models/studio 17/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 17/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 17/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 17/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 17/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "studio 18",
+    "name": "Studio 18",
+    "poses": [
+      {
+        "id": "studio 18",
+        "label": "Studio 18",
+        "publicPath": "/models/studio 18/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 18/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 18/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 18/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 18/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "studio 19",
+    "name": "Studio 19",
+    "poses": [
+      {
+        "id": "studio 19",
+        "label": "Studio 19",
+        "publicPath": "/models/studio 19/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 19/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 19/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 19/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 19/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "studio 20",
+    "name": "Studio 20",
+    "poses": [
+      {
+        "id": "studio 20",
+        "label": "Studio 20",
+        "publicPath": "/models/studio 20/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 20/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 20/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 20/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 20/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "studio 21",
+    "name": "Studio 21",
+    "poses": [
+      {
+        "id": "studio 21",
+        "label": "Studio 21",
+        "publicPath": "/models/studio 21/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 21/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 21/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 21/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 21/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "studio 22",
+    "name": "Studio 22",
+    "poses": [
+      {
+        "id": "studio 22",
+        "label": "Studio 22",
+        "publicPath": "/models/studio 22/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 22/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 22/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 22/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 22/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "studio 23",
+    "name": "Studio 23",
+    "poses": [
+      {
+        "id": "studio 23",
+        "label": "Studio 23",
+        "publicPath": "/models/studio 23/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 23/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 23/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 23/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 23/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "studio 24",
+    "name": "Studio 24",
+    "poses": [
+      {
+        "id": "studio 24",
+        "label": "Studio 24",
+        "publicPath": "/models/studio 24/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 24/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 24/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 24/full.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "studio 25",
+    "name": "Studio 25",
+    "poses": [
+      {
+        "id": "studio 25",
+        "label": "Studio 25",
+        "publicPath": "/models/studio 25/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 25/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 25/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 25/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 25/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "studio 26",
+    "name": "Studio 26",
+    "poses": [
+      {
+        "id": "studio 26",
+        "label": "Studio 26",
+        "publicPath": "/models/studio 26/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 26/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 26/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 26/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 26/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "studio 27",
+    "name": "Studio 27",
+    "poses": [
+      {
+        "id": "studio 27",
+        "label": "Studio 27",
+        "publicPath": "/models/studio 27/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 27/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 27/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 27/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 27/side.jpg"
+          }
+        }
+      }
+    ]
   }
 ] as unknown as HumanModel[];
