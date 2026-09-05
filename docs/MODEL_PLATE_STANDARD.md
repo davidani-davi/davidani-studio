@@ -62,3 +62,29 @@ regular twin's plate: same garment, same body.
 
 Callers ask for `humanModelId: "auto"` (the default when none is named) and get
 back which plate was chosen in `assigned`.
+
+## Framings (2026-09-05)
+
+A house plate is full-length; Faire's listing photos are not. A top or a jacket
+is shot head to mid-thigh with the garment filling the frame, pants and skirts
+from the waist down with no head in frame, and only dresses, sets and the one
+"full shot" show the whole figure. Three families share each photograph:
+
+| family      | frame                                  | used for                                                        |
+|-------------|----------------------------------------|-----------------------------------------------------------------|
+| `studio NN` | head to shoes, head 9–11 % of frame    | dresses, jumpsuits, rompers, sets, and the "full" view of all    |
+| `crop NN`   | head to mid-thigh, head ~20 % of frame | front, side and back of tops and outerwear                      |
+| `low NN`    | natural waist to shoes, no head        | front and side of pants and skirts (bottoms shoot no back view) |
+
+`crop` and `low` are pixel crops of `studio NN`, never a second generation
+(faire-management `thumbnail-optimizer/plate_crop.py`): 2:3 at 1200×1800,
+geometry relative to the figure height H = head top → shoe bottom, crop =
+−0.03 H … 0.58 H, low = 0.40 H … 1.03 H. Only `studio NN` shows in a picker;
+`/api/model-shots` swaps in the sibling for the framing the garment category
+needs (`lib/plate-framing.ts`), and the extension plans the same views
+(`model_shots_core.js categoryFor`). The category comes from the Faire taxonomy
+name the style code maps to, so a "Top & Pant Set" is a set, not pants.
+
+Pipeline: harvest → install → `plate_crop.py` → `npm run models:manifest`.
+The kylie / celine / sydney / pants plates retired to `public/models/hide/`
+the same day: the right framing for a top, the wrong models.

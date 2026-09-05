@@ -13,6 +13,7 @@ import {
 import { optimizePromptForModel } from "@/lib/prompt-strategy";
 import { buildGarmentContract, hasKnownFacts, type KnownGarment } from "@/lib/garment-contract";
 import { assignPlate } from "@/lib/plate-assign";
+import { framingFor, isDerivedPlate, plateForFraming, shotCategory, shotViews } from "@/lib/plate-framing";
 import type { ModelId } from "@/lib/models";
 
 export const runtime = "nodejs";
@@ -91,7 +92,8 @@ export async function GET(req: Request) {
   return json({
     ok: true,
     views: MULTI_MODEL_VIEWS,
-    models: models.map((m) => ({
+    // the crop/low families are the house plates re-framed, never picked by hand
+    models: models.filter((m) => m.userAdded || !isDerivedPlate(m.id)).map((m) => ({
       id: m.id,
       name: m.name,
       userAdded: Boolean(m.userAdded),
@@ -125,6 +127,15 @@ export async function POST(req: Request) {
 
   if (!garmentImageUrls.length) return json({ ok: false, error: "garmentImageUrls is required" }, 400);
 
+  // What is being shot decides the views and the plate framing
+  // (lib/plate-framing.ts): pants and skirts waist-down, tops and outerwear
+  // head-to-thigh, everything else full-length. The extension planned the run
+  // with the same rule and says which category it used.
+  const category = shotCategory({ ...known, category: body.category ?? (known as { category?: unknown }).category });
+  const framing = framingFor(category, view);
+  const views = shotViews(category);
+  const catalogue = await listAllHumanModels();
+
   /**
    * "auto" assigns the plate from the style code (lib/plate-assign.ts):
    * deterministic, so a style always comes back on the same model, and spread,
@@ -136,7 +147,6 @@ export async function POST(req: Request) {
     if (!styleCode) {
       return json({ ok: false, error: "auto model needs a styleCode to assign from" }, 400);
     }
-    const catalogue = (await listAllHumanModels()).filter((m) => !m.id.startsWith("pants"));
     const choice = assignPlate(styleCode, catalogue, { preferPrefix: body.platePrefix });
     if (!choice) return json({ ok: false, error: "no plates installed" }, 500);
     humanModelId = choice.humanModelId;
@@ -144,6 +154,13 @@ export async function POST(req: Request) {
     assigned = `${humanModelId} · ${poseId}`;
   }
   if (!humanModelId || !poseId) return json({ ok: false, error: "humanModelId and poseId are required" }, 400);
+
+  // The house plate is full-length; a top's front is shot on its "crop NN"
+  // sibling and a pant's on "low NN" -- the same photograph, re-framed. When
+  // the family is not installed the full-length plate stands in.
+  const plate = plateForFraming(humanModelId, poseId, framing, catalogue);
+  humanModelId = plate.humanModelId;
+  poseId = plate.poseId;
 
   const origin = new URL(req.url).origin;
   const call = async (
@@ -211,8 +228,8 @@ export async function POST(req: Request) {
     const identity = mergeMultiModelGarmentIdentity(analyzeData);
     const prompt = optimizePromptForModel(
       modelId,
-      `${basePrompt}${buildMultiModelConsistencySuffix(identity.garment, identity.features)}` +
-        `${buildMultiModelViewSuffix(view, hasBackReference)}`
+      `${basePrompt}${buildMultiModelConsistencySuffix(identity.garment, identity.features, views)}` +
+        `${buildMultiModelViewSuffix(view, hasBackReference, { framing, views })}`
     );
 
     const generated = await call(generateModel, "/api/generate-model", {
@@ -236,7 +253,7 @@ export async function POST(req: Request) {
     return json({
       ok: true, view, url, prompt,
       garment: identity.garment,
-      humanModelId, poseId, assigned,
+      humanModelId, poseId, assigned, category, framing,
       // What the known facts changed, so a wrong contract is visible in the
       // panel and countable in the eval rather than silent.
       corrections: contract?.corrections ?? [],

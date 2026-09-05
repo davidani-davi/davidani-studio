@@ -8,489 +8,1351 @@ import type { HumanModel } from "./models-registry";
 
 export const STATIC_HUMAN_MODELS = [
   {
-    "id": "kylie 1",
-    "name": "Kylie 1",
+    "id": "crop 01",
+    "name": "Crop 01",
     "poses": [
       {
-        "id": "kylie 1",
-        "label": "Kylie 1",
-        "publicPath": "/models/kylie 1/front.png",
-        "filename": "front.png",
-        "subdir": "",
-        "views": {
-          "back": {
-            "filename": "back.png",
-            "publicPath": "/models/kylie 1/back.png"
-          },
-          "front": {
-            "filename": "front.png",
-            "publicPath": "/models/kylie 1/front.png"
-          },
-          "full": {
-            "filename": "full.png",
-            "publicPath": "/models/kylie 1/full.png"
-          },
-          "side": {
-            "filename": "side.png",
-            "publicPath": "/models/kylie 1/side.png"
-          }
-        },
-        "viewVariants": {
-          "back": [
-            {
-              "filename": "back2.png",
-              "publicPath": "/models/kylie 1/back2.png"
-            },
-            {
-              "filename": "back3.png",
-              "publicPath": "/models/kylie 1/back3.png"
-            }
-          ],
-          "front": [
-            {
-              "filename": "front2.png",
-              "publicPath": "/models/kylie 1/front2.png"
-            },
-            {
-              "filename": "front3.png",
-              "publicPath": "/models/kylie 1/front3.png"
-            }
-          ],
-          "full": [
-            {
-              "filename": "full2.png",
-              "publicPath": "/models/kylie 1/full2.png"
-            },
-            {
-              "filename": "full3.png",
-              "publicPath": "/models/kylie 1/full3.png"
-            }
-          ],
-          "side": [
-            {
-              "filename": "side2.png",
-              "publicPath": "/models/kylie 1/side2.png"
-            },
-            {
-              "filename": "side3.png",
-              "publicPath": "/models/kylie 1/side3.png"
-            }
-          ]
-        }
-      }
-    ]
-  },
-  {
-    "id": "kylie 2",
-    "name": "Kylie 2",
-    "poses": [
-      {
-        "id": "kylie 2",
-        "label": "Kylie 2",
-        "publicPath": "/models/kylie 2/front.png",
-        "filename": "front.png",
-        "subdir": "",
-        "views": {
-          "back": {
-            "filename": "back.png",
-            "publicPath": "/models/kylie 2/back.png"
-          },
-          "front": {
-            "filename": "front.png",
-            "publicPath": "/models/kylie 2/front.png"
-          },
-          "full": {
-            "filename": "full.png",
-            "publicPath": "/models/kylie 2/full.png"
-          },
-          "side": {
-            "filename": "side.png",
-            "publicPath": "/models/kylie 2/side.png"
-          }
-        },
-        "viewVariants": {
-          "back": [
-            {
-              "filename": "back2.png",
-              "publicPath": "/models/kylie 2/back2.png"
-            },
-            {
-              "filename": "back3.png",
-              "publicPath": "/models/kylie 2/back3.png"
-            }
-          ],
-          "front": [
-            {
-              "filename": "front2.png",
-              "publicPath": "/models/kylie 2/front2.png"
-            },
-            {
-              "filename": "front3.png",
-              "publicPath": "/models/kylie 2/front3.png"
-            }
-          ],
-          "full": [
-            {
-              "filename": "full2.png",
-              "publicPath": "/models/kylie 2/full2.png"
-            },
-            {
-              "filename": "full3.png",
-              "publicPath": "/models/kylie 2/full3.png"
-            }
-          ],
-          "side": [
-            {
-              "filename": "side2.png",
-              "publicPath": "/models/kylie 2/side2.png"
-            },
-            {
-              "filename": "side3.png",
-              "publicPath": "/models/kylie 2/side3.png"
-            }
-          ]
-        }
-      }
-    ]
-  },
-  {
-    "id": "kylie 3",
-    "name": "Kylie 3",
-    "poses": [
-      {
-        "id": "kylie 3",
-        "label": "Kylie 3",
-        "publicPath": "/models/kylie 3/front.png",
-        "filename": "front.png",
-        "subdir": "",
-        "views": {
-          "back": {
-            "filename": "back.png",
-            "publicPath": "/models/kylie 3/back.png"
-          },
-          "front": {
-            "filename": "front.png",
-            "publicPath": "/models/kylie 3/front.png"
-          },
-          "full": {
-            "filename": "full.png",
-            "publicPath": "/models/kylie 3/full.png"
-          },
-          "side": {
-            "filename": "side.png",
-            "publicPath": "/models/kylie 3/side.png"
-          }
-        },
-        "viewVariants": {
-          "back": [
-            {
-              "filename": "back2.png",
-              "publicPath": "/models/kylie 3/back2.png"
-            },
-            {
-              "filename": "back3.png",
-              "publicPath": "/models/kylie 3/back3.png"
-            }
-          ],
-          "front": [
-            {
-              "filename": "front2.png",
-              "publicPath": "/models/kylie 3/front2.png"
-            },
-            {
-              "filename": "front3.png",
-              "publicPath": "/models/kylie 3/front3.png"
-            },
-            {
-              "filename": "front4.png",
-              "publicPath": "/models/kylie 3/front4.png"
-            }
-          ],
-          "full": [
-            {
-              "filename": "full2.png",
-              "publicPath": "/models/kylie 3/full2.png"
-            }
-          ],
-          "side": [
-            {
-              "filename": "side2.png",
-              "publicPath": "/models/kylie 3/side2.png"
-            },
-            {
-              "filename": "side3.png",
-              "publicPath": "/models/kylie 3/side3.png"
-            }
-          ]
-        }
-      }
-    ]
-  },
-  {
-    "id": "celine 1",
-    "name": "Celine 1",
-    "poses": [
-      {
-        "id": "celine 1",
-        "label": "Celine 1",
-        "publicPath": "/models/celine 1/front.png",
-        "filename": "front.png",
-        "subdir": "",
-        "views": {
-          "back": {
-            "filename": "back.png",
-            "publicPath": "/models/celine 1/back.png"
-          },
-          "front": {
-            "filename": "front.png",
-            "publicPath": "/models/celine 1/front.png"
-          },
-          "full": {
-            "filename": "full.png",
-            "publicPath": "/models/celine 1/full.png"
-          },
-          "side": {
-            "filename": "side.png",
-            "publicPath": "/models/celine 1/side.png"
-          }
-        },
-        "viewVariants": {
-          "side": [
-            {
-              "filename": "side2.png",
-              "publicPath": "/models/celine 1/side2.png"
-            },
-            {
-              "filename": "side3.png",
-              "publicPath": "/models/celine 1/side3.png"
-            },
-            {
-              "filename": "side4.png",
-              "publicPath": "/models/celine 1/side4.png"
-            }
-          ]
-        }
-      }
-    ]
-  },
-  {
-    "id": "celine 2",
-    "name": "Celine 2",
-    "poses": [
-      {
-        "id": "celine 2",
-        "label": "Celine 2",
-        "publicPath": "/models/celine 2/front.png",
-        "filename": "front.png",
-        "subdir": "",
-        "views": {
-          "back": {
-            "filename": "back.png",
-            "publicPath": "/models/celine 2/back.png"
-          },
-          "front": {
-            "filename": "front.png",
-            "publicPath": "/models/celine 2/front.png"
-          },
-          "full": {
-            "filename": "full.png",
-            "publicPath": "/models/celine 2/full.png"
-          },
-          "side": {
-            "filename": "side.png",
-            "publicPath": "/models/celine 2/side.png"
-          }
-        }
-      }
-    ]
-  },
-  {
-    "id": "celine 3",
-    "name": "Celine 3",
-    "poses": [
-      {
-        "id": "celine 3",
-        "label": "Celine 3",
-        "publicPath": "/models/celine 3/front.png",
-        "filename": "front.png",
-        "subdir": "",
-        "views": {
-          "back": {
-            "filename": "back.png",
-            "publicPath": "/models/celine 3/back.png"
-          },
-          "front": {
-            "filename": "front.png",
-            "publicPath": "/models/celine 3/front.png"
-          },
-          "full": {
-            "filename": "full.png",
-            "publicPath": "/models/celine 3/full.png"
-          },
-          "side": {
-            "filename": "side.png",
-            "publicPath": "/models/celine 3/side.png"
-          }
-        }
-      }
-    ]
-  },
-  {
-    "id": "pants 1",
-    "name": "Pants 1",
-    "poses": [
-      {
-        "id": "pants 1",
-        "label": "1",
-        "publicPath": "/models/pants 1/front.png",
-        "filename": "front.png",
-        "subdir": "",
-        "views": {
-          "back": {
-            "filename": "back.jpg",
-            "publicPath": "/models/pants 1/back.jpg"
-          },
-          "front": {
-            "filename": "front.png",
-            "publicPath": "/models/pants 1/front.png"
-          },
-          "side": {
-            "filename": "side.jpg",
-            "publicPath": "/models/pants 1/side.jpg"
-          }
-        },
-        "viewVariants": {
-          "back": [
-            {
-              "filename": "back2.jpg",
-              "publicPath": "/models/pants 1/back2.jpg"
-            },
-            {
-              "filename": "back3.jpg",
-              "publicPath": "/models/pants 1/back3.jpg"
-            },
-            {
-              "filename": "back4.jpg",
-              "publicPath": "/models/pants 1/back4.jpg"
-            },
-            {
-              "filename": "back5.jpg",
-              "publicPath": "/models/pants 1/back5.jpg"
-            },
-            {
-              "filename": "back6.jpg",
-              "publicPath": "/models/pants 1/back6.jpg"
-            }
-          ],
-          "front": [
-            {
-              "filename": "front2.jpg",
-              "publicPath": "/models/pants 1/front2.jpg"
-            },
-            {
-              "filename": "front3.jpg",
-              "publicPath": "/models/pants 1/front3.jpg"
-            },
-            {
-              "filename": "front4.jpg",
-              "publicPath": "/models/pants 1/front4.jpg"
-            },
-            {
-              "filename": "front5.jpg",
-              "publicPath": "/models/pants 1/front5.jpg"
-            }
-          ],
-          "side": [
-            {
-              "filename": "side2.jpg",
-              "publicPath": "/models/pants 1/side2.jpg"
-            },
-            {
-              "filename": "side3.jpg",
-              "publicPath": "/models/pants 1/side3.jpg"
-            },
-            {
-              "filename": "side4.jpg",
-              "publicPath": "/models/pants 1/side4.jpg"
-            }
-          ]
-        }
-      }
-    ]
-  },
-  {
-    "id": "sydney",
-    "name": "Sydney",
-    "poses": [
-      {
-        "id": "sydney",
-        "label": "Sydney",
-        "publicPath": "/models/sydney/front.jpg",
+        "id": "crop 01",
+        "label": "Crop 01",
+        "publicPath": "/models/crop 01/front.jpg",
         "filename": "front.jpg",
         "subdir": "",
         "views": {
           "back": {
             "filename": "back.jpg",
-            "publicPath": "/models/sydney/back.jpg"
+            "publicPath": "/models/crop 01/back.jpg"
           },
           "front": {
             "filename": "front.jpg",
-            "publicPath": "/models/sydney/front.jpg"
-          },
-          "full": {
-            "filename": "full.jpg",
-            "publicPath": "/models/sydney/full.jpg"
+            "publicPath": "/models/crop 01/front.jpg"
           },
           "side": {
             "filename": "side.jpg",
-            "publicPath": "/models/sydney/side.jpg"
+            "publicPath": "/models/crop 01/side.jpg"
           }
-        },
-        "viewVariants": {
-          "back": [
-            {
-              "filename": "back2.jpg",
-              "publicPath": "/models/sydney/back2.jpg"
-            },
-            {
-              "filename": "back3.jpg",
-              "publicPath": "/models/sydney/back3.jpg"
-            }
-          ],
-          "front": [
-            {
-              "filename": "front2.jpg",
-              "publicPath": "/models/sydney/front2.jpg"
-            },
-            {
-              "filename": "front3.jpg",
-              "publicPath": "/models/sydney/front3.jpg"
-            }
-          ],
-          "full": [
-            {
-              "filename": "full2.jpg",
-              "publicPath": "/models/sydney/full2.jpg"
-            },
-            {
-              "filename": "full3.jpg",
-              "publicPath": "/models/sydney/full3.jpg"
-            },
-            {
-              "filename": "full4.jpg",
-              "publicPath": "/models/sydney/full4.jpg"
-            }
-          ],
-          "side": [
-            {
-              "filename": "side2.jpg",
-              "publicPath": "/models/sydney/side2.jpg"
-            },
-            {
-              "filename": "side3.jpg",
-              "publicPath": "/models/sydney/side3.jpg"
-            }
-          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "crop 02",
+    "name": "Crop 02",
+    "poses": [
+      {
+        "id": "crop 02",
+        "label": "Crop 02",
+        "publicPath": "/models/crop 02/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 02/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 02/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 02/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "crop 03",
+    "name": "Crop 03",
+    "poses": [
+      {
+        "id": "crop 03",
+        "label": "Crop 03",
+        "publicPath": "/models/crop 03/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 03/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 03/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 03/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "crop 04",
+    "name": "Crop 04",
+    "poses": [
+      {
+        "id": "crop 04",
+        "label": "Crop 04",
+        "publicPath": "/models/crop 04/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 04/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 04/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 04/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "crop 05",
+    "name": "Crop 05",
+    "poses": [
+      {
+        "id": "crop 05",
+        "label": "Crop 05",
+        "publicPath": "/models/crop 05/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 05/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 05/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 05/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "crop 06",
+    "name": "Crop 06",
+    "poses": [
+      {
+        "id": "crop 06",
+        "label": "Crop 06",
+        "publicPath": "/models/crop 06/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 06/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 06/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 06/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "crop 07",
+    "name": "Crop 07",
+    "poses": [
+      {
+        "id": "crop 07",
+        "label": "Crop 07",
+        "publicPath": "/models/crop 07/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 07/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 07/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 07/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "crop 08",
+    "name": "Crop 08",
+    "poses": [
+      {
+        "id": "crop 08",
+        "label": "Crop 08",
+        "publicPath": "/models/crop 08/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 08/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 08/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 08/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "crop 09",
+    "name": "Crop 09",
+    "poses": [
+      {
+        "id": "crop 09",
+        "label": "Crop 09",
+        "publicPath": "/models/crop 09/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 09/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 09/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 09/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "crop 10",
+    "name": "Crop 10",
+    "poses": [
+      {
+        "id": "crop 10",
+        "label": "Crop 10",
+        "publicPath": "/models/crop 10/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 10/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 10/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 10/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "crop 11",
+    "name": "Crop 11",
+    "poses": [
+      {
+        "id": "crop 11",
+        "label": "Crop 11",
+        "publicPath": "/models/crop 11/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 11/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 11/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 11/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "crop 12",
+    "name": "Crop 12",
+    "poses": [
+      {
+        "id": "crop 12",
+        "label": "Crop 12",
+        "publicPath": "/models/crop 12/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 12/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 12/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 12/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "crop 13",
+    "name": "Crop 13",
+    "poses": [
+      {
+        "id": "crop 13",
+        "label": "Crop 13",
+        "publicPath": "/models/crop 13/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 13/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 13/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 13/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "crop 14",
+    "name": "Crop 14",
+    "poses": [
+      {
+        "id": "crop 14",
+        "label": "Crop 14",
+        "publicPath": "/models/crop 14/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 14/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 14/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 14/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "crop 15",
+    "name": "Crop 15",
+    "poses": [
+      {
+        "id": "crop 15",
+        "label": "Crop 15",
+        "publicPath": "/models/crop 15/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 15/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 15/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 15/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "crop 16",
+    "name": "Crop 16",
+    "poses": [
+      {
+        "id": "crop 16",
+        "label": "Crop 16",
+        "publicPath": "/models/crop 16/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 16/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 16/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 16/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "crop 17",
+    "name": "Crop 17",
+    "poses": [
+      {
+        "id": "crop 17",
+        "label": "Crop 17",
+        "publicPath": "/models/crop 17/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 17/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 17/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 17/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "crop 18",
+    "name": "Crop 18",
+    "poses": [
+      {
+        "id": "crop 18",
+        "label": "Crop 18",
+        "publicPath": "/models/crop 18/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 18/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 18/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 18/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "crop 19",
+    "name": "Crop 19",
+    "poses": [
+      {
+        "id": "crop 19",
+        "label": "Crop 19",
+        "publicPath": "/models/crop 19/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 19/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 19/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 19/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "crop 20",
+    "name": "Crop 20",
+    "poses": [
+      {
+        "id": "crop 20",
+        "label": "Crop 20",
+        "publicPath": "/models/crop 20/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 20/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 20/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 20/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "crop 21",
+    "name": "Crop 21",
+    "poses": [
+      {
+        "id": "crop 21",
+        "label": "Crop 21",
+        "publicPath": "/models/crop 21/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 21/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 21/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 21/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "crop 22",
+    "name": "Crop 22",
+    "poses": [
+      {
+        "id": "crop 22",
+        "label": "Crop 22",
+        "publicPath": "/models/crop 22/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 22/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 22/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 22/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "crop 23",
+    "name": "Crop 23",
+    "poses": [
+      {
+        "id": "crop 23",
+        "label": "Crop 23",
+        "publicPath": "/models/crop 23/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 23/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 23/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 23/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "crop 24",
+    "name": "Crop 24",
+    "poses": [
+      {
+        "id": "crop 24",
+        "label": "Crop 24",
+        "publicPath": "/models/crop 24/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 24/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 24/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 24/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "crop 25",
+    "name": "Crop 25",
+    "poses": [
+      {
+        "id": "crop 25",
+        "label": "Crop 25",
+        "publicPath": "/models/crop 25/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 25/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 25/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 25/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "crop 26",
+    "name": "Crop 26",
+    "poses": [
+      {
+        "id": "crop 26",
+        "label": "Crop 26",
+        "publicPath": "/models/crop 26/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 26/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 26/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 26/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "crop 27",
+    "name": "Crop 27",
+    "poses": [
+      {
+        "id": "crop 27",
+        "label": "Crop 27",
+        "publicPath": "/models/crop 27/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 27/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 27/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 27/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "low 01",
+    "name": "Low 01",
+    "poses": [
+      {
+        "id": "low 01",
+        "label": "Low 01",
+        "publicPath": "/models/low 01/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 01/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 01/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "low 02",
+    "name": "Low 02",
+    "poses": [
+      {
+        "id": "low 02",
+        "label": "Low 02",
+        "publicPath": "/models/low 02/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 02/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 02/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "low 03",
+    "name": "Low 03",
+    "poses": [
+      {
+        "id": "low 03",
+        "label": "Low 03",
+        "publicPath": "/models/low 03/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 03/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 03/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "low 04",
+    "name": "Low 04",
+    "poses": [
+      {
+        "id": "low 04",
+        "label": "Low 04",
+        "publicPath": "/models/low 04/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 04/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 04/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "low 05",
+    "name": "Low 05",
+    "poses": [
+      {
+        "id": "low 05",
+        "label": "Low 05",
+        "publicPath": "/models/low 05/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 05/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 05/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "low 06",
+    "name": "Low 06",
+    "poses": [
+      {
+        "id": "low 06",
+        "label": "Low 06",
+        "publicPath": "/models/low 06/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 06/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 06/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "low 07",
+    "name": "Low 07",
+    "poses": [
+      {
+        "id": "low 07",
+        "label": "Low 07",
+        "publicPath": "/models/low 07/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 07/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 07/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "low 08",
+    "name": "Low 08",
+    "poses": [
+      {
+        "id": "low 08",
+        "label": "Low 08",
+        "publicPath": "/models/low 08/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 08/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 08/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "low 09",
+    "name": "Low 09",
+    "poses": [
+      {
+        "id": "low 09",
+        "label": "Low 09",
+        "publicPath": "/models/low 09/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 09/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 09/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "low 10",
+    "name": "Low 10",
+    "poses": [
+      {
+        "id": "low 10",
+        "label": "Low 10",
+        "publicPath": "/models/low 10/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 10/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 10/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "low 11",
+    "name": "Low 11",
+    "poses": [
+      {
+        "id": "low 11",
+        "label": "Low 11",
+        "publicPath": "/models/low 11/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 11/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 11/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "low 12",
+    "name": "Low 12",
+    "poses": [
+      {
+        "id": "low 12",
+        "label": "Low 12",
+        "publicPath": "/models/low 12/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 12/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 12/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "low 13",
+    "name": "Low 13",
+    "poses": [
+      {
+        "id": "low 13",
+        "label": "Low 13",
+        "publicPath": "/models/low 13/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 13/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 13/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "low 14",
+    "name": "Low 14",
+    "poses": [
+      {
+        "id": "low 14",
+        "label": "Low 14",
+        "publicPath": "/models/low 14/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 14/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 14/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "low 15",
+    "name": "Low 15",
+    "poses": [
+      {
+        "id": "low 15",
+        "label": "Low 15",
+        "publicPath": "/models/low 15/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 15/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 15/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "low 16",
+    "name": "Low 16",
+    "poses": [
+      {
+        "id": "low 16",
+        "label": "Low 16",
+        "publicPath": "/models/low 16/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 16/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 16/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "low 17",
+    "name": "Low 17",
+    "poses": [
+      {
+        "id": "low 17",
+        "label": "Low 17",
+        "publicPath": "/models/low 17/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 17/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 17/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "low 18",
+    "name": "Low 18",
+    "poses": [
+      {
+        "id": "low 18",
+        "label": "Low 18",
+        "publicPath": "/models/low 18/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 18/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 18/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "low 19",
+    "name": "Low 19",
+    "poses": [
+      {
+        "id": "low 19",
+        "label": "Low 19",
+        "publicPath": "/models/low 19/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 19/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 19/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "low 20",
+    "name": "Low 20",
+    "poses": [
+      {
+        "id": "low 20",
+        "label": "Low 20",
+        "publicPath": "/models/low 20/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 20/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 20/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "low 21",
+    "name": "Low 21",
+    "poses": [
+      {
+        "id": "low 21",
+        "label": "Low 21",
+        "publicPath": "/models/low 21/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 21/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 21/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "low 22",
+    "name": "Low 22",
+    "poses": [
+      {
+        "id": "low 22",
+        "label": "Low 22",
+        "publicPath": "/models/low 22/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 22/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 22/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "low 23",
+    "name": "Low 23",
+    "poses": [
+      {
+        "id": "low 23",
+        "label": "Low 23",
+        "publicPath": "/models/low 23/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 23/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 23/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "low 24",
+    "name": "Low 24",
+    "poses": [
+      {
+        "id": "low 24",
+        "label": "Low 24",
+        "publicPath": "/models/low 24/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 24/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 24/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "low 25",
+    "name": "Low 25",
+    "poses": [
+      {
+        "id": "low 25",
+        "label": "Low 25",
+        "publicPath": "/models/low 25/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 25/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 25/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "low 26",
+    "name": "Low 26",
+    "poses": [
+      {
+        "id": "low 26",
+        "label": "Low 26",
+        "publicPath": "/models/low 26/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 26/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 26/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "low 27",
+    "name": "Low 27",
+    "poses": [
+      {
+        "id": "low 27",
+        "label": "Low 27",
+        "publicPath": "/models/low 27/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 27/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 27/side.jpg"
+          }
         }
       }
     ]

@@ -396,5 +396,40 @@
       "front_is": "real studio photograph",
       "others_are": "generated from the front plate, same model"
     }
-  ]
+  ],
+  "families": {
+    "crop": {
+      "from": "studio NN, same photograph",
+      "views": [
+        "front",
+        "side",
+        "back"
+      ],
+      "framing": "head to mid-thigh, garment fills the frame, head about 20% of the frame",
+      "size": [
+        1200,
+        1800
+      ],
+      "geometry_of_figure_height": {
+        "top": -0.03,
+        "bottom": 0.58
+      }
+    },
+    "low": {
+      "from": "studio NN, same photograph",
+      "views": [
+        "front",
+        "side"
+      ],
+      "framing": "waist to shoes, no head or shoulders in frame",
+      "size": [
+        1200,
+        1800
+      ],
+      "geometry_of_figure_height": {
+        "top": 0.4,
+        "bottom": 1.03
+      }
+    }
+  }
 }

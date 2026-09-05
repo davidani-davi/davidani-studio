@@ -326,22 +326,10 @@ function collectPresetImages(modelFolderName: string): ModelPose[] {
   return [...deduped.values()];
 }
 
-const MODEL_ORDER_PRIORITY: Record<string, number> = {
-  "kylie 1": 0,
-  "kylie 2": 1,
-  "kylie 3": 2,
-  "celine 1": 3,
-  "celine 2": 4,
-  "celine 3": 5,
-  "brie 1": 6,
-  "brie 2": 7,
-  "brie 3": 8,
-  "brie 4": 9,
-  "pants 1": 10,
-  "pants 2": 11,
-  "pants 3": 12,
-  sydney: 13,
-};
+// Explicit ordering for plates that should sort ahead of the rest. Empty since
+// the house set replaced the kylie/celine/sydney/pants plates (2026-09-05):
+// "studio NN" and its derived "crop NN" / "low NN" families sort by name.
+const MODEL_ORDER_PRIORITY: Record<string, number> = {};
 
 function displayModelName(modelId: string, folderName: string): string {
   return titleCaseWords(folderName);
