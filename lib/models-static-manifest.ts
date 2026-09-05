@@ -866,5 +866,98 @@ export const STATIC_HUMAN_MODELS = [
         }
       }
     ]
+  },
+  {
+    "id": "studio 13",
+    "name": "Studio 13",
+    "poses": [
+      {
+        "id": "studio 13",
+        "label": "Studio 13",
+        "publicPath": "/models/studio 13/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 13/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 13/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 13/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 13/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "studio 14",
+    "name": "Studio 14",
+    "poses": [
+      {
+        "id": "studio 14",
+        "label": "Studio 14",
+        "publicPath": "/models/studio 14/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 14/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 14/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 14/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 14/side.jpg"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "studio 15",
+    "name": "Studio 15",
+    "poses": [
+      {
+        "id": "studio 15",
+        "label": "Studio 15",
+        "publicPath": "/models/studio 15/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 15/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 15/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 15/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 15/side.jpg"
+          }
+        }
+      }
+    ]
   }
 ] as unknown as HumanModel[];
