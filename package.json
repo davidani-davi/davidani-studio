@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "vitest run"
+    "test": "vitest run",
+    "models:manifest": "vite-node scripts/build-models-manifest.mts"
   },
   "dependencies": {
     "@fal-ai/client": "^1.2.0",
