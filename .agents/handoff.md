@@ -1,6 +1,6 @@
 # Handoff — 2026-09-05 (Claude Code)
 
-Branch: main · last commit: see `git log -1` (GPT round-two docs) · Vercel auto-deploys on push.
+Branch: main · last commit: a42b4df (GPT default) · Vercel auto-deploys on push.
 Backup of the pre-engine pipeline: tag `model-maker-v1-nano-banana-2026-09-05` (pushed).
 
 ## Where it stands
@@ -19,12 +19,19 @@ Backup of the pre-engine pipeline: tag `model-maker-v1-nano-banana-2026-09-05` (
   rewrote a low plate into a full figure, redrew hair/shoes) — retire; a paste-back composite
   is the only useful mask.
 
-## Next steps (after David's verdict)
-1. If A/B win: make `modelId: "gpt-image"` + `native4k` the default for model-shots, fold the
-   neckline/hem/closure lines into `leanBrief` and re-run the six; then samples + vision judge.
+- **David's verdict: GPT at native size is the default now (a42b4df).** POST /api/model-shots
+  without modelId/gptVariant runs `gpt-image` + `native4k`; nano-banana, `gptVariant: "auto"`
+  and `engine: "tryon"` stay reachable by name. Two corrections re-run the same day: a front
+  photo for DP62140AP (auto size broke the low framing, native held it) and a zoomed neckline
+  photo for DWJ62218 (every variant then drew the crew neck) — the garment photo decides more
+  than the prompt; faire-management photo_pick now prefers the tightest frame with every hem.
+
+## Next steps
+1. Fold neckline / hem / closure from the garment contract into `leanBrief`, re-run the six as
+   B2, and if it holds make lean the default prompt too; then samples + vision judge.
 2. Delete the `masked` branch (route + `garmentMaskFromDiff`) unless David wants the paste-back.
-3. Extension (faire-management) exposes Engine = Editor / Try-on only; add a GPT switch or just
-   flip the studio default — needs an unpacked reload next time David is at a browser.
+3. Extension 2.30.1 (faire-management) relabels Editor as the GPT default; it sends no modelId so
+   the studio decides — the relabel needs an unpacked reload next time David is at a browser.
 
 ## Gotchas
 - FAL_KEY lives only in Vercel env — every GPT / try-on run goes through the deployed API.
