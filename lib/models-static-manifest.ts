@@ -32,7 +32,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "crop 02",
@@ -59,7 +61,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "crop 03",
@@ -86,7 +90,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "crop 04",
@@ -113,7 +119,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "crop 05",
@@ -140,7 +148,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "crop 06",
@@ -167,7 +177,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "crop 07",
@@ -194,7 +206,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "shorts",
+    "lowOk": true
   },
   {
     "id": "crop 08",
@@ -221,7 +235,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "skirt",
+    "lowOk": false
   },
   {
     "id": "crop 09",
@@ -248,7 +264,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "crop 10",
@@ -275,7 +293,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "crop 11",
@@ -302,7 +322,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "crop 12",
@@ -329,7 +351,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "skirt",
+    "lowOk": false
   },
   {
     "id": "crop 13",
@@ -356,7 +380,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "crop 14",
@@ -383,7 +409,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "crop 15",
@@ -410,7 +438,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "crop 16",
@@ -437,7 +467,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "crop 17",
@@ -464,7 +496,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "shorts",
+    "lowOk": true
   },
   {
     "id": "crop 18",
@@ -491,7 +525,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "crop 19",
@@ -518,7 +554,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "crop 20",
@@ -545,7 +583,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "crop 21",
@@ -572,7 +612,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "crop 22",
@@ -599,7 +641,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "skirt",
+    "lowOk": false
   },
   {
     "id": "crop 23",
@@ -626,7 +670,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "skirt",
+    "lowOk": false
   },
   {
     "id": "crop 24",
@@ -653,7 +699,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "crop 25",
@@ -680,7 +728,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "crop 26",
@@ -707,7 +757,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "crop 27",
@@ -734,7 +786,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "low 01",
@@ -757,7 +811,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "low 02",
@@ -780,7 +836,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "low 03",
@@ -803,7 +861,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "low 04",
@@ -826,7 +886,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "low 05",
@@ -849,7 +911,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "low 06",
@@ -872,7 +936,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "low 07",
@@ -895,7 +961,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "shorts",
+    "lowOk": true
   },
   {
     "id": "low 08",
@@ -918,7 +986,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "skirt",
+    "lowOk": false
   },
   {
     "id": "low 09",
@@ -941,7 +1011,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "low 10",
@@ -964,7 +1036,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "low 11",
@@ -987,7 +1061,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "low 12",
@@ -1010,7 +1086,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "skirt",
+    "lowOk": false
   },
   {
     "id": "low 13",
@@ -1033,7 +1111,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "low 14",
@@ -1056,7 +1136,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "low 15",
@@ -1079,7 +1161,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "low 16",
@@ -1102,7 +1186,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "low 17",
@@ -1125,7 +1211,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "shorts",
+    "lowOk": true
   },
   {
     "id": "low 18",
@@ -1148,7 +1236,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "low 19",
@@ -1171,7 +1261,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "low 20",
@@ -1194,7 +1286,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "low 21",
@@ -1217,7 +1311,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "low 22",
@@ -1240,7 +1336,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "skirt",
+    "lowOk": false
   },
   {
     "id": "low 23",
@@ -1263,7 +1361,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "skirt",
+    "lowOk": false
   },
   {
     "id": "low 24",
@@ -1286,7 +1386,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "low 25",
@@ -1309,7 +1411,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "low 26",
@@ -1332,7 +1436,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "low 27",
@@ -1355,7 +1461,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "studio 01",
@@ -1386,7 +1494,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "studio 02",
@@ -1417,7 +1527,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "studio 03",
@@ -1448,7 +1560,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "studio 04",
@@ -1479,7 +1593,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "studio 05",
@@ -1510,7 +1626,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "studio 06",
@@ -1541,7 +1659,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "studio 07",
@@ -1572,7 +1692,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "shorts",
+    "lowOk": true
   },
   {
     "id": "studio 08",
@@ -1603,7 +1725,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "skirt",
+    "lowOk": false
   },
   {
     "id": "studio 09",
@@ -1634,7 +1758,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "studio 10",
@@ -1665,7 +1791,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "studio 11",
@@ -1696,7 +1824,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "studio 12",
@@ -1727,7 +1857,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "skirt",
+    "lowOk": false
   },
   {
     "id": "studio 13",
@@ -1758,7 +1890,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "studio 14",
@@ -1789,7 +1923,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "studio 15",
@@ -1820,7 +1956,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "studio 16",
@@ -1851,7 +1989,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "studio 17",
@@ -1882,7 +2022,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "shorts",
+    "lowOk": true
   },
   {
     "id": "studio 18",
@@ -1913,7 +2055,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "studio 19",
@@ -1944,7 +2088,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "studio 20",
@@ -1975,7 +2121,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "studio 21",
@@ -2006,7 +2154,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "studio 22",
@@ -2037,7 +2187,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "skirt",
+    "lowOk": false
   },
   {
     "id": "studio 23",
@@ -2068,7 +2220,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "skirt",
+    "lowOk": false
   },
   {
     "id": "studio 24",
@@ -2099,7 +2253,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "studio 25",
@@ -2130,7 +2286,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "studio 26",
@@ -2161,7 +2319,9 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   },
   {
     "id": "studio 27",
@@ -2192,6 +2352,8 @@ export const STATIC_HUMAN_MODELS = [
           }
         }
       }
-    ]
+    ],
+    "wears": "pants",
+    "lowOk": true
   }
 ] as unknown as HumanModel[];

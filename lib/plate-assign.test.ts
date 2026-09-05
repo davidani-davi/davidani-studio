@@ -64,3 +64,43 @@ describe("assignPlate", () => {
     expect(assignPlate("DA1", old)!.humanModelId).toBe("kylie 1");
   });
 });
+
+describe("assignPlate for bottoms", () => {
+  const TAGGED = PLATES.map((p, i) => ({ ...p, wears: i % 3 === 0 ? "pants" : "dress", lowOk: i % 3 === 0 }));
+  const okIds = new Set(TAGGED.filter((p) => p.lowOk).map((p) => p.id));
+
+  it("shoots pants and skirts only where the model wears trousers", () => {
+    const cases: Array<[string, string]> = [["DP62140AP", "pants"], ["DS42505S", "skirt"], ["DP67160", "pants"], ["DP60023A", "pants"]];
+    for (const [code, category] of cases) {
+      const got = assignPlate(code, TAGGED, { category })!;
+      expect(okIds.has(got.humanModelId)).toBe(true);
+    }
+  });
+
+  it("still spreads bottoms across every trouser plate", () => {
+    const hist: Record<string, number> = {};
+    for (let i = 0; i < 120; i++) {
+      const got = assignPlate(`DP${60000 + i * 7}`, TAGGED, { category: "pants" })!;
+      hist[got.humanModelId] = (hist[got.humanModelId] || 0) + 1;
+    }
+    expect(Object.keys(hist).sort()).toEqual([...okIds].sort());
+  });
+
+  it("leaves tops on the whole house set", () => {
+    const hist = spread(Array.from({ length: 240 }, (_, i) => `DWT${60000 + i * 7}`), TAGGED);
+    expect(Object.keys(hist).length).toBe(TAGGED.length);
+  });
+
+  it("falls back to the house set when no plate is tagged", () => {
+    expect(assignPlate("DP62140AP", PLATES, { category: "pants" })).toEqual(assignPlate("DP62140AP", PLATES));
+  });
+
+  it("keeps a Plus twin on its regular's plate", () => {
+    expect(assignPlate("PP62140AP", TAGGED, { category: "pants" })).toEqual(assignPlate("DP62140AP", TAGGED, { category: "pants" }));
+  });
+
+  it("an explicit family preference still wins over the bottoms rule", () => {
+    const got = assignPlate("DP62140AP", TAGGED, { category: "pants", preferPrefix: "studio 02" })!;
+    expect(got.humanModelId).toBe("studio 02");
+  });
+});

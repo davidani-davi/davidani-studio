@@ -88,3 +88,20 @@ name the style code maps to, so a "Top & Pant Set" is a set, not pants.
 Pipeline: harvest → install → `plate_crop.py` → `npm run models:manifest`.
 The kylie / celine / sydney / pants plates retired to `public/models/hide/`
 the same day: the right framing for a top, the wrong models.
+
+## What the model wears (2026-09-05)
+
+A bottom is shot on `low NN`, and the generator repaints the model's legs with
+the garment. That works when the legs are already trousers and not when they
+are a dress or a long skirt: there is nothing to repaint and the hem bleeds
+into the result. So each house plate carries `wears` (pants / shorts / skirt /
+dress / jumpsuit / other) and `low_ok` in `plates.json`, read by
+`lib/plate-wear.ts`. The automatic assignment keeps pants and skirts to the
+`low_ok` subset (`assignPlate(code, plates, { category })`, still deterministic
+and still spread), `/api/model-shots` GET serves `wears` / `lowOk` per model and
+`previews.{full,crop,low}` per pose, and the extension's picker shows a bottom
+only the trouser plates, previewed waist-down. The tags come from
+faire-management `thumbnail-optimizer/plate_wear.py` (Claude vision over the
+front plate); `plate_harvest.py` asks new candidates the same question and
+`plate_install.py` records the answer, so a new plate arrives tagged. First
+pass: 23 of 27 plates take a bottom; studio 08, 12, 22 and 23 wear skirts.

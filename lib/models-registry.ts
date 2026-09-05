@@ -18,6 +18,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { uploadToFal } from "./fal";
 import { STATIC_HUMAN_MODELS } from "./models-static-manifest";
+import { mergePlateWear } from "./plate-wear";
 import { listUserModels } from "./user-assets";
 
 export interface ModelPose {
@@ -57,6 +58,10 @@ export interface HumanModel {
   poses: ModelPose[];
   /** True for user-uploaded models stored in Blob (deletable in the UI). */
   userAdded?: boolean;
+  /** What the model wears below the waist (plates.json `wears`) and whether a
+   *  bottom can be painted onto the plate (`low_ok`) — lib/plate-wear.ts. */
+  wears?: string;
+  lowOk?: boolean;
 }
 
 const IMAGE_EXTS = new Set(["png", "jpg", "jpeg", "webp"]);
@@ -371,7 +376,18 @@ export function listHumanModels(): HumanModel[] {
     if (aPriority !== bPriority) return aPriority - bPriority;
     return a.name.localeCompare(b.name);
   });
-  return models.length > 0 ? models : STATIC_HUMAN_MODELS;
+  // what each model wears below the waist, from plates.json (lib/plate-wear.ts)
+  const tagged = mergePlateWear(models, readPlateWear(modelsDir));
+  return tagged.length > 0 ? tagged : STATIC_HUMAN_MODELS;
+}
+
+function readPlateWear(modelsDir: string): Array<{ name?: string; wears?: string; low_ok?: boolean }> {
+  try {
+    const doc = JSON.parse(fs.readFileSync(path.join(modelsDir, "plates.json"), "utf8"));
+    return Array.isArray(doc?.plates) ? doc.plates : [];
+  } catch {
+    return [];
+  }
 }
 
 /**

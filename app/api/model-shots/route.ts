@@ -94,13 +94,27 @@ export async function GET(req: Request) {
   return json({
     ok: true,
     views: MULTI_MODEL_VIEWS,
-    // the crop/low families are the house plates re-framed, never picked by hand
-    models: models.filter((m) => m.userAdded || !isDerivedPlate(m.id)).map((m) => ({
-      id: m.id,
-      name: m.name,
-      userAdded: Boolean(m.userAdded),
-      poses: m.poses.map((p) => ({ id: p.id, label: p.label, preview: p.publicPath })),
-    })),
+    // the crop/low families are the house plates re-framed, never picked by
+    // hand — but their fronts ride along as previews, so a picker can show the
+    // framing a category will actually shoot on (waist-down for a bottom)
+    models: models.filter((m) => m.userAdded || !isDerivedPlate(m.id)).map((m) => {
+      const num = /^studio\s*(\d+)$/i.exec(m.id)?.[1];
+      const sibling = (family: string) =>
+        (num ? models.find((x) => x.id.toLowerCase() === `${family} ${num}`) : undefined)?.poses[0]?.publicPath;
+      return {
+        id: m.id,
+        name: m.name,
+        userAdded: Boolean(m.userAdded),
+        wears: m.wears,
+        lowOk: m.lowOk === true,
+        poses: m.poses.map((p) => ({
+          id: p.id,
+          label: p.label,
+          preview: p.publicPath,
+          previews: { full: p.publicPath, crop: sibling("crop"), low: sibling("low") },
+        })),
+      };
+    }),
   });
 }
 
@@ -152,7 +166,7 @@ export async function POST(req: Request) {
     if (!styleCode) {
       return json({ ok: false, error: "auto model needs a styleCode to assign from" }, 400);
     }
-    const choice = assignPlate(styleCode, catalogue, { preferPrefix: body.platePrefix });
+    const choice = assignPlate(styleCode, catalogue, { preferPrefix: body.platePrefix, category });
     if (!choice) return json({ ok: false, error: "no plates installed" }, 500);
     humanModelId = choice.humanModelId;
     poseId = choice.poseId;

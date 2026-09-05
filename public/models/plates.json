@@ -30,7 +30,11 @@
         "side"
       ],
       "front_is": "real studio photograph",
-      "others_are": "generated from the front plate, same model"
+      "others_are": "generated from the front plate, same model",
+      "wears": "pants",
+      "low_ok": true,
+      "legs_separated": true,
+      "hem": "ankle"
     },
     {
       "name": "studio 02",
@@ -44,7 +48,11 @@
         "side"
       ],
       "front_is": "real studio photograph",
-      "others_are": "generated from the front plate, same model"
+      "others_are": "generated from the front plate, same model",
+      "wears": "pants",
+      "low_ok": true,
+      "legs_separated": true,
+      "hem": "ankle"
     },
     {
       "name": "studio 03",
@@ -58,7 +66,11 @@
         "side"
       ],
       "front_is": "real studio photograph",
-      "others_are": "generated from the front plate, same model"
+      "others_are": "generated from the front plate, same model",
+      "wears": "pants",
+      "low_ok": true,
+      "legs_separated": true,
+      "hem": "floor"
     },
     {
       "name": "studio 04",
@@ -72,7 +84,11 @@
         "side"
       ],
       "front_is": "real studio photograph",
-      "others_are": "generated from the front plate, same model"
+      "others_are": "generated from the front plate, same model",
+      "wears": "pants",
+      "low_ok": true,
+      "legs_separated": true,
+      "hem": "ankle"
     },
     {
       "name": "studio 05",
@@ -86,7 +102,11 @@
         "side"
       ],
       "front_is": "real studio photograph",
-      "others_are": "generated from the front plate, same model"
+      "others_are": "generated from the front plate, same model",
+      "wears": "pants",
+      "low_ok": true,
+      "legs_separated": true,
+      "hem": "ankle"
     },
     {
       "name": "studio 06",
@@ -100,7 +120,11 @@
         "side"
       ],
       "front_is": "real studio photograph",
-      "others_are": "generated from the front plate, same model"
+      "others_are": "generated from the front plate, same model",
+      "wears": "pants",
+      "low_ok": true,
+      "legs_separated": true,
+      "hem": "ankle"
     },
     {
       "name": "studio 07",
@@ -114,7 +138,11 @@
         "side"
       ],
       "front_is": "real studio photograph",
-      "others_are": "generated from the front plate, same model"
+      "others_are": "generated from the front plate, same model",
+      "wears": "shorts",
+      "low_ok": true,
+      "legs_separated": true,
+      "hem": "above-knee"
     },
     {
       "name": "studio 08",
@@ -128,7 +156,11 @@
         "side"
       ],
       "front_is": "real studio photograph",
-      "others_are": "generated from the front plate, same model"
+      "others_are": "generated from the front plate, same model",
+      "wears": "skirt",
+      "low_ok": false,
+      "legs_separated": false,
+      "hem": "ankle"
     },
     {
       "name": "studio 09",
@@ -142,7 +174,11 @@
         "side"
       ],
       "front_is": "real studio photograph",
-      "others_are": "generated from the front plate, same model"
+      "others_are": "generated from the front plate, same model",
+      "wears": "pants",
+      "low_ok": true,
+      "legs_separated": true,
+      "hem": "ankle"
     },
     {
       "name": "studio 10",
@@ -156,7 +192,11 @@
         "side"
       ],
       "front_is": "real studio photograph",
-      "others_are": "generated from the front plate, same model"
+      "others_are": "generated from the front plate, same model",
+      "wears": "pants",
+      "low_ok": true,
+      "legs_separated": true,
+      "hem": "floor"
     },
     {
       "name": "studio 11",
@@ -170,7 +210,11 @@
         "side"
       ],
       "front_is": "real studio photograph",
-      "others_are": "generated from the front plate, same model"
+      "others_are": "generated from the front plate, same model",
+      "wears": "pants",
+      "low_ok": true,
+      "legs_separated": true,
+      "hem": "ankle"
     },
     {
       "name": "studio 12",
@@ -184,7 +228,11 @@
         "side"
       ],
       "front_is": "real studio photograph",
-      "others_are": "generated from the front plate, same model"
+      "others_are": "generated from the front plate, same model",
+      "wears": "skirt",
+      "low_ok": false,
+      "legs_separated": false,
+      "hem": "above-knee"
     },
     {
       "name": "studio 13",
@@ -198,7 +246,11 @@
         "side"
       ],
       "front_is": "real studio photograph",
-      "others_are": "generated from the front plate, same model"
+      "others_are": "generated from the front plate, same model",
+      "wears": "pants",
+      "low_ok": true,
+      "legs_separated": true,
+      "hem": "ankle"
     },
     {
       "name": "studio 14",
@@ -212,7 +264,11 @@
         "side"
       ],
       "front_is": "real studio photograph",
-      "others_are": "generated from the front plate, same model"
+      "others_are": "generated from the front plate, same model",
+      "wears": "pants",
+      "low_ok": true,
+      "legs_separated": true,
+      "hem": "ankle"
     },
     {
       "name": "studio 15",
@@ -226,7 +282,11 @@
         "side"
       ],
       "front_is": "real studio photograph",
-      "others_are": "generated from the front plate, same model"
+      "others_are": "generated from the front plate, same model",
+      "wears": "pants",
+      "low_ok": true,
+      "legs_separated": true,
+      "hem": "ankle"
     },
     {
       "name": "studio 16",
@@ -240,7 +300,11 @@
         "side"
       ],
       "front_is": "real studio photograph",
-      "others_are": "generated from the front plate, same model"
+      "others_are": "generated from the front plate, same model",
+      "wears": "pants",
+      "low_ok": true,
+      "legs_separated": true,
+      "hem": "ankle"
     },
     {
       "name": "studio 17",
@@ -254,7 +318,11 @@
         "side"
       ],
       "front_is": "real studio photograph",
-      "others_are": "generated from the front plate, same model"
+      "others_are": "generated from the front plate, same model",
+      "wears": "shorts",
+      "low_ok": true,
+      "legs_separated": false,
+      "hem": "above-knee"
     },
     {
       "name": "studio 18",
@@ -268,7 +336,11 @@
         "side"
       ],
       "front_is": "real studio photograph",
-      "others_are": "generated from the front plate, same model"
+      "others_are": "generated from the front plate, same model",
+      "wears": "pants",
+      "low_ok": true,
+      "legs_separated": true,
+      "hem": "ankle"
     },
     {
       "name": "studio 19",
@@ -282,7 +354,11 @@
         "side"
       ],
       "front_is": "real studio photograph",
-      "others_are": "generated from the front plate, same model"
+      "others_are": "generated from the front plate, same model",
+      "wears": "pants",
+      "low_ok": true,
+      "legs_separated": true,
+      "hem": "ankle"
     },
     {
       "name": "studio 20",
@@ -296,7 +372,11 @@
         "side"
       ],
       "front_is": "real studio photograph",
-      "others_are": "generated from the front plate, same model"
+      "others_are": "generated from the front plate, same model",
+      "wears": "pants",
+      "low_ok": true,
+      "legs_separated": true,
+      "hem": "floor"
     },
     {
       "name": "studio 21",
@@ -310,7 +390,11 @@
         "side"
       ],
       "front_is": "real studio photograph",
-      "others_are": "generated from the front plate, same model"
+      "others_are": "generated from the front plate, same model",
+      "wears": "pants",
+      "low_ok": true,
+      "legs_separated": true,
+      "hem": "ankle"
     },
     {
       "name": "studio 22",
@@ -324,7 +408,11 @@
         "side"
       ],
       "front_is": "real studio photograph",
-      "others_are": "generated from the front plate, same model"
+      "others_are": "generated from the front plate, same model",
+      "wears": "skirt",
+      "low_ok": false,
+      "legs_separated": false,
+      "hem": "ankle"
     },
     {
       "name": "studio 23",
@@ -338,7 +426,11 @@
         "side"
       ],
       "front_is": "real studio photograph",
-      "others_are": "generated from the front plate, same model"
+      "others_are": "generated from the front plate, same model",
+      "wears": "skirt",
+      "low_ok": false,
+      "legs_separated": false,
+      "hem": "ankle"
     },
     {
       "name": "studio 24",
@@ -352,7 +444,11 @@
         "side"
       ],
       "front_is": "real studio photograph",
-      "others_are": "generated from the front plate, same model"
+      "others_are": "generated from the front plate, same model",
+      "wears": "pants",
+      "low_ok": true,
+      "legs_separated": true,
+      "hem": "floor"
     },
     {
       "name": "studio 25",
@@ -366,7 +462,11 @@
         "side"
       ],
       "front_is": "real studio photograph",
-      "others_are": "generated from the front plate, same model"
+      "others_are": "generated from the front plate, same model",
+      "wears": "pants",
+      "low_ok": true,
+      "legs_separated": true,
+      "hem": "ankle"
     },
     {
       "name": "studio 26",
@@ -380,7 +480,11 @@
         "side"
       ],
       "front_is": "real studio photograph",
-      "others_are": "generated from the front plate, same model"
+      "others_are": "generated from the front plate, same model",
+      "wears": "pants",
+      "low_ok": true,
+      "legs_separated": true,
+      "hem": "ankle"
     },
     {
       "name": "studio 27",
@@ -394,7 +498,11 @@
         "side"
       ],
       "front_is": "real studio photograph",
-      "others_are": "generated from the front plate, same model"
+      "others_are": "generated from the front plate, same model",
+      "wears": "pants",
+      "low_ok": true,
+      "legs_separated": true,
+      "hem": "ankle"
     }
   ],
   "families": {

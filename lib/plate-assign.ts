@@ -1,3 +1,5 @@
+import { bottomPlates, isBottom } from "./plate-wear";
+
 /**
  * Which model a style gets shot on.
  *
@@ -57,17 +59,24 @@ export function plateHash(styleCode: string): number {
  */
 export function assignPlate(
   styleCode: string,
-  plates: Array<{ id: string; poses: Array<{ id: string }> }>,
-  opts: { preferPrefix?: string } = {}
+  plates: Array<{ id: string; poses: Array<{ id: string }>; lowOk?: boolean }>,
+  opts: { preferPrefix?: string; category?: string } = {}
 ): PlateChoice | null {
   const usable = (plates || []).filter((p) => p.poses && p.poses.length);
   if (!usable.length) return null;
 
   // Explicit preference first, then the house set, then whatever exists —
   // never nothing, because a missing plate is a failed run.
-  const preferred = opts.preferPrefix
+  let preferred = opts.preferPrefix
     ? usable.filter((p) => p.id.toLowerCase().startsWith(opts.preferPrefix!.toLowerCase()))
     : housePlates(usable);
+  // A bottom is painted onto the waist-down sibling of its plate, which only
+  // works when the model already wears trousers (lib/plate-wear.ts): pants
+  // and skirts draw from the tagged subset when there is one.
+  if (!opts.preferPrefix && isBottom(opts.category)) {
+    const lows = bottomPlates(usable);
+    if (lows.length) preferred = lows;
+  }
   const list = preferred.length ? preferred : usable;
 
   // A Plus twin is the same garment: strip the leading P so the pair lands on
