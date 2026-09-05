@@ -119,6 +119,36 @@ observations stop being a maintenance burden.
 **7. Doji-shaped extras, later.** Faire listing videos from the front view
 (image-to-video); a "twin" per plate model is just the plate family we have.
 
+## The bake-off (2026-09-05, front view, one plate per style, three engines)
+
+Six styles through `engine: "tryon"` (FASHN v1.6), the v1 editor on `nano-banana-2`
+(4K) and the v1 editor on GPT Image 2 (`modelId: "gpt-image"`). Sheets were sent
+to David; he judges. What the numbers and my own eyes say:
+
+| Style | Plate | Try-on | Editor · nano | Editor · GPT Image 2 |
+|---|---|---|---|---|
+| DWJ62218 striped cardigan | crop 22 | 23 s · face 0.1% changed · white tee from the ERP photo kept under it, hem to the hip | 56 s · 2.8% · hem cropped above the belt | 90 s · 8.6% · 1200×1792 |
+| DP62140AP plaid barrel pants | low 07 | 42 s · plaid right, **barrel silhouette lost** (reads straight) | 97 s · barrel right, but **re-dressed the top in matching plaid** | 93 s · barrel right, top kept |
+| DWT68181 striped sweater (flat photo) | crop 09 | 22 s · 0.2% · stripes **wave and drift** across the chest | 104 s · 2.7% · stripes crisp, colour dull | 91 s · 1.9% · crisp, pink seam kept |
+| DWT60401 deer sweater (on-model photo) | crop 17 | 25 s · 0.1% · intarsia and scalloped hem faithful | 95 s · 5.1% · faithful | 90 s · 2.1% · faithful |
+| DT62181 ruffle blouse (flat) | crop 10 | 21 s · 0.4% · plausible but a different tier structure | 70 s · 2.6% · cape structure right | 93 s · 0.2% · right |
+| DP62206 floral denim (flat) | low 02 | 40 s · florals placed, leg slimmer than the photo | 95 s · faithful | 96 s · faithful |
+
+"face n% changed" = share of pixels in the top 22% of the frame that moved by more
+than 24/255 against the plate (meaningless on the waist-down `low` plates, where that
+band is the garment).
+
+**Reading.** Hypothesis 1 holds: the try-on leaves the photograph alone (0.1–0.4%
+on every crop plate) and is 2–4× faster. Hypotheses 2 and 3 do **not** hold for
+FASHN on our garments: the whole-frame editors were *more* faithful to silhouette
+(barrel, cape, hem) and to a flat-photo print (the stripes). The editor's own tell
+showed up once: nano re-dressed the plate's top to match the pants (DP62140AP).
+GPT Image 2 was the most faithful editor but redraws the face most on one case and
+tops out at 1200×1792. Two engine fixes came out of the run: the plate's own outfit
+must be segmented out (`segmentation_free` off — the first pass left the plate's
+turtleneck collar under the cardigan), and the try-on's 864×1296 needs the
+full-res composite (step 3) before it can ship at 2000×3000.
+
 ## What this is not
 
 Not a rewrite. The route grows a second engine; the plates, the picker, the ERP
