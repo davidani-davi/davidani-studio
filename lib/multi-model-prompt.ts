@@ -86,6 +86,33 @@ export function buildMultiModelViewSuffix(
   );
 }
 
+/**
+ * The operator's note on a Redo ("zip-front stand collar, no lapels"), as one
+ * clean line: no control characters, 300 characters at most, or nothing.
+ */
+export function sanitizeOperatorNote(note: unknown): string {
+  return String(note ?? "")
+    .replace(/[\u0000-\u001f\u007f]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 300);
+}
+
+/**
+ * One view came back wrong while the others were approved. The person who
+ * approved them says what is wrong; that sentence outranks the vision read,
+ * because it is the only input here that has actually seen the garment.
+ */
+export function buildOperatorNoteSuffix(note: unknown, view: PresetView): string {
+  const clean = sanitizeOperatorNote(note);
+  if (!clean) return "";
+  return (
+    ` OPERATOR CORRECTION for this ${view} view, from the person who approved the other views of this set: ${clean}. ` +
+    "This correction is the truth about the garment and overrides any conflicting reading of the garment photographs or of the reference plate. " +
+    "Change only what the correction names; keep the model, framing, garment color, fabric, and every other detail exactly as in the approved views."
+  );
+}
+
 export function buildMultiModelConsistencySuffix(
   garment: string,
   features: string,

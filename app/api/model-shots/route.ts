@@ -7,6 +7,8 @@ import {
   MULTI_MODEL_VIEWS,
   buildMultiModelConsistencySuffix,
   buildMultiModelViewSuffix,
+  buildOperatorNoteSuffix,
+  sanitizeOperatorNote,
   mergeMultiModelGarmentIdentity,
   multiModelPoseVariantIndex,
 } from "@/lib/multi-model-prompt";
@@ -125,6 +127,9 @@ export async function POST(req: Request) {
   // it the run behaves exactly as before, on vision alone.
   const known: KnownGarment = (body.known && typeof body.known === "object" ? body.known : {}) as KnownGarment;
 
+  // A Redo's fix note from the extension: what the operator says is wrong
+  // with this one view. Empty on a normal run.
+  const note = sanitizeOperatorNote(body.note);
   if (!garmentImageUrls.length) return json({ ok: false, error: "garmentImageUrls is required" }, 400);
 
   // What is being shot decides the views and the plate framing
@@ -229,7 +234,8 @@ export async function POST(req: Request) {
     const prompt = optimizePromptForModel(
       modelId,
       `${basePrompt}${buildMultiModelConsistencySuffix(identity.garment, identity.features, views)}` +
-        `${buildMultiModelViewSuffix(view, hasBackReference, { framing, views })}`
+        `${buildMultiModelViewSuffix(view, hasBackReference, { framing, views })}` +
+        `${buildOperatorNoteSuffix(note, view)}`
     );
 
     const generated = await call(generateModel, "/api/generate-model", {
@@ -253,7 +259,7 @@ export async function POST(req: Request) {
     return json({
       ok: true, view, url, prompt,
       garment: identity.garment,
-      humanModelId, poseId, assigned, category, framing,
+      humanModelId, poseId, assigned, category, framing, note: note || undefined,
       // What the known facts changed, so a wrong contract is visible in the
       // panel and countable in the eval rather than silent.
       corrections: contract?.corrections ?? [],
