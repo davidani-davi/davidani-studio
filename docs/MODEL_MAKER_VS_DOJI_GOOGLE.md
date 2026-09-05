@@ -169,6 +169,7 @@ meaningless on the waist-down `low` plates so the two pants rows are omitted):
 | style | plate | benchmark | A | B | C |
 |---|---|---|---|---|---|
 | DWJ62218 striped cardigan | crop 22 | 8.6 | 5.1 | 6.4 | 7.5 |
+| DWJ62218, re-run on the zoomed-in front photo | crop 22 | 5.3 | 8.9 | 1.7 | 4.2 |
 | DWT68181 striped sweater | crop 09 | 1.9 | 2.1 | 1.9 | 6.3 |
 | DWT60401 deer sweater | crop 17 | 2.1 | 6.5 | 5.2 | 4.2 |
 | DT62181 lace cape top | crop 10 | 0.2 | 1.4 | 0.4 | 7.6 |
@@ -192,6 +193,16 @@ Reading, before David's:
   the frame — because the try-on re-renders the whole image faintly. If the mask
   is to help, it is as a *paste-back* after the edit (plate pixels outside the
   garment, edit inside), never as an input. Retire the variant.
+
+**Two corrections from David, re-run the same day.** The DP62140AP garment photo was
+the back view (`BURGUNDY_4`); on the front view (`BURGUNDY_2`) A and B kept the
+waist-down framing and the plate's striped top, while the benchmark at auto size and
+C both rewrote the low plate into a full-length figure with a head. The benchmark is
+not immune to that, then; native size seems to anchor the frame. DWJ62218 on the
+zoomed-in front photo (`RED PINK_2`, neckline and white tee clearly visible): all four
+drew the crew neck with the tee, B with the least face change of the day (1.7%). The
+garment photo decides the neckline more than the prompt does — production picks it
+with the vision hero pick (front-facing); the scratch runner had picked by hand.
 
 Sheets: faire-management scratch `ab_<STYLE>_gptsheet.jpg` (run by `ab_tryon.py …
 gpt4k gptlean gptmask`, sheet by `SHEET_ENGINES=gpt,gpt4k,gptlean,gptmask sheet.py`).
