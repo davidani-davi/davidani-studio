@@ -3052,6 +3052,23 @@ export interface GenerateParams {
    */
   raw?: boolean;
   /**
+   * Send `prompt` exactly as given — no model prefix, no overlay text — but
+   * keep every other default (reference canvas, image ordering, no
+   * portrait-recreation rewrite). The model-shots lean brief uses this: it
+   * names the face it wants kept, which `raw` would read as a portrait job.
+   */
+  verbatimPrompt?: boolean;
+  /**
+   * GPT Image 2 only: ask for this output size (both edges multiples of 16,
+   * at most 8.3 MP). Omitted → the edit infers a size from its inputs.
+   */
+  imageSize?: { width: number; height: number };
+  /**
+   * GPT Image 2 only: a mask the size of image_urls[0] — white where the
+   * edit may paint, black where the input is kept.
+   */
+  maskUrl?: string;
+  /**
    * Which studio's prompt prefix to stack in front of `prompt`. Image Studio
    * passes "product-shot" so it stops inheriting Model Studio's prefix, which
    * explicitly forbids flat lays. Defaults to "model-swap" — see PromptIntent.
@@ -3505,7 +3522,9 @@ export async function generate(params: GenerateParams): Promise<GenerationResult
     ? portraitRecreation
       ? sanitizeRejectedPortraitPrompt(params.prompt)
       : params.prompt
-    : optimizePromptForModel(params.modelId, params.prompt, params.intent);
+    : params.verbatimPrompt
+      ? params.prompt
+      : optimizePromptForModel(params.modelId, params.prompt, params.intent);
   const finalPrompt = modelOptimizedPrompt + overlayInstruction;
   let input: Record<string, unknown> = { prompt: finalPrompt };
 
@@ -3593,6 +3612,8 @@ export async function generate(params: GenerateParams): Promise<GenerationResult
         openAiApiKey: process.env.OPENAI_API_KEY,
       })
     );
+    if (params.imageSize) input.image_size = { width: params.imageSize.width, height: params.imageSize.height };
+    if (params.maskUrl) input.mask_url = params.maskUrl;
   }
 
   let result: any;

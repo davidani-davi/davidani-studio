@@ -17,6 +17,9 @@ import { buildGarmentContract, hasKnownFacts, type KnownGarment } from "@/lib/ga
 import { assignPlate } from "@/lib/plate-assign";
 import { framingFor, isDerivedPlate, plateForFraming, shotCategory, shotViews } from "@/lib/plate-framing";
 import { buildTryOnInput, garmentForView, runTryOn, tryOnSeed, type GarmentPhotoType } from "@/lib/tryon-engine";
+import { GPT_NATIVE_SIZE, garmentMaskFromDiff, gptVariantOf, leanBrief, maskCoverage } from "@/lib/gpt-variants";
+import { uploadToFal } from "@/lib/fal";
+import sharp from "sharp";
 import { getPosePublicPath, getPoseUrl, isKnownHumanModel } from "@/lib/models-registry";
 import { findUserModelViewUrl } from "@/lib/user-assets";
 import type { ModelId } from "@/lib/models";
@@ -299,12 +302,54 @@ export async function POST(req: Request) {
     if (!basePrompt) throw new Error(`analyzer returned an empty ${view} prompt`);
 
     const identity = mergeMultiModelGarmentIdentity(analyzeData);
-    const prompt = optimizePromptForModel(
+    const v1Prompt = optimizePromptForModel(
       modelId,
       `${basePrompt}${buildMultiModelConsistencySuffix(identity.garment, identity.features, views)}` +
         `${buildMultiModelViewSuffix(view, hasBackReference, { framing, views })}` +
         `${buildOperatorNoteSuffix(note, view)}`
     );
+
+    // GPT Image 2 variants (lib/gpt-variants.ts). Each isolates one change
+    // against the v1 run: the output size, the prompt, or a repaint mask.
+    const gptVariant = modelId === "gpt-image" ? gptVariantOf(body.gptVariant) : "auto";
+    let prompt = v1Prompt;
+    let rawPrompt = false;
+    let imageSize: { width: number; height: number } | undefined;
+    let maskUrl: string | undefined;
+    let canvasImageUrl: string | undefined;
+    let maskInfo: { coverage: number; tryonMs: number } | undefined;
+    if (gptVariant === "native4k" || gptVariant === "lean") imageSize = { ...GPT_NATIVE_SIZE };
+    if (gptVariant === "lean") {
+      prompt = leanBrief({
+        garment: identity.garment, features: identity.features, category, view,
+        hasBackPhoto: hasBackReference, note,
+      });
+      rawPrompt = true;
+    }
+    if (gptVariant === "masked") {
+      // the try-on's footprint on this plate is the region a garment occupies
+      const variantIndex = multiModelPoseVariantIndex(view);
+      const plateUrl = await resolvePlateUrl(req, humanModelId, poseId, view, variantIndex);
+      const tryon = await runTryOn(buildTryOnInput({
+        plateUrl, garmentUrl: garmentForView(view, garmentImageUrls), category,
+        seed: tryOnSeed(String(known.styleCode || body.styleCode || ""), view, note),
+      }));
+      const [plateBuf, tryonBuf] = await Promise.all(
+        [plateUrl, tryon.urls[0]].map(async (u) => Buffer.from(await (await fetch(u)).arrayBuffer()))
+      );
+      const size = { ...GPT_NATIVE_SIZE };
+      const [plateUp, mask] = await Promise.all([
+        sharp(plateBuf).resize(size.width, size.height, { fit: "fill", kernel: "lanczos3" }).jpeg({ quality: 95 }).toBuffer(),
+        garmentMaskFromDiff(plateBuf, tryonBuf, { size }),
+      ]);
+      const [plateUpUrl, maskUp] = await Promise.all([
+        uploadToFal(new Blob([Uint8Array.from(plateUp)], { type: "image/jpeg" }), "plate-4k.jpg"),
+        uploadToFal(new Blob([Uint8Array.from(mask)], { type: "image/png" }), "garment-mask.png"),
+      ]);
+      canvasImageUrl = plateUpUrl;
+      maskUrl = maskUp;
+      maskInfo = { coverage: await maskCoverage(mask), tryonMs: tryon.ms };
+    }
 
     const generated = await call(generateModel, "/api/generate-model", {
       modelId,
@@ -319,6 +364,10 @@ export async function POST(req: Request) {
       poseVariantIndex: multiModelPoseVariantIndex(view),
       preserveSecondaryReferences: hasBackReference,
       prompt,
+      ...(rawPrompt ? { rawPrompt: true } : {}),
+      ...(imageSize ? { imageSize } : {}),
+      ...(maskUrl ? { maskUrl } : {}),
+      ...(canvasImageUrl ? { canvasImageUrl } : {}),
     });
 
     const url = generated?.images?.[0]?.url;
@@ -326,6 +375,7 @@ export async function POST(req: Request) {
 
     return json({
       ok: true, view, url, prompt,
+      ...(gptVariant !== "auto" ? { gptVariant, ...(maskInfo ? { mask: maskInfo } : {}) } : {}),
       garment: identity.garment,
       humanModelId, poseId, assigned, category, framing, note: note || undefined,
       // What the known facts changed, so a wrong contract is visible in the

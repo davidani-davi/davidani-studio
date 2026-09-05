@@ -81,6 +81,9 @@ export async function POST(req: Request) {
       overlay,
       poseVariantIndex,
       preserveSecondaryReferences,
+      imageSize,
+      maskUrl,
+      rawPrompt,
     } = body as {
       modelId: ModelId;
       humanModelId: string;
@@ -96,6 +99,10 @@ export async function POST(req: Request) {
       overlay?: OverlayOptions;
       poseVariantIndex?: number;
       preserveSecondaryReferences?: boolean;
+      /** GPT Image 2 variants (lib/gpt-variants.ts): output size, repaint mask, prompt as given. */
+      imageSize?: { width: number; height: number };
+      maskUrl?: string;
+      rawPrompt?: boolean;
     };
     const safePoseVariantIndex =
       typeof poseVariantIndex === "number" && Number.isFinite(poseVariantIndex)
@@ -138,7 +145,10 @@ export async function POST(req: Request) {
     try {
       result = await generate({
         modelId,
-        prompt: `${prompt} ${MODEL_POSE_GARMENT_FIREWALL}`,
+        prompt: rawPrompt ? prompt : `${prompt} ${MODEL_POSE_GARMENT_FIREWALL}`,
+        verbatimPrompt: rawPrompt === true,
+        imageSize,
+        maskUrl,
         imageUrls: garmentImageUrls,
         // Normal run: pose is the canvas. QC repair: selected result is the canvas.
         referenceImageUrl: canvasUrl,
@@ -176,7 +186,10 @@ export async function POST(req: Request) {
         prompt:
           canRetryWithPrimaryReference
             ? `${prompt} ${MODEL_POSE_GARMENT_FIREWALL} Use the remaining product reference as the sole garment source of truth. Do not invent missing details from removed secondary references.`
-            : `${prompt} ${MODEL_POSE_GARMENT_FIREWALL}`,
+            : rawPrompt ? prompt : `${prompt} ${MODEL_POSE_GARMENT_FIREWALL}`,
+        verbatimPrompt: rawPrompt === true,
+        imageSize,
+        maskUrl,
         imageUrls: canRetryWithPrimaryReference ? [garmentImageUrls[0]] : garmentImageUrls,
         referenceImageUrl: canvasUrl,
         aspectRatio,
