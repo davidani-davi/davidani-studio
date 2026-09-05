@@ -220,6 +220,7 @@ export async function POST(req: Request) {
         plateUrl, garmentUrl, category, garmentPhotoType: photoType,
         seed: tryOnSeed(styleCode, view, note),
         samples: Number(body.samples) || 1,
+        segmentationFree: body.segmentationFree === true,
       });
       const out = await runTryOn(input);
       return json({

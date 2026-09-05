@@ -41,7 +41,7 @@ describe("buildTryOnInput", () => {
     const input = buildTryOnInput({ plateUrl: "https://x/plate.jpg", garmentUrl: "https://x/g.jpg", category: "pants", seed: 7 });
     expect(input).toEqual({
       model_image: "https://x/plate.jpg", garment_image: "https://x/g.jpg", category: "bottoms", mode: "quality",
-      garment_photo_type: "auto", segmentation_free: true, output_format: "png", num_samples: 1,
+      garment_photo_type: "auto", segmentation_free: false, output_format: "png", num_samples: 1,
       moderation_level: "permissive", seed: 7,
     });
     expect("prompt" in input).toBe(false);
@@ -51,6 +51,7 @@ describe("buildTryOnInput", () => {
     expect(buildTryOnInput({ plateUrl: "p", garmentUrl: "g", samples: 9 }).num_samples).toBe(4);
     expect(buildTryOnInput({ plateUrl: "p", garmentUrl: "g", samples: 0 }).num_samples).toBe(1);
     expect("seed" in buildTryOnInput({ plateUrl: "p", garmentUrl: "g" })).toBe(false);
+    expect(buildTryOnInput({ plateUrl: "p", garmentUrl: "g", segmentationFree: true }).segmentation_free).toBe(true);
     expect(() => buildTryOnInput({ plateUrl: "", garmentUrl: "g" })).toThrow(/plateUrl/);
   });
 });

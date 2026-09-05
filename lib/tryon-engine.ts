@@ -94,6 +94,11 @@ export function buildTryOnInput(o: {
   garmentPhotoType?: GarmentPhotoType;
   seed?: number;
   samples?: number;
+  /** Skip the model's clothing segmentation. Our plates are real outfits, so
+   * the garment the model wears must be parsed out and replaced — the first
+   * bake-off (DWJ62218 on crop 22, 2026-09-05) left the plate's turtleneck
+   * collar showing through the cardigan with this on. Off unless asked. */
+  segmentationFree?: boolean;
 }): TryOnInput {
   if (!o.plateUrl) throw new Error("plateUrl is required");
   if (!o.garmentUrl) throw new Error("garmentUrl is required");
@@ -103,8 +108,7 @@ export function buildTryOnInput(o: {
     category: tryOnCategory(o.category),
     mode: "quality",
     garment_photo_type: o.garmentPhotoType || "auto",
-    // the plate is one model on seamless paper: human parsing adds nothing
-    segmentation_free: true,
+    segmentation_free: o.segmentationFree === true,
     output_format: "png",
     num_samples: Math.min(4, Math.max(1, Math.floor(o.samples || 1))),
     moderation_level: "permissive",
