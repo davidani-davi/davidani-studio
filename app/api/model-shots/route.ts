@@ -16,6 +16,9 @@ import { optimizePromptForModel } from "@/lib/prompt-strategy";
 import { buildGarmentContract, hasKnownFacts, type KnownGarment } from "@/lib/garment-contract";
 import { assignPlate } from "@/lib/plate-assign";
 import { framingFor, isDerivedPlate, plateForFraming, shotCategory, shotViews } from "@/lib/plate-framing";
+import { buildTryOnInput, garmentForView, runTryOn, tryOnSeed, type GarmentPhotoType } from "@/lib/tryon-engine";
+import { getPosePublicPath, getPoseUrl, isKnownHumanModel } from "@/lib/models-registry";
+import { findUserModelViewUrl } from "@/lib/user-assets";
 import type { ModelId } from "@/lib/models";
 
 export const runtime = "nodejs";
@@ -85,6 +88,22 @@ async function authorized(req: Request): Promise<boolean> {
   const cookie = req.headers.get("cookie") || "";
   const match = cookie.match(new RegExp(`(?:^|;\\s*)${SESSION_COOKIE}=([^;]+)`));
   return match ? verifySessionToken(decodeURIComponent(match[1]), secret) : false;
+}
+
+/**
+ * The plate as a URL the try-on model can fetch — the same resolution rule as
+ * /api/generate-model: a user-added model's stored URL, the public path on
+ * Vercel, a fal-storage upload in local dev.
+ */
+async function resolvePlateUrl(
+  req: Request, modelId: string, poseId: string, view: PresetView, variantIndex: number
+): Promise<string> {
+  if (!isKnownHumanModel(modelId)) {
+    const userUrl = await findUserModelViewUrl(modelId, view);
+    if (userUrl) return userUrl.startsWith("http") ? userUrl : new URL(userUrl, req.url).toString();
+  }
+  if (process.env.VERCEL) return new URL(getPosePublicPath(modelId, poseId, view, variantIndex), req.url).toString();
+  return getPoseUrl(modelId, poseId, view, variantIndex);
 }
 
 /** GET — the model catalog the extension's picker shows. */
@@ -180,6 +199,40 @@ export async function POST(req: Request) {
   const plate = plateForFraming(humanModelId, poseId, framing, catalogue);
   humanModelId = plate.humanModelId;
   poseId = plate.poseId;
+
+  /**
+   * The try-on engine (lib/tryon-engine.ts): the plate and the garment photo go
+   * straight into a purpose-built try-on model — no vision reads, no prompt.
+   * The person is kept and only the garment is generated, which is the whole
+   * difference between a photograph and a render. Off by default; the
+   * extension asks for it with `engine: "tryon"`.
+   */
+  const engine: "nano" | "tryon" = body.engine === "tryon" ? "tryon" : "nano";
+  if (engine === "tryon") {
+    try {
+      const variantIndex = multiModelPoseVariantIndex(view);
+      const plateUrl = await resolvePlateUrl(req, humanModelId, poseId, view, variantIndex);
+      const garmentUrl = garmentForView(view, garmentImageUrls);
+      const styleCode = String(known.styleCode || body.styleCode || "").trim();
+      const photoType: GarmentPhotoType =
+        body.garmentPhotoType === "flat-lay" || body.garmentPhotoType === "model" ? body.garmentPhotoType : "auto";
+      const input = buildTryOnInput({
+        plateUrl, garmentUrl, category, garmentPhotoType: photoType,
+        seed: tryOnSeed(styleCode, view, note),
+        samples: Number(body.samples) || 1,
+      });
+      const out = await runTryOn(input);
+      return json({
+        ok: true, view, url: out.urls[0], urls: out.urls, engine,
+        garment: garmentUrl, prompt: "",
+        humanModelId, poseId, assigned, category, framing, note: note || undefined,
+        corrections: [],
+        tryon: { endpoint: out.endpoint, category: input.category, seed: input.seed, ms: out.ms },
+      });
+    } catch (err: any) {
+      return json({ ok: false, view, engine, error: String(err?.message || err) }, 502);
+    }
+  }
 
   const origin = new URL(req.url).origin;
   const call = async (
