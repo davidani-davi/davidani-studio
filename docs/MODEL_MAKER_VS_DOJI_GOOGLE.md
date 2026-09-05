@@ -149,6 +149,53 @@ must be segmented out (`segmentation_free` off — the first pass left the plate
 turtleneck collar under the cardigan), and the try-on's 864×1296 needs the
 full-res composite (step 3) before it can ship at 2000×3000.
 
+## GPT round two (2026-09-05, same six styles, same plates, three variants)
+
+David judged the first bake-off: GPT Image 2 on the v1 prompt is the benchmark.
+Three variants (`gptVariant` on POST /api/model-shots, `lib/gpt-variants.ts`) change
+one thing each against that benchmark, so the next judgement says which change helped.
+
+| | benchmark | A `native4k` | B `lean` | C `masked` |
+|---|---|---|---|---|
+| prompt | v1 stack, 1,348 words | v1 stack | ~150-word brief from the garment contract | v1 stack |
+| size asked | none (auto → 1200×1792) | 2048×3072 | 2048×3072 | plate upscaled to 2048×3072 + mask |
+| extra input | — | — | — | repaint mask cut from the try-on's footprint |
+| seconds | 90–96 | 99–114 | 95–108 | 122–156 (try-on 22–55 of it) |
+| output | 1200×1792 | 2048×3072 | 2048×3072 | 2048×3072 |
+
+Face band changed vs the plate (top 22% of the frame, % of pixels off by >24/255;
+meaningless on the waist-down `low` plates so the two pants rows are omitted):
+
+| style | plate | benchmark | A | B | C |
+|---|---|---|---|---|---|
+| DWJ62218 striped cardigan | crop 22 | 8.6 | 5.1 | 6.4 | 7.5 |
+| DWT68181 striped sweater | crop 09 | 1.9 | 2.1 | 1.9 | 6.3 |
+| DWT60401 deer sweater | crop 17 | 2.1 | 6.5 | 5.2 | 4.2 |
+| DT62181 lace cape top | crop 10 | 0.2 | 1.4 | 0.4 | 7.6 |
+
+Reading, before David's:
+
+- **A, native size, is free.** fal honours `image_size: {2048, 3072}` on
+  `openai/gpt-image-2/edit` (the first run got 1200×1792 only because nothing was
+  asked for). Garment, face and framing are at the benchmark's level, the file is
+  the deliverable size with no upsampling, and it costs ~10 s. Keep it on.
+- **B, the lean brief, holds.** Same fidelity on five of six with a tenth of the
+  words, and it is the only variant that carried the plate's own layer through
+  (the white tee under the cardigan on DWJ62218, as in the ERP photo). It also
+  drew a V neckline where the benchmark drew the crew the garment has — one miss,
+  from the brief not naming the neckline; the contract can. Worth a second round
+  with the neckline and hem in the brief.
+- **C, the mask, is a dead end as an API mask.** GPT's `mask_url` is guidance, not
+  a boundary: on DP62140AP it rewrote the waist-down plate into a full-length
+  figure with a head, and on three tops it redrew hair or shoes outside the mask
+  (worst face-band on three of four). The mask itself is also loose — 43–61% of
+  the frame — because the try-on re-renders the whole image faintly. If the mask
+  is to help, it is as a *paste-back* after the edit (plate pixels outside the
+  garment, edit inside), never as an input. Retire the variant.
+
+Sheets: faire-management scratch `ab_<STYLE>_gptsheet.jpg` (run by `ab_tryon.py …
+gpt4k gptlean gptmask`, sheet by `SHEET_ENGINES=gpt,gpt4k,gptlean,gptmask sheet.py`).
+
 ## What this is not
 
 Not a rewrite. The route grows a second engine; the plates, the picker, the ERP
