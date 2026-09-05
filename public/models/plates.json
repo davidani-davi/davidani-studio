@@ -1,0 +1,190 @@
+{
+ "standard": {
+  "bg": [
+   249,
+   237,
+   226
+  ],
+  "bg_tol": 30,
+  "corner_spread_max": 34,
+  "head_pct_max": 14,
+  "head_pct_min": 5,
+  "ratio": 0.6666666666666666,
+  "ratio_tol": 0.06,
+  "min_width": 1200
+ },
+ "delivery": [
+  2000,
+  3000
+ ],
+ "plates": [
+  {
+   "name": "studio 01",
+   "source_style": "DETP60186",
+   "pose": "standing, one hand behind back, weight slightly shifted",
+   "head_pct": 11,
+   "views": [
+    "back",
+    "front",
+    "full",
+    "side"
+   ],
+   "front_is": "real studio photograph",
+   "others_are": "generated from the front plate, same model"
+  },
+  {
+   "name": "studio 02",
+   "source_style": "DETP67306A",
+   "pose": "standing side-on, weight even, arms relaxed down",
+   "head_pct": 11,
+   "views": [
+    "back",
+    "front",
+    "full",
+    "side"
+   ],
+   "front_is": "real studio photograph",
+   "others_are": "generated from the front plate, same model"
+  },
+  {
+   "name": "studio 03",
+   "source_style": "DJ40155LS",
+   "pose": "standing straight, arms relaxed at sides, feet apart",
+   "head_pct": 9,
+   "views": [
+    "back",
+    "front",
+    "full",
+    "side"
+   ],
+   "front_is": "real studio photograph",
+   "others_are": "generated from the front plate, same model"
+  },
+  {
+   "name": "studio 04",
+   "source_style": "DJ60276",
+   "pose": "standing straight, arms relaxed at sides, feet apart",
+   "head_pct": 10,
+   "views": [
+    "back",
+    "front",
+    "full",
+    "side"
+   ],
+   "front_is": "real studio photograph",
+   "others_are": "generated from the front plate, same model"
+  },
+  {
+   "name": "studio 05",
+   "source_style": "DP62140AP",
+   "pose": "standing straight, both thumbs hooked in front pockets",
+   "head_pct": 9,
+   "views": [
+    "back",
+    "front",
+    "full",
+    "side"
+   ],
+   "front_is": "real studio photograph",
+   "others_are": "generated from the front plate, same model"
+  },
+  {
+   "name": "studio 06",
+   "source_style": "DP67160",
+   "pose": "standing straight, one hand in pocket",
+   "head_pct": 10,
+   "views": [
+    "back",
+    "front",
+    "full",
+    "side"
+   ],
+   "front_is": "real studio photograph",
+   "others_are": "generated from the front plate, same model"
+  },
+  {
+   "name": "studio 07",
+   "source_style": "DTP70045A",
+   "pose": "standing straight, arms relaxed at sides, feet apart",
+   "head_pct": 10,
+   "views": [
+    "back",
+    "front",
+    "full",
+    "side"
+   ],
+   "front_is": "real studio photograph",
+   "others_are": "generated from the front plate, same model"
+  },
+  {
+   "name": "studio 08",
+   "source_style": "DWJ62218",
+   "pose": "standing upright, arms relaxed at sides",
+   "head_pct": 11,
+   "views": [
+    "back",
+    "front",
+    "full",
+    "side"
+   ],
+   "front_is": "real studio photograph",
+   "others_are": "generated from the front plate, same model"
+  },
+  {
+   "name": "studio 09",
+   "source_style": "DWJ68152",
+   "pose": "standing upright, hands in pockets, feet slightly apart",
+   "head_pct": 11,
+   "views": [
+    "back",
+    "front",
+    "full",
+    "side"
+   ],
+   "front_is": "real studio photograph",
+   "others_are": "generated from the front plate, same model"
+  },
+  {
+   "name": "studio 10",
+   "source_style": "DWT58109",
+   "pose": "standing straight, arms relaxed at sides",
+   "head_pct": 10,
+   "views": [
+    "back",
+    "front",
+    "full",
+    "side"
+   ],
+   "front_is": "real studio photograph",
+   "others_are": "generated from the front plate, same model"
+  },
+  {
+   "name": "studio 11",
+   "source_style": "DWT67159",
+   "pose": "standing straight, arms at sides, feet slightly apart",
+   "head_pct": 11,
+   "views": [
+    "back",
+    "front",
+    "full",
+    "side"
+   ],
+   "front_is": "real studio photograph",
+   "others_are": "generated from the front plate, same model"
+  },
+  {
+   "name": "studio 12",
+   "source_style": "DWT68181",
+   "pose": "standing relaxed, hands clasped at waist, legs crossed",
+   "head_pct": 9,
+   "views": [
+    "back",
+    "front",
+    "full",
+    "side"
+   ],
+   "front_is": "real studio photograph",
+   "others_are": "generated from the front plate, same model"
+  }
+ ]
+}
