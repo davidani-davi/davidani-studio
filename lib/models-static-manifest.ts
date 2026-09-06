@@ -614,7 +614,8 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "silhouette": "barrel"
   },
   {
     "id": "crop 22",
@@ -1313,7 +1314,8 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "silhouette": "barrel"
   },
   {
     "id": "low 22",
@@ -2156,7 +2158,8 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "silhouette": "barrel"
   },
   {
     "id": "studio 22",

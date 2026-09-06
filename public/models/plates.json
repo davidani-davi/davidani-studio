@@ -394,7 +394,9 @@
       "wears": "pants",
       "low_ok": true,
       "legs_separated": true,
-      "hem": "ankle"
+      "hem": "ankle",
+      "silhouette": "barrel",
+      "silhouette_note": "DP67305 is the barrel body (David, 2026-09-06): barrel-leg bottoms shoot on this plate"
     },
     {
       "name": "studio 22",
