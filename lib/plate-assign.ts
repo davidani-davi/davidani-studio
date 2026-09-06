@@ -1,4 +1,4 @@
-import { bottomPlates, isBottom } from "./plate-wear";
+import { bottomPlates, isBottom, silhouettePlates } from "./plate-wear";
 
 /**
  * Which model a style gets shot on.
@@ -59,8 +59,8 @@ export function plateHash(styleCode: string): number {
  */
 export function assignPlate(
   styleCode: string,
-  plates: Array<{ id: string; poses: Array<{ id: string }>; lowOk?: boolean }>,
-  opts: { preferPrefix?: string; category?: string } = {}
+  plates: Array<{ id: string; poses: Array<{ id: string }>; lowOk?: boolean; silhouette?: string }>,
+  opts: { preferPrefix?: string; category?: string; silhouette?: string } = {}
 ): PlateChoice | null {
   const usable = (plates || []).filter((p) => p.poses && p.poses.length);
   if (!usable.length) return null;
@@ -76,6 +76,10 @@ export function assignPlate(
   if (!opts.preferPrefix && isBottom(opts.category)) {
     const lows = bottomPlates(usable);
     if (lows.length) preferred = lows;
+    // A bottom whose title names a leg silhouette ("Barrel Leg Jeans") shoots
+    // on a plate photographed in that body, when one is tagged (silhouetteOf).
+    const shaped = silhouettePlates(usable, opts.silhouette);
+    if (shaped.length) preferred = shaped;
   }
   const list = preferred.length ? preferred : usable;
 

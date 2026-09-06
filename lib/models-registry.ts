@@ -62,6 +62,9 @@ export interface HumanModel {
    *  bottom can be painted onto the plate (`low_ok`) — lib/plate-wear.ts. */
   wears?: string;
   lowOk?: boolean;
+  /** Leg silhouette the plate was photographed in (plates.json `silhouette`,
+   *  e.g. "barrel" from DP67305) — lib/plate-wear.ts silhouetteOf. */
+  silhouette?: string;
 }
 
 const IMAGE_EXTS = new Set(["png", "jpg", "jpeg", "webp"]);
@@ -381,7 +384,7 @@ export function listHumanModels(): HumanModel[] {
   return tagged.length > 0 ? tagged : STATIC_HUMAN_MODELS;
 }
 
-function readPlateWear(modelsDir: string): Array<{ name?: string; wears?: string; low_ok?: boolean }> {
+function readPlateWear(modelsDir: string): Array<{ name?: string; wears?: string; low_ok?: boolean; silhouette?: string }> {
   try {
     const doc = JSON.parse(fs.readFileSync(path.join(modelsDir, "plates.json"), "utf8"));
     return Array.isArray(doc?.plates) ? doc.plates : [];

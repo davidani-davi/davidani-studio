@@ -103,6 +103,24 @@ export function applyStyling(basePrompt: string, styling: string): string {
   return neg >= 0 ? `${p.slice(0, neg)} ${line}${p.slice(neg)}` : `${p.trim()} ${line}`;
 }
 
+/**
+ * The back view when the only garment photo is the front (2026-09-06). The
+ * old line said "infer the back logically from the front", and with the
+ * contract also saying "keep graphics across the set" GPT mirrored the front
+ * onto the back: the fawn intarsia of DWT60401, the UNLIMITED print of
+ * DET62260, a button placket and chest pockets on DJ60302 / DJ68071 — nine
+ * of thirty-nine backs in one batch. A garment's back is plain unless a back
+ * photo says otherwise.
+ */
+export const PLAIN_BACK_RULE =
+  "For this back view there is no back reference: the garment photo shows the FRONT of the garment only. " +
+  "Render a plain back: the same fabric, color, knit or weave, sleeves, cuffs, hem shape, collar back, seams and construction as the front, " +
+  "and an all-over or repeat pattern continues around the back exactly as on the front. " +
+  "Anything placed on the front stays on the front: a chest or center-front graphic, artwork, text, logo, embroidery, appliqué, intarsia motif, " +
+  "button placket, buttons, zip, chest pockets, pocket flaps and front-only trims do NOT appear on the back. " +
+  "Do not mirror, copy or reinvent the front design onto the back; a plain back panel is correct. " +
+  "The model must face away from camera in a true rear view; do not show the model's face or an over-the-shoulder glance. ";
+
 export function buildMultiModelViewSuffix(
   view: PresetView,
   hasBackReference: boolean,
@@ -123,7 +141,7 @@ export function buildMultiModelViewSuffix(
     (view === "back" && hasBackReference
       ? "For this back view, use the second uploaded garment image as the back-reference source of truth for back artwork, seams, pockets, hem shape, wash, construction, and trim placement. The model must face away from camera in a true rear view: show the back of the head, shoulders, torso, sleeves, and garment back. Do not show the model's face, do not use an over-the-shoulder glance, and do not rotate into a 3/4 back pose. "
       : view === "back"
-      ? "For this back view, infer the back logically from the front garment image while preserving the same garment category, fabric, construction, trims, and realistic production details. The model must face away from camera in a true rear view; do not show the model's face or an over-the-shoulder glance. "
+      ? PLAIN_BACK_RULE
       : view === "side" && hasBackReference
       ? "For this side view, bridge the uploaded front and back references into one continuous garment: front details should wrap naturally toward the side, back details should only appear where they would truly be visible from the side, and no new alternate garment design should appear. "
       : view === "full" && hasBackReference
@@ -179,7 +197,7 @@ export function buildMultiModelConsistencySuffix(
     ` ${garmentLine}${featureLine}` +
     "The front and back uploads are paired evidence for the same garment and must be reconciled into one complete product map before generating any angle. " +
     `All ${n} outputs must look like one real garment photographed from ${angles} angles, not ${n} related garments, not ${n} colorways, and not ${n} reinterpretations. ` +
-    "Keep the same garment length, volume, fit, fabric texture, color, construction logic, pocket size and placement, closure type, cuff/hem behavior, graphics, and trim placement across the set. " +
+    "Keep the same garment length, volume, fit, fabric texture, color, construction logic, pocket size and placement, closure type, cuff/hem behavior, graphics in the placement the reference shows them, and trim placement across the set. " +
     "SCALE RULE: the garment is worn in the model's own size: shoulder seams at her natural shoulder line, sleeves ending at the wrist bone, the hem at its stated length on her body. Do not enlarge or lengthen the garment beyond its stated fit, and do not shorten or crop it to fit the frame. " +
     "ALL-OVER PATTERN RULE: if the garment reference shows a scattered, all-over, or repeat graphic/patch/print that covers the full body surface (chest, torso, sleeves), reproduce that pattern across ALL those areas in every view — do not simplify to sleeve-only or partial placement. The pattern density and surface coverage must match the reference exactly. " +
     "Only reveal angle-specific information that would naturally be visible from that view."

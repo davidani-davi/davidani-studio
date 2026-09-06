@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bottomPlates, isBottom, mergePlateWear } from "./plate-wear";
+import { bottomPlates, isBottom, mergePlateWear, silhouetteOf, silhouettePlates } from "./plate-wear";
 
 const PLATES = [
   { name: "studio 05", wears: "pants", low_ok: true },
@@ -42,5 +42,25 @@ describe("bottomPlates / isBottom", () => {
     expect(isBottom("pants")).toBe(true);
     expect(isBottom("skirt")).toBe(true);
     for (const c of ["top", "outerwear", "dress", "set", "unknown", undefined, null]) expect(isBottom(c)).toBe(false);
+  });
+});
+
+describe("silhouette", () => {
+  it("reads the leg silhouette a title names", () => {
+    expect(silhouetteOf("Hand Painted Peacock Floral Barrel Leg Jeans")).toBe("barrel");
+    expect(silhouetteOf("Seamed Panel Raw Hem Wide Leg Sweatpants")).toBe("wide");
+    expect(silhouetteOf("Fawn Intarsia Dot Brushed Knit Sweater")).toBeUndefined();
+    expect(silhouetteOf(null)).toBeUndefined();
+  });
+  it("carries plates.json silhouette onto the house plate and its crop/low siblings", () => {
+    const plates = [...PLATES, { name: "studio 12", wears: "pants", low_ok: true, silhouette: "Barrel" }];
+    const models: any[] = [...MODELS, { id: "studio 12", poses: [] }, { id: "low 12", poses: [] }];
+    const tagged = mergePlateWear(models, plates);
+    const by = Object.fromEntries(tagged.map((m: any) => [m.id, m.silhouette]));
+    expect(by["studio 12"]).toBe("barrel");
+    expect(by["low 12"]).toBe("barrel");
+    expect(by["studio 05"]).toBeUndefined();
+    expect(silhouettePlates(tagged, "barrel").map((m: any) => m.id)).toEqual(["studio 12"]);
+    expect(silhouettePlates(tagged, undefined)).toEqual([]);
   });
 });

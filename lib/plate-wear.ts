@@ -10,7 +10,39 @@
  * `wears` and `low_ok` in plates.json, and both the automatic assignment and
  * the extension's picker keep bottoms to the tagged subset.
  */
-export type PlateWear = { wears?: string; lowOk?: boolean };
+export type PlateWear = { wears?: string; lowOk?: boolean; silhouette?: string };
+
+/**
+ * The leg silhouette a bottom's title names, as the key a plate is tagged
+ * with in plates.json (`silhouette`): "Barrel Leg Jeans" -> "barrel". A
+ * plate harvested from our own DP67305 (the barrel body, David 2026-09-06)
+ * carries `silhouette: "barrel"`, and a barrel style shoots on it so the
+ * leg shape comes from a photograph of that body, not from a guess.
+ */
+const SILHOUETTES: Array<[RegExp, string]> = [
+  [/\bbarrel\b/i, "barrel"],
+  [/\bballoon\b/i, "balloon"],
+  [/\bwide[\s-]?leg\b|\bpalazzo\b/i, "wide"],
+  [/\bstraight[\s-]?leg\b|\bstraight\b/i, "straight"],
+  [/\bflare[ds]?\b|\bbootcut\b|\bboot[\s-]?cut\b/i, "flare"],
+  [/\bjogger[s]?\b/i, "jogger"],
+  [/\bskinny\b|\bslim\b/i, "skinny"],
+  [/\bcargo\b/i, "cargo"],
+];
+export function silhouetteOf(title: unknown): string | undefined {
+  const t = String(title || "");
+  for (const [re, key] of SILHOUETTES) if (re.test(t)) return key;
+  return undefined;
+}
+
+/** The tagged bottom plates whose silhouette matches; empty when none does. */
+export function silhouettePlates<T extends { id: string; lowOk?: boolean; silhouette?: string }>(
+  plates: T[],
+  silhouette: string | undefined
+): T[] {
+  if (!silhouette) return [];
+  return bottomPlates(plates).filter((p) => String(p.silhouette || "").toLowerCase() === silhouette);
+}
 
 export function isBottom(category: unknown): boolean {
   return category === "pants" || category === "skirt";
@@ -30,12 +62,17 @@ export function bottomPlates<T extends { id: string; lowOk?: boolean }>(plates: 
  */
 export function mergePlateWear<T extends { id: string } & PlateWear>(
   models: T[],
-  plates: Array<{ name?: string; wears?: string; low_ok?: boolean }> | null | undefined
+  plates: Array<{ name?: string; wears?: string; low_ok?: boolean; silhouette?: string }> | null | undefined
 ): T[] {
   const byNum = new Map<number, PlateWear>();
   for (const p of plates || []) {
     const m = /^studio\s*(\d+)$/i.exec(String(p.name || "").trim());
-    if (m && p.wears !== undefined) byNum.set(Number(m[1]), { wears: String(p.wears), lowOk: p.low_ok === true });
+    if (m && p.wears !== undefined) {
+      byNum.set(Number(m[1]), {
+        wears: String(p.wears), lowOk: p.low_ok === true,
+        ...(p.silhouette ? { silhouette: String(p.silhouette).toLowerCase() } : {}),
+      });
+    }
   }
   return (models || []).map((model) => {
     const m = /^(studio|crop|low)\s*(\d+)$/i.exec(String(model.id || "").trim());

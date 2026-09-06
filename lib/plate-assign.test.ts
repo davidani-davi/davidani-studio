@@ -27,6 +27,21 @@ describe("assignPlate", () => {
     expect(Math.max(...counts)).toBeLessThan((codes.length / PLATES.length) * 2);
   });
 
+  it("a bottom whose title names a silhouette shoots on the plate tagged with it", () => {
+    const tagged = PLATES.map((p, i) => ({ ...p, wears: "pants", lowOk: true, silhouette: i === 5 ? "barrel" : undefined }));
+    const barrel = assignPlate("DP62206", tagged, { category: "pants", silhouette: "barrel" });
+    expect(barrel!.humanModelId).toBe("studio 06");
+    // its Plus twin lands on the same body
+    expect(assignPlate("PP62206", tagged, { category: "pants", silhouette: "barrel" })).toEqual(barrel);
+    // no silhouette word, or none tagged: the ordinary trouser-plate spread
+    const plain = assignPlate("DP62206", tagged, { category: "pants" });
+    expect(plain!.humanModelId).toMatch(/^studio /);
+    expect(assignPlate("DP62206", tagged, { category: "pants", silhouette: "flare" })).toEqual(plain);
+    // a top never takes the silhouette route
+    expect(assignPlate("DWT60401", tagged, { category: "top", silhouette: "barrel" }))
+      .toEqual(assignPlate("DWT60401", tagged, { category: "top" }));
+  });
+
   it("can be held to one family of plates", () => {
     const mixed = [...PLATES, { id: "pants 1", poses: [{ id: "front" }] }];
     const got = assignPlate("DP62206", mixed, { preferPrefix: "pants" });

@@ -17,6 +17,7 @@ import {
 import { optimizePromptForModel } from "@/lib/prompt-strategy";
 import { buildGarmentContract, hasKnownFacts, type KnownGarment } from "@/lib/garment-contract";
 import { assignPlate } from "@/lib/plate-assign";
+import { silhouetteOf } from "@/lib/plate-wear";
 import { framingFor, hemFor, isDerivedPlate, plateForFraming, shotCategory, shotViews } from "@/lib/plate-framing";
 import { buildTryOnInput, garmentForView, runTryOn, tryOnSeed, type GarmentPhotoType } from "@/lib/tryon-engine";
 import { GPT_NATIVE_SIZE, garmentMaskFromDiff, gptVariantOf, leanBrief, maskCoverage } from "@/lib/gpt-variants";
@@ -131,6 +132,7 @@ export async function GET(req: Request) {
         userAdded: Boolean(m.userAdded),
         wears: m.wears,
         lowOk: m.lowOk === true,
+        silhouette: m.silhouette,
         poses: m.poses.map((p) => ({
           id: p.id,
           label: p.label,
@@ -199,7 +201,10 @@ export async function POST(req: Request) {
     if (!styleCode) {
       return json({ ok: false, error: "auto model needs a styleCode to assign from" }, 400);
     }
-    const choice = assignPlate(styleCode, catalogue, { preferPrefix: body.platePrefix, category });
+    const choice = assignPlate(styleCode, catalogue, {
+      preferPrefix: body.platePrefix, category,
+      silhouette: silhouetteOf((known as { title?: unknown }).title ?? body.title),
+    });
     if (!choice) return json({ ok: false, error: "no plates installed" }, 500);
     humanModelId = choice.humanModelId;
     poseId = choice.poseId;

@@ -33,6 +33,20 @@ describe("buildMultiModelViewSuffix", () => {
     expect(stylingFor("outerwear", "short")).toBe("");
     expect(stylingFor("dress", "long")).toBe("");
   });
+  it("with no back photo the back is plain: front graphics and plackets stay on the front", () => {
+    const s = buildMultiModelViewSuffix("back", false, { framing: "crop" });
+    expect(s).toContain("there is no back reference");
+    expect(s).toContain("Render a plain back");
+    expect(s).toContain("do NOT appear on the back");
+    expect(s).not.toContain("infer the back logically");
+    expect(s).toContain("true rear view");
+    // with a real back photo the second image is the truth, not the plain rule
+    const withBack = buildMultiModelViewSuffix("back", true, { framing: "crop" });
+    expect(withBack).toContain("second uploaded garment image");
+    expect(withBack).not.toContain("Render a plain back");
+    // the contract no longer asks for graphics "across the set" unqualified
+    expect(buildMultiModelConsistencySuffix("a sweater", "")).toContain("graphics in the placement the reference shows them");
+  });
   it("the consistency contract fixes the garment's scale on the body", () => {
     expect(buildMultiModelConsistencySuffix("a coat", "")).toContain(
       "SCALE RULE: the garment is worn in the model's own size: shoulder seams at her natural shoulder line, sleeves ending at the wrist bone"
