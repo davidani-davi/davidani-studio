@@ -1,6 +1,6 @@
-# Handoff — 2026-09-06 (Claude Code, 09:36)
+# Handoff — 2026-09-06 (Claude Code, 10:40)
 
-Branch: main · last commit: 566d801 · Vercel auto-deploys on push (READY).
+Branch: main · last commit: 29f6b6c · Vercel auto-deploys on push (READY).
 Backup of the pre-engine pipeline: tag `model-maker-v1-nano-banana-2026-09-05`.
 
 ## Just accomplished
@@ -11,6 +11,10 @@ Backup of the pre-engine pipeline: tag `model-maker-v1-nano-banana-2026-09-05`.
   `BACK_REFERENCE_RULE`, "the SECOND uploaded image shows the BACK") and `applyOperatorNote`
   (9d5644d: the request's `note` field). route.ts composes them; the suffix no longer repeats
   the note. Tests for all three; 664 pass, tsc clean (566d801 fixed a stale expectation).
+- **`applyProportions` / `PROPORTIONS_RULE`** (29f6b6c): hem, trouser and sleeve lengths come from
+  the garment photo, every view. The batch had drawn 3/4 cargos full length, an ankle balloon pant
+  at mid-calf and wrist fur sleeves as bracelet sleeves; with the rule plus an operator note all
+  nine re-shoots came out right (tests: 16 in multi-model-prompt.test.ts).
 - Verified in production on the faire-management batch: 12 mirrored backs re-rendered plain
   (DET62260 needed an operator note — graphic tee with no back photo), DP62206 shot on the
   barrel plate (studio 21, `silhouette: "barrel"` in plates.json, assignPlate prefers it).
