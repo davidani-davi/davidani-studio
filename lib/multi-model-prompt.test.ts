@@ -106,9 +106,13 @@ describe("applyPlainBack — the plain-back rule inside the base prompt, ahead o
     expect(out.indexOf("BACK VIEW:")).toBeLessThan(out.indexOf("Negative prompt:"));
     expect(out.replace(/\s*Negative prompt:[\s\S]*$/i, "")).toContain("Render a plain back");
   });
-  it("leaves the prompt alone for other views and when a back photo exists", () => {
+  it("leaves the prompt alone for other views; with a back photo the back-reference rule goes in instead", () => {
     expect(applyPlainBack(base, "front", false)).toBe(base);
-    expect(applyPlainBack(base, "back", true)).toBe(base);
+    const out = applyPlainBack(base, "back", true);
+    expect(out).toContain("SECOND uploaded garment image shows the BACK");
+    expect(out).toContain("if the second photo shows a plain back, the back is plain");
+    expect(out).not.toContain("there is no back reference");
+    expect(out.indexOf("BACK VIEW:")).toBeLessThan(out.indexOf("Negative prompt:"));
   });
 });
 

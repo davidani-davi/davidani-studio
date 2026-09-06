@@ -127,10 +127,21 @@ export function applyOperatorNote(basePrompt: string, note: unknown, view: Prese
   return suffix ? insertBeforeNegative(p, suffix) : p;
 }
 
+/**
+ * The back view when a real back photo IS the second reference. The
+ * 2026-09-06 tees (DET70086/DET70088/DET70100) shipped a plain flat-lay back as
+ * image two and GPT still painted the front graphic on the back: this text
+ * too only lived in the suffix.
+ */
+export const BACK_REFERENCE_RULE =
+  "For this back view the SECOND uploaded garment image shows the BACK of this garment: use it as the source of truth for back artwork, seams, pockets, hem shape, wash, construction and trim placement, and render exactly that back. " +
+  "Anything that appears only in the first (front) photo — a front graphic, artwork, text, logo, embroidery, placket or chest pocket — does NOT appear on the back unless the second photo shows it there; if the second photo shows a plain back, the back is plain. " +
+  "The model must face away from camera in a true rear view: show the back of the head, shoulders, torso, sleeves, and garment back. Do not show the model's face, do not use an over-the-shoulder glance, and do not rotate into a 3/4 back pose. ";
+
 export function applyPlainBack(basePrompt: string, view: PresetView, hasBackReference: boolean): string {
   const p = String(basePrompt || "");
-  if (view !== "back" || hasBackReference) return p;
-  return insertBeforeNegative(p, `BACK VIEW: ${PLAIN_BACK_RULE.trim()}`);
+  if (view !== "back") return p;
+  return insertBeforeNegative(p, `BACK VIEW: ${(hasBackReference ? BACK_REFERENCE_RULE : PLAIN_BACK_RULE).trim()}`);
 }
 
 /**
@@ -169,7 +180,7 @@ export function buildMultiModelViewSuffix(
       ? "Combined garment contract: the first garment reference and second garment reference together define one exact SKU. The first image supplies the front-facing truth; the second image supplies the back-facing truth. Merge both references into one physical garment identity, not two garments, not two design options, and not inspiration images. "
       : "") +
     (view === "back" && hasBackReference
-      ? "For this back view, use the second uploaded garment image as the back-reference source of truth for back artwork, seams, pockets, hem shape, wash, construction, and trim placement. The model must face away from camera in a true rear view: show the back of the head, shoulders, torso, sleeves, and garment back. Do not show the model's face, do not use an over-the-shoulder glance, and do not rotate into a 3/4 back pose. "
+      ? BACK_REFERENCE_RULE
       : view === "back"
       ? PLAIN_BACK_RULE
       : view === "side" && hasBackReference
