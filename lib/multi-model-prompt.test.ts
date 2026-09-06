@@ -3,6 +3,7 @@ import {
   LONG_LAYER_STYLING,
   applyOperatorNote,
   applyPlainBack,
+  applyProportions,
   applyStyling,
   buildMultiModelConsistencySuffix,
   buildMultiModelViewSuffix,
@@ -94,6 +95,19 @@ describe("applyStyling — inside the base prompt, where the GPT editor can see 
     expect(applyStyling("Make the edit. Negative prompt: grid", "wear black boots")).toBe("Make the edit. STYLING: wear black boots Negative prompt: grid");
     expect(applyStyling("Make the edit.", "wear black boots")).toBe("Make the edit. STYLING: wear black boots");
     expect(applyStyling(base, "")).toBe(base);
+  });
+});
+
+describe("applyProportions — the length rule inside the base prompt, ahead of the negative prompt", () => {
+  const base = "Use Image A as the base image; take the pants from Image B. Negative prompt: grid";
+  it("puts the proportions rule before the negative prompt", () => {
+    const out = applyProportions(base);
+    expect(out).toContain("GARMENT PROPORTIONS: reproduce the exact lengths");
+    expect(out.indexOf("GARMENT PROPORTIONS")).toBeLessThan(out.indexOf("Negative prompt:"));
+    expect(out.replace(/\s*Negative prompt:[\s\S]*$/i, "")).toContain("3/4 leg stays at mid-calf");
+  });
+  it("leaves an empty prompt empty", () => {
+    expect(applyProportions("")).toBe("");
   });
 });
 

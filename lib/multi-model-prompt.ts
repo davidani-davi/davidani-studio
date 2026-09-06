@@ -138,6 +138,22 @@ export const BACK_REFERENCE_RULE =
   "Anything that appears only in the first (front) photo — a front graphic, artwork, text, logo, embroidery, placket or chest pocket — does NOT appear on the back unless the second photo shows it there; if the second photo shows a plain back, the back is plain. " +
   "The model must face away from camera in a true rear view: show the back of the head, shoulders, torso, sleeves, and garment back. Do not show the model's face, do not use an over-the-shoulder glance, and do not rotate into a 3/4 back pose. ";
 
+/**
+ * Garment proportions come from the reference photo, every view (2026-09-06):
+ * the batch drew 3/4 cargo pants full length, a wrist-length faux-fur sleeve
+ * as a bracelet sleeve and an ankle balloon pant at mid-calf — the analyzer
+ * names a garment but never its lengths, and GPT fills them in by type.
+ */
+export const PROPORTIONS_RULE =
+  "GARMENT PROPORTIONS: reproduce the exact lengths shown in the garment photo — the hem, the trouser leg and the sleeve end exactly where they end in the photo relative to the body. " +
+  "A cropped or 3/4 leg stays at mid-calf, a full-length leg reaches the ankle, a wrist-length sleeve reaches the wrist, a 3/4 sleeve stops at the forearm, a cropped jacket stays cropped. " +
+  "Never lengthen or shorten a garment to what its type usually looks like. ";
+
+export function applyProportions(basePrompt: string): string {
+  const p = String(basePrompt || "");
+  return p ? insertBeforeNegative(p, PROPORTIONS_RULE.trim()) : p;
+}
+
 export function applyPlainBack(basePrompt: string, view: PresetView, hasBackReference: boolean): string {
   const p = String(basePrompt || "");
   if (view !== "back") return p;

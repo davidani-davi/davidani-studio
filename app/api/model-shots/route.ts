@@ -8,6 +8,7 @@ import {
   buildMultiModelConsistencySuffix,
   applyOperatorNote,
   applyPlainBack,
+  applyProportions,
   applyStyling,
   buildMultiModelViewSuffix,
   stylingFor,
@@ -323,7 +324,7 @@ export async function POST(req: Request) {
     // The styling goes into the base prompt itself: the GPT optimizer drops
     // everything after the analyzer's negative prompt, suffixes included.
     const basePrompt = applyOperatorNote(
-      applyPlainBack(applyStyling(String(analyzeData.prompt || "").trim(), styling), view, hasBackReference),
+      applyPlainBack(applyProportions(applyStyling(String(analyzeData.prompt || "").trim(), styling)), view, hasBackReference),
       note,
       view
     );
