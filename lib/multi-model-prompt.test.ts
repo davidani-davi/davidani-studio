@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   LONG_LAYER_STYLING,
+  applyOperatorNote,
   applyPlainBack,
   applyStyling,
   buildMultiModelConsistencySuffix,
@@ -108,5 +109,17 @@ describe("applyPlainBack — the plain-back rule inside the base prompt, ahead o
   it("leaves the prompt alone for other views and when a back photo exists", () => {
     expect(applyPlainBack(base, "front", false)).toBe(base);
     expect(applyPlainBack(base, "back", true)).toBe(base);
+  });
+});
+
+describe("applyOperatorNote — the Redo note inside the base prompt", () => {
+  const base = "Use Image A; take the tee from Image B. Negative prompt: grid";
+  it("lands before the negative prompt", () => {
+    const out = applyOperatorNote(base, "the back is a plain panel with no print", "back");
+    expect(out).toContain("OPERATOR CORRECTION for this back view");
+    expect(out.indexOf("OPERATOR CORRECTION")).toBeLessThan(out.indexOf("Negative prompt:"));
+  });
+  it("leaves the prompt alone without a note", () => {
+    expect(applyOperatorNote(base, "", "back")).toBe(base);
   });
 });

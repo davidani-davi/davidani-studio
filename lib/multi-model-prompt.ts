@@ -116,6 +116,17 @@ function insertBeforeNegative(basePrompt: string, line: string): string {
  * carried PLAIN_BACK_RULE only in the suffix and every back came out with
  * the front graphic again.
  */
+/**
+ * The operator's Redo note, same placement: buildOperatorNoteSuffix sits after
+ * the negative prompt and never reached GPT (found 2026-09-06 when a plain-back
+ * correction for DET62260 would have gone the same way).
+ */
+export function applyOperatorNote(basePrompt: string, note: unknown, view: PresetView): string {
+  const p = String(basePrompt || "");
+  const suffix = buildOperatorNoteSuffix(note, view).trim();
+  return suffix ? insertBeforeNegative(p, suffix) : p;
+}
+
 export function applyPlainBack(basePrompt: string, view: PresetView, hasBackReference: boolean): string {
   const p = String(basePrompt || "");
   if (view !== "back" || hasBackReference) return p;

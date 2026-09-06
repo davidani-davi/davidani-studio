@@ -6,11 +6,11 @@ import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth";
 import {
   MULTI_MODEL_VIEWS,
   buildMultiModelConsistencySuffix,
+  applyOperatorNote,
   applyPlainBack,
   applyStyling,
   buildMultiModelViewSuffix,
   stylingFor,
-  buildOperatorNoteSuffix,
   sanitizeOperatorNote,
   mergeMultiModelGarmentIdentity,
   multiModelPoseVariantIndex,
@@ -322,7 +322,11 @@ export async function POST(req: Request) {
 
     // The styling goes into the base prompt itself: the GPT optimizer drops
     // everything after the analyzer's negative prompt, suffixes included.
-    const basePrompt = applyPlainBack(applyStyling(String(analyzeData.prompt || "").trim(), styling), view, hasBackReference);
+    const basePrompt = applyOperatorNote(
+      applyPlainBack(applyStyling(String(analyzeData.prompt || "").trim(), styling), view, hasBackReference),
+      note,
+      view
+    );
     if (!basePrompt) throw new Error(`analyzer returned an empty ${view} prompt`);
 
     const identity = mergeMultiModelGarmentIdentity(analyzeData);
@@ -330,7 +334,7 @@ export async function POST(req: Request) {
       modelId,
       `${basePrompt}${buildMultiModelConsistencySuffix(identity.garment, identity.features, views)}` +
         `${buildMultiModelViewSuffix(view, hasBackReference, { framing, views, styling })}` +
-        `${buildOperatorNoteSuffix(note, view)}`
+        ``
     );
 
     // GPT Image 2 variants (lib/gpt-variants.ts). Each isolates one change
