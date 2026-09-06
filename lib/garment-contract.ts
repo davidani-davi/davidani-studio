@@ -249,7 +249,7 @@ const LENGTHS: Array<[RegExp, { adj: string; hem: string }]> = [
 ];
 /** Any length a vision phrase may carry, so an asserted one replaces rather than joins it. */
 const LENGTH_WORDS_RE =
-  /\b(hip|thigh|waist|knee|mid-?calf|calf|ankle|floor|midi|maxi|mini|cropped|crop|long-?line|full)[- ]?length\b|\b(longline|long-line|midi|maxi|cropped|hip-length|thigh-length)\b/gi;
+  /\b(hip|thigh|waist|knee|mid-?calf|calf|ankle|floor|midi|maxi|mini|cropped|crop|long-?line|full|tunic|mid|short|long|regular|standard)[- ]?length\b|\b(longline|long-line|midi|maxi|cropped|hip-length|thigh-length)\b/gi;
 
 export function lengthFor(known: KnownGarment | null | undefined): { adj: string; hem: string } | null {
   const k = known || {};

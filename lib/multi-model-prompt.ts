@@ -75,6 +75,34 @@ export function stylingFor(category: string | null | undefined, hem: string | nu
   return (c === "top" || c === "outerwear") && String(hem || "").toLowerCase() === "long" ? LONG_LAYER_STYLING : "";
 }
 
+/** What a plate wears below the waist or on the feet, as the analyzer names it in the keep-list. */
+const PLATE_BOTTOMS_RE =
+  /\b(trousers?|pants?|jeans|denim|skirts?|shorts|leggings?|culottes?|joggers?|chinos?|slacks|shoes?|boots?|loafers?|sneakers?|heels|sandals?|mules|footwear|feet|foot|barefoot|legs?|socks?|hosiery|tights)\b/i;
+
+/**
+ * Put the styling INSIDE the analyzer's base prompt, because that is the only
+ * part the GPT editor sees: optimizeForGptImage strips from "Negative
+ * prompt:" to the end of the string, and every multi-view suffix (framing,
+ * scale, styling) is appended after that marker. The base prompt also lists
+ * the plate's own trousers and shoes among the things to keep "completely
+ * unchanged"; those items go, and the styling follows the keep-list so it
+ * reads as the one wardrobe edit below the hem. Without a keep-list it lands
+ * just before the negative prompt, or at the end.
+ */
+export function applyStyling(basePrompt: string, styling: string): string {
+  const s = String(styling || "").trim();
+  const p = String(basePrompt || "");
+  if (!s) return p;
+  const line = `STYLING: ${s}`;
+  const inKeepList = p.replace(/and background \(([^)]*)\) completely unchanged;/, (_m, list: string) => {
+    const kept = list.split(/,\s*/).filter((item) => !PLATE_BOTTOMS_RE.test(item));
+    return `and background (${kept.join(", ")}) completely unchanged; ${line}`;
+  });
+  if (inKeepList !== p) return inKeepList;
+  const neg = p.search(/\s*Negative prompt:/i);
+  return neg >= 0 ? `${p.slice(0, neg)} ${line}${p.slice(neg)}` : `${p.trim()} ${line}`;
+}
+
 export function buildMultiModelViewSuffix(
   view: PresetView,
   hasBackReference: boolean,

@@ -139,6 +139,13 @@ describe("buildGarmentContract — the DJ67094 failure (length and fit)", () => 
     expect(c.features).toContain("length: longline, the hem falls at mid-calf, well below the knee");
     expect(c.corrections).toContain('length: "longline" asserted (listing copy); vision\'s length struck');
   });
+  it("strikes every length vision may write, including the ones the re-shoot produced", () => {
+    for (const g of ["tunic-length double-breasted plaid wool button-front coat", "mid-length plaid wool button-front coat", "knee length plaid coat"]) {
+      const c = buildGarmentContract(DJ67094_KNOWN, { garment: g, features: "" });
+      expect(c.garment).not.toMatch(/tunic-length|mid-length|knee length/i);
+      expect(c.garment).toMatch(/longline coat/i);
+    }
+  });
   it("the copy's fit is spelled out on the body, so a relaxed coat is not a tent", () => {
     const c = buildGarmentContract(DJ67094_KNOWN, SIDE_VISION);
     expect(c.features).toContain("fit: relaxed through the body, shoulder seams at her natural shoulder line, sleeves ending at the wrist bone");

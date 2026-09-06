@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   LONG_LAYER_STYLING,
+  applyStyling,
   buildMultiModelConsistencySuffix,
   buildMultiModelViewSuffix,
   buildOperatorNoteSuffix,
@@ -58,5 +59,24 @@ describe("operator note", () => {
     expect(s).toContain("OPERATOR CORRECTION for this side view");
     expect(s).toContain("zip-front stand collar, no lapels");
     expect(s).toContain("overrides any conflicting reading");
+  });
+});
+
+describe("applyStyling — inside the base prompt, where the GPT editor can see it", () => {
+  const base =
+    "Use Image A as the base image and keep the model's body, face, identity (long dark hair), pose (standing), hair, expression, lighting, shadows, camera angle, depth of field, and background (pale cream seamless studio backdrop, soft frontal lighting, blue trousers with lace patches visible at hem, black lug-sole boots, gold chain necklace, no other accessories) completely unchanged; take the coat from Image B. Negative prompt: collage, grid";
+  it("drops the plate's trousers and shoes from the keep-list and states the styling right after it", () => {
+    const out = applyStyling(base, LONG_LAYER_STYLING);
+    expect(out).not.toContain("blue trousers");
+    expect(out).not.toContain("lug-sole boots");
+    expect(out).toContain(
+      "and background (pale cream seamless studio backdrop, soft frontal lighting, gold chain necklace, no other accessories) completely unchanged; STYLING: below the garment's hem"
+    );
+    expect(out.indexOf("STYLING:")).toBeLessThan(out.indexOf("Negative prompt:"));
+  });
+  it("lands before the negative prompt without a keep-list, at the end without one, and leaves a prompt alone without styling", () => {
+    expect(applyStyling("Make the edit. Negative prompt: grid", "wear black boots")).toBe("Make the edit. STYLING: wear black boots Negative prompt: grid");
+    expect(applyStyling("Make the edit.", "wear black boots")).toBe("Make the edit. STYLING: wear black boots");
+    expect(applyStyling(base, "")).toBe(base);
   });
 });

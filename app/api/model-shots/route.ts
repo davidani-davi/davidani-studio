@@ -6,6 +6,7 @@ import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth";
 import {
   MULTI_MODEL_VIEWS,
   buildMultiModelConsistencySuffix,
+  applyStyling,
   buildMultiModelViewSuffix,
   stylingFor,
   buildOperatorNoteSuffix,
@@ -272,6 +273,10 @@ export async function POST(req: Request) {
     // of ONE garment, not two garments.
     const hasBackReference = garmentImageUrls.length > 1;
 
+    // A long layer's hem is in every frame, so the whole look changes — the
+    // coat and the house bottoms under it — not just the upper body: the
+    // upper-body scope would order the plate's own trousers kept "as-is".
+    const styling = stylingFor(category, hem);
     const analyzeBody = {
       modelId: humanModelId,
       poseId,
@@ -280,6 +285,7 @@ export async function POST(req: Request) {
       garmentImageUrls,
       twoPiece: false,
       promptMode: "classic" as const,
+      ...(styling ? { swapScopeOverride: "full-look" as const } : {}),
     };
     let analyzeData = await call(analyzeModel, "/api/analyze-model", analyzeBody);
 
@@ -308,14 +314,16 @@ export async function POST(req: Request) {
       });
     }
 
-    const basePrompt = String(analyzeData.prompt || "").trim();
+    // The styling goes into the base prompt itself: the GPT optimizer drops
+    // everything after the analyzer's negative prompt, suffixes included.
+    const basePrompt = applyStyling(String(analyzeData.prompt || "").trim(), styling);
     if (!basePrompt) throw new Error(`analyzer returned an empty ${view} prompt`);
 
     const identity = mergeMultiModelGarmentIdentity(analyzeData);
     const v1Prompt = optimizePromptForModel(
       modelId,
       `${basePrompt}${buildMultiModelConsistencySuffix(identity.garment, identity.features, views)}` +
-        `${buildMultiModelViewSuffix(view, hasBackReference, { framing, views, styling: stylingFor(category, hem) })}` +
+        `${buildMultiModelViewSuffix(view, hasBackReference, { framing, views, styling })}` +
         `${buildOperatorNoteSuffix(note, view)}`
     );
 
