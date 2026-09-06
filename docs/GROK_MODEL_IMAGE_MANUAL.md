@@ -75,8 +75,21 @@ Then the shot plan:
 | Category | Views, in order | Plate framing |
 |---|---|---|
 | pants, skirt | front, side, full | `low` for front/side, `full` for full |
-| top, outerwear | front, side, back, full | `crop` for front/side/back, `full` for full |
+| top, outerwear (hem not long) | front, side, back, full | `crop` for front/side/back, `full` for full |
+| top, outerwear with a **long** hem | front, side, back, full | `full` throughout — the hem is in every frame |
 | dress, set, unknown | front, side, back, full | `full` throughout |
+
+**Hem is the second dimension** (`hemFor`, 2026-09-05). Before choosing the framing, read the
+type and title for a hem word: any kind of coat (`coat`, `peacoat`, `overcoat`, `topcoat`,
+`trench`, `duster`), `longline`, `maxi`, `midi`, `mid-calf`, `knee-length`, `below the knee`,
+`ankle-length`, `floor-length`, `full-length` → hem **long**; `cropped` / `crop` → hem **short**
+and wins; an explicit `known.hem` wins over both. "Long sleeve" is not a hem word. A long top or
+outerwear piece takes the full-length plate in every view: the head-to-thigh crop plate has no
+room for the hem, and the engine either shortens the garment to fit the frame (a mid-calf coat
+came back a shacket on the side) or stretches the figure to keep the hem in frame (a tent on the
+front). Under a long layer the plate's own trousers and shoes would show, so the swap widens to
+the full look and the brief dresses the model below the hem in plain black straight-leg trousers
+and plain black ankle boots — the same in every view of the set (§7).
 
 `crop NN` and `low NN` are **the same photograph re-framed**, not different plates. If the
 re-framed family is not installed, use the full-length plate — the shot survives, it is just
@@ -138,6 +151,17 @@ The answer was in our own systems the whole time. Apply this precedence, high to
 4. **Colourway — from the ERP colour name.** Append
    `colourway: navy and blue, matching the uploaded reference exactly`, so the render is
    checkable against the colour the buyer will actually order rather than "blue-ish".
+5. **Length — from the title and type** (2026-09-05). `longline` / `duster` → "longline, the hem
+   falls at mid-calf, well below the knee"; `maxi` / `floor-length` / `full-length` →
+   floor-length; `midi` / `mid-calf` → midi-length; `knee-length` / `below the knee` →
+   knee-length; `ankle-length`; `cropped` → "the hem sits at the natural waist"; a hem read as
+   long with no word in the copy → knee-length. Strike vision's own length words ("tunic-length",
+   "mid-length", "hip-length") from the phrase and put ours in front of the type noun:
+   `longline plaid coat`. On DJ67094 vision read a mid-calf coat as "tunic-length" and the crop
+   plate turned it into a shacket.
+6. **Fit — from the copy.** `oversized` / `relaxed` / `boxy` from title or description;
+   `slim` / `fitted` / `tailored` from the title only (descriptions say "fitted" of anything).
+   Append `fit: an oversized, relaxed fit` to the features.
 
 When the garment opens, do three things, not one:
 
@@ -248,7 +272,8 @@ Output one photograph, nothing else: no text, no collage, no alternate views.
 
 | Category | REGION |
 |---|---|
-| top, outerwear | `what she wears on her upper body` |
+| top, outerwear (hem not long) | `what she wears on her upper body` |
+| top, outerwear with a long hem | `her whole outfit` — then say what goes below the hem: `plain black straight-leg trousers and plain black ankle boots, the same in every view` |
 | pants, skirt, shorts | `what she wears on her lower body` |
 | dress, romper, jumpsuit | `her whole outfit` |
 | anything else | `the garment she wears` |
@@ -275,6 +300,14 @@ in `{FEATURES}`.
 Five layers, concatenated in this order. L1, L2, L3 and L5 are byte-identical across all four
 views; only L4 changes. That is the honest summary of this prompt: **94% of every call is the
 same text, and the view is named last.**
+
+**GPT Image 2 sees only the base prompt.** The GPT optimizer (`optimizeForGptImage` →
+`stripNegativePrompt`) cuts everything from `Negative prompt:` to the END of the string, and the
+multi-view suffix — framing rule, scale rule, styling rule, consistency contract — is appended
+after that marker. So the GPT editor has never received any of it. Anything that must reach GPT
+goes into the base prompt: the garment contract (§4) or `applyStyling`, which rewrites the
+analyzer's keep-list (strikes the plate's trousers/shoes) and appends `STYLING: …` before the
+negative block. Restoring the suffix for GPT is a prompt change that has not been evaluated.
 
 **L1 — canvas + garment firewall**
 

@@ -73,8 +73,14 @@ from the waist down with no head in frame, and only dresses, sets and the one
 | family      | frame                                  | used for                                                        |
 |-------------|----------------------------------------|-----------------------------------------------------------------|
 | `studio NN` | head to shoes, head 9–11 % of frame    | dresses, jumpsuits, rompers, sets, and the "full" view of all    |
-| `crop NN`   | head to mid-thigh, head ~20 % of frame | front, side and back of tops and outerwear                      |
+| `crop NN`   | head to mid-thigh, head ~20 % of frame | front, side and back of tops and outerwear with a normal hem    |
 | `low NN`    | natural waist to shoes, no head        | front and side of pants and skirts (bottoms shoot no back view) |
+
+A long top or outerwear piece — any coat, longline/duster, knee/midi/maxi in the
+type or title (`hemFor`, kept in lockstep in faire-management
+`thumbnail-optimizer/model_shots_core.js` and studio `lib/plate-framing.ts`) —
+takes `studio NN` in every view: the crop frame has no room for the hem, and the
+engine shortens the garment or stretches the figure to cope (DJ67094, 2026-09-05).
 
 `crop` and `low` are pixel crops of `studio NN`, never a second generation
 (faire-management `thumbnail-optimizer/plate_crop.py`): 2:3 at 1200×1800,
