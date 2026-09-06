@@ -99,8 +99,27 @@ export function applyStyling(basePrompt: string, styling: string): string {
     return `and background (${kept.join(", ")}) completely unchanged; ${line}`;
   });
   if (inKeepList !== p) return inKeepList;
+  return insertBeforeNegative(p, line);
+}
+
+/** One line into the base prompt ahead of "Negative prompt:" (or at the end). */
+function insertBeforeNegative(basePrompt: string, line: string): string {
+  const p = String(basePrompt || "");
   const neg = p.search(/\s*Negative prompt:/i);
   return neg >= 0 ? `${p.slice(0, neg)} ${line}${p.slice(neg)}` : `${p.trim()} ${line}`;
+}
+
+/**
+ * The plain-back rule has to live in the base prompt for the same reason as
+ * the styling: the GPT optimizer strips everything after "Negative prompt:",
+ * and the view suffix sits after it. The first re-shoot (2026-09-06 08:06)
+ * carried PLAIN_BACK_RULE only in the suffix and every back came out with
+ * the front graphic again.
+ */
+export function applyPlainBack(basePrompt: string, view: PresetView, hasBackReference: boolean): string {
+  const p = String(basePrompt || "");
+  if (view !== "back" || hasBackReference) return p;
+  return insertBeforeNegative(p, `BACK VIEW: ${PLAIN_BACK_RULE.trim()}`);
 }
 
 /**

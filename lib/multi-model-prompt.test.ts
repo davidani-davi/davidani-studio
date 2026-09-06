@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   LONG_LAYER_STYLING,
+  applyPlainBack,
   applyStyling,
   buildMultiModelConsistencySuffix,
   buildMultiModelViewSuffix,
@@ -92,5 +93,20 @@ describe("applyStyling — inside the base prompt, where the GPT editor can see 
     expect(applyStyling("Make the edit. Negative prompt: grid", "wear black boots")).toBe("Make the edit. STYLING: wear black boots Negative prompt: grid");
     expect(applyStyling("Make the edit.", "wear black boots")).toBe("Make the edit. STYLING: wear black boots");
     expect(applyStyling(base, "")).toBe(base);
+  });
+});
+
+describe("applyPlainBack — the plain-back rule inside the base prompt, ahead of the negative prompt", () => {
+  const base = "Use Image A as the base image; take the sweater from Image B. Negative prompt: grid";
+  it("puts the rule before the negative prompt for a back view with no back photo", () => {
+    const out = applyPlainBack(base, "back", false);
+    expect(out).toContain("BACK VIEW: For this back view there is no back reference");
+    expect(out).toContain("do NOT appear on the back");
+    expect(out.indexOf("BACK VIEW:")).toBeLessThan(out.indexOf("Negative prompt:"));
+    expect(out.replace(/\s*Negative prompt:[\s\S]*$/i, "")).toContain("Render a plain back");
+  });
+  it("leaves the prompt alone for other views and when a back photo exists", () => {
+    expect(applyPlainBack(base, "front", false)).toBe(base);
+    expect(applyPlainBack(base, "back", true)).toBe(base);
   });
 });

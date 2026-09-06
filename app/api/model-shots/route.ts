@@ -6,6 +6,7 @@ import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth";
 import {
   MULTI_MODEL_VIEWS,
   buildMultiModelConsistencySuffix,
+  applyPlainBack,
   applyStyling,
   buildMultiModelViewSuffix,
   stylingFor,
@@ -321,7 +322,7 @@ export async function POST(req: Request) {
 
     // The styling goes into the base prompt itself: the GPT optimizer drops
     // everything after the analyzer's negative prompt, suffixes included.
-    const basePrompt = applyStyling(String(analyzeData.prompt || "").trim(), styling);
+    const basePrompt = applyPlainBack(applyStyling(String(analyzeData.prompt || "").trim(), styling), view, hasBackReference);
     if (!basePrompt) throw new Error(`analyzer returned an empty ${view} prompt`);
 
     const identity = mergeMultiModelGarmentIdentity(analyzeData);
