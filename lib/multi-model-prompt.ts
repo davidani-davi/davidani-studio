@@ -55,6 +55,24 @@ export interface ViewSuffixOptions {
   framing?: PlateFraming;
   /** The views this run shoots; bottoms shoot three, everything else four. */
   views?: PresetView[];
+  /** What the model wears below the garment, when the plate's own legs would show (stylingFor). */
+  styling?: string;
+}
+
+/**
+ * A long layer — a longline coat, a duster cardigan — has its hem in every
+ * frame, and under it the plate's own trousers show. Those differ from view
+ * to view (the side, back and full plates are generated from the front one,
+ * each with its own invented bottoms), so the set reads as three outfits.
+ * One plain house styling under every long layer keeps the four views one
+ * shoot and lets the garment do the selling.
+ */
+export const LONG_LAYER_STYLING =
+  "below the garment's hem the model wears plain black straight-leg trousers and plain black ankle boots — the same trousers and boots in every view of this set. Replace whatever the base image wears below the waist with them; none of the base image's trousers, skirt, shoes, or bare legs may show.";
+
+export function stylingFor(category: string | null | undefined, hem: string | null | undefined): string {
+  const c = String(category || "").toLowerCase();
+  return (c === "top" || c === "outerwear") && String(hem || "").toLowerCase() === "long" ? LONG_LAYER_STYLING : "";
 }
 
 export function buildMultiModelViewSuffix(
@@ -70,6 +88,7 @@ export function buildMultiModelViewSuffix(
     `This run is part of one ${countWord(views.length)}-view ecommerce photoshoot set: ${listViews(views)}. ` +
     `Keep the exact same model identity, face, body proportions, lighting, warm beige studio background, camera quality, garment color, construction, trims, texture, and styling continuity across the set. ` +
     FRAMING_RULE[framing] +
+    (opts.styling ? `STYLING RULE: ${opts.styling} ` : "") +
     (hasBackReference
       ? "Combined garment contract: the first garment reference and second garment reference together define one exact SKU. The first image supplies the front-facing truth; the second image supplies the back-facing truth. Merge both references into one physical garment identity, not two garments, not two design options, and not inspiration images. "
       : "") +
@@ -133,6 +152,7 @@ export function buildMultiModelConsistencySuffix(
     "The front and back uploads are paired evidence for the same garment and must be reconciled into one complete product map before generating any angle. " +
     `All ${n} outputs must look like one real garment photographed from ${angles} angles, not ${n} related garments, not ${n} colorways, and not ${n} reinterpretations. ` +
     "Keep the same garment length, volume, fit, fabric texture, color, construction logic, pocket size and placement, closure type, cuff/hem behavior, graphics, and trim placement across the set. " +
+    "SCALE RULE: the garment is worn in the model's own size: shoulder seams at her natural shoulder line, sleeves ending at the wrist bone, the hem at its stated length on her body. Do not enlarge or lengthen the garment beyond its stated fit, and do not shorten or crop it to fit the frame. " +
     "ALL-OVER PATTERN RULE: if the garment reference shows a scattered, all-over, or repeat graphic/patch/print that covers the full body surface (chest, torso, sleeves), reproduce that pattern across ALL those areas in every view — do not simplify to sleeve-only or partial placement. The pattern density and surface coverage must match the reference exactly. " +
     "Only reveal angle-specific information that would naturally be visible from that view."
   );

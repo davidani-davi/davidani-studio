@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildGarmentContract, closureFor, normalizeType, typeIn } from "./garment-contract";
+import { buildGarmentContract, closureFor, fitFor, lengthFor, normalizeType, typeIn } from "./garment-contract";
 
 /**
  * The case that motivated the module, first and by name: DWJ62218's open
@@ -109,5 +109,61 @@ describe("helpers", () => {
     const c = buildGarmentContract({}, { garment: "cream linen blouse", features: "puff sleeves" });
     expect(c.garment).toBe("cream linen blouse");
     expect(c.corrections).toEqual([]);
+  });
+});
+
+/**
+ * The second failure, by name: DJ67094's longline coat. Vision re-read the hem
+ * for every view ("knee length", "hip length", "mid-calf"), the side render
+ * came back a shacket and the front a tent. The title said "Longline" and the
+ * description "relaxed" the whole time.
+ */
+describe("buildGarmentContract — the DJ67094 failure (length and fit)", () => {
+  const DJ67094_KNOWN = {
+    styleCode: "DJ67094",
+    type: "Coat - Women's",
+    title: "Plaid Double Breasted Longline Trench Coat",
+    color: "MINT/RED",
+    description:
+      "Brushed woven plaid with notched lapels and a double breasted button front. The relaxed longline silhouette falls well below the knee and layers easily over knitwear and denim.",
+  };
+  const SIDE_VISION = {
+    garment: "burgundy, cream, and charcoal plaid wool blend double-breasted button-front coat dress with notch collar, hip length",
+    features: "notched lapels, epaulettes, flap pockets",
+  };
+  it("the title's length overrules the hem this view's vision read", () => {
+    const c = buildGarmentContract(DJ67094_KNOWN, SIDE_VISION);
+    expect(c.garment).not.toMatch(/hip length/i);
+    expect(c.garment).toMatch(/longline coat/i);
+    expect(c.garment).not.toMatch(/,\s*$/);
+    expect(c.features).toContain("length: longline, the hem falls at mid-calf, well below the knee");
+    expect(c.corrections).toContain('length: "longline" asserted (listing copy); vision\'s length struck');
+  });
+  it("the copy's fit is spelled out on the body, so a relaxed coat is not a tent", () => {
+    const c = buildGarmentContract(DJ67094_KNOWN, SIDE_VISION);
+    expect(c.features).toContain("fit: relaxed through the body, shoulder seams at her natural shoulder line, sleeves ending at the wrist bone");
+    expect(c.corrections).toContain('fit: "relaxed" asserted (listing copy)');
+  });
+  it("a plain coat the planner calls long is at least knee-length; a cropped one is cropped", () => {
+    expect(lengthFor({ type: "Coat - Women's", title: "Wool Blend Coat", hem: "long" })).toEqual({
+      adj: "knee-length", hem: "the hem falls at or just below the knee",
+    });
+    expect(lengthFor({ type: "Coat - Women's", title: "Cropped Wool Coat", hem: "long" })?.adj).toBe("cropped");
+    expect(lengthFor({ title: "Floral Maxi Dress" })?.adj).toBe("floor-length");
+    expect(lengthFor({ title: "Ribbed Midi Skirt" })?.adj).toBe("midi-length");
+    expect(lengthFor({ title: "Two-Tone Striped Button-Front Cardigan" })).toBeNull();
+    expect(lengthFor({ title: "Long Sleeve Tee", description: "layers over a midi skirt" })).toBeNull();
+  });
+  it("close fits are read from the title only; roomy fits from the description too", () => {
+    expect(fitFor({ title: "Boxy Tee", description: "pairs with slim jeans" })?.word).toBe("boxy");
+    expect(fitFor({ title: "Ribbed Tee", description: "pairs with slim jeans" })).toBeNull();
+    expect(fitFor({ title: "Slim Fit Turtleneck" })?.word).toBe("fitted");
+    expect(fitFor({ title: "Plaid Shacket", description: "an oversized, relaxed layer" })?.word).toBe("oversized");
+  });
+  it("adds the length noun when vision named none, and leaves the DWJ62218 phrase alone", () => {
+    const c = buildGarmentContract({ type: "Coat - Women's", title: "Longline Wool Coat" }, { garment: "plaid wool blend with lapels", features: "" });
+    expect(c.garment).toMatch(/longline coat/i);
+    const d = buildGarmentContract(DWJ62218_KNOWN, DWJ62218_VISION);
+    expect(d.corrections.some((x) => x.startsWith("length:") || x.startsWith("fit:"))).toBe(false);
   });
 });

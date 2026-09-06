@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  LONG_LAYER_STYLING,
   buildMultiModelConsistencySuffix,
   buildMultiModelViewSuffix,
   buildOperatorNoteSuffix,
   sanitizeOperatorNote,
+  stylingFor,
 } from "./multi-model-prompt";
 
 describe("buildMultiModelViewSuffix", () => {
@@ -20,6 +22,20 @@ describe("buildMultiModelViewSuffix", () => {
     const crop = buildMultiModelViewSuffix("side", false, { framing: "crop" });
     expect(crop).toContain("head-to-mid-thigh");
     expect(crop).toContain("Do not zoom out");
+  });
+  it("a long layer carries the house styling under its hem; nothing else does", () => {
+    const s = buildMultiModelViewSuffix("front", false, { framing: "full", styling: stylingFor("outerwear", "long") });
+    expect(s).toContain("STYLING RULE: below the garment's hem the model wears plain black straight-leg trousers and plain black ankle boots");
+    expect(buildMultiModelViewSuffix("front", false, { framing: "crop" })).not.toContain("STYLING RULE");
+    expect(stylingFor("top", "long")).toBe(LONG_LAYER_STYLING);
+    expect(stylingFor("outerwear", "")).toBe("");
+    expect(stylingFor("outerwear", "short")).toBe("");
+    expect(stylingFor("dress", "long")).toBe("");
+  });
+  it("the consistency contract fixes the garment's scale on the body", () => {
+    expect(buildMultiModelConsistencySuffix("a coat", "")).toContain(
+      "SCALE RULE: the garment is worn in the model's own size: shoulder seams at her natural shoulder line, sleeves ending at the wrist bone"
+    );
   });
   it("the consistency contract counts the same views", () => {
     expect(buildMultiModelConsistencySuffix("a vest", "", ["front", "side", "full"])).toContain(

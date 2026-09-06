@@ -34,8 +34,10 @@ export interface KnownGarment {
   fabric?: string;
   /** The colourway being shot, e.g. "NAVY/BLUE". */
   color?: string;
-  /** The listing description, read only for closure words. */
+  /** The listing description, read for closure and fit words. */
   description?: string;
+  /** Where the hem ends when the caller already decided ("long" / "short"); else read from the copy. */
+  hem?: string;
 }
 
 export interface VisionGarment {
@@ -203,7 +205,79 @@ export function buildGarmentContract(
     corrections.push(`colourway: "${known.color.trim()}" (ERP)`);
   }
 
+  // 5. Length. Vision re-reads the hem for every view and drifts: on DJ67094
+  //    one longline coat came back "knee length", "hip length" and "mid-calf"
+  //    across four views, and the side render was a shacket. The title says
+  //    "Longline"; it overrules the phrase and is spelled out in the features.
+  const length = lengthFor(known);
+  if (length) {
+    const had = LENGTH_WORDS_RE.test(garment);
+    garment = tidy(garment.replace(LENGTH_WORDS_RE, " ")).replace(/(\s*,)?\s*\bwith\b\s*$/i, "").replace(/[\s,]+$/, "");
+    const noun = typeIn(garment) || type;
+    garment = noun && new RegExp(`\\b${noun}\\b`, "i").test(garment)
+      ? tidy(garment.replace(new RegExp(`\\b${noun}\\b`, "i"), `${length.adj} ${noun}`))
+      : tidy(`${length.adj} ${garment}`);
+    features = features ? `${features}. length: ${length.adj}, ${length.hem}` : `length: ${length.adj}, ${length.hem}`;
+    corrections.push(`length: "${length.adj}" asserted (listing copy)${had ? "; vision's length struck" : ""}`);
+  }
+
+  // 6. Fit. Vision cannot size a garment from a hanger shot and the render
+  //    tends to a tent; the copy says how it is meant to sit on the body.
+  const fit = fitFor(known);
+  if (fit) {
+    features = features ? `${features}. fit: ${fit.phrase}` : `fit: ${fit.phrase}`;
+    corrections.push(`fit: "${fit.word}" asserted (listing copy)`);
+  }
+
   return { garment: tidy(garment), features: tidy(features), corrections };
+}
+
+/**
+ * Length words we act on, longest first, and what each means on the body. The
+ * title and taxonomy name describe the garment itself; the description also
+ * talks about what it layers over, so only the title is read here. An
+ * explicit `hem` from the planner ("long" with no length word, i.e. a plain
+ * "coat") asserts a knee-length hem, the shortest a coat comes.
+ */
+const LENGTHS: Array<[RegExp, { adj: string; hem: string }]> = [
+  [/\bcropped\b|\bcrop\b/i, { adj: "cropped", hem: "the hem sits at the natural waist" }],
+  [/long-?line|\bduster\b/i, { adj: "longline", hem: "the hem falls at mid-calf, well below the knee" }],
+  [/floor-?length|full-?length|\bmaxi\b/i, { adj: "floor-length", hem: "the hem reaches the ankle" }],
+  [/ankle-?length/i, { adj: "ankle-length", hem: "the hem sits at the ankle bone" }],
+  [/mid-?calf|calf-?length|\bmidi\b/i, { adj: "midi-length", hem: "the hem falls at mid-calf" }],
+  [/knee-?length|below[- ]the[- ]knee|below-?knee/i, { adj: "knee-length", hem: "the hem falls at or just below the knee" }],
+];
+/** Any length a vision phrase may carry, so an asserted one replaces rather than joins it. */
+const LENGTH_WORDS_RE =
+  /\b(hip|thigh|waist|knee|mid-?calf|calf|ankle|floor|midi|maxi|mini|cropped|crop|long-?line|full)[- ]?length\b|\b(longline|long-line|midi|maxi|cropped|hip-length|thigh-length)\b/gi;
+
+export function lengthFor(known: KnownGarment | null | undefined): { adj: string; hem: string } | null {
+  const k = known || {};
+  const text = `${k.type || ""} ${k.title || ""}`;
+  for (const [re, len] of LENGTHS) if (re.test(text)) return len;
+  if (String(k.hem || "").toLowerCase() === "long") return { adj: "knee-length", hem: "the hem falls at or just below the knee" };
+  return null;
+}
+
+/**
+ * Fit words, first match wins; each says where the garment sits on the body.
+ * The roomy words are read from the title and the description alike; the
+ * close-fitting ones only from the title, because a description says "pairs
+ * with slim jeans" about the trousers, not the top.
+ */
+const FITS: Array<[RegExp, string, string, "title" | "any"]> = [
+  [/\boversized?\b/i, "oversized", "oversized and roomy through the body on purpose, yet worn in the model's own size: shoulder seams at or just off her natural shoulder line, sleeves ending at the wrist", "any"],
+  [/\brelaxed\b/i, "relaxed", "relaxed through the body, shoulder seams at her natural shoulder line, sleeves ending at the wrist bone", "any"],
+  [/\bboxy\b/i, "boxy", "boxy and straight through the body, shoulder seams at her natural shoulder line", "any"],
+  [/\b(slim|fitted|tailored|bodycon|body-hugging)\b/i, "fitted", "fitted close to the body, shoulder seams at her natural shoulder line", "title"],
+];
+
+export function fitFor(known: KnownGarment | null | undefined): { word: string; phrase: string } | null {
+  const k = known || {};
+  const title = String(k.title || "");
+  const any = `${title} ${k.description || ""}`;
+  for (const [re, word, phrase, scope] of FITS) if (re.test(scope === "title" ? title : any)) return { word, phrase };
+  return null;
 }
 
 /** True when there is enough known truth to be worth overriding vision with. */

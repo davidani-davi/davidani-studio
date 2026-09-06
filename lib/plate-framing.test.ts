@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  categoryFromType, framingFor, isDerivedPlate, plateForFraming, shotCategory, shotPlan, shotViews,
+  categoryFromType, framingFor, hemFor, isDerivedPlate, plateForFraming, shotCategory, shotPlan, shotViews, showsBottoms,
 } from "./plate-framing";
 
 describe("shotCategory", () => {
@@ -40,6 +40,18 @@ describe("shotPlan", () => {
     expect(shotViews("top")).toEqual(["front", "side", "back", "full"]);
     expect(shotPlan("outerwear").map((s) => s.framing)).toEqual(["crop", "crop", "crop", "full"]);
   });
+  it("a long top or outerwear piece is full-length in every view, like a dress; bottoms and short layers as before", () => {
+    expect(shotPlan("outerwear", "long").map((s) => s.framing)).toEqual(["full", "full", "full", "full"]);
+    expect(framingFor("top", "side", "long")).toBe("full");
+    expect(framingFor("outerwear", "side", "short")).toBe("crop");
+    expect(framingFor("outerwear", "side")).toBe("crop");
+    expect(framingFor("pants", "front", "long")).toBe("low");
+    expect(shotViews("outerwear")).toEqual(["front", "side", "back", "full"]);
+    expect(showsBottoms("outerwear", "long")).toBe(true);
+    expect(showsBottoms("top", "long")).toBe(true);
+    expect(showsBottoms("outerwear", "")).toBe(false);
+    expect(showsBottoms("dress", "long")).toBe(false);
+  });
   it("dresses, sets and the unknown are full-length everywhere", () => {
     for (const c of ["dress", "set", "unknown"] as const) {
       expect(shotViews(c)).toEqual(["front", "side", "back", "full"]);
@@ -68,5 +80,30 @@ describe("plateForFraming", () => {
     expect(isDerivedPlate("crop 07")).toBe(true);
     expect(isDerivedPlate("low 12")).toBe(true);
     expect(isDerivedPlate("studio 07")).toBe(false);
+  });
+});
+
+describe("hemFor — where the garment ends, from our own copy", () => {
+  it("a coat of any kind, a longline or duster piece, a knee, midi or maxi length is long", () => {
+    expect(hemFor({ type: "Coat - Women's", title: "Plaid Double Breasted Longline Trench Coat" })).toBe("long");
+    expect(hemFor({ type: "Coat - Women's", title: "Wool Blend Coat" })).toBe("long");
+    expect(hemFor({ title: "Belted Trench" })).toBe("long");
+    expect(hemFor({ title: "Classic Peacoat" })).toBe("long");
+    expect(hemFor({ type: "Cardigan - Women's", title: "Ribbed Duster Cardigan" })).toBe("long");
+    expect(hemFor({ title: "Knee-Length Quilted Jacket" })).toBe("long");
+    expect(hemFor({ title: "Plaid Midi Shirt Dress" })).toBe("long");
+  });
+  it("cropped wins over everything; a jacket, a long sleeve top and a waistcoat are not long", () => {
+    expect(hemFor({ type: "Coat - Women's", title: "Cropped Plaid Coat" })).toBe("short");
+    expect(hemFor({ type: "Shirt Jacket/Shacket - Women's", title: "Plaid Shacket" })).toBe("");
+    expect(hemFor({ title: "Long Sleeve Ribbed Top" })).toBe("");
+    expect(hemFor({ title: "Tailored Waistcoat" })).toBe("");
+    expect(hemFor({})).toBe("");
+    expect(hemFor(null)).toBe("");
+  });
+  it("an explicit hem from the planner wins", () => {
+    expect(hemFor({ hem: "short", title: "Longline Coat" })).toBe("short");
+    expect(hemFor({ hem: "long", title: "Boxy Tee" })).toBe("long");
+    expect(hemFor({ hem: "nonsense", title: "Boxy Tee" })).toBe("");
   });
 });

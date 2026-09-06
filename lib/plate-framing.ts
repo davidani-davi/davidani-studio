@@ -17,10 +17,23 @@ import { MULTI_MODEL_VIEWS } from "./multi-model-prompt";
  *   crop NN     head to mid-thigh, head ~20% of frame   -> tops, outerwear
  *   low NN      waist to shoes, no head                  -> pants, skirts
  *
- * The extension plans the run with the same category rule (model_shots_core.js
- * categoryFor) so the views it queues and the plates served here agree.
+ * The crop family only works when the garment ends above its bottom edge. A
+ * longline coat on "crop NN" has nowhere to put its hem: DJ67094 (2026-09-05)
+ * came back as a hip-length shacket on the side view and as an oversized,
+ * stretched figure on the front and back, because the generator either obeys
+ * the crop and shortens the coat or breaks it and extends the body. So the
+ * hem is a second planning dimension (hemFor): a top or outerwear piece whose
+ * copy says it is long — longline, duster, knee-length, midi, maxi, or simply
+ * a coat — is shot on the full-length plate in every view, like a dress.
+ *
+ * The extension plans the run with the same category and hem rules
+ * (model_shots_core.js categoryFor / hemFor) so the views it queues and the
+ * plates served here agree.
  */
 export type PlateFraming = "full" | "crop" | "low";
+/** Where the garment ends, read from our own copy: "long" reaches below the
+ *  crop plate's mid-thigh edge, "short" is explicitly cropped, "" is unknown. */
+export type Hem = "long" | "short" | "";
 export type ShotCategory = GarmentCategory;
 export const SHOT_CATEGORIES: ShotCategory[] = ["top", "outerwear", "dress", "set", "pants", "skirt", "unknown"];
 
@@ -29,8 +42,33 @@ export interface ShotStep {
   framing: PlateFraming;
 }
 
+/**
+ * Length words in a title or taxonomy name that put the hem below the crop
+ * plate's mid-thigh edge. A coat of any kind counts: a coat that ends above
+ * the thigh is the exception and its title says "cropped". "Long sleeve"
+ * deliberately does not match. Mirrored in model_shots_core.js LONG_HEM.
+ */
+const LONG_HEM_RE =
+  /\b(pea|over|top|rain|trench|duster|long)?coat\b|\btrench\b|\bduster\b|long-?line|\bmaxi\b|\bmidi\b|mid-?calf|calf-?length|knee-?length|below[- ]the[- ]knee|below-?knee|ankle-?length|floor-?length|full-?length/i;
+const SHORT_HEM_RE = /\bcropped\b|\bcrop\b/i;
+
+/** The hem a run is planned with: an explicit one wins, then the taxonomy name and the title. */
+export function hemFor(known: { hem?: unknown; type?: unknown; title?: unknown } | null | undefined): Hem {
+  const k = known || {};
+  const explicit = String(k.hem || "").toLowerCase();
+  if (explicit === "long" || explicit === "short") return explicit;
+  const text = `${typeof k.type === "string" ? k.type : ""} ${typeof k.title === "string" ? k.title : ""}`;
+  if (SHORT_HEM_RE.test(text)) return "short";
+  return LONG_HEM_RE.test(text) ? "long" : "";
+}
+
+/** True when a layer's hem is in every frame, so the plate's own legs would show under it. */
+export function showsBottoms(category: ShotCategory, hem: Hem): boolean {
+  return (category === "top" || category === "outerwear") && hem === "long";
+}
+
 /** The views a run shoots for a category, in shooting order, with the plate framing each is handed. */
-export function shotPlan(category: ShotCategory): ShotStep[] {
+export function shotPlan(category: ShotCategory, hem: Hem = ""): ShotStep[] {
   if (category === "pants" || category === "skirt") {
     return [
       { view: "front", framing: "low" },
@@ -38,7 +76,7 @@ export function shotPlan(category: ShotCategory): ShotStep[] {
       { view: "full", framing: "full" },
     ];
   }
-  if (category === "top" || category === "outerwear") {
+  if ((category === "top" || category === "outerwear") && hem !== "long") {
     return [
       { view: "front", framing: "crop" },
       { view: "side", framing: "crop" },
@@ -53,8 +91,8 @@ export function shotViews(category: ShotCategory): PresetView[] {
   return shotPlan(category).map((s) => s.view);
 }
 
-export function framingFor(category: ShotCategory, view: PresetView): PlateFraming {
-  return shotPlan(category).find((s) => s.view === view)?.framing ?? "full";
+export function framingFor(category: ShotCategory, view: PresetView, hem: Hem = ""): PlateFraming {
+  return shotPlan(category, hem).find((s) => s.view === view)?.framing ?? "full";
 }
 
 /**

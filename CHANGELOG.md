@@ -1,5 +1,13 @@
 # Changelog
 
+## [Unreleased] - 2026-09-05
+
+### Fixed
+
+- Model shots: a long top or outerwear piece (a coat of any kind, longline, duster, knee/midi/maxi length in the title) is shot on the full-length plate in every view. The head-to-thigh crop plate has no room for its hem, and DJ67094 came back as a shacket on the side and a stretched, oversized figure on the front (`lib/plate-framing.ts` hemFor).
+- The garment contract now asserts length and fit from the listing copy the way it asserts closure, so four views describe one hem ("longline, the hem falls at mid-calf") and one fit ("relaxed through the body, shoulder seams at her natural shoulder line").
+- Under a long layer the model wears one plain house styling (black straight-leg trousers, black ankle boots) in every view instead of each plate's own invented bottoms; every set gets a scale rule (worn in her own size, sleeves at the wrist).
+
 ## [0.2.0.0] - 2026-07-29
 
 ### Added

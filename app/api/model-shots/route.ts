@@ -7,6 +7,7 @@ import {
   MULTI_MODEL_VIEWS,
   buildMultiModelConsistencySuffix,
   buildMultiModelViewSuffix,
+  stylingFor,
   buildOperatorNoteSuffix,
   sanitizeOperatorNote,
   mergeMultiModelGarmentIdentity,
@@ -15,7 +16,7 @@ import {
 import { optimizePromptForModel } from "@/lib/prompt-strategy";
 import { buildGarmentContract, hasKnownFacts, type KnownGarment } from "@/lib/garment-contract";
 import { assignPlate } from "@/lib/plate-assign";
-import { framingFor, isDerivedPlate, plateForFraming, shotCategory, shotViews } from "@/lib/plate-framing";
+import { framingFor, hemFor, isDerivedPlate, plateForFraming, shotCategory, shotViews } from "@/lib/plate-framing";
 import { buildTryOnInput, garmentForView, runTryOn, tryOnSeed, type GarmentPhotoType } from "@/lib/tryon-engine";
 import { GPT_NATIVE_SIZE, garmentMaskFromDiff, gptVariantOf, leanBrief, maskCoverage } from "@/lib/gpt-variants";
 import { uploadToFal } from "@/lib/fal";
@@ -178,7 +179,11 @@ export async function POST(req: Request) {
   // head-to-thigh, everything else full-length. The extension planned the run
   // with the same rule and says which category it used.
   const category = shotCategory({ ...known, category: body.category ?? (known as { category?: unknown }).category });
-  const framing = framingFor(category, view);
+  // A long layer (a coat, a longline cardigan) has its hem in every frame, so
+  // it is shot on the full-length plate throughout (lib/plate-framing.ts hemFor).
+  const hem = hemFor({ ...known, hem: body.hem ?? known.hem });
+  known.hem = known.hem || hem;
+  const framing = framingFor(category, view, hem);
   const views = shotViews(category);
   const catalogue = await listAllHumanModels();
 
@@ -234,7 +239,7 @@ export async function POST(req: Request) {
       return json({
         ok: true, view, url: out.urls[0], urls: out.urls, engine,
         garment: garmentUrl, prompt: "",
-        humanModelId, poseId, assigned, category, framing, note: note || undefined,
+        humanModelId, poseId, assigned, category, hem, framing, note: note || undefined,
         corrections: [],
         tryon: { endpoint: out.endpoint, category: input.category, seed: input.seed, ms: out.ms },
       });
@@ -310,7 +315,7 @@ export async function POST(req: Request) {
     const v1Prompt = optimizePromptForModel(
       modelId,
       `${basePrompt}${buildMultiModelConsistencySuffix(identity.garment, identity.features, views)}` +
-        `${buildMultiModelViewSuffix(view, hasBackReference, { framing, views })}` +
+        `${buildMultiModelViewSuffix(view, hasBackReference, { framing, views, styling: stylingFor(category, hem) })}` +
         `${buildOperatorNoteSuffix(note, view)}`
     );
 
@@ -382,7 +387,7 @@ export async function POST(req: Request) {
       ok: true, view, url, prompt,
       ...(gptVariant !== "auto" ? { gptVariant, ...(maskInfo ? { mask: maskInfo } : {}) } : {}),
       garment: identity.garment,
-      humanModelId, poseId, assigned, category, framing, note: note || undefined,
+      humanModelId, poseId, assigned, category, hem, framing, note: note || undefined,
       // What the known facts changed, so a wrong contract is visible in the
       // panel and countable in the eval rather than silent.
       corrections: contract?.corrections ?? [],
