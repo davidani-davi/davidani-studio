@@ -44,7 +44,7 @@ describe("buildMultiModelViewSuffix", () => {
     expect(s).toContain("true rear view");
     // with a real back photo the second image is the truth, not the plain rule
     const withBack = buildMultiModelViewSuffix("back", true, { framing: "crop" });
-    expect(withBack).toContain("second uploaded garment image");
+    expect(withBack).toContain("SECOND uploaded garment image shows the BACK");
     expect(withBack).not.toContain("Render a plain back");
     // the contract no longer asks for graphics "across the set" unqualified
     expect(buildMultiModelConsistencySuffix("a sweater", "")).toContain("graphics in the placement the reference shows them");
