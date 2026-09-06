@@ -1,29 +1,26 @@
-# Handoff — 2026-09-06 (Claude Code, 08:26)
+# Handoff — 2026-09-06 (Claude Code, 09:36)
 
-Branch: main · last commit: b90c53c · Vercel auto-deploys on push (READY).
+Branch: main · last commit: 566d801 · Vercel auto-deploys on push (READY).
 Backup of the pre-engine pipeline: tag `model-maker-v1-nano-banana-2026-09-05`.
 
 ## Just accomplished
-- **Plain back rule** (`PLAIN_BACK_RULE`, `applyPlainBack` in lib/multi-model-prompt.ts): with
-  no back photo the back is plain — same fabric/colour/construction, all-over patterns
-  continue, placement graphics/plackets/chest pockets stay on the front. It MUST be inserted
-  into the base prompt ahead of "Negative prompt:" (like applyStyling): the first attempt
-  (a723dd5, suffix only) changed nothing — GPT never sees the suffix. b90c53c fixed it;
-  verified on DWT60401 (fawn intarsia front, plain dotted back).
-- **Silhouette plates**: plates.json `silhouette` tag (studio 21 = DP67305 = barrel),
-  `silhouetteOf(title)` / `silhouettePlates`, assignPlate prefers a matching plate for
-  bottoms. Manifest regenerated (`npx vite-node scripts/build-models-manifest.mts`;
-  `npm run models:manifest` is broken — vite-node not on PATH).
-- 660 tests + new ones pass; tsc clean.
-
-## Blocked
-- **fal.ai balance exhausted (08:19)**: /api/model-shots returns 502 with
-  "User is locked. Reason: Exhausted balance". David tops up at fal.ai/dashboard/billing.
-  The faire-management re-shoot (11 backs + DP62206 on the barrel plate) waits on it.
+- **Everything aimed at GPT now lives in the BASE prompt** (lib/multi-model-prompt.ts):
+  `optimizePromptForModel("gpt-image")` strips from "Negative prompt:" on, so the multi-view
+  suffix never reached GPT. `insertBeforeNegative()` is the one helper; used by `applyStyling`,
+  `applyPlainBack` (b90c53c: no back photo → plain back; 48b843f: with a back photo →
+  `BACK_REFERENCE_RULE`, "the SECOND uploaded image shows the BACK") and `applyOperatorNote`
+  (9d5644d: the request's `note` field). route.ts composes them; the suffix no longer repeats
+  the note. Tests for all three; 664 pass, tsc clean (566d801 fixed a stale expectation).
+- Verified in production on the faire-management batch: 12 mirrored backs re-rendered plain
+  (DET62260 needed an operator note — graphic tee with no back photo), DP62206 shot on the
+  barrel plate (studio 21, `silhouette: "barrel"` in plates.json, assignPlate prefers it).
+- Manifest regen: `npx vite-node scripts/build-models-manifest.mts` (`npm run models:manifest`
+  is broken — vite-node not on PATH).
 
 ## Next
-1. After top-up: DP62206 render should log plate low/studio 21 — confirm.
-2. Rule of thumb for any future prompt rule aimed at GPT: put it in the base prompt
-   (insertBeforeNegative), never only in a multi-view suffix. Consider moving the whole
-   view/consistency suffix ahead of the marker.
-3. Lean brief round two (from the previous handoff) still open.
+1. Rule of thumb: any new prompt rule for GPT goes through `insertBeforeNegative`, never only
+   into `buildMultiModelViewSuffix`. Consider moving the whole view/consistency suffix ahead of
+   the marker so the two paths stop diverging.
+2. fal.ai prepaid balance is the render budget: 502 "User is locked. Reason: Exhausted balance"
+   means top up at fal.ai/dashboard/billing; keep ≤4 concurrent renders (14 at once → 502 burst).
+3. Lean brief round two (from the earlier handoff) still open.
