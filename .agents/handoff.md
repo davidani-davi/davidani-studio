@@ -28,3 +28,10 @@ Backup of the pre-engine pipeline: tag `model-maker-v1-nano-banana-2026-09-05`.
 2. fal.ai prepaid balance is the render budget: 502 "User is locked. Reason: Exhausted balance"
    means top up at fal.ai/dashboard/billing; keep ≤4 concurrent renders (14 at once → 502 burst).
 3. Lean brief round two (from the earlier handoff) still open.
+
+## 2026-09-06 22:40 (Claude Code) — /api/square
+- `app/api/square/route.ts` (7a811d0, 9d2c969 proxy exemption, 33af678): a 2:3 shot → square by
+  Bria expand outpainting; body `{imageUrl, size?, subjectX?, prompt?}`; subject centre measured by
+  `lib/square-subject.ts` when not given (test: square-subject.test.ts). Same X-DDTO-TOKEN gate as
+  model-shots. Callers: faire-management extension 2.42.0 (`studio-square` message) and
+  `faire_drafts.studio_square`. ~12 s, ~$0.04 per square on the fal balance.
