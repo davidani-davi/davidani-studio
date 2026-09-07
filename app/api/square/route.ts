@@ -3,6 +3,7 @@ import { fal } from "@fal-ai/client";
 import sharp from "sharp";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth";
 import { uploadToFal } from "@/lib/fal";
+import { measureSubjectX } from "@/lib/square-subject";
 
 /**
  * POST /api/square — a 2:3 studio shot becomes a square by EXTENDING the
@@ -10,10 +11,14 @@ import { uploadToFal } from "@/lib/fal";
  * photo. The original pixels stay untouched: the model only fills the new
  * canvas around them.
  *
- * Body: { imageUrl, size?: 2000, subjectX?: 0.5, prompt?: string }
+ * Body: { imageUrl, size?: 2000, subjectX?: number, prompt?: string }
  *   subjectX — where the subject's centre sits across the source (0..1).
  *              The source is placed so that point lands on the square's
- *              centre line, clamped to the canvas.
+ *              centre line, clamped to the canvas. Omitted: measured here —
+ *              the middle of the span of columns where more than a fifth of
+ *              the pixels sit clearly off the backdrop (a top-to-bottom
+ *              gradient sampled at the edges), so a model rendered off to
+ *              one side still lands centred.
  * Reply: { ok, url, width, height, placed: { x, y, w, h } }
  *
  * AUTH — the same gate as /api/model-shots (X-DDTO-TOKEN or a studio session).
@@ -57,7 +62,7 @@ export async function POST(req: Request) {
   const imageUrl = String(body.imageUrl || "").trim();
   if (!/^https?:\/\//.test(imageUrl)) return json({ ok: false, error: "imageUrl required" }, 400);
   const size = Math.min(4000, Math.max(512, Math.round(Number(body.size) || 2000)));
-  const subjectX = Math.min(1, Math.max(0, Number(body.subjectX ?? 0.5)));
+  const givenX = body.subjectX == null ? null : Math.min(1, Math.max(0, Number(body.subjectX)));
   const key = process.env.FAL_KEY;
   if (!key) return json({ ok: false, error: "FAL_KEY missing" }, 500);
   fal.config({ credentials: key });
@@ -69,6 +74,8 @@ export async function POST(req: Request) {
     const meta = await sharp(buf).metadata();
     const w0 = meta.width || 0, h0 = meta.height || 0;
     if (!w0 || !h0) return json({ ok: false, error: "unreadable image" }, 400);
+
+    const subjectX = givenX ?? await measureSubjectX(buf);
 
     // Fit to the square's height (portrait sources) or width (landscape ones).
     const scale = Math.min(size / h0, size / w0);
