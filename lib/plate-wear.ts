@@ -158,7 +158,12 @@ export function mergePlateWear<T extends { id: string } & PlateWear>(
         ...(slug ? { slug, poseKey: slug.replace(/-[a-z]+$/, "") } : {}),
         ...(p.outfit_above ? { outfitAbove: String(p.outfit_above) } : {}),
         ...(p.outfit_below ? { outfitBelow: String(p.outfit_below) } : {}),
-        ...(p.auto === false ? { autoPool: false } : {}),
+        // explicit either way (2026-09-08): the deployed function kept
+        // answering autoPool:true for auto:false rows while the bundled
+        // plates.json plainly carried them — a stale compiled module in the
+        // restored build cache is the only explanation left, and a changed
+        // source line is what evicts it
+        autoPool: p.auto !== false,
       });
     }
   }

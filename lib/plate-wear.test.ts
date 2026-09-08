@@ -73,6 +73,6 @@ describe("plates.json auto:false", () => {
       { name: "studio 31", wears: "pants", low_ok: true },
     ];
     const by = Object.fromEntries(mergePlateWear(models, rows).map((m: any) => [m.id, m.autoPool]));
-    expect(by).toEqual({ "studio 65": false, "crop 65": false, "studio 31": undefined });
+    expect(by).toEqual({ "studio 65": false, "crop 65": false, "studio 31": true });
   });
 });
