@@ -1,6 +1,6 @@
 {
- "note": "Plates retired from public/models/plates.json. Their folders live beside this file; plate_install.py reads this so a retired plate is never silently reinstalled and its number is never reused by a different model.",
- "retired_from": "600bc94",
+ "note": "Plates retired from public/models/plates.json. Their folders live beside this file; plate_install.py reads this so a retired plate is never silently reinstalled and its number is never reused by a different model. Rebuilt from the git history of plates.json \u2014 every studio folder in hide/ that is not live.",
+ "retired_from": "600bc94, plus DWT62133 warm-backdrop family 2026-09-08; studio 25 warm backdrop 2026-09-08",
  "plates": [
   {
    "name": "studio 01",
@@ -43,6 +43,69 @@
    "outfit_above": "leopard star print sweatshirt"
   },
   {
+   "name": "studio 04",
+   "source_style": "DJ60276",
+   "pose": "standing straight, arms relaxed at sides, feet apart",
+   "head_pct": 10,
+   "views": [
+    "back",
+    "front",
+    "full",
+    "side"
+   ],
+   "front_is": "real studio photograph",
+   "others_are": "generated from the front plate, same model",
+   "wears": "pants",
+   "low_ok": true,
+   "legs_separated": true,
+   "hem": "floor",
+   "outfit_below": "heather grey wide-leg sweatpants",
+   "outfit_above": "black ribbed tank top, tucked in",
+   "tank": "2026-09-08"
+  },
+  {
+   "name": "studio 06",
+   "source_style": "DP67160",
+   "pose": "standing straight, one hand in pocket",
+   "head_pct": 10,
+   "views": [
+    "back",
+    "front",
+    "full",
+    "side"
+   ],
+   "front_is": "real studio photograph",
+   "others_are": "generated from the front plate, same model",
+   "wears": "pants",
+   "low_ok": true,
+   "legs_separated": true,
+   "hem": "floor",
+   "outfit_below": "acid-wash wide-leg jeans",
+   "outfit_above": "black ribbed tank top, tucked in",
+   "tank": "2026-09-08"
+  },
+  {
+   "name": "studio 07",
+   "source_style": "DTP70045A",
+   "pose": "standing straight, arms relaxed at sides, feet apart",
+   "head_pct": 10,
+   "views": [
+    "back",
+    "front",
+    "full",
+    "side"
+   ],
+   "front_is": "real studio photograph",
+   "others_are": "generated from the front plate, same model",
+   "wears": "shorts",
+   "low_ok": true,
+   "legs_separated": true,
+   "hem": "above-knee",
+   "outfit_below": "multicolor striped linen shorts",
+   "outfit_above": "black ribbed tank top, tucked in",
+   "tank": "2026-09-08"
+  },
+  {
    "name": "studio 08",
    "source_style": "DWJ62218",
    "pose": "standing upright, arms relaxed at sides",
@@ -61,6 +124,48 @@
    "hem": "ankle",
    "outfit_below": "ivory flowy maxi skirt",
    "outfit_above": "yellow-blue striped cardigan"
+  },
+  {
+   "name": "studio 09",
+   "source_style": "DWJ68152",
+   "pose": "standing upright, hands in pockets, feet slightly apart",
+   "head_pct": 11,
+   "views": [
+    "back",
+    "front",
+    "full",
+    "side"
+   ],
+   "front_is": "real studio photograph",
+   "others_are": "generated from the front plate, same model",
+   "wears": "pants",
+   "low_ok": true,
+   "legs_separated": true,
+   "hem": "ankle",
+   "outfit_below": "polka-dot wide-leg trousers",
+   "outfit_above": "black ribbed tank top, tucked in",
+   "tank": "2026-09-08"
+  },
+  {
+   "name": "studio 10",
+   "source_style": "DWT58109",
+   "pose": "standing straight, arms relaxed at sides",
+   "head_pct": 10,
+   "views": [
+    "back",
+    "front",
+    "full",
+    "side"
+   ],
+   "front_is": "real studio photograph",
+   "others_are": "generated from the front plate, same model",
+   "wears": "pants",
+   "low_ok": true,
+   "legs_separated": true,
+   "hem": "floor",
+   "outfit_below": "patchwork wide-leg jeans",
+   "outfit_above": "black ribbed tank top, tucked in",
+   "tank": "2026-09-08"
   },
   {
    "name": "studio 11",
@@ -223,6 +328,27 @@
    "outfit_above": "ivory frayed-trim tee"
   },
   {
+   "name": "studio 20",
+   "source_style": "DP67097",
+   "pose": "standing, weight on one leg, arms relaxed",
+   "head_pct": 10,
+   "views": [
+    "back",
+    "front",
+    "full",
+    "side"
+   ],
+   "front_is": "real studio photograph",
+   "others_are": "generated from the front plate, same model",
+   "wears": "pants",
+   "low_ok": true,
+   "legs_separated": true,
+   "hem": "floor",
+   "outfit_below": "charcoal pleated wide-leg trousers",
+   "outfit_above": "black ribbed tank top, tucked in",
+   "tank": "2026-09-08"
+  },
+  {
    "name": "studio 21",
    "source_style": "DP67305",
    "pose": "standing upright, arms relaxed at sides, feet apart",
@@ -243,6 +369,27 @@
    "silhouette_note": "DP67305 is the barrel body (David, 2026-09-06): barrel-leg bottoms shoot on this plate",
    "outfit_below": "polka-dot barrel jeans",
    "outfit_above": "beige cat graphic tee"
+  },
+  {
+   "name": "studio 22",
+   "source_style": "DS42505S",
+   "pose": "standing upright, arms at sides, feet slightly apart",
+   "head_pct": 9,
+   "views": [
+    "back",
+    "front",
+    "full",
+    "side"
+   ],
+   "front_is": "real studio photograph",
+   "others_are": "generated from the front plate, same model",
+   "wears": "skirt",
+   "low_ok": false,
+   "legs_separated": false,
+   "hem": "ankle",
+   "outfit_below": "leopard print lace-hem midi skirt",
+   "outfit_above": "black ribbed tank top, tucked in",
+   "tank": "2026-09-08"
   },
   {
    "name": "studio 23",
@@ -285,6 +432,27 @@
    "outfit_above": "patchwork print button-down shirt"
   },
   {
+   "name": "studio 25",
+   "source_style": "DT62115",
+   "pose": "Standing straight, one hand in pocket, feet apart",
+   "head_pct": 10,
+   "views": [
+    "back",
+    "front",
+    "full",
+    "side"
+   ],
+   "front_is": "real studio photograph",
+   "others_are": "generated from the front plate, same model",
+   "wears": "pants",
+   "low_ok": true,
+   "legs_separated": true,
+   "hem": "ankle",
+   "outfit_below": "brown polka-dot barrel pants",
+   "outfit_above": "black ribbed tank top, tucked in",
+   "tank": "2026-09-08"
+  },
+  {
    "name": "studio 26",
    "source_style": "DWT60361",
    "pose": "standing, hands in pockets, feet slightly apart",
@@ -323,6 +491,242 @@
    "hem": "ankle",
    "outfit_below": "light-wash baggy jeans",
    "outfit_above": "navy cable-knit crop sweater"
+  },
+  {
+   "name": "studio 28",
+   "source_style": "DWT62133",
+   "pose": "standing straight, arms relaxed at sides",
+   "head_pct": 9,
+   "views": [
+    "back",
+    "front",
+    "full",
+    "side"
+   ],
+   "slug": "dwt62133-24-neutral",
+   "face": "vision",
+   "expression": "neutral",
+   "wears": "pants",
+   "low_ok": true,
+   "front_is": "real studio photograph, head replaced with the house AI face (GPT Image 2, masked)",
+   "others_are": "generated from the front plate, same model",
+   "legs_separated": true,
+   "hem": "floor",
+   "outfit_below": "patchwork wide-leg chambray pants",
+   "outfit_above": "red ruffle-collar cardigan"
+  },
+  {
+   "name": "studio 29",
+   "source_style": "DWT62133",
+   "pose": "standing straight, arms relaxed at sides",
+   "head_pct": 9,
+   "views": [
+    "back",
+    "front",
+    "full",
+    "side"
+   ],
+   "slug": "dwt62133-24-smile",
+   "face": "vision",
+   "expression": "smile",
+   "wears": "pants",
+   "low_ok": true,
+   "front_is": "real studio photograph, head replaced with the house AI face (GPT Image 2, masked)",
+   "others_are": "generated from the front plate, same model",
+   "legs_separated": true,
+   "hem": "floor",
+   "outfit_below": "patchwork wide-leg chambray pants",
+   "outfit_above": "red ruffle-collar cardigan"
+  },
+  {
+   "name": "studio 30",
+   "source_style": "DWT62133",
+   "pose": "standing straight, arms relaxed at sides",
+   "head_pct": 9,
+   "views": [
+    "back",
+    "front",
+    "full",
+    "side"
+   ],
+   "slug": "dwt62133-24-smirk",
+   "face": "vision",
+   "expression": "smirk",
+   "wears": "pants",
+   "low_ok": true,
+   "front_is": "real studio photograph, head replaced with the house AI face (GPT Image 2, masked)",
+   "others_are": "generated from the front plate, same model",
+   "legs_separated": true,
+   "hem": "floor",
+   "outfit_below": "patchwork wide-leg chambray pants",
+   "outfit_above": "red ruffle-collar cardigan"
+  },
+  {
+   "name": "studio 31",
+   "source_style": "DWT62133",
+   "pose": "standing straight, arms relaxed at sides",
+   "head_pct": 9,
+   "views": [
+    "back",
+    "front",
+    "full",
+    "side"
+   ],
+   "slug": "dwt62133-24-teeth",
+   "face": "vision",
+   "expression": "teeth",
+   "wears": "pants",
+   "low_ok": true,
+   "front_is": "real studio photograph, head replaced with the house AI face (GPT Image 2, masked)",
+   "others_are": "generated from the front plate, same model",
+   "legs_separated": true,
+   "hem": "floor",
+   "outfit_below": "patchwork wide-leg chambray pants",
+   "outfit_above": "red ruffle-collar cardigan"
+  },
+  {
+   "name": "studio 32",
+   "source_style": "DWT62170",
+   "pose": "standing, one arm raised to head, hand in pocket",
+   "head_pct": 10,
+   "views": [
+    "back",
+    "front",
+    "full",
+    "side"
+   ],
+   "slug": "dwt62170-20-neutral",
+   "face": "vision",
+   "expression": "neutral",
+   "wears": "pants",
+   "low_ok": true,
+   "front_is": "real studio photograph, head replaced with the house AI face (GPT Image 2, masked)",
+   "others_are": "generated from the front plate, same model",
+   "legs_separated": true,
+   "hem": "ankle",
+   "outfit_below": "polka-dot barrel jeans",
+   "outfit_above": "black ribbed tank top, tucked in",
+   "tank": "2026-09-08"
+  },
+  {
+   "name": "studio 33",
+   "source_style": "DWT62170",
+   "pose": "standing, one arm raised to head, hand in pocket",
+   "head_pct": 10,
+   "views": [
+    "back",
+    "front",
+    "full",
+    "side"
+   ],
+   "slug": "dwt62170-20-smile",
+   "face": "vision",
+   "expression": "smile",
+   "wears": "pants",
+   "low_ok": true,
+   "front_is": "real studio photograph, head replaced with the house AI face (GPT Image 2, masked)",
+   "others_are": "generated from the front plate, same model",
+   "legs_separated": true,
+   "hem": "ankle",
+   "outfit_below": "polka-dot barrel jeans",
+   "outfit_above": "black ribbed tank top, tucked in",
+   "tank": "2026-09-08"
+  },
+  {
+   "name": "studio 34",
+   "source_style": "DWT62170",
+   "pose": "standing, one arm raised to head, hand in pocket",
+   "head_pct": 10,
+   "views": [
+    "back",
+    "front",
+    "full",
+    "side"
+   ],
+   "slug": "dwt62170-20-teeth",
+   "face": "vision",
+   "expression": "teeth",
+   "wears": "pants",
+   "low_ok": true,
+   "front_is": "real studio photograph, head replaced with the house AI face (GPT Image 2, masked)",
+   "others_are": "generated from the front plate, same model",
+   "legs_separated": true,
+   "hem": "ankle",
+   "outfit_below": "polka-dot barrel jeans",
+   "outfit_above": "black ribbed tank top, tucked in",
+   "tank": "2026-09-08"
+  },
+  {
+   "name": "studio 35",
+   "source_style": "DWT62170",
+   "pose": "standing, weight on one leg, hand in pocket",
+   "head_pct": 10,
+   "views": [
+    "back",
+    "front",
+    "full",
+    "side"
+   ],
+   "slug": "dwt62170-21-neutral",
+   "face": "vision",
+   "expression": "neutral",
+   "wears": "pants",
+   "low_ok": true,
+   "front_is": "real studio photograph, head replaced with the house AI face (GPT Image 2, masked)",
+   "others_are": "generated from the front plate, same model",
+   "legs_separated": true,
+   "hem": "ankle",
+   "outfit_below": "polka-dot barrel jeans",
+   "outfit_above": "black ribbed tank top, tucked in",
+   "tank": "2026-09-08"
+  },
+  {
+   "name": "studio 36",
+   "source_style": "DWT62170",
+   "pose": "standing, weight on one leg, hand in pocket",
+   "head_pct": 10,
+   "views": [
+    "back",
+    "front",
+    "full",
+    "side"
+   ],
+   "slug": "dwt62170-21-smile",
+   "face": "vision",
+   "expression": "smile",
+   "wears": "pants",
+   "low_ok": true,
+   "front_is": "real studio photograph, head replaced with the house AI face (GPT Image 2, masked)",
+   "others_are": "generated from the front plate, same model",
+   "legs_separated": true,
+   "hem": "ankle",
+   "outfit_below": "polka-dot barrel jeans",
+   "outfit_above": "black ribbed tank top, tucked in",
+   "tank": "2026-09-08"
+  },
+  {
+   "name": "studio 37",
+   "source_style": "DWT62170",
+   "pose": "standing, weight on one leg, hand in pocket",
+   "head_pct": 10,
+   "views": [
+    "back",
+    "front",
+    "full",
+    "side"
+   ],
+   "slug": "dwt62170-21-teeth",
+   "face": "vision",
+   "expression": "teeth",
+   "wears": "pants",
+   "low_ok": true,
+   "front_is": "real studio photograph, head replaced with the house AI face (GPT Image 2, masked)",
+   "others_are": "generated from the front plate, same model",
+   "legs_separated": true,
+   "hem": "ankle",
+   "outfit_below": "polka-dot barrel jeans",
+   "outfit_above": "black ribbed tank top, tucked in",
+   "tank": "2026-09-08"
   },
   {
    "name": "studio 38",
@@ -683,6 +1087,82 @@
    "legs_separated": true,
    "hem": "ankle",
    "auto": false
+  },
+  {
+   "name": "studio 53",
+   "source_style": "DWT62133",
+   "pose": "standing straight, arms relaxed at sides",
+   "head_pct": 9,
+   "views": [
+    "back",
+    "front",
+    "full",
+    "side"
+   ],
+   "slug": "dwt62133-24-celine-neutral",
+   "face": "celine",
+   "expression": "neutral",
+   "wears": "pants",
+   "low_ok": true,
+   "front_is": "real studio photograph, head replaced with the house AI face (GPT Image 2, masked)",
+   "others_are": "generated from the front plate, same model"
+  },
+  {
+   "name": "studio 54",
+   "source_style": "DWT62133",
+   "pose": "standing straight, arms relaxed at sides",
+   "head_pct": 9,
+   "views": [
+    "back",
+    "front",
+    "full",
+    "side"
+   ],
+   "slug": "dwt62133-24-celine-smile",
+   "face": "celine",
+   "expression": "smile",
+   "wears": "pants",
+   "low_ok": true,
+   "front_is": "real studio photograph, head replaced with the house AI face (GPT Image 2, masked)",
+   "others_are": "generated from the front plate, same model"
+  },
+  {
+   "name": "studio 55",
+   "source_style": "DWT62133",
+   "pose": "standing straight, arms relaxed at sides",
+   "head_pct": 9,
+   "views": [
+    "back",
+    "front",
+    "full",
+    "side"
+   ],
+   "slug": "dwt62133-24-celine-smirk",
+   "face": "celine",
+   "expression": "smirk",
+   "wears": "pants",
+   "low_ok": true,
+   "front_is": "real studio photograph, head replaced with the house AI face (GPT Image 2, masked)",
+   "others_are": "generated from the front plate, same model"
+  },
+  {
+   "name": "studio 56",
+   "source_style": "DWT62133",
+   "pose": "standing straight, arms relaxed at sides",
+   "head_pct": 9,
+   "views": [
+    "back",
+    "front",
+    "full",
+    "side"
+   ],
+   "slug": "dwt62133-24-celine-teeth",
+   "face": "celine",
+   "expression": "teeth",
+   "wears": "pants",
+   "low_ok": true,
+   "front_is": "real studio photograph, head replaced with the house AI face (GPT Image 2, masked)",
+   "others_are": "generated from the front plate, same model"
   },
   {
    "name": "studio 62",
