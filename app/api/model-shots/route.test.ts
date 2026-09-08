@@ -54,6 +54,22 @@ describe("/api/model-shots auth", () => {
     expect((await GET(req({ "X-DDTO-TOKEN": "team-password" }))).status).toBe(200);
   });
 
+  it("lists the house character's tags with each plate, so a picker can fold them by pose", async () => {
+    process.env.MODEL_SHOTS_TOKEN = "s3cret";
+    const { GET } = await load();
+    const { models } = await (await GET(req({ "X-DDTO-TOKEN": "s3cret" }))).json();
+    const byId = (id: string) => models.find((m: any) => m.id === id);
+    const house = byId("studio 28");
+    expect(house).toMatchObject({ character: "vision", expression: "neutral", poseKey: "dwt62133-24", autoPool: true });
+    expect(house.pose).toMatch(/arms relaxed/);
+    // the wardrobe variant is listed but flagged out of the auto pool
+    expect(byId("studio 38")).toMatchObject({ character: "vision", autoPool: false });
+    // a photographed model carries no character at all
+    const real = byId("studio 01");
+    expect(real.autoPool).toBe(true);
+    expect(real.character).toBeUndefined();
+  });
+
   it("prefers MODEL_SHOTS_TOKEN once it is set, so the extension key can be rotated alone", async () => {
     process.env.MODEL_SHOTS_TOKEN = "s3cret";
     process.env.APP_PASSWORD = "team-password";

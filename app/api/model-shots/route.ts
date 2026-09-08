@@ -145,6 +145,14 @@ export async function GET(req: Request) {
         wears: m.wears,
         lowOk: m.lowOk === true,
         silhouette: m.silhouette,
+        // the house character's tags (plates.json via lib/plate-wear.ts), so a
+        // picker can fold the plates into one card per pose with the
+        // expressions inside, and keep the wardrobe variants off the front row
+        ...(m.character ? { character: m.character } : {}),
+        ...(m.expression ? { expression: m.expression } : {}),
+        ...(m.poseKey ? { poseKey: m.poseKey } : {}),
+        ...(m.pose ? { pose: m.pose } : {}),
+        autoPool: m.autoPool !== false,
         poses: m.poses.map((p) => ({
           id: p.id,
           label: p.label,
