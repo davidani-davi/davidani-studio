@@ -247,6 +247,672 @@ export const STATIC_HUMAN_MODELS = [
     "autoPool": true
   },
   {
+    "id": "crop 61",
+    "name": "Crop 61",
+    "poses": [
+      {
+        "id": "crop 61",
+        "label": "Crop 61",
+        "publicPath": "/models/crop 61/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 61/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 61/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 61/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides, feet apart",
+    "character": "celine",
+    "expression": "neutral",
+    "slug": "dj40155ls-42-celine-neutral",
+    "poseKey": "dj40155ls-42-celine",
+    "outfitAbove": "black ribbed tank top, tucked in",
+    "outfitBelow": "cream wide-leg trousers",
+    "autoPool": true
+  },
+  {
+    "id": "crop 80",
+    "name": "Crop 80",
+    "poses": [
+      {
+        "id": "crop 80",
+        "label": "Crop 80",
+        "publicPath": "/models/crop 80/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 80/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 80/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 80/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides, feet apart",
+    "character": "celine",
+    "expression": "smile",
+    "slug": "dj40155ls-42-celine-smile",
+    "poseKey": "dj40155ls-42-celine",
+    "outfitAbove": "black ribbed tank top, tucked in",
+    "outfitBelow": "cream wide-leg trousers",
+    "autoPool": true
+  },
+  {
+    "id": "crop 81",
+    "name": "Crop 81",
+    "poses": [
+      {
+        "id": "crop 81",
+        "label": "Crop 81",
+        "publicPath": "/models/crop 81/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 81/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 81/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 81/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides, feet apart",
+    "character": "celine",
+    "expression": "teeth",
+    "slug": "dj40155ls-42-celine-teeth",
+    "poseKey": "dj40155ls-42-celine",
+    "outfitAbove": "black ribbed tank top, tucked in",
+    "outfitBelow": "cream wide-leg trousers",
+    "autoPool": true
+  },
+  {
+    "id": "crop 82",
+    "name": "Crop 82",
+    "poses": [
+      {
+        "id": "crop 82",
+        "label": "Crop 82",
+        "publicPath": "/models/crop 82/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 82/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 82/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 82/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides, feet apart",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "dj40155ls-42-neutral",
+    "poseKey": "dj40155ls-42",
+    "outfitAbove": "black ribbed tank top, tucked in",
+    "outfitBelow": "cream wide-leg trousers",
+    "autoPool": true
+  },
+  {
+    "id": "crop 83",
+    "name": "Crop 83",
+    "poses": [
+      {
+        "id": "crop 83",
+        "label": "Crop 83",
+        "publicPath": "/models/crop 83/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 83/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 83/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 83/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides, feet apart",
+    "character": "vision",
+    "expression": "smile",
+    "slug": "dj40155ls-42-smile",
+    "poseKey": "dj40155ls-42",
+    "outfitAbove": "black ribbed tank top, tucked in",
+    "outfitBelow": "cream wide-leg trousers",
+    "autoPool": true
+  },
+  {
+    "id": "crop 84",
+    "name": "Crop 84",
+    "poses": [
+      {
+        "id": "crop 84",
+        "label": "Crop 84",
+        "publicPath": "/models/crop 84/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 84/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 84/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 84/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides, feet apart",
+    "character": "vision",
+    "expression": "teeth",
+    "slug": "dj40155ls-42-teeth",
+    "poseKey": "dj40155ls-42",
+    "outfitAbove": "black ribbed tank top, tucked in",
+    "outfitBelow": "cream wide-leg trousers",
+    "autoPool": true
+  },
+  {
+    "id": "crop 85",
+    "name": "Crop 85",
+    "poses": [
+      {
+        "id": "crop 85",
+        "label": "Crop 85",
+        "publicPath": "/models/crop 85/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 85/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 85/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 85/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, right hand on hip, feet apart",
+    "character": "celine",
+    "expression": "neutral",
+    "slug": "dp60197b-44-celine-neutral",
+    "poseKey": "dp60197b-44-celine",
+    "outfitAbove": "black ribbed tank top, tucked in",
+    "outfitBelow": "olive balloon barrel pants",
+    "autoPool": true
+  },
+  {
+    "id": "crop 86",
+    "name": "Crop 86",
+    "poses": [
+      {
+        "id": "crop 86",
+        "label": "Crop 86",
+        "publicPath": "/models/crop 86/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 86/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 86/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 86/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, right hand on hip, feet apart",
+    "character": "celine",
+    "expression": "smile",
+    "slug": "dp60197b-44-celine-smile",
+    "poseKey": "dp60197b-44-celine",
+    "outfitAbove": "black ribbed tank top, tucked in",
+    "outfitBelow": "olive balloon barrel pants",
+    "autoPool": true
+  },
+  {
+    "id": "crop 87",
+    "name": "Crop 87",
+    "poses": [
+      {
+        "id": "crop 87",
+        "label": "Crop 87",
+        "publicPath": "/models/crop 87/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 87/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 87/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 87/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, right hand on hip, feet apart",
+    "character": "celine",
+    "expression": "teeth",
+    "slug": "dp60197b-44-celine-teeth",
+    "poseKey": "dp60197b-44-celine",
+    "outfitAbove": "black ribbed tank top, tucked in",
+    "outfitBelow": "olive balloon barrel pants",
+    "autoPool": true
+  },
+  {
+    "id": "crop 88",
+    "name": "Crop 88",
+    "poses": [
+      {
+        "id": "crop 88",
+        "label": "Crop 88",
+        "publicPath": "/models/crop 88/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 88/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 88/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 88/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, right hand on hip, feet apart",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "dp60197b-44-neutral",
+    "poseKey": "dp60197b-44",
+    "outfitAbove": "black ribbed tank top, tucked in",
+    "outfitBelow": "olive balloon barrel pants",
+    "autoPool": true
+  },
+  {
+    "id": "crop 89",
+    "name": "Crop 89",
+    "poses": [
+      {
+        "id": "crop 89",
+        "label": "Crop 89",
+        "publicPath": "/models/crop 89/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 89/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 89/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 89/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, right hand on hip, feet apart",
+    "character": "vision",
+    "expression": "smile",
+    "slug": "dp60197b-44-smile",
+    "poseKey": "dp60197b-44",
+    "outfitAbove": "black ribbed tank top, tucked in",
+    "outfitBelow": "olive balloon barrel pants",
+    "autoPool": true
+  },
+  {
+    "id": "crop 90",
+    "name": "Crop 90",
+    "poses": [
+      {
+        "id": "crop 90",
+        "label": "Crop 90",
+        "publicPath": "/models/crop 90/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 90/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 90/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 90/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, right hand on hip, feet apart",
+    "character": "vision",
+    "expression": "teeth",
+    "slug": "dp60197b-44-teeth",
+    "poseKey": "dp60197b-44",
+    "outfitAbove": "black ribbed tank top, tucked in",
+    "outfitBelow": "olive balloon barrel pants",
+    "autoPool": true
+  },
+  {
+    "id": "crop 91",
+    "name": "Crop 91",
+    "poses": [
+      {
+        "id": "crop 91",
+        "label": "Crop 91",
+        "publicPath": "/models/crop 91/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 91/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 91/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 91/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, both thumbs hooked in front pockets",
+    "character": "celine",
+    "expression": "neutral",
+    "slug": "dp62140ap-43-celine-neutral",
+    "poseKey": "dp62140ap-43-celine",
+    "outfitAbove": "black ribbed tank top, tucked in",
+    "outfitBelow": "brown plaid barrel trousers",
+    "autoPool": true
+  },
+  {
+    "id": "crop 92",
+    "name": "Crop 92",
+    "poses": [
+      {
+        "id": "crop 92",
+        "label": "Crop 92",
+        "publicPath": "/models/crop 92/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 92/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 92/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 92/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, both thumbs hooked in front pockets",
+    "character": "celine",
+    "expression": "smile",
+    "slug": "dp62140ap-43-celine-smile",
+    "poseKey": "dp62140ap-43-celine",
+    "outfitAbove": "black ribbed tank top, tucked in",
+    "outfitBelow": "brown plaid barrel trousers",
+    "autoPool": true
+  },
+  {
+    "id": "crop 93",
+    "name": "Crop 93",
+    "poses": [
+      {
+        "id": "crop 93",
+        "label": "Crop 93",
+        "publicPath": "/models/crop 93/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 93/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 93/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 93/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, both thumbs hooked in front pockets",
+    "character": "celine",
+    "expression": "teeth",
+    "slug": "dp62140ap-43-celine-teeth",
+    "poseKey": "dp62140ap-43-celine",
+    "outfitAbove": "black ribbed tank top, tucked in",
+    "outfitBelow": "brown plaid barrel trousers",
+    "autoPool": true
+  },
+  {
+    "id": "crop 94",
+    "name": "Crop 94",
+    "poses": [
+      {
+        "id": "crop 94",
+        "label": "Crop 94",
+        "publicPath": "/models/crop 94/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 94/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 94/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 94/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, both thumbs hooked in front pockets",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "dp62140ap-43-neutral",
+    "poseKey": "dp62140ap-43",
+    "outfitAbove": "black ribbed tank top, tucked in",
+    "outfitBelow": "brown plaid barrel trousers",
+    "autoPool": true
+  },
+  {
+    "id": "crop 95",
+    "name": "Crop 95",
+    "poses": [
+      {
+        "id": "crop 95",
+        "label": "Crop 95",
+        "publicPath": "/models/crop 95/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 95/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 95/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 95/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, both thumbs hooked in front pockets",
+    "character": "vision",
+    "expression": "smile",
+    "slug": "dp62140ap-43-smile",
+    "poseKey": "dp62140ap-43",
+    "outfitAbove": "black ribbed tank top, tucked in",
+    "outfitBelow": "brown plaid barrel trousers",
+    "autoPool": true
+  },
+  {
+    "id": "crop 96",
+    "name": "Crop 96",
+    "poses": [
+      {
+        "id": "crop 96",
+        "label": "Crop 96",
+        "publicPath": "/models/crop 96/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 96/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 96/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 96/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, both thumbs hooked in front pockets",
+    "character": "vision",
+    "expression": "teeth",
+    "slug": "dp62140ap-43-teeth",
+    "poseKey": "dp62140ap-43",
+    "outfitAbove": "black ribbed tank top, tucked in",
+    "outfitBelow": "brown plaid barrel trousers",
+    "autoPool": true
+  },
+  {
     "id": "low 03",
     "name": "Low 03",
     "poses": [
@@ -455,6 +1121,600 @@ export const STATIC_HUMAN_MODELS = [
     "expression": "teeth",
     "slug": "dwt62170-21-celine-teeth",
     "poseKey": "dwt62170-21-celine",
+    "autoPool": true
+  },
+  {
+    "id": "low 61",
+    "name": "Low 61",
+    "poses": [
+      {
+        "id": "low 61",
+        "label": "Low 61",
+        "publicPath": "/models/low 61/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 61/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 61/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides, feet apart",
+    "character": "celine",
+    "expression": "neutral",
+    "slug": "dj40155ls-42-celine-neutral",
+    "poseKey": "dj40155ls-42-celine",
+    "outfitAbove": "black ribbed tank top, tucked in",
+    "outfitBelow": "cream wide-leg trousers",
+    "autoPool": true
+  },
+  {
+    "id": "low 80",
+    "name": "Low 80",
+    "poses": [
+      {
+        "id": "low 80",
+        "label": "Low 80",
+        "publicPath": "/models/low 80/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 80/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 80/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides, feet apart",
+    "character": "celine",
+    "expression": "smile",
+    "slug": "dj40155ls-42-celine-smile",
+    "poseKey": "dj40155ls-42-celine",
+    "outfitAbove": "black ribbed tank top, tucked in",
+    "outfitBelow": "cream wide-leg trousers",
+    "autoPool": true
+  },
+  {
+    "id": "low 81",
+    "name": "Low 81",
+    "poses": [
+      {
+        "id": "low 81",
+        "label": "Low 81",
+        "publicPath": "/models/low 81/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 81/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 81/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides, feet apart",
+    "character": "celine",
+    "expression": "teeth",
+    "slug": "dj40155ls-42-celine-teeth",
+    "poseKey": "dj40155ls-42-celine",
+    "outfitAbove": "black ribbed tank top, tucked in",
+    "outfitBelow": "cream wide-leg trousers",
+    "autoPool": true
+  },
+  {
+    "id": "low 82",
+    "name": "Low 82",
+    "poses": [
+      {
+        "id": "low 82",
+        "label": "Low 82",
+        "publicPath": "/models/low 82/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 82/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 82/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides, feet apart",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "dj40155ls-42-neutral",
+    "poseKey": "dj40155ls-42",
+    "outfitAbove": "black ribbed tank top, tucked in",
+    "outfitBelow": "cream wide-leg trousers",
+    "autoPool": true
+  },
+  {
+    "id": "low 83",
+    "name": "Low 83",
+    "poses": [
+      {
+        "id": "low 83",
+        "label": "Low 83",
+        "publicPath": "/models/low 83/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 83/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 83/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides, feet apart",
+    "character": "vision",
+    "expression": "smile",
+    "slug": "dj40155ls-42-smile",
+    "poseKey": "dj40155ls-42",
+    "outfitAbove": "black ribbed tank top, tucked in",
+    "outfitBelow": "cream wide-leg trousers",
+    "autoPool": true
+  },
+  {
+    "id": "low 84",
+    "name": "Low 84",
+    "poses": [
+      {
+        "id": "low 84",
+        "label": "Low 84",
+        "publicPath": "/models/low 84/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 84/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 84/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides, feet apart",
+    "character": "vision",
+    "expression": "teeth",
+    "slug": "dj40155ls-42-teeth",
+    "poseKey": "dj40155ls-42",
+    "outfitAbove": "black ribbed tank top, tucked in",
+    "outfitBelow": "cream wide-leg trousers",
+    "autoPool": true
+  },
+  {
+    "id": "low 85",
+    "name": "Low 85",
+    "poses": [
+      {
+        "id": "low 85",
+        "label": "Low 85",
+        "publicPath": "/models/low 85/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 85/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 85/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, right hand on hip, feet apart",
+    "character": "celine",
+    "expression": "neutral",
+    "slug": "dp60197b-44-celine-neutral",
+    "poseKey": "dp60197b-44-celine",
+    "outfitAbove": "black ribbed tank top, tucked in",
+    "outfitBelow": "olive balloon barrel pants",
+    "autoPool": true
+  },
+  {
+    "id": "low 86",
+    "name": "Low 86",
+    "poses": [
+      {
+        "id": "low 86",
+        "label": "Low 86",
+        "publicPath": "/models/low 86/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 86/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 86/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, right hand on hip, feet apart",
+    "character": "celine",
+    "expression": "smile",
+    "slug": "dp60197b-44-celine-smile",
+    "poseKey": "dp60197b-44-celine",
+    "outfitAbove": "black ribbed tank top, tucked in",
+    "outfitBelow": "olive balloon barrel pants",
+    "autoPool": true
+  },
+  {
+    "id": "low 87",
+    "name": "Low 87",
+    "poses": [
+      {
+        "id": "low 87",
+        "label": "Low 87",
+        "publicPath": "/models/low 87/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 87/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 87/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, right hand on hip, feet apart",
+    "character": "celine",
+    "expression": "teeth",
+    "slug": "dp60197b-44-celine-teeth",
+    "poseKey": "dp60197b-44-celine",
+    "outfitAbove": "black ribbed tank top, tucked in",
+    "outfitBelow": "olive balloon barrel pants",
+    "autoPool": true
+  },
+  {
+    "id": "low 88",
+    "name": "Low 88",
+    "poses": [
+      {
+        "id": "low 88",
+        "label": "Low 88",
+        "publicPath": "/models/low 88/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 88/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 88/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, right hand on hip, feet apart",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "dp60197b-44-neutral",
+    "poseKey": "dp60197b-44",
+    "outfitAbove": "black ribbed tank top, tucked in",
+    "outfitBelow": "olive balloon barrel pants",
+    "autoPool": true
+  },
+  {
+    "id": "low 89",
+    "name": "Low 89",
+    "poses": [
+      {
+        "id": "low 89",
+        "label": "Low 89",
+        "publicPath": "/models/low 89/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 89/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 89/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, right hand on hip, feet apart",
+    "character": "vision",
+    "expression": "smile",
+    "slug": "dp60197b-44-smile",
+    "poseKey": "dp60197b-44",
+    "outfitAbove": "black ribbed tank top, tucked in",
+    "outfitBelow": "olive balloon barrel pants",
+    "autoPool": true
+  },
+  {
+    "id": "low 90",
+    "name": "Low 90",
+    "poses": [
+      {
+        "id": "low 90",
+        "label": "Low 90",
+        "publicPath": "/models/low 90/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 90/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 90/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, right hand on hip, feet apart",
+    "character": "vision",
+    "expression": "teeth",
+    "slug": "dp60197b-44-teeth",
+    "poseKey": "dp60197b-44",
+    "outfitAbove": "black ribbed tank top, tucked in",
+    "outfitBelow": "olive balloon barrel pants",
+    "autoPool": true
+  },
+  {
+    "id": "low 91",
+    "name": "Low 91",
+    "poses": [
+      {
+        "id": "low 91",
+        "label": "Low 91",
+        "publicPath": "/models/low 91/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 91/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 91/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, both thumbs hooked in front pockets",
+    "character": "celine",
+    "expression": "neutral",
+    "slug": "dp62140ap-43-celine-neutral",
+    "poseKey": "dp62140ap-43-celine",
+    "outfitAbove": "black ribbed tank top, tucked in",
+    "outfitBelow": "brown plaid barrel trousers",
+    "autoPool": true
+  },
+  {
+    "id": "low 92",
+    "name": "Low 92",
+    "poses": [
+      {
+        "id": "low 92",
+        "label": "Low 92",
+        "publicPath": "/models/low 92/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 92/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 92/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, both thumbs hooked in front pockets",
+    "character": "celine",
+    "expression": "smile",
+    "slug": "dp62140ap-43-celine-smile",
+    "poseKey": "dp62140ap-43-celine",
+    "outfitAbove": "black ribbed tank top, tucked in",
+    "outfitBelow": "brown plaid barrel trousers",
+    "autoPool": true
+  },
+  {
+    "id": "low 93",
+    "name": "Low 93",
+    "poses": [
+      {
+        "id": "low 93",
+        "label": "Low 93",
+        "publicPath": "/models/low 93/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 93/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 93/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, both thumbs hooked in front pockets",
+    "character": "celine",
+    "expression": "teeth",
+    "slug": "dp62140ap-43-celine-teeth",
+    "poseKey": "dp62140ap-43-celine",
+    "outfitAbove": "black ribbed tank top, tucked in",
+    "outfitBelow": "brown plaid barrel trousers",
+    "autoPool": true
+  },
+  {
+    "id": "low 94",
+    "name": "Low 94",
+    "poses": [
+      {
+        "id": "low 94",
+        "label": "Low 94",
+        "publicPath": "/models/low 94/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 94/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 94/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, both thumbs hooked in front pockets",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "dp62140ap-43-neutral",
+    "poseKey": "dp62140ap-43",
+    "outfitAbove": "black ribbed tank top, tucked in",
+    "outfitBelow": "brown plaid barrel trousers",
+    "autoPool": true
+  },
+  {
+    "id": "low 95",
+    "name": "Low 95",
+    "poses": [
+      {
+        "id": "low 95",
+        "label": "Low 95",
+        "publicPath": "/models/low 95/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 95/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 95/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, both thumbs hooked in front pockets",
+    "character": "vision",
+    "expression": "smile",
+    "slug": "dp62140ap-43-smile",
+    "poseKey": "dp62140ap-43",
+    "outfitAbove": "black ribbed tank top, tucked in",
+    "outfitBelow": "brown plaid barrel trousers",
+    "autoPool": true
+  },
+  {
+    "id": "low 96",
+    "name": "Low 96",
+    "poses": [
+      {
+        "id": "low 96",
+        "label": "Low 96",
+        "publicPath": "/models/low 96/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 96/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 96/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, both thumbs hooked in front pockets",
+    "character": "vision",
+    "expression": "teeth",
+    "slug": "dp62140ap-43-teeth",
+    "poseKey": "dp62140ap-43",
+    "outfitAbove": "black ribbed tank top, tucked in",
+    "outfitBelow": "brown plaid barrel trousers",
     "autoPool": true
   },
   {
@@ -722,6 +1982,744 @@ export const STATIC_HUMAN_MODELS = [
     "expression": "teeth",
     "slug": "dwt62170-21-celine-teeth",
     "poseKey": "dwt62170-21-celine",
+    "autoPool": true
+  },
+  {
+    "id": "studio 61",
+    "name": "Studio 61",
+    "poses": [
+      {
+        "id": "studio 61",
+        "label": "Studio 61",
+        "publicPath": "/models/studio 61/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 61/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 61/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 61/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 61/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides, feet apart",
+    "character": "celine",
+    "expression": "neutral",
+    "slug": "dj40155ls-42-celine-neutral",
+    "poseKey": "dj40155ls-42-celine",
+    "outfitAbove": "black ribbed tank top, tucked in",
+    "outfitBelow": "cream wide-leg trousers",
+    "autoPool": true
+  },
+  {
+    "id": "studio 80",
+    "name": "Studio 80",
+    "poses": [
+      {
+        "id": "studio 80",
+        "label": "Studio 80",
+        "publicPath": "/models/studio 80/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 80/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 80/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 80/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 80/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides, feet apart",
+    "character": "celine",
+    "expression": "smile",
+    "slug": "dj40155ls-42-celine-smile",
+    "poseKey": "dj40155ls-42-celine",
+    "outfitAbove": "black ribbed tank top, tucked in",
+    "outfitBelow": "cream wide-leg trousers",
+    "autoPool": true
+  },
+  {
+    "id": "studio 81",
+    "name": "Studio 81",
+    "poses": [
+      {
+        "id": "studio 81",
+        "label": "Studio 81",
+        "publicPath": "/models/studio 81/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 81/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 81/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 81/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 81/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides, feet apart",
+    "character": "celine",
+    "expression": "teeth",
+    "slug": "dj40155ls-42-celine-teeth",
+    "poseKey": "dj40155ls-42-celine",
+    "outfitAbove": "black ribbed tank top, tucked in",
+    "outfitBelow": "cream wide-leg trousers",
+    "autoPool": true
+  },
+  {
+    "id": "studio 82",
+    "name": "Studio 82",
+    "poses": [
+      {
+        "id": "studio 82",
+        "label": "Studio 82",
+        "publicPath": "/models/studio 82/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 82/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 82/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 82/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 82/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides, feet apart",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "dj40155ls-42-neutral",
+    "poseKey": "dj40155ls-42",
+    "outfitAbove": "black ribbed tank top, tucked in",
+    "outfitBelow": "cream wide-leg trousers",
+    "autoPool": true
+  },
+  {
+    "id": "studio 83",
+    "name": "Studio 83",
+    "poses": [
+      {
+        "id": "studio 83",
+        "label": "Studio 83",
+        "publicPath": "/models/studio 83/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 83/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 83/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 83/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 83/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides, feet apart",
+    "character": "vision",
+    "expression": "smile",
+    "slug": "dj40155ls-42-smile",
+    "poseKey": "dj40155ls-42",
+    "outfitAbove": "black ribbed tank top, tucked in",
+    "outfitBelow": "cream wide-leg trousers",
+    "autoPool": true
+  },
+  {
+    "id": "studio 84",
+    "name": "Studio 84",
+    "poses": [
+      {
+        "id": "studio 84",
+        "label": "Studio 84",
+        "publicPath": "/models/studio 84/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 84/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 84/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 84/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 84/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides, feet apart",
+    "character": "vision",
+    "expression": "teeth",
+    "slug": "dj40155ls-42-teeth",
+    "poseKey": "dj40155ls-42",
+    "outfitAbove": "black ribbed tank top, tucked in",
+    "outfitBelow": "cream wide-leg trousers",
+    "autoPool": true
+  },
+  {
+    "id": "studio 85",
+    "name": "Studio 85",
+    "poses": [
+      {
+        "id": "studio 85",
+        "label": "Studio 85",
+        "publicPath": "/models/studio 85/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 85/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 85/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 85/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 85/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, right hand on hip, feet apart",
+    "character": "celine",
+    "expression": "neutral",
+    "slug": "dp60197b-44-celine-neutral",
+    "poseKey": "dp60197b-44-celine",
+    "outfitAbove": "black ribbed tank top, tucked in",
+    "outfitBelow": "olive balloon barrel pants",
+    "autoPool": true
+  },
+  {
+    "id": "studio 86",
+    "name": "Studio 86",
+    "poses": [
+      {
+        "id": "studio 86",
+        "label": "Studio 86",
+        "publicPath": "/models/studio 86/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 86/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 86/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 86/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 86/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, right hand on hip, feet apart",
+    "character": "celine",
+    "expression": "smile",
+    "slug": "dp60197b-44-celine-smile",
+    "poseKey": "dp60197b-44-celine",
+    "outfitAbove": "black ribbed tank top, tucked in",
+    "outfitBelow": "olive balloon barrel pants",
+    "autoPool": true
+  },
+  {
+    "id": "studio 87",
+    "name": "Studio 87",
+    "poses": [
+      {
+        "id": "studio 87",
+        "label": "Studio 87",
+        "publicPath": "/models/studio 87/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 87/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 87/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 87/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 87/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, right hand on hip, feet apart",
+    "character": "celine",
+    "expression": "teeth",
+    "slug": "dp60197b-44-celine-teeth",
+    "poseKey": "dp60197b-44-celine",
+    "outfitAbove": "black ribbed tank top, tucked in",
+    "outfitBelow": "olive balloon barrel pants",
+    "autoPool": true
+  },
+  {
+    "id": "studio 88",
+    "name": "Studio 88",
+    "poses": [
+      {
+        "id": "studio 88",
+        "label": "Studio 88",
+        "publicPath": "/models/studio 88/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 88/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 88/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 88/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 88/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, right hand on hip, feet apart",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "dp60197b-44-neutral",
+    "poseKey": "dp60197b-44",
+    "outfitAbove": "black ribbed tank top, tucked in",
+    "outfitBelow": "olive balloon barrel pants",
+    "autoPool": true
+  },
+  {
+    "id": "studio 89",
+    "name": "Studio 89",
+    "poses": [
+      {
+        "id": "studio 89",
+        "label": "Studio 89",
+        "publicPath": "/models/studio 89/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 89/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 89/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 89/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 89/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, right hand on hip, feet apart",
+    "character": "vision",
+    "expression": "smile",
+    "slug": "dp60197b-44-smile",
+    "poseKey": "dp60197b-44",
+    "outfitAbove": "black ribbed tank top, tucked in",
+    "outfitBelow": "olive balloon barrel pants",
+    "autoPool": true
+  },
+  {
+    "id": "studio 90",
+    "name": "Studio 90",
+    "poses": [
+      {
+        "id": "studio 90",
+        "label": "Studio 90",
+        "publicPath": "/models/studio 90/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 90/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 90/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 90/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 90/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, right hand on hip, feet apart",
+    "character": "vision",
+    "expression": "teeth",
+    "slug": "dp60197b-44-teeth",
+    "poseKey": "dp60197b-44",
+    "outfitAbove": "black ribbed tank top, tucked in",
+    "outfitBelow": "olive balloon barrel pants",
+    "autoPool": true
+  },
+  {
+    "id": "studio 91",
+    "name": "Studio 91",
+    "poses": [
+      {
+        "id": "studio 91",
+        "label": "Studio 91",
+        "publicPath": "/models/studio 91/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 91/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 91/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 91/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 91/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, both thumbs hooked in front pockets",
+    "character": "celine",
+    "expression": "neutral",
+    "slug": "dp62140ap-43-celine-neutral",
+    "poseKey": "dp62140ap-43-celine",
+    "outfitAbove": "black ribbed tank top, tucked in",
+    "outfitBelow": "brown plaid barrel trousers",
+    "autoPool": true
+  },
+  {
+    "id": "studio 92",
+    "name": "Studio 92",
+    "poses": [
+      {
+        "id": "studio 92",
+        "label": "Studio 92",
+        "publicPath": "/models/studio 92/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 92/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 92/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 92/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 92/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, both thumbs hooked in front pockets",
+    "character": "celine",
+    "expression": "smile",
+    "slug": "dp62140ap-43-celine-smile",
+    "poseKey": "dp62140ap-43-celine",
+    "outfitAbove": "black ribbed tank top, tucked in",
+    "outfitBelow": "brown plaid barrel trousers",
+    "autoPool": true
+  },
+  {
+    "id": "studio 93",
+    "name": "Studio 93",
+    "poses": [
+      {
+        "id": "studio 93",
+        "label": "Studio 93",
+        "publicPath": "/models/studio 93/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 93/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 93/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 93/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 93/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, both thumbs hooked in front pockets",
+    "character": "celine",
+    "expression": "teeth",
+    "slug": "dp62140ap-43-celine-teeth",
+    "poseKey": "dp62140ap-43-celine",
+    "outfitAbove": "black ribbed tank top, tucked in",
+    "outfitBelow": "brown plaid barrel trousers",
+    "autoPool": true
+  },
+  {
+    "id": "studio 94",
+    "name": "Studio 94",
+    "poses": [
+      {
+        "id": "studio 94",
+        "label": "Studio 94",
+        "publicPath": "/models/studio 94/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 94/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 94/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 94/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 94/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, both thumbs hooked in front pockets",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "dp62140ap-43-neutral",
+    "poseKey": "dp62140ap-43",
+    "outfitAbove": "black ribbed tank top, tucked in",
+    "outfitBelow": "brown plaid barrel trousers",
+    "autoPool": true
+  },
+  {
+    "id": "studio 95",
+    "name": "Studio 95",
+    "poses": [
+      {
+        "id": "studio 95",
+        "label": "Studio 95",
+        "publicPath": "/models/studio 95/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 95/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 95/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 95/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 95/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, both thumbs hooked in front pockets",
+    "character": "vision",
+    "expression": "smile",
+    "slug": "dp62140ap-43-smile",
+    "poseKey": "dp62140ap-43",
+    "outfitAbove": "black ribbed tank top, tucked in",
+    "outfitBelow": "brown plaid barrel trousers",
+    "autoPool": true
+  },
+  {
+    "id": "studio 96",
+    "name": "Studio 96",
+    "poses": [
+      {
+        "id": "studio 96",
+        "label": "Studio 96",
+        "publicPath": "/models/studio 96/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 96/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 96/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 96/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 96/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, both thumbs hooked in front pockets",
+    "character": "vision",
+    "expression": "teeth",
+    "slug": "dp62140ap-43-teeth",
+    "poseKey": "dp62140ap-43",
+    "outfitAbove": "black ribbed tank top, tucked in",
+    "outfitBelow": "brown plaid barrel trousers",
     "autoPool": true
   }
 ] as unknown as HumanModel[];
