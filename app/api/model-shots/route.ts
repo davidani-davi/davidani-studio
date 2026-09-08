@@ -27,6 +27,8 @@ import { framingFor, hemFor, isDerivedPlate, plateForFraming, shotCategory, shot
 import { buildTryOnInput, garmentForView, runTryOn, tryOnSeed, type GarmentPhotoType } from "@/lib/tryon-engine";
 import { GPT_NATIVE_SIZE, garmentMaskFromDiff, gptVariantOf, leanBrief, maskCoverage } from "@/lib/gpt-variants";
 import { uploadToFal } from "@/lib/fal";
+import { restoreRenderOnPlate } from "@/lib/plate-restore-run";
+import type { PlateRestoreReport } from "@/lib/plate-restore";
 import sharp from "sharp";
 import { getPosePublicPath, getPoseUrl, isKnownHumanModel } from "@/lib/models-registry";
 import { findUserModelViewUrl } from "@/lib/user-assets";
@@ -468,11 +470,31 @@ async function renderShot(req: Request, body: any): Promise<Response> {
       ...(canvasImageUrl ? { canvasImageUrl } : {}),
     });
 
-    const url = generated?.images?.[0]?.url;
-    if (typeof url !== "string") throw new Error(`${view} view did not return an image`);
+    const rawUrl = generated?.images?.[0]?.url;
+    if (typeof rawUrl !== "string") throw new Error(`${view} view did not return an image`);
+
+    // Back onto the plate's own backdrop, figure re-centred (lib/plate-restore.ts).
+    // Every view goes through it — the front too, so all four share one sweep.
+    // A failure ships the raw render with the reason attached, never an error.
+    let url = rawUrl;
+    let restore: PlateRestoreReport | undefined;
+    if (body.restore !== false) {
+      try {
+        const plateUrl = await resolvePlateUrl(req, humanModelId, poseId, view, multiModelPoseVariantIndex(view));
+        const r = await restoreRenderOnPlate(rawUrl, plateUrl);
+        restore = r.report;
+        if (r.url) url = r.url;
+        console.log(`[plate-restore] ${view} ${r.report.applied ? `applied shift ${r.report.shiftX}px` : `skipped: ${r.report.skipReason}`} (${r.ms}ms)`);
+      } catch (err: any) {
+        restore = { applied: false, coverage: 0, shiftX: 0, failed: true, skipReason: String(err?.message || err) };
+        console.warn(`[plate-restore] ${view} failed: ${restore.skipReason}`);
+      }
+    }
 
     return json({
       ok: true, view, url, prompt,
+      ...(url !== rawUrl ? { rawUrl } : {}),
+      ...(restore ? { restore } : {}),
       ...(gptVariant !== "auto" ? { gptVariant, ...(maskInfo ? { mask: maskInfo } : {}) } : {}),
       garment: identity.garment, anchored: Boolean(anchorImageUrl),
       humanModelId, poseId, assigned, category, hem, framing, note: note || undefined,
