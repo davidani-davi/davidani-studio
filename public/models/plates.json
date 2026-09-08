@@ -819,6 +819,7 @@
       "pose": "standing straight, arms relaxed at sides",
       "head_pct": 9,
       "views": [
+        "back",
         "front",
         "full",
         "side"
@@ -1002,6 +1003,7 @@
       "pose": "standing, one arm raised to head, hand in pocket",
       "head_pct": 10,
       "views": [
+        "back",
         "front",
         "full",
         "side"

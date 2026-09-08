@@ -1279,6 +1279,10 @@ export const STATIC_HUMAN_MODELS = [
         "filename": "front.jpg",
         "subdir": "",
         "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 39/back.jpg"
+          },
           "front": {
             "filename": "front.jpg",
             "publicPath": "/models/crop 39/front.jpg"
@@ -1563,6 +1567,10 @@ export const STATIC_HUMAN_MODELS = [
         "filename": "front.jpg",
         "subdir": "",
         "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 47/back.jpg"
+          },
           "front": {
             "filename": "front.jpg",
             "publicPath": "/models/crop 47/front.jpg"
@@ -4777,6 +4785,10 @@ export const STATIC_HUMAN_MODELS = [
         "filename": "front.jpg",
         "subdir": "",
         "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 39/back.jpg"
+          },
           "front": {
             "filename": "front.jpg",
             "publicPath": "/models/studio 39/front.jpg"
@@ -5093,6 +5105,10 @@ export const STATIC_HUMAN_MODELS = [
         "filename": "front.jpg",
         "subdir": "",
         "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 47/back.jpg"
+          },
           "front": {
             "filename": "front.jpg",
             "publicPath": "/models/studio 47/front.jpg"
