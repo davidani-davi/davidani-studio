@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildModelSwapPromptVariants, buildTwoImagePrompt, buildTwoPiecePrompt, isBaseLayerTop, isOuterLayer, isSleevelessGarment, isTransientUpstreamError } from "./fal";
+import { buildModelSwapPromptVariants, buildTwoImagePrompt, buildTwoPiecePrompt, inferSwapScope, isBaseLayerTop, isOuterLayer, isSleevelessGarment, isTransientUpstreamError } from "./fal";
 
 const FEATURES = "a ribbed cream collar, a full-length center front zipper, two front welt pockets";
 const slots = (out: string) =>
@@ -371,5 +371,15 @@ describe("what sits under an open outer layer (DJ60404 on studio 65, 2026-09-08)
     expect(isBaseLayerTop("black ribbed sleeveless tank top")).toBe(true);
     expect(isBaseLayerTop("white cami")).toBe(true);
     expect(isBaseLayerTop("yellow chunky knit sweater")).toBe(false);
+  });
+});
+
+describe("inferSwapScope matches whole words (DS62164 'plaid insets', 2026-09-08)", () => {
+  it("a skirt with insets is a lower-body swap, a corset top an upper-body one", () => {
+    expect(inferSwapScope("wide-leg light blue denim midi-length skirt with multicolor plaid insets")).toBe("lower-body");
+    expect(inferSwapScope("boned corset top")).toBe("upper-body");
+    expect(inferSwapScope("sunset print midi dress")).toBe("full-look");
+    expect(inferSwapScope("knit top and pant set")).toBe("full-look");
+    expect(inferSwapScope("two-piece linen set")).toBe("full-look");
   });
 });

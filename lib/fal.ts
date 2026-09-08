@@ -2403,7 +2403,9 @@ export function inferSwapScope(garment: string): SwapScope {
     "matching set",
     "two-piece",
   ];
-  if (fullLookWords.some((w) => text.includes(w))) return "full-look";
+  // whole words only: "plaid insets" is not a set, a "corset top" is not one either (DS62164, 2026-09-08)
+  const hasWord = (w: string) => new RegExp(`\\b${w.replace(/[-\s]+/g, "[-\\s]+")}s?\\b`, "i").test(text);
+  if (fullLookWords.some(hasWord)) return "full-look";
 
   const lowerBodyWords = [
     "pants",
@@ -2423,7 +2425,7 @@ export function inferSwapScope(garment: string): SwapScope {
     "corduroys",
     "bottoms",
   ];
-  if (lowerBodyWords.some((w) => text.includes(w))) return "lower-body";
+  if (lowerBodyWords.some(hasWord)) return "lower-body";
 
   return "upper-body";
 }

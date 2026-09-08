@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  categoryFromType, framingFor, hemFor, isDerivedPlate, plateForFraming, shotCategory, shotPlan, shotViews, showsBottoms,
+  categoryFromType, framingFor, hemFor, isDerivedPlate, plateForFraming, shotCategory, shotPlan, shotViews, showsBottoms, swapScopeForCategory,
 } from "./plate-framing";
 
 describe("shotCategory", () => {
@@ -105,5 +105,17 @@ describe("hemFor — where the garment ends, from our own copy", () => {
     expect(hemFor({ hem: "short", title: "Longline Coat" })).toBe("short");
     expect(hemFor({ hem: "long", title: "Boxy Tee" })).toBe("long");
     expect(hemFor({ hem: "nonsense", title: "Boxy Tee" })).toBe("");
+  });
+});
+
+describe("swapScopeForCategory", () => {
+  it("pins the analyzer's scope from the category", () => {
+    expect(swapScopeForCategory("skirt")).toBe("lower-body");
+    expect(swapScopeForCategory("pants")).toBe("lower-body");
+    expect(swapScopeForCategory("set")).toBe("full-look");
+    expect(swapScopeForCategory("dress")).toBe("full-look");
+    expect(swapScopeForCategory("top")).toBe("upper-body");
+    expect(swapScopeForCategory("outerwear")).toBe("upper-body");
+    expect(swapScopeForCategory("unknown")).toBeUndefined();
   });
 });

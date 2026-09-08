@@ -23,7 +23,7 @@ import { optimizePromptForModel } from "@/lib/prompt-strategy";
 import { buildGarmentContract, hasKnownFacts, type KnownGarment } from "@/lib/garment-contract";
 import { assignPlate } from "@/lib/plate-assign";
 import { silhouetteOf } from "@/lib/plate-wear";
-import { framingFor, hemFor, isDerivedPlate, plateForFraming, shotCategory, shotViews } from "@/lib/plate-framing";
+import { framingFor, hemFor, isDerivedPlate, plateForFraming, shotCategory, shotViews, swapScopeForCategory } from "@/lib/plate-framing";
 import { buildTryOnInput, garmentForView, runTryOn, tryOnSeed, type GarmentPhotoType } from "@/lib/tryon-engine";
 import { GPT_NATIVE_SIZE, garmentMaskFromDiff, gptVariantOf, leanBrief, maskCoverage } from "@/lib/gpt-variants";
 import { uploadToFal } from "@/lib/fal";
@@ -337,7 +337,13 @@ async function renderShot(req: Request, body: any): Promise<Response> {
       garmentImageUrls,
       twoPiece: false,
       promptMode: "classic" as const,
-      ...(styling ? { swapScopeOverride: "full-look" as const } : {}),
+      // the scope comes from the category we know, never from a word in the
+      // vision read; a long layer restyles the whole look (stylingFor)
+      ...(styling
+        ? { swapScopeOverride: "full-look" as const }
+        : swapScopeForCategory(category)
+        ? { swapScopeOverride: swapScopeForCategory(category) }
+        : {}),
     };
     let analyzeData = await call(analyzeModel, "/api/analyze-model", analyzeBody);
 

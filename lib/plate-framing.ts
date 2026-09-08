@@ -62,6 +62,19 @@ export function hemFor(known: { hem?: unknown; type?: unknown; title?: unknown }
   return LONG_HEM_RE.test(text) ? "long" : "";
 }
 
+/**
+ * The swap scope a category pins for the analyzer (lib/fal.ts SwapScope), so
+ * what we know about the style decides it and not a word in the vision read —
+ * "plaid insets" made a skirt a full-look swap and the full view invented a
+ * new top (DS62164 on studio 20, 2026-09-08). Unknown stays with the analyzer.
+ */
+export function swapScopeForCategory(category: ShotCategory): "upper-body" | "lower-body" | "full-look" | undefined {
+  if (category === "pants" || category === "skirt") return "lower-body";
+  if (category === "dress" || category === "set") return "full-look";
+  if (category === "top" || category === "outerwear") return "upper-body";
+  return undefined;
+}
+
 /** True when a layer's hem is in every frame, so the plate's own legs would show under it. */
 export function showsBottoms(category: ShotCategory, hem: Hem): boolean {
   return (category === "top" || category === "outerwear") && hem === "long";
