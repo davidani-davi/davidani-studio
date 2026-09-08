@@ -46,3 +46,12 @@ Backup of the pre-engine pipeline: tag `model-maker-v1-nano-banana-2026-09-05`.
 - Colour flood-fill cut-outs eat pale garments on the cream sweep (ecru trousers); keep the matte.
 - Next: face anchoring for side/full (head crop of the front render as an extra reference); plate-matte
   cache is per process (Map in plate-restore-run.ts) — a blob-store cache if cold starts hurt.
+
+## 2026-09-08 (Claude Code) — face anchor on side/full (f49bab4)
+- `lib/face-anchor.ts`: the front render (anchorImageUrl) is matted, the head located (crown→neck, or a
+  framing-keyed share of the figure when hair hides the neck: HEAD_SHARE full 0.135 / crop 0.22), a
+  1.9-head square cut and hosted on fal; the route appends it AFTER the front for side and full only
+  (never back, never a waist-down front); `applyAnchor(p, hasAnchor, hasFace)` moves the front to
+  "SECOND-TO-LAST" and adds FACE_RULE. Response: `faceAnchored`, `face: {applied, box, method}`;
+  `faceAnchor: false` in the body opts out. Tests lib/face-anchor.test.ts; 703 tests green.
+- Pilot: scratchpad pilot.py shoots front, then side/full with and without the crop on one style.
