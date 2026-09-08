@@ -1,69 +1,28 @@
-# Handoff — 2026-09-06 (Claude Code, 10:40)
+# handoff — davidani-studio
 
-Branch: main · last commit: 29f6b6c · Vercel auto-deploys on push (READY).
-Backup of the pre-engine pipeline: tag `model-maker-v1-nano-banana-2026-09-05`.
+Written 2026-09-08 by Claude Code. Branch main, last commit c15dab0 (pushed).
 
-## Just accomplished
-- **Everything aimed at GPT now lives in the BASE prompt** (lib/multi-model-prompt.ts):
-  `optimizePromptForModel("gpt-image")` strips from "Negative prompt:" on, so the multi-view
-  suffix never reached GPT. `insertBeforeNegative()` is the one helper; used by `applyStyling`,
-  `applyPlainBack` (b90c53c: no back photo → plain back; 48b843f: with a back photo →
-  `BACK_REFERENCE_RULE`, "the SECOND uploaded image shows the BACK") and `applyOperatorNote`
-  (9d5644d: the request's `note` field). route.ts composes them; the suffix no longer repeats
-  the note. Tests for all three; 664 pass, tsc clean (566d801 fixed a stale expectation).
-- **`applyProportions` / `PROPORTIONS_RULE`** (29f6b6c): hem, trouser and sleeve lengths come from
-  the garment photo, every view. The batch had drawn 3/4 cargos full length, an ankle balloon pant
-  at mid-calf and wrist fur sleeves as bracelet sleeves; with the rule plus an operator note all
-  nine re-shoots came out right (tests: 16 in multi-model-prompt.test.ts).
-- Verified in production on the faire-management batch: 12 mirrored backs re-rendered plain
-  (DET62260 needed an operator note — graphic tee with no back photo), DP62206 shot on the
-  barrel plate (studio 21, `silhouette: "barrel"` in plates.json, assignPlate prefers it).
-- Manifest regen: `npx vite-node scripts/build-models-manifest.mts` (`npm run models:manifest`
-  is broken — vite-node not on PATH).
+## Just done
+- Vision + celine reference (plate) sets on the three live poses. Bases = the tank fronts
+  of studio 03 / 05 / 19 (candidates.json rows 42/43/44 in the faire-management data root,
+  `file` instead of ERP url). 18 GPT Image 2 masked head swaps (neutral/smile/teeth × 2 faces
+  × 3 poses), 30 KIE derives, all accepted by the house standard first attempt.
+  Installed as studio 61, 80–96 (celine: 61 80 81 / 85 86 87 / 91 92 93; vision: 82 83 84 /
+  88 89 90 / 94 95 96). Each carries `base_plate`, outfit/hem/legs fields copied from its base.
+  crop/low families cut; lib/models-static-manifest.ts rebuilt.
+- Earlier today: face anchor (f49bab4), blend restore (31d3fb8), both verified live on DJ62231.
 
-## Next
-1. Rule of thumb: any new prompt rule for GPT goes through `insertBeforeNegative`, never only
-   into `buildMultiModelViewSuffix`. Consider moving the whole view/consistency suffix ahead of
-   the marker so the two paths stop diverging.
-2. fal.ai prepaid balance is the render budget: 502 "User is locked. Reason: Exhausted balance"
-   means top up at fal.ai/dashboard/billing; keep ≤4 concurrent renders (14 at once → 502 burst).
-3. Lean brief round two (from the earlier handoff) still open.
+## Next steps
+1. Confirm the Vercel build of c15dab0 is READY and `/api/models` lists studio 96.
+2. David reviews the two sheets (sent); retire any rejected set with `git mv` to
+   public/models/hide/ + hide/plates.json (never delete).
+3. Decide whether studio 03/05/19 (real face) stay in the auto pool now that the house-face
+   sets cover the same poses.
 
-## 2026-09-06 22:40 (Claude Code) — /api/square
-- `app/api/square/route.ts` (7a811d0, 9d2c969 proxy exemption, 33af678): a 2:3 shot → square by
-  Bria expand outpainting; body `{imageUrl, size?, subjectX?, prompt?}`; subject centre measured by
-  `lib/square-subject.ts` when not given (test: square-subject.test.ts). Same X-DDTO-TOKEN gate as
-  model-shots. Callers: faire-management extension 2.42.0 (`studio-square` message) and
-  `faire_drafts.studio_square`. ~12 s, ~$0.04 per square on the fal balance.
-
-## 2026-09-08 (Claude Code) — plate restore on every model-shot view (e9101b5)
-- `lib/plate-restore.ts` + `lib/plate-restore-run.ts` + `lib/matte.ts`: after generate-model returns, the
-  view is matted (fal `fal-ai/birefnet/v2`), the plate's own model is lifted out of the plate, the hole is
-  filled from the sweep around it, the figure is shifted onto the plate's figure centre and composited
-  through the matte. Response gains `rawUrl` + `restore` report; `restore: false` in the body skips it.
-- Tests: lib/plate-restore.test.ts (synthetic mattes); tsc clean. Verified locally on the rejected tank
-  renders (03 side/full, 10 back, 05 side). NOT yet seen on a live run — first thing to check.
-- Colour flood-fill cut-outs eat pale garments on the cream sweep (ecru trousers); keep the matte.
-- Next: face anchoring for side/full (head crop of the front render as an extra reference); plate-matte
-  cache is per process (Map in plate-restore-run.ts) — a blob-store cache if cold starts hurt.
-
-## 2026-09-08 (Claude Code) — face anchor on side/full (f49bab4)
-- `lib/face-anchor.ts`: the front render (anchorImageUrl) is matted, the head located (crown→neck, or a
-  framing-keyed share of the figure when hair hides the neck: HEAD_SHARE full 0.135 / crop 0.22), a
-  1.9-head square cut and hosted on fal; the route appends it AFTER the front for side and full only
-  (never back, never a waist-down front); `applyAnchor(p, hasAnchor, hasFace)` moves the front to
-  "SECOND-TO-LAST" and adds FACE_RULE. Response: `faceAnchored`, `face: {applied, box, method}`;
-  `faceAnchor: false` in the body opts out. Tests lib/face-anchor.test.ts; 703 tests green.
-- Pilot: scratchpad pilot.py shoots front, then side/full with and without the crop on one style.
-- Pilot DJ62231 / studio 03 (2026-09-08 15:16): all 5 views ok, face crop applied (share method, box 1229²
-  on the crop plate). Full view with the crop is the closer likeness; side is the same either way (profile
-  is plate-bound). It also showed the restore's wide-blur fill as a pale aura round the figure — fillHole
-  is now a row-wise boundary blend (this commit); verified locally on the pilot's raws, not yet live.
-- David on the live restore: "kind of bad" (mask edge at the boots, shadow gone, pale band). Restore is now
-  a BLEND (this commit): a feathered keep zone round the figure carries the render's own pixels — edges and
-  floor shadow — re-toned to the plate by a low-frequency colour match; the plate's sweep takes over
-  outside it. Plate's model + its foot shadow still lifted (row-wise fill). Verified on the DJ62231 raws
-  locally; live rerun next.
-- Live rerun DJ62231 on 31d3fb8 (2026-09-08 15:55): all 5 views ok, no halo, boots and floor shadow are the
-  render's own, plate sweep outside. Sheet in the session scratchpad (pilot2/). Restore is live for every
-  shot from here; `restore: false` still opts out.
+## Gotchas
+- Another session may share this checkout: commit with explicit pathspecs, never `git add -A`
+  (tsconfig.tsbuildinfo is dirty and must not be committed).
+- plate_install pins head-swapped plates to their slug only (0539021 in faire-management);
+  before that fix the vision sets would have overwritten studio 03/05/19.
+- plate_derive.py --slug runs are merge-safe in parallel (4 at a time); `--all` would also
+  derive every staged row lacking views — do not use it.
