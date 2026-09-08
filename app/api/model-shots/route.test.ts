@@ -112,3 +112,35 @@ describe("/api/model-shots known-facts contract", () => {
     expect(hasKnownFacts(undefined)).toBe(false);
   });
 });
+
+describe("/api/model-shots async tasks", () => {
+  it("answers with a task id, renders after the response, and GET ?taskId= hands the outcome back", async () => {
+    process.env.MODEL_SHOTS_TOKEN = "s3cret";
+    delete process.env.BLOB_READ_WRITE_TOKEN;
+    const pending: Promise<unknown>[] = [];
+    vi.doMock("next/server", async (importOriginal) => {
+      const orig = await importOriginal<typeof import("next/server")>();
+      return { ...orig, after: (fn: () => Promise<unknown>) => { pending.push(fn()); } };
+    });
+    const { GET, POST } = await load();
+    const auth = { "X-DDTO-TOKEN": "s3cret" };
+    // no garment photo: the render fails at its first check, which is exactly
+    // the kind of outcome the task has to carry back instead of a held socket
+    const started = await POST(req(auth, { async: true, view: "side", humanModelId: "kylie 1", poseId: "kylie 1" }));
+    expect(started.status).toBe(200);
+    const { taskId, view } = await started.json();
+    expect(taskId).toMatch(/^[a-zA-Z0-9-]{8,64}$/);
+    expect(view).toBe("side");
+    await Promise.all(pending);
+    const polled = await GET(new Request(`https://studio.test/api/model-shots?taskId=${taskId}`, { headers: auth }));
+    expect(polled.status).toBe(200);
+    const { task } = await polled.json();
+    expect(task.status).toBe("failed");
+    expect(task.result.ok).toBe(false);
+    expect(task.result.error).toMatch(/garmentImageUrls/);
+    expect(task.view).toBe("side");
+    const missing = await GET(new Request("https://studio.test/api/model-shots?taskId=nope-not-a-task", { headers: auth }));
+    expect(missing.status).toBe(404);
+    vi.doUnmock("next/server");
+  });
+});

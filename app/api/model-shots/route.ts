@@ -1,4 +1,5 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
+import { readShotTask, writeShotTask } from "@/lib/shot-tasks";
 import { POST as analyzeModel } from "../analyze-model/route";
 import { POST as generateModel } from "../generate-model/route";
 import { listAllHumanModels, type PresetView } from "@/lib/models-registry";
@@ -119,6 +120,13 @@ async function resolvePlateUrl(
 /** GET — the model catalog the extension's picker shows. */
 export async function GET(req: Request) {
   if (!(await authorized(req))) return json({ ok: false, error: "unauthorized" }, 401);
+  // ?taskId= polls a shot started with `async: true` (lib/shot-tasks.ts)
+  const taskId = new URL(req.url).searchParams.get("taskId");
+  if (taskId) {
+    const task = await readShotTask(taskId);
+    if (!task) return json({ ok: false, error: "task not found" }, 404);
+    return json({ ok: true, task });
+  }
   const models = await listAllHumanModels();
   return json({
     ok: true,
@@ -158,6 +166,35 @@ export async function POST(req: Request) {
     return json({ ok: false, error: "invalid JSON body" }, 400);
   }
 
+  /**
+   * `async: true` — answer with a task id now, render after the response and
+   * keep the outcome in lib/shot-tasks.ts for GET ?taskId= to hand back. A
+   * view with a fal retry or two runs past 300 s, and the held connection is
+   * cut there whatever maxDuration says; the render itself may take the
+   * whole 800 s inside after().
+   */
+  if (body.async === true) {
+    const id = crypto.randomUUID();
+    const view = String(MULTI_MODEL_VIEWS.includes(body.view) ? body.view : "front");
+    const createdAt = Date.now();
+    await writeShotTask({ id, status: "running", view, createdAt, updatedAt: createdAt });
+    after(async () => {
+      let result: Record<string, unknown>;
+      try {
+        const res = await renderShot(req, body);
+        result = await res.json().catch(() => ({ ok: false, view, error: `model-shots answered ${res.status}` }));
+      } catch (err: any) {
+        result = { ok: false, view, error: String(err?.message || err) };
+      }
+      await writeShotTask({ id, status: result.ok ? "done" : "failed", view, createdAt, updatedAt: Date.now(), result });
+    });
+    return json({ ok: true, taskId: id, view });
+  }
+  return renderShot(req, body);
+}
+
+/** One view, start to finish: the synchronous POST body. */
+async function renderShot(req: Request, body: any): Promise<Response> {
   const garmentImageUrls: string[] = (body.garmentImageUrls || []).filter(
     (u: unknown): u is string => typeof u === "string" && u.length > 0
   );
