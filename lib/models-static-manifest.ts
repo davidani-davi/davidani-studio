@@ -1233,6 +1233,538 @@ export const STATIC_HUMAN_MODELS = [
     "outfitBelow": "polka-dot barrel jeans"
   },
   {
+    "id": "crop 38",
+    "name": "Crop 38",
+    "poses": [
+      {
+        "id": "crop 38",
+        "label": "Crop 38",
+        "publicPath": "/models/crop 38/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 38/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 38/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 38/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62133-24-black-blouse-neutral",
+    "poseKey": "vision-dwt62133-24-black-blouse",
+    "outfitAbove": "black blouse",
+    "outfitBelow": "patchwork wide-leg chambray pants"
+  },
+  {
+    "id": "crop 39",
+    "name": "Crop 39",
+    "poses": [
+      {
+        "id": "crop 39",
+        "label": "Crop 39",
+        "publicPath": "/models/crop 39/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 39/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 39/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62133-24-black-trousers-neutral",
+    "poseKey": "vision-dwt62133-24-black-trousers",
+    "outfitAbove": "red ruffle-collar cardigan",
+    "outfitBelow": "black trousers"
+  },
+  {
+    "id": "crop 40",
+    "name": "Crop 40",
+    "poses": [
+      {
+        "id": "crop 40",
+        "label": "Crop 40",
+        "publicPath": "/models/crop 40/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 40/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 40/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 40/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "shorts",
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62133-24-denim-shorts-neutral",
+    "poseKey": "vision-dwt62133-24-denim-shorts",
+    "outfitAbove": "red ruffle-collar cardigan",
+    "outfitBelow": "denim shorts"
+  },
+  {
+    "id": "crop 41",
+    "name": "Crop 41",
+    "poses": [
+      {
+        "id": "crop 41",
+        "label": "Crop 41",
+        "publicPath": "/models/crop 41/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 41/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 41/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 41/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "skirt",
+    "lowOk": false,
+    "pose": "standing straight, arms relaxed at sides",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62133-24-midi-skirt-neutral",
+    "poseKey": "vision-dwt62133-24-midi-skirt",
+    "outfitAbove": "red ruffle-collar cardigan",
+    "outfitBelow": "midi skirt"
+  },
+  {
+    "id": "crop 42",
+    "name": "Crop 42",
+    "poses": [
+      {
+        "id": "crop 42",
+        "label": "Crop 42",
+        "publicPath": "/models/crop 42/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 42/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 42/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 42/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62133-24-white-tee-neutral",
+    "poseKey": "vision-dwt62133-24-white-tee",
+    "outfitAbove": "white tee",
+    "outfitBelow": "patchwork wide-leg chambray pants"
+  },
+  {
+    "id": "crop 43",
+    "name": "Crop 43",
+    "poses": [
+      {
+        "id": "crop 43",
+        "label": "Crop 43",
+        "publicPath": "/models/crop 43/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 43/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 43/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 43/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, one arm raised to head, hand in pocket",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62170-20-black-blouse-neutral",
+    "poseKey": "vision-dwt62170-20-black-blouse",
+    "outfitAbove": "black blouse",
+    "outfitBelow": "polka-dot barrel jeans"
+  },
+  {
+    "id": "crop 44",
+    "name": "Crop 44",
+    "poses": [
+      {
+        "id": "crop 44",
+        "label": "Crop 44",
+        "publicPath": "/models/crop 44/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 44/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 44/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 44/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, one arm raised to head, hand in pocket",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62170-20-black-trousers-neutral",
+    "poseKey": "vision-dwt62170-20-black-trousers",
+    "outfitAbove": "tan rodeo graphic sweater",
+    "outfitBelow": "black trousers"
+  },
+  {
+    "id": "crop 45",
+    "name": "Crop 45",
+    "poses": [
+      {
+        "id": "crop 45",
+        "label": "Crop 45",
+        "publicPath": "/models/crop 45/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 45/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 45/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 45/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "shorts",
+    "lowOk": true,
+    "pose": "standing, one arm raised to head, hand in pocket",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62170-20-denim-shorts-neutral",
+    "poseKey": "vision-dwt62170-20-denim-shorts",
+    "outfitAbove": "tan rodeo graphic sweater",
+    "outfitBelow": "denim shorts"
+  },
+  {
+    "id": "crop 46",
+    "name": "Crop 46",
+    "poses": [
+      {
+        "id": "crop 46",
+        "label": "Crop 46",
+        "publicPath": "/models/crop 46/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 46/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 46/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 46/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "skirt",
+    "lowOk": false,
+    "pose": "standing, one arm raised to head, hand in pocket",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62170-20-midi-skirt-neutral",
+    "poseKey": "vision-dwt62170-20-midi-skirt",
+    "outfitAbove": "tan rodeo graphic sweater",
+    "outfitBelow": "midi skirt"
+  },
+  {
+    "id": "crop 47",
+    "name": "Crop 47",
+    "poses": [
+      {
+        "id": "crop 47",
+        "label": "Crop 47",
+        "publicPath": "/models/crop 47/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 47/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 47/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, one arm raised to head, hand in pocket",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62170-20-white-tee-neutral",
+    "poseKey": "vision-dwt62170-20-white-tee",
+    "outfitAbove": "white tee",
+    "outfitBelow": "polka-dot barrel jeans"
+  },
+  {
+    "id": "crop 48",
+    "name": "Crop 48",
+    "poses": [
+      {
+        "id": "crop 48",
+        "label": "Crop 48",
+        "publicPath": "/models/crop 48/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 48/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 48/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 48/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, weight on one leg, hand in pocket",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62170-21-black-blouse-neutral",
+    "poseKey": "vision-dwt62170-21-black-blouse",
+    "outfitAbove": "black blouse",
+    "outfitBelow": "polka-dot barrel jeans"
+  },
+  {
+    "id": "crop 49",
+    "name": "Crop 49",
+    "poses": [
+      {
+        "id": "crop 49",
+        "label": "Crop 49",
+        "publicPath": "/models/crop 49/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 49/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 49/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 49/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, weight on one leg, hand in pocket",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62170-21-black-trousers-neutral",
+    "poseKey": "vision-dwt62170-21-black-trousers",
+    "outfitAbove": "tan rodeo graphic sweater",
+    "outfitBelow": "black trousers"
+  },
+  {
+    "id": "crop 50",
+    "name": "Crop 50",
+    "poses": [
+      {
+        "id": "crop 50",
+        "label": "Crop 50",
+        "publicPath": "/models/crop 50/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 50/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 50/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 50/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "shorts",
+    "lowOk": true,
+    "pose": "standing, weight on one leg, hand in pocket",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62170-21-denim-shorts-neutral",
+    "poseKey": "vision-dwt62170-21-denim-shorts",
+    "outfitAbove": "tan rodeo graphic sweater",
+    "outfitBelow": "denim shorts"
+  },
+  {
+    "id": "crop 51",
+    "name": "Crop 51",
+    "poses": [
+      {
+        "id": "crop 51",
+        "label": "Crop 51",
+        "publicPath": "/models/crop 51/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 51/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 51/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 51/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "skirt",
+    "lowOk": false,
+    "pose": "standing, weight on one leg, hand in pocket",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62170-21-midi-skirt-neutral",
+    "poseKey": "vision-dwt62170-21-midi-skirt",
+    "outfitAbove": "tan rodeo graphic sweater",
+    "outfitBelow": "midi skirt"
+  },
+  {
+    "id": "crop 52",
+    "name": "Crop 52",
+    "poses": [
+      {
+        "id": "crop 52",
+        "label": "Crop 52",
+        "publicPath": "/models/crop 52/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 52/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 52/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 52/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, weight on one leg, hand in pocket",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62170-21-white-tee-neutral",
+    "poseKey": "vision-dwt62170-21-white-tee",
+    "outfitAbove": "white tee",
+    "outfitBelow": "polka-dot barrel jeans"
+  },
+  {
     "id": "faces",
     "name": "Faces",
     "poses": [
@@ -2339,6 +2871,486 @@ export const STATIC_HUMAN_MODELS = [
     "slug": "dwt62170-21-teeth",
     "poseKey": "dwt62170-21",
     "outfitAbove": "tan rodeo graphic sweater",
+    "outfitBelow": "polka-dot barrel jeans"
+  },
+  {
+    "id": "low 38",
+    "name": "Low 38",
+    "poses": [
+      {
+        "id": "low 38",
+        "label": "Low 38",
+        "publicPath": "/models/low 38/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 38/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 38/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62133-24-black-blouse-neutral",
+    "poseKey": "vision-dwt62133-24-black-blouse",
+    "outfitAbove": "black blouse",
+    "outfitBelow": "patchwork wide-leg chambray pants"
+  },
+  {
+    "id": "low 39",
+    "name": "Low 39",
+    "poses": [
+      {
+        "id": "low 39",
+        "label": "Low 39",
+        "publicPath": "/models/low 39/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 39/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 39/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62133-24-black-trousers-neutral",
+    "poseKey": "vision-dwt62133-24-black-trousers",
+    "outfitAbove": "red ruffle-collar cardigan",
+    "outfitBelow": "black trousers"
+  },
+  {
+    "id": "low 40",
+    "name": "Low 40",
+    "poses": [
+      {
+        "id": "low 40",
+        "label": "Low 40",
+        "publicPath": "/models/low 40/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 40/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 40/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "shorts",
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62133-24-denim-shorts-neutral",
+    "poseKey": "vision-dwt62133-24-denim-shorts",
+    "outfitAbove": "red ruffle-collar cardigan",
+    "outfitBelow": "denim shorts"
+  },
+  {
+    "id": "low 41",
+    "name": "Low 41",
+    "poses": [
+      {
+        "id": "low 41",
+        "label": "Low 41",
+        "publicPath": "/models/low 41/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 41/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 41/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "skirt",
+    "lowOk": false,
+    "pose": "standing straight, arms relaxed at sides",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62133-24-midi-skirt-neutral",
+    "poseKey": "vision-dwt62133-24-midi-skirt",
+    "outfitAbove": "red ruffle-collar cardigan",
+    "outfitBelow": "midi skirt"
+  },
+  {
+    "id": "low 42",
+    "name": "Low 42",
+    "poses": [
+      {
+        "id": "low 42",
+        "label": "Low 42",
+        "publicPath": "/models/low 42/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 42/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 42/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62133-24-white-tee-neutral",
+    "poseKey": "vision-dwt62133-24-white-tee",
+    "outfitAbove": "white tee",
+    "outfitBelow": "patchwork wide-leg chambray pants"
+  },
+  {
+    "id": "low 43",
+    "name": "Low 43",
+    "poses": [
+      {
+        "id": "low 43",
+        "label": "Low 43",
+        "publicPath": "/models/low 43/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 43/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 43/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, one arm raised to head, hand in pocket",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62170-20-black-blouse-neutral",
+    "poseKey": "vision-dwt62170-20-black-blouse",
+    "outfitAbove": "black blouse",
+    "outfitBelow": "polka-dot barrel jeans"
+  },
+  {
+    "id": "low 44",
+    "name": "Low 44",
+    "poses": [
+      {
+        "id": "low 44",
+        "label": "Low 44",
+        "publicPath": "/models/low 44/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 44/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 44/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, one arm raised to head, hand in pocket",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62170-20-black-trousers-neutral",
+    "poseKey": "vision-dwt62170-20-black-trousers",
+    "outfitAbove": "tan rodeo graphic sweater",
+    "outfitBelow": "black trousers"
+  },
+  {
+    "id": "low 45",
+    "name": "Low 45",
+    "poses": [
+      {
+        "id": "low 45",
+        "label": "Low 45",
+        "publicPath": "/models/low 45/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 45/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 45/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "shorts",
+    "lowOk": true,
+    "pose": "standing, one arm raised to head, hand in pocket",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62170-20-denim-shorts-neutral",
+    "poseKey": "vision-dwt62170-20-denim-shorts",
+    "outfitAbove": "tan rodeo graphic sweater",
+    "outfitBelow": "denim shorts"
+  },
+  {
+    "id": "low 46",
+    "name": "Low 46",
+    "poses": [
+      {
+        "id": "low 46",
+        "label": "Low 46",
+        "publicPath": "/models/low 46/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 46/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 46/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "skirt",
+    "lowOk": false,
+    "pose": "standing, one arm raised to head, hand in pocket",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62170-20-midi-skirt-neutral",
+    "poseKey": "vision-dwt62170-20-midi-skirt",
+    "outfitAbove": "tan rodeo graphic sweater",
+    "outfitBelow": "midi skirt"
+  },
+  {
+    "id": "low 47",
+    "name": "Low 47",
+    "poses": [
+      {
+        "id": "low 47",
+        "label": "Low 47",
+        "publicPath": "/models/low 47/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 47/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 47/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, one arm raised to head, hand in pocket",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62170-20-white-tee-neutral",
+    "poseKey": "vision-dwt62170-20-white-tee",
+    "outfitAbove": "white tee",
+    "outfitBelow": "polka-dot barrel jeans"
+  },
+  {
+    "id": "low 48",
+    "name": "Low 48",
+    "poses": [
+      {
+        "id": "low 48",
+        "label": "Low 48",
+        "publicPath": "/models/low 48/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 48/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 48/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, weight on one leg, hand in pocket",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62170-21-black-blouse-neutral",
+    "poseKey": "vision-dwt62170-21-black-blouse",
+    "outfitAbove": "black blouse",
+    "outfitBelow": "polka-dot barrel jeans"
+  },
+  {
+    "id": "low 49",
+    "name": "Low 49",
+    "poses": [
+      {
+        "id": "low 49",
+        "label": "Low 49",
+        "publicPath": "/models/low 49/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 49/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 49/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, weight on one leg, hand in pocket",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62170-21-black-trousers-neutral",
+    "poseKey": "vision-dwt62170-21-black-trousers",
+    "outfitAbove": "tan rodeo graphic sweater",
+    "outfitBelow": "black trousers"
+  },
+  {
+    "id": "low 50",
+    "name": "Low 50",
+    "poses": [
+      {
+        "id": "low 50",
+        "label": "Low 50",
+        "publicPath": "/models/low 50/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 50/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 50/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "shorts",
+    "lowOk": true,
+    "pose": "standing, weight on one leg, hand in pocket",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62170-21-denim-shorts-neutral",
+    "poseKey": "vision-dwt62170-21-denim-shorts",
+    "outfitAbove": "tan rodeo graphic sweater",
+    "outfitBelow": "denim shorts"
+  },
+  {
+    "id": "low 51",
+    "name": "Low 51",
+    "poses": [
+      {
+        "id": "low 51",
+        "label": "Low 51",
+        "publicPath": "/models/low 51/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 51/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 51/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "skirt",
+    "lowOk": false,
+    "pose": "standing, weight on one leg, hand in pocket",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62170-21-midi-skirt-neutral",
+    "poseKey": "vision-dwt62170-21-midi-skirt",
+    "outfitAbove": "tan rodeo graphic sweater",
+    "outfitBelow": "midi skirt"
+  },
+  {
+    "id": "low 52",
+    "name": "Low 52",
+    "poses": [
+      {
+        "id": "low 52",
+        "label": "Low 52",
+        "publicPath": "/models/low 52/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 52/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 52/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, weight on one leg, hand in pocket",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62170-21-white-tee-neutral",
+    "poseKey": "vision-dwt62170-21-white-tee",
+    "outfitAbove": "white tee",
     "outfitBelow": "polka-dot barrel jeans"
   },
   {
@@ -3712,6 +4724,598 @@ export const STATIC_HUMAN_MODELS = [
     "slug": "dwt62170-21-teeth",
     "poseKey": "dwt62170-21",
     "outfitAbove": "tan rodeo graphic sweater",
+    "outfitBelow": "polka-dot barrel jeans"
+  },
+  {
+    "id": "studio 38",
+    "name": "Studio 38",
+    "poses": [
+      {
+        "id": "studio 38",
+        "label": "Studio 38",
+        "publicPath": "/models/studio 38/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 38/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 38/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 38/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 38/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62133-24-black-blouse-neutral",
+    "poseKey": "vision-dwt62133-24-black-blouse",
+    "outfitAbove": "black blouse",
+    "outfitBelow": "patchwork wide-leg chambray pants"
+  },
+  {
+    "id": "studio 39",
+    "name": "Studio 39",
+    "poses": [
+      {
+        "id": "studio 39",
+        "label": "Studio 39",
+        "publicPath": "/models/studio 39/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 39/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 39/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 39/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62133-24-black-trousers-neutral",
+    "poseKey": "vision-dwt62133-24-black-trousers",
+    "outfitAbove": "red ruffle-collar cardigan",
+    "outfitBelow": "black trousers"
+  },
+  {
+    "id": "studio 40",
+    "name": "Studio 40",
+    "poses": [
+      {
+        "id": "studio 40",
+        "label": "Studio 40",
+        "publicPath": "/models/studio 40/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 40/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 40/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 40/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 40/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "shorts",
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62133-24-denim-shorts-neutral",
+    "poseKey": "vision-dwt62133-24-denim-shorts",
+    "outfitAbove": "red ruffle-collar cardigan",
+    "outfitBelow": "denim shorts"
+  },
+  {
+    "id": "studio 41",
+    "name": "Studio 41",
+    "poses": [
+      {
+        "id": "studio 41",
+        "label": "Studio 41",
+        "publicPath": "/models/studio 41/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 41/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 41/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 41/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 41/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "skirt",
+    "lowOk": false,
+    "pose": "standing straight, arms relaxed at sides",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62133-24-midi-skirt-neutral",
+    "poseKey": "vision-dwt62133-24-midi-skirt",
+    "outfitAbove": "red ruffle-collar cardigan",
+    "outfitBelow": "midi skirt"
+  },
+  {
+    "id": "studio 42",
+    "name": "Studio 42",
+    "poses": [
+      {
+        "id": "studio 42",
+        "label": "Studio 42",
+        "publicPath": "/models/studio 42/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 42/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 42/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 42/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 42/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62133-24-white-tee-neutral",
+    "poseKey": "vision-dwt62133-24-white-tee",
+    "outfitAbove": "white tee",
+    "outfitBelow": "patchwork wide-leg chambray pants"
+  },
+  {
+    "id": "studio 43",
+    "name": "Studio 43",
+    "poses": [
+      {
+        "id": "studio 43",
+        "label": "Studio 43",
+        "publicPath": "/models/studio 43/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 43/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 43/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 43/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 43/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, one arm raised to head, hand in pocket",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62170-20-black-blouse-neutral",
+    "poseKey": "vision-dwt62170-20-black-blouse",
+    "outfitAbove": "black blouse",
+    "outfitBelow": "polka-dot barrel jeans"
+  },
+  {
+    "id": "studio 44",
+    "name": "Studio 44",
+    "poses": [
+      {
+        "id": "studio 44",
+        "label": "Studio 44",
+        "publicPath": "/models/studio 44/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 44/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 44/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 44/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 44/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, one arm raised to head, hand in pocket",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62170-20-black-trousers-neutral",
+    "poseKey": "vision-dwt62170-20-black-trousers",
+    "outfitAbove": "tan rodeo graphic sweater",
+    "outfitBelow": "black trousers"
+  },
+  {
+    "id": "studio 45",
+    "name": "Studio 45",
+    "poses": [
+      {
+        "id": "studio 45",
+        "label": "Studio 45",
+        "publicPath": "/models/studio 45/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 45/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 45/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 45/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 45/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "shorts",
+    "lowOk": true,
+    "pose": "standing, one arm raised to head, hand in pocket",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62170-20-denim-shorts-neutral",
+    "poseKey": "vision-dwt62170-20-denim-shorts",
+    "outfitAbove": "tan rodeo graphic sweater",
+    "outfitBelow": "denim shorts"
+  },
+  {
+    "id": "studio 46",
+    "name": "Studio 46",
+    "poses": [
+      {
+        "id": "studio 46",
+        "label": "Studio 46",
+        "publicPath": "/models/studio 46/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 46/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 46/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 46/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 46/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "skirt",
+    "lowOk": false,
+    "pose": "standing, one arm raised to head, hand in pocket",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62170-20-midi-skirt-neutral",
+    "poseKey": "vision-dwt62170-20-midi-skirt",
+    "outfitAbove": "tan rodeo graphic sweater",
+    "outfitBelow": "midi skirt"
+  },
+  {
+    "id": "studio 47",
+    "name": "Studio 47",
+    "poses": [
+      {
+        "id": "studio 47",
+        "label": "Studio 47",
+        "publicPath": "/models/studio 47/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 47/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 47/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 47/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, one arm raised to head, hand in pocket",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62170-20-white-tee-neutral",
+    "poseKey": "vision-dwt62170-20-white-tee",
+    "outfitAbove": "white tee",
+    "outfitBelow": "polka-dot barrel jeans"
+  },
+  {
+    "id": "studio 48",
+    "name": "Studio 48",
+    "poses": [
+      {
+        "id": "studio 48",
+        "label": "Studio 48",
+        "publicPath": "/models/studio 48/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 48/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 48/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 48/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 48/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, weight on one leg, hand in pocket",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62170-21-black-blouse-neutral",
+    "poseKey": "vision-dwt62170-21-black-blouse",
+    "outfitAbove": "black blouse",
+    "outfitBelow": "polka-dot barrel jeans"
+  },
+  {
+    "id": "studio 49",
+    "name": "Studio 49",
+    "poses": [
+      {
+        "id": "studio 49",
+        "label": "Studio 49",
+        "publicPath": "/models/studio 49/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 49/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 49/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 49/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 49/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, weight on one leg, hand in pocket",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62170-21-black-trousers-neutral",
+    "poseKey": "vision-dwt62170-21-black-trousers",
+    "outfitAbove": "tan rodeo graphic sweater",
+    "outfitBelow": "black trousers"
+  },
+  {
+    "id": "studio 50",
+    "name": "Studio 50",
+    "poses": [
+      {
+        "id": "studio 50",
+        "label": "Studio 50",
+        "publicPath": "/models/studio 50/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 50/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 50/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 50/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 50/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "shorts",
+    "lowOk": true,
+    "pose": "standing, weight on one leg, hand in pocket",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62170-21-denim-shorts-neutral",
+    "poseKey": "vision-dwt62170-21-denim-shorts",
+    "outfitAbove": "tan rodeo graphic sweater",
+    "outfitBelow": "denim shorts"
+  },
+  {
+    "id": "studio 51",
+    "name": "Studio 51",
+    "poses": [
+      {
+        "id": "studio 51",
+        "label": "Studio 51",
+        "publicPath": "/models/studio 51/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 51/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 51/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 51/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 51/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "skirt",
+    "lowOk": false,
+    "pose": "standing, weight on one leg, hand in pocket",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62170-21-midi-skirt-neutral",
+    "poseKey": "vision-dwt62170-21-midi-skirt",
+    "outfitAbove": "tan rodeo graphic sweater",
+    "outfitBelow": "midi skirt"
+  },
+  {
+    "id": "studio 52",
+    "name": "Studio 52",
+    "poses": [
+      {
+        "id": "studio 52",
+        "label": "Studio 52",
+        "publicPath": "/models/studio 52/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 52/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 52/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 52/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 52/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, weight on one leg, hand in pocket",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62170-21-white-tee-neutral",
+    "poseKey": "vision-dwt62170-21-white-tee",
+    "outfitAbove": "white tee",
     "outfitBelow": "polka-dot barrel jeans"
   }
 ] as unknown as HumanModel[];
