@@ -35,3 +35,14 @@ Backup of the pre-engine pipeline: tag `model-maker-v1-nano-banana-2026-09-05`.
   `lib/square-subject.ts` when not given (test: square-subject.test.ts). Same X-DDTO-TOKEN gate as
   model-shots. Callers: faire-management extension 2.42.0 (`studio-square` message) and
   `faire_drafts.studio_square`. ~12 s, ~$0.04 per square on the fal balance.
+
+## 2026-09-08 (Claude Code) — plate restore on every model-shot view (e9101b5)
+- `lib/plate-restore.ts` + `lib/plate-restore-run.ts` + `lib/matte.ts`: after generate-model returns, the
+  view is matted (fal `fal-ai/birefnet/v2`), the plate's own model is lifted out of the plate, the hole is
+  filled from the sweep around it, the figure is shifted onto the plate's figure centre and composited
+  through the matte. Response gains `rawUrl` + `restore` report; `restore: false` in the body skips it.
+- Tests: lib/plate-restore.test.ts (synthetic mattes); tsc clean. Verified locally on the rejected tank
+  renders (03 side/full, 10 back, 05 side). NOT yet seen on a live run — first thing to check.
+- Colour flood-fill cut-outs eat pale garments on the cream sweep (ecru trousers); keep the matte.
+- Next: face anchoring for side/full (head crop of the front render as an extra reference); plate-matte
+  cache is per process (Map in plate-restore-run.ts) — a blob-store cache if cold starts hurt.
