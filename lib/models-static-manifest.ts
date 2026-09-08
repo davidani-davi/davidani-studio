@@ -36,7 +36,7 @@ export const STATIC_HUMAN_MODELS = [
     "wears": "pants",
     "lowOk": true,
     "pose": "standing straight, arms relaxed at sides, feet apart",
-    "outfitAbove": "beige textured hooded button-up",
+    "outfitAbove": "black ribbed tank top, tucked in",
     "outfitBelow": "cream wide-leg trousers",
     "autoPool": true
   },
@@ -69,7 +69,7 @@ export const STATIC_HUMAN_MODELS = [
     "wears": "pants",
     "lowOk": true,
     "pose": "standing straight, arms relaxed at sides, feet apart",
-    "outfitAbove": "leopard print bomber jacket",
+    "outfitAbove": "black ribbed tank top, tucked in",
     "outfitBelow": "heather grey wide-leg sweatpants",
     "autoPool": true
   },
@@ -102,7 +102,7 @@ export const STATIC_HUMAN_MODELS = [
     "wears": "pants",
     "lowOk": true,
     "pose": "standing straight, both thumbs hooked in front pockets",
-    "outfitAbove": "ivory ribbed turtleneck sweater",
+    "outfitAbove": "black ribbed tank top, tucked in",
     "outfitBelow": "brown plaid barrel trousers",
     "autoPool": true
   },
@@ -135,7 +135,7 @@ export const STATIC_HUMAN_MODELS = [
     "wears": "pants",
     "lowOk": true,
     "pose": "standing straight, one hand in pocket",
-    "outfitAbove": "distressed cable-knit sweater",
+    "outfitAbove": "black ribbed tank top, tucked in",
     "outfitBelow": "acid-wash wide-leg jeans",
     "autoPool": true
   },
@@ -168,7 +168,7 @@ export const STATIC_HUMAN_MODELS = [
     "wears": "shorts",
     "lowOk": true,
     "pose": "standing straight, arms relaxed at sides, feet apart",
-    "outfitAbove": "striped square-neck tank top",
+    "outfitAbove": "black ribbed tank top, tucked in",
     "outfitBelow": "multicolor striped linen shorts",
     "autoPool": true
   },
@@ -201,7 +201,7 @@ export const STATIC_HUMAN_MODELS = [
     "wears": "pants",
     "lowOk": true,
     "pose": "standing upright, hands in pockets, feet slightly apart",
-    "outfitAbove": "black unicorn-print cardigan",
+    "outfitAbove": "black ribbed tank top, tucked in",
     "outfitBelow": "polka-dot wide-leg trousers",
     "autoPool": true
   },
@@ -234,7 +234,7 @@ export const STATIC_HUMAN_MODELS = [
     "wears": "pants",
     "lowOk": true,
     "pose": "standing straight, arms relaxed at sides",
-    "outfitAbove": "taupe turtleneck sweater",
+    "outfitAbove": "black ribbed tank top, tucked in",
     "outfitBelow": "patchwork wide-leg jeans",
     "autoPool": true
   },
@@ -267,7 +267,7 @@ export const STATIC_HUMAN_MODELS = [
     "wears": "pants",
     "lowOk": true,
     "pose": "standing, right hand on hip, feet apart",
-    "outfitAbove": "grey layered henley tank",
+    "outfitAbove": "black ribbed tank top, tucked in",
     "outfitBelow": "olive balloon barrel pants",
     "autoPool": true
   },
@@ -300,7 +300,7 @@ export const STATIC_HUMAN_MODELS = [
     "wears": "pants",
     "lowOk": true,
     "pose": "standing, weight on one leg, arms relaxed",
-    "outfitAbove": "black crewneck sweater layered tee",
+    "outfitAbove": "black ribbed tank top, tucked in",
     "outfitBelow": "charcoal pleated wide-leg trousers",
     "autoPool": true
   },
@@ -333,7 +333,7 @@ export const STATIC_HUMAN_MODELS = [
     "wears": "skirt",
     "lowOk": false,
     "pose": "standing upright, arms at sides, feet slightly apart",
-    "outfitAbove": "black sleeveless turtleneck top",
+    "outfitAbove": "black ribbed tank top, tucked in",
     "outfitBelow": "leopard print lace-hem midi skirt",
     "autoPool": true
   },
@@ -366,7 +366,7 @@ export const STATIC_HUMAN_MODELS = [
     "wears": "pants",
     "lowOk": true,
     "pose": "Standing straight, one hand in pocket, feet apart",
-    "outfitAbove": "taupe graphic tee",
+    "outfitAbove": "black ribbed tank top, tucked in",
     "outfitBelow": "brown polka-dot barrel pants",
     "autoPool": true
   },
@@ -551,7 +551,7 @@ export const STATIC_HUMAN_MODELS = [
     "expression": "neutral",
     "slug": "dwt62170-20-neutral",
     "poseKey": "dwt62170-20",
-    "outfitAbove": "tan rodeo graphic sweater",
+    "outfitAbove": "black ribbed tank top, tucked in",
     "outfitBelow": "polka-dot barrel jeans",
     "autoPool": true
   },
@@ -588,7 +588,7 @@ export const STATIC_HUMAN_MODELS = [
     "expression": "smile",
     "slug": "dwt62170-20-smile",
     "poseKey": "dwt62170-20",
-    "outfitAbove": "tan rodeo graphic sweater",
+    "outfitAbove": "black ribbed tank top, tucked in",
     "outfitBelow": "polka-dot barrel jeans",
     "autoPool": true
   },
@@ -625,7 +625,7 @@ export const STATIC_HUMAN_MODELS = [
     "expression": "teeth",
     "slug": "dwt62170-20-teeth",
     "poseKey": "dwt62170-20",
-    "outfitAbove": "tan rodeo graphic sweater",
+    "outfitAbove": "black ribbed tank top, tucked in",
     "outfitBelow": "polka-dot barrel jeans",
     "autoPool": true
   },
@@ -662,7 +662,7 @@ export const STATIC_HUMAN_MODELS = [
     "expression": "neutral",
     "slug": "dwt62170-21-neutral",
     "poseKey": "dwt62170-21",
-    "outfitAbove": "tan rodeo graphic sweater",
+    "outfitAbove": "black ribbed tank top, tucked in",
     "outfitBelow": "polka-dot barrel jeans",
     "autoPool": true
   },
@@ -699,7 +699,7 @@ export const STATIC_HUMAN_MODELS = [
     "expression": "smile",
     "slug": "dwt62170-21-smile",
     "poseKey": "dwt62170-21",
-    "outfitAbove": "tan rodeo graphic sweater",
+    "outfitAbove": "black ribbed tank top, tucked in",
     "outfitBelow": "polka-dot barrel jeans",
     "autoPool": true
   },
@@ -736,7 +736,7 @@ export const STATIC_HUMAN_MODELS = [
     "expression": "teeth",
     "slug": "dwt62170-21-teeth",
     "poseKey": "dwt62170-21",
-    "outfitAbove": "tan rodeo graphic sweater",
+    "outfitAbove": "black ribbed tank top, tucked in",
     "outfitBelow": "polka-dot barrel jeans",
     "autoPool": true
   },
@@ -1045,7 +1045,7 @@ export const STATIC_HUMAN_MODELS = [
     "wears": "pants",
     "lowOk": true,
     "pose": "standing straight, arms relaxed at sides, feet apart",
-    "outfitAbove": "beige textured hooded button-up",
+    "outfitAbove": "black ribbed tank top, tucked in",
     "outfitBelow": "cream wide-leg trousers",
     "autoPool": true
   },
@@ -1074,7 +1074,7 @@ export const STATIC_HUMAN_MODELS = [
     "wears": "pants",
     "lowOk": true,
     "pose": "standing straight, arms relaxed at sides, feet apart",
-    "outfitAbove": "leopard print bomber jacket",
+    "outfitAbove": "black ribbed tank top, tucked in",
     "outfitBelow": "heather grey wide-leg sweatpants",
     "autoPool": true
   },
@@ -1103,7 +1103,7 @@ export const STATIC_HUMAN_MODELS = [
     "wears": "pants",
     "lowOk": true,
     "pose": "standing straight, both thumbs hooked in front pockets",
-    "outfitAbove": "ivory ribbed turtleneck sweater",
+    "outfitAbove": "black ribbed tank top, tucked in",
     "outfitBelow": "brown plaid barrel trousers",
     "autoPool": true
   },
@@ -1132,7 +1132,7 @@ export const STATIC_HUMAN_MODELS = [
     "wears": "pants",
     "lowOk": true,
     "pose": "standing straight, one hand in pocket",
-    "outfitAbove": "distressed cable-knit sweater",
+    "outfitAbove": "black ribbed tank top, tucked in",
     "outfitBelow": "acid-wash wide-leg jeans",
     "autoPool": true
   },
@@ -1161,7 +1161,7 @@ export const STATIC_HUMAN_MODELS = [
     "wears": "shorts",
     "lowOk": true,
     "pose": "standing straight, arms relaxed at sides, feet apart",
-    "outfitAbove": "striped square-neck tank top",
+    "outfitAbove": "black ribbed tank top, tucked in",
     "outfitBelow": "multicolor striped linen shorts",
     "autoPool": true
   },
@@ -1190,7 +1190,7 @@ export const STATIC_HUMAN_MODELS = [
     "wears": "pants",
     "lowOk": true,
     "pose": "standing upright, hands in pockets, feet slightly apart",
-    "outfitAbove": "black unicorn-print cardigan",
+    "outfitAbove": "black ribbed tank top, tucked in",
     "outfitBelow": "polka-dot wide-leg trousers",
     "autoPool": true
   },
@@ -1219,7 +1219,7 @@ export const STATIC_HUMAN_MODELS = [
     "wears": "pants",
     "lowOk": true,
     "pose": "standing straight, arms relaxed at sides",
-    "outfitAbove": "taupe turtleneck sweater",
+    "outfitAbove": "black ribbed tank top, tucked in",
     "outfitBelow": "patchwork wide-leg jeans",
     "autoPool": true
   },
@@ -1248,7 +1248,7 @@ export const STATIC_HUMAN_MODELS = [
     "wears": "pants",
     "lowOk": true,
     "pose": "standing, right hand on hip, feet apart",
-    "outfitAbove": "grey layered henley tank",
+    "outfitAbove": "black ribbed tank top, tucked in",
     "outfitBelow": "olive balloon barrel pants",
     "autoPool": true
   },
@@ -1277,7 +1277,7 @@ export const STATIC_HUMAN_MODELS = [
     "wears": "pants",
     "lowOk": true,
     "pose": "standing, weight on one leg, arms relaxed",
-    "outfitAbove": "black crewneck sweater layered tee",
+    "outfitAbove": "black ribbed tank top, tucked in",
     "outfitBelow": "charcoal pleated wide-leg trousers",
     "autoPool": true
   },
@@ -1306,7 +1306,7 @@ export const STATIC_HUMAN_MODELS = [
     "wears": "skirt",
     "lowOk": false,
     "pose": "standing upright, arms at sides, feet slightly apart",
-    "outfitAbove": "black sleeveless turtleneck top",
+    "outfitAbove": "black ribbed tank top, tucked in",
     "outfitBelow": "leopard print lace-hem midi skirt",
     "autoPool": true
   },
@@ -1335,7 +1335,7 @@ export const STATIC_HUMAN_MODELS = [
     "wears": "pants",
     "lowOk": true,
     "pose": "Standing straight, one hand in pocket, feet apart",
-    "outfitAbove": "taupe graphic tee",
+    "outfitAbove": "black ribbed tank top, tucked in",
     "outfitBelow": "brown polka-dot barrel pants",
     "autoPool": true
   },
@@ -1500,7 +1500,7 @@ export const STATIC_HUMAN_MODELS = [
     "expression": "neutral",
     "slug": "dwt62170-20-neutral",
     "poseKey": "dwt62170-20",
-    "outfitAbove": "tan rodeo graphic sweater",
+    "outfitAbove": "black ribbed tank top, tucked in",
     "outfitBelow": "polka-dot barrel jeans",
     "autoPool": true
   },
@@ -1533,7 +1533,7 @@ export const STATIC_HUMAN_MODELS = [
     "expression": "smile",
     "slug": "dwt62170-20-smile",
     "poseKey": "dwt62170-20",
-    "outfitAbove": "tan rodeo graphic sweater",
+    "outfitAbove": "black ribbed tank top, tucked in",
     "outfitBelow": "polka-dot barrel jeans",
     "autoPool": true
   },
@@ -1566,7 +1566,7 @@ export const STATIC_HUMAN_MODELS = [
     "expression": "teeth",
     "slug": "dwt62170-20-teeth",
     "poseKey": "dwt62170-20",
-    "outfitAbove": "tan rodeo graphic sweater",
+    "outfitAbove": "black ribbed tank top, tucked in",
     "outfitBelow": "polka-dot barrel jeans",
     "autoPool": true
   },
@@ -1599,7 +1599,7 @@ export const STATIC_HUMAN_MODELS = [
     "expression": "neutral",
     "slug": "dwt62170-21-neutral",
     "poseKey": "dwt62170-21",
-    "outfitAbove": "tan rodeo graphic sweater",
+    "outfitAbove": "black ribbed tank top, tucked in",
     "outfitBelow": "polka-dot barrel jeans",
     "autoPool": true
   },
@@ -1632,7 +1632,7 @@ export const STATIC_HUMAN_MODELS = [
     "expression": "smile",
     "slug": "dwt62170-21-smile",
     "poseKey": "dwt62170-21",
-    "outfitAbove": "tan rodeo graphic sweater",
+    "outfitAbove": "black ribbed tank top, tucked in",
     "outfitBelow": "polka-dot barrel jeans",
     "autoPool": true
   },
@@ -1665,7 +1665,7 @@ export const STATIC_HUMAN_MODELS = [
     "expression": "teeth",
     "slug": "dwt62170-21-teeth",
     "poseKey": "dwt62170-21",
-    "outfitAbove": "tan rodeo graphic sweater",
+    "outfitAbove": "black ribbed tank top, tucked in",
     "outfitBelow": "polka-dot barrel jeans",
     "autoPool": true
   },
@@ -1950,7 +1950,7 @@ export const STATIC_HUMAN_MODELS = [
     "wears": "pants",
     "lowOk": true,
     "pose": "standing straight, arms relaxed at sides, feet apart",
-    "outfitAbove": "beige textured hooded button-up",
+    "outfitAbove": "black ribbed tank top, tucked in",
     "outfitBelow": "cream wide-leg trousers",
     "autoPool": true
   },
@@ -1987,7 +1987,7 @@ export const STATIC_HUMAN_MODELS = [
     "wears": "pants",
     "lowOk": true,
     "pose": "standing straight, arms relaxed at sides, feet apart",
-    "outfitAbove": "leopard print bomber jacket",
+    "outfitAbove": "black ribbed tank top, tucked in",
     "outfitBelow": "heather grey wide-leg sweatpants",
     "autoPool": true
   },
@@ -2024,7 +2024,7 @@ export const STATIC_HUMAN_MODELS = [
     "wears": "pants",
     "lowOk": true,
     "pose": "standing straight, both thumbs hooked in front pockets",
-    "outfitAbove": "ivory ribbed turtleneck sweater",
+    "outfitAbove": "black ribbed tank top, tucked in",
     "outfitBelow": "brown plaid barrel trousers",
     "autoPool": true
   },
@@ -2061,7 +2061,7 @@ export const STATIC_HUMAN_MODELS = [
     "wears": "pants",
     "lowOk": true,
     "pose": "standing straight, one hand in pocket",
-    "outfitAbove": "distressed cable-knit sweater",
+    "outfitAbove": "black ribbed tank top, tucked in",
     "outfitBelow": "acid-wash wide-leg jeans",
     "autoPool": true
   },
@@ -2098,7 +2098,7 @@ export const STATIC_HUMAN_MODELS = [
     "wears": "shorts",
     "lowOk": true,
     "pose": "standing straight, arms relaxed at sides, feet apart",
-    "outfitAbove": "striped square-neck tank top",
+    "outfitAbove": "black ribbed tank top, tucked in",
     "outfitBelow": "multicolor striped linen shorts",
     "autoPool": true
   },
@@ -2135,7 +2135,7 @@ export const STATIC_HUMAN_MODELS = [
     "wears": "pants",
     "lowOk": true,
     "pose": "standing upright, hands in pockets, feet slightly apart",
-    "outfitAbove": "black unicorn-print cardigan",
+    "outfitAbove": "black ribbed tank top, tucked in",
     "outfitBelow": "polka-dot wide-leg trousers",
     "autoPool": true
   },
@@ -2172,7 +2172,7 @@ export const STATIC_HUMAN_MODELS = [
     "wears": "pants",
     "lowOk": true,
     "pose": "standing straight, arms relaxed at sides",
-    "outfitAbove": "taupe turtleneck sweater",
+    "outfitAbove": "black ribbed tank top, tucked in",
     "outfitBelow": "patchwork wide-leg jeans",
     "autoPool": true
   },
@@ -2209,7 +2209,7 @@ export const STATIC_HUMAN_MODELS = [
     "wears": "pants",
     "lowOk": true,
     "pose": "standing, right hand on hip, feet apart",
-    "outfitAbove": "grey layered henley tank",
+    "outfitAbove": "black ribbed tank top, tucked in",
     "outfitBelow": "olive balloon barrel pants",
     "autoPool": true
   },
@@ -2246,7 +2246,7 @@ export const STATIC_HUMAN_MODELS = [
     "wears": "pants",
     "lowOk": true,
     "pose": "standing, weight on one leg, arms relaxed",
-    "outfitAbove": "black crewneck sweater layered tee",
+    "outfitAbove": "black ribbed tank top, tucked in",
     "outfitBelow": "charcoal pleated wide-leg trousers",
     "autoPool": true
   },
@@ -2283,7 +2283,7 @@ export const STATIC_HUMAN_MODELS = [
     "wears": "skirt",
     "lowOk": false,
     "pose": "standing upright, arms at sides, feet slightly apart",
-    "outfitAbove": "black sleeveless turtleneck top",
+    "outfitAbove": "black ribbed tank top, tucked in",
     "outfitBelow": "leopard print lace-hem midi skirt",
     "autoPool": true
   },
@@ -2320,7 +2320,7 @@ export const STATIC_HUMAN_MODELS = [
     "wears": "pants",
     "lowOk": true,
     "pose": "Standing straight, one hand in pocket, feet apart",
-    "outfitAbove": "taupe graphic tee",
+    "outfitAbove": "black ribbed tank top, tucked in",
     "outfitBelow": "brown polka-dot barrel pants",
     "autoPool": true
   },
@@ -2525,7 +2525,7 @@ export const STATIC_HUMAN_MODELS = [
     "expression": "neutral",
     "slug": "dwt62170-20-neutral",
     "poseKey": "dwt62170-20",
-    "outfitAbove": "tan rodeo graphic sweater",
+    "outfitAbove": "black ribbed tank top, tucked in",
     "outfitBelow": "polka-dot barrel jeans",
     "autoPool": true
   },
@@ -2566,7 +2566,7 @@ export const STATIC_HUMAN_MODELS = [
     "expression": "smile",
     "slug": "dwt62170-20-smile",
     "poseKey": "dwt62170-20",
-    "outfitAbove": "tan rodeo graphic sweater",
+    "outfitAbove": "black ribbed tank top, tucked in",
     "outfitBelow": "polka-dot barrel jeans",
     "autoPool": true
   },
@@ -2607,7 +2607,7 @@ export const STATIC_HUMAN_MODELS = [
     "expression": "teeth",
     "slug": "dwt62170-20-teeth",
     "poseKey": "dwt62170-20",
-    "outfitAbove": "tan rodeo graphic sweater",
+    "outfitAbove": "black ribbed tank top, tucked in",
     "outfitBelow": "polka-dot barrel jeans",
     "autoPool": true
   },
@@ -2648,7 +2648,7 @@ export const STATIC_HUMAN_MODELS = [
     "expression": "neutral",
     "slug": "dwt62170-21-neutral",
     "poseKey": "dwt62170-21",
-    "outfitAbove": "tan rodeo graphic sweater",
+    "outfitAbove": "black ribbed tank top, tucked in",
     "outfitBelow": "polka-dot barrel jeans",
     "autoPool": true
   },
@@ -2689,7 +2689,7 @@ export const STATIC_HUMAN_MODELS = [
     "expression": "smile",
     "slug": "dwt62170-21-smile",
     "poseKey": "dwt62170-21",
-    "outfitAbove": "tan rodeo graphic sweater",
+    "outfitAbove": "black ribbed tank top, tucked in",
     "outfitBelow": "polka-dot barrel jeans",
     "autoPool": true
   },
@@ -2730,7 +2730,7 @@ export const STATIC_HUMAN_MODELS = [
     "expression": "teeth",
     "slug": "dwt62170-21-teeth",
     "poseKey": "dwt62170-21",
-    "outfitAbove": "tan rodeo graphic sweater",
+    "outfitAbove": "black ribbed tank top, tucked in",
     "outfitBelow": "polka-dot barrel jeans",
     "autoPool": true
   },
