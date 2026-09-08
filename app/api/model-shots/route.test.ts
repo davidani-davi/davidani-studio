@@ -62,10 +62,11 @@ describe("/api/model-shots auth", () => {
     const house = byId("studio 28");
     expect(house).toMatchObject({ character: "vision", expression: "neutral", poseKey: "dwt62133-24", autoPool: true });
     expect(house.pose).toMatch(/arms relaxed/);
-    // the wardrobe variant is listed but flagged out of the auto pool
-    expect(byId("studio 38")).toMatchObject({ character: "vision", autoPool: false });
+    // the wardrobe variants were retired to hide/ (2026-09-08): not listed at all
+    expect(byId("studio 38")).toBeUndefined();
+    expect(byId("faces")).toBeUndefined();
     // a photographed model carries no character at all
-    const real = byId("studio 01");
+    const real = byId("studio 03");
     expect(real.autoPool).toBe(true);
     expect(real.character).toBeUndefined();
   });
