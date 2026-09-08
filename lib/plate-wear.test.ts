@@ -64,3 +64,15 @@ describe("silhouette", () => {
     expect(silhouettePlates(tagged, undefined)).toEqual([]);
   });
 });
+
+describe("plates.json auto:false", () => {
+  it("rides onto the whole family as autoPool:false", () => {
+    const models = [{ id: "studio 65" }, { id: "crop 65" }, { id: "studio 31" }] as any[];
+    const rows = [
+      { name: "studio 65", wears: "pants", low_ok: true, auto: false },
+      { name: "studio 31", wears: "pants", low_ok: true },
+    ];
+    const by = Object.fromEntries(mergePlateWear(models, rows).map((m: any) => [m.id, m.autoPool]));
+    expect(by).toEqual({ "studio 65": false, "crop 65": false, "studio 31": undefined });
+  });
+});

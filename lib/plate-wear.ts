@@ -17,12 +17,18 @@ export type PlateWear = {
   character?: string; expression?: string; slug?: string; poseKey?: string; pose?: string;
   /** Short outfit descriptors from plate_wear.py ("polka-dot barrel jeans"). */
   outfitAbove?: string; outfitBelow?: string;
+  /** plates.json `auto: false` — a plate the assigner must not pick on its own
+   *  (studio 65, 2026-09-08: an off-centre front and a different face on the
+   *  full view; the wardrobe plates wait for QC). */
+  autoPool?: boolean;
 };
 
 /** One plates.json row, as written by faire-management plate_install.py / plate_wear.py. */
 export type PlateRow = {
   name?: string; wears?: string; low_ok?: boolean; silhouette?: string; pose?: string;
   face?: string; expression?: string; slug?: string; outfit_above?: string; outfit_below?: string;
+  /** false = kept out of automatic assignment (still pickable by hand) until it passes plate QC. */
+  auto?: boolean;
 };
 
 /**
@@ -152,6 +158,7 @@ export function mergePlateWear<T extends { id: string } & PlateWear>(
         ...(slug ? { slug, poseKey: slug.replace(/-[a-z]+$/, "") } : {}),
         ...(p.outfit_above ? { outfitAbove: String(p.outfit_above) } : {}),
         ...(p.outfit_below ? { outfitBelow: String(p.outfit_below) } : {}),
+        ...(p.auto === false ? { autoPool: false } : {}),
       });
     }
   }

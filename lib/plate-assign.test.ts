@@ -119,3 +119,21 @@ describe("assignPlate for bottoms", () => {
     expect(got.humanModelId).toBe("studio 02");
   });
 });
+
+describe("plates kept out of automatic assignment (studio 65, 2026-09-08)", () => {
+  const plates = [
+    ...PLATES,
+    { id: "studio 65", poses: [{ id: "studio 65" }], autoPool: false },
+    { id: "studio 66", poses: [{ id: "studio 66" }], autoPool: false, lowOk: true },
+  ];
+  it("never lands a style on an auto:false plate, for a top or a bottom", () => {
+    const codes = Array.from({ length: 400 }, (_, i) => `DWT${60000 + i * 3}`);
+    for (const c of codes) {
+      expect(assignPlate(c, plates)!.humanModelId).not.toMatch(/studio 6[56]/);
+      expect(assignPlate(c, plates, { category: "pants" })!.humanModelId).not.toMatch(/studio 6[56]/);
+    }
+  });
+  it("still reaches it when asked for by prefix", () => {
+    expect(assignPlate("DWT62170", plates, { preferPrefix: "studio 65" })!.humanModelId).toBe("studio 65");
+  });
+});

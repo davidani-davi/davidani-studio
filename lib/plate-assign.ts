@@ -59,10 +59,12 @@ export function plateHash(styleCode: string): number {
  */
 export function assignPlate(
   styleCode: string,
-  plates: Array<{ id: string; poses: Array<{ id: string }>; lowOk?: boolean; silhouette?: string }>,
+  plates: Array<{ id: string; poses: Array<{ id: string }>; lowOk?: boolean; silhouette?: string; autoPool?: boolean }>,
   opts: { preferPrefix?: string; category?: string; silhouette?: string } = {}
 ): PlateChoice | null {
-  const usable = (plates || []).filter((p) => p.poses && p.poses.length);
+  // plates.json `auto: false` keeps a plate out of every automatic pool — an
+  // explicit preferPrefix still reaches it, and so does the picker.
+  const usable = (plates || []).filter((p) => p.poses && p.poses.length && (opts.preferPrefix || p.autoPool !== false));
   if (!usable.length) return null;
 
   // Explicit preference first, then the house set, then whatever exists —
