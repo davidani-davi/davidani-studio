@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildModelSwapPromptVariants, buildTwoImagePrompt, buildTwoPiecePrompt, isSleevelessGarment, isTransientUpstreamError } from "./fal";
+import { buildModelSwapPromptVariants, buildTwoImagePrompt, buildTwoPiecePrompt, isBaseLayerTop, isOuterLayer, isSleevelessGarment, isTransientUpstreamError } from "./fal";
 
 const FEATURES = "a ribbed cream collar, a full-length center front zipper, two front welt pockets";
 const slots = (out: string) =>
@@ -329,5 +329,47 @@ describe("transient upstream errors are retried, everything else is not", () => 
     expect(isTransientUpstreamError({ status: 500, body: { detail: [{ loc: ["body"], msg: "Downstream service error", type: "downstream_service_error", input: { prompt: "x" } }] } })).toBe(true);
     expect(isTransientUpstreamError({ status: 503, message: "Service Unavailable" })).toBe(true);
     expect(isTransientUpstreamError({ status: 422, body: { detail: [{ msg: "content_policy_violation" }] } })).toBe(false);
+  });
+});
+
+describe("what sits under an open outer layer (DJ60404 on studio 65, 2026-09-08)", () => {
+  const tankPlate = {
+    currentGarment: "black ribbed sleeveless tank top",
+    modelIdentity: "long blonde hair",
+    poseSummary: "standing, one hand raised",
+    sceneSummary: "cream backdrop, polka-dot jeans",
+  } as any;
+  const sweaterPlate = { ...tankPlate, currentGarment: "yellow chunky knit sweater" };
+  it("keeps the plate's plain tank under a jacket, in every variant", () => {
+    for (const p of buildModelSwapPromptVariants("floral cotton twill shirt jacket", "open front, chest pockets", tankPlate)) {
+      expect(p).toContain("UNDER-LAYER:");
+      expect(p).toContain("keep the black ribbed sleeveless tank top on as the only garment under the floral cotton twill shirt jacket");
+      expect(p).toContain("never bare skin under an open floral cotton twill shirt jacket");
+      expect(p).not.toContain("remove the black ribbed sleeveless tank top");
+      expect(p).not.toContain("comes off completely");
+    }
+  });
+  it("swaps a sweater for a plain black tank under an outer layer", () => {
+    for (const p of buildModelSwapPromptVariants("gray faux fur vest", "", sweaterPlate)) {
+      expect(p).toContain("remove the yellow chunky knit sweater entirely");
+      expect(p).toContain("one plain fitted black tank top and nothing else");
+      expect(p).toContain("SLEEVELESS: the gray faux fur vest has no sleeves");
+    }
+  });
+  it("says nothing about an under-layer for a plain top", () => {
+    for (const p of buildModelSwapPromptVariants("white cotton tee", "short sleeves", tankPlate)) {
+      expect(p).not.toContain("UNDER-LAYER:");
+      expect(p).toContain("remove the black ribbed sleeveless tank top entirely");
+    }
+  });
+  it("reads outer layers and base layers from the words we have", () => {
+    expect(isOuterLayer("cotton twill shirt jacket")).toBe(true);
+    expect(isOuterLayer("faux fur vest")).toBe(true);
+    expect(isOuterLayer("longline cardigan")).toBe(true);
+    expect(isOuterLayer("chunky knit sweater")).toBe(false);
+    expect(isOuterLayer("wide leg jeans")).toBe(false);
+    expect(isBaseLayerTop("black ribbed sleeveless tank top")).toBe(true);
+    expect(isBaseLayerTop("white cami")).toBe(true);
+    expect(isBaseLayerTop("yellow chunky knit sweater")).toBe(false);
   });
 });

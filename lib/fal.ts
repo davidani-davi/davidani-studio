@@ -2377,6 +2377,17 @@ export function isSleevelessGarment(garment: string, features = ""): boolean {
   return false;
 }
 
+/** An outer layer — worn over something, so what shows under it has to be decided, not left to chance. */
+export function isOuterLayer(garment: string, features = ""): boolean {
+  const text = `${garment} ${features}`.toLowerCase();
+  return /\b(jackets?|shackets?|coats?|overcoats?|peacoats?|blazers?|cardigans?|vests?|gilets?|waistcoats?|parkas?|trench|anoraks?|bombers?|puffers?|overshirts?|dusters?|kimonos?|capes?|ponchos?|windbreakers?)\b/.test(text);
+}
+
+/** A plain sleeveless base layer the plate already wears — fit to stay under an open outer layer. */
+export function isBaseLayerTop(garment: string): boolean {
+  return /\b(tank|cami|camisole|bralette|bandeau|tube top|bodysuit)\b/i.test(garment);
+}
+
 export function inferSwapScope(garment: string): SwapScope {
   const text = garment.toLowerCase();
 
@@ -2574,13 +2585,32 @@ export function buildModelSwapPromptVariants(
   // plate's sweater sleeves under the vest on the full shot and fused them
   // into fur sleeves on the back. The arms are bare, in every view, full stop.
   const sleevelessClause = isSleevelessGarment(newGarment, newGarmentFeatures)
-    ? ` SLEEVELESS: the ${newGarment} has no sleeves — the model's arms are bare skin from the shoulder to the hand, and no sleeve, undershirt or inner layer of any garment shows on either arm;`
+    ? ` SLEEVELESS: the ${newGarment} has no sleeves — the model's arms are bare skin from the shoulder to the hand, and no sleeve of any garment shows on either arm;`
     : "";
+  // What sits under an open outer layer (DJ60404 on studio 65, 2026-09-08):
+  // with the plate's top "off completely" the front came back bare-skinned
+  // under the open shirt jacket while the full shot kept the plate's black
+  // tank. The plate's plain base layer stays, in every view; a plate whose
+  // top is a sweater or shirt gets a plain black tank instead. Never bare skin.
+  const plateTop = String(analyzedModel.currentGarment || "").trim() || "current top";
+  const outerLayer = isOuterLayer(newGarment, newGarmentFeatures);
+  const keepBase = outerLayer && isBaseLayerTop(plateTop);
+  const underLayerClause = !outerLayer
+    ? ""
+    : keepBase
+    ? ` UNDER-LAYER: the ${newGarment} is an outer layer, worn open or closed exactly as Image B shows it; the ${plateTop} the model already wears in Image A stays on, unchanged in colour, neckline and fit, as the one and only garment under the ${newGarment}, in this and every view — never bare skin under an open ${newGarment}, never any other top (this rule wins over any no-inner-garment rule below); if Image B itself shows a different top under the open ${newGarment}, render that top instead;`
+    : ` UNDER-LAYER: the ${newGarment} is an outer layer, worn open or closed exactly as Image B shows it; the ${plateTop} comes off and under the ${newGarment} the model wears one plain fitted black tank top and nothing else, in this and every view — never bare skin under an open ${newGarment}, never the ${plateTop}, never a sweater, shirt or blouse (this rule wins over any no-inner-garment rule below); if Image B itself shows a different top under the open ${newGarment}, render that top instead;`;
+  const removalFor = (cg: string, ng: string): string =>
+    keepBase
+      ? `keep the ${cg} on as the only garment under the ${ng}`
+      : `remove the ${cg} entirely (none of it survives as a sleeve, collar, hem or inner layer)`;
 
   // Scope clause — vary the verb across variants for prompt diversity but
   // keep the underlying instruction identical.
   const scopeClauseFor = (verb: "replace" | "transfer" | "integrate", ng: string): string =>
-    swapScope === "upper-body"
+    swapScope === "upper-body" && keepBase
+      ? `${verb} the upper-body garment area with the new ${ng} worn over the ${plateTop} the model already wears in Image A — the ${plateTop} stays exactly as it is (same colour, neckline and fit) as the only layer under the new ${ng}, with nothing else added under or over it, and the arms show whatever the new ${ng} and the ${plateTop} leave bare; preserve any visible skirt, pants, shorts, or other lower-body garment from Image A exactly as-is — same color, shape, hem, waistband, drape, and coverage; do not remove, crop out, fade out, or simplify the lower-body garment.`
+      : swapScope === "upper-body"
       ? `${verb} the upper-body garment area with the new ${ng}: the top the model wears in Image A comes off completely — none of its sleeves, cuffs, collar, hem or fabric remains visible under, beside or below the new ${ng}, and it is never kept as an inner layer; what shows under and around the new ${ng} is decided by Image B alone — if Image B shows a sleeveless garment or bare arms, the model's arms are bare skin from the shoulder down with no sleeve, undershirt or inner layer of any kind, and if Image B shows a top under an open layer, render that top as Image B shows it; preserve any visible skirt, pants, shorts, or other lower-body garment from Image A exactly as-is — same color, shape, hem, waistband, drape, and coverage; do not remove, crop out, fade out, or simplify the lower-body garment.`
       : swapScope === "lower-body"
       ? `${verb} only the lower-body garment area with the new ${ng}; preserve any visible top, jacket, sweater, blouse, shirt, or upper-body garment from Image A exactly as-is, and obey the specified leg silhouette exactly — preserve barrel curvature, wide-leg width, straight-leg vertical line, flare opening, taper, cuff, hem length, waistband rise, pocket placement, and fabric break without straightening, widening, or flattening.`
@@ -2610,7 +2640,7 @@ export function buildModelSwapPromptVariants(
       : "preserve every structural detail of the garment from Image B exactly;";
     return [
       `Use Image A as the base image and keep the model's body, face, identity (${mi}), pose (${ps}), hair, expression, lighting, shadows, camera angle, depth of field, and background (${sc}) completely unchanged;`,
-      `take the ${ng} from Image B and apply it onto the model — ${scopeClauseFor("replace", ng)} remove the ${cg} entirely (none of it survives as a sleeve, collar, hem or inner layer),${sleevelessClause} and carefully match lighting direction, fabric drape, body contour, perspective, and shadow behavior so everything blends naturally;`,
+      `take the ${ng} from Image B and apply it onto the model — ${scopeClauseFor("replace", ng)} ${removalFor(cg, ng)},${sleevelessClause}${underLayerClause} and carefully match lighting direction, fabric drape, body contour, perspective, and shadow behavior so everything blends naturally;`,
       `STRUCTURE PRIORITY: render the garment with the EXACT silhouette and construction visible in Image B — body length, hem geometry (preserve any high-low, shirttail, stepped, or asymmetric hem with the back panel longer than the front exactly as shown), sleeve length and volume, cuff shape, neckline depth and shape, collar height, waistband, drape, and overall body fit;`,
       featureClause,
       antiLayeringFor("structure"),
@@ -2636,7 +2666,7 @@ export function buildModelSwapPromptVariants(
       : "keep every visible surface detail from Image B intact;";
     return [
       `Build the final image from Image A as the foundation, preserving every visual element exactly as shown — ${mi}, pose (${ps}), scene (${sc}), face, hair, posture, lighting setup, shadows, camera perspective, and depth of field, plus the rest of the visible outfit aside from the swap area;`,
-      `transfer the ${ng} from Image B onto the subject in Image A — ${scopeClauseFor("transfer", ng)} remove the ${cg} from the current look entirely (none of it survives as a sleeve, collar, hem or inner layer),${sleevelessClause} and adapt the garment to Image A's lighting intensity, body geometry, perspective, and shadow placement for seamless realism;`,
+      `transfer the ${ng} from Image B onto the subject in Image A — ${scopeClauseFor("transfer", ng)} ${removalFor(cg, ng)},${sleevelessClause}${underLayerClause} and adapt the garment to Image A's lighting intensity, body geometry, perspective, and shadow placement for seamless realism;`,
       `SURFACE PRIORITY: the garment must match Image B's color exactly (every hue and saturation), the print pattern (every motif placement, density, and orientation), all trim and tape placement, hardware positions on the wearer-correct side (zippers, buttons, snaps, drawstrings), hem stitching color and width, and the precise fabric texture and sheen visible in Image B; do not mirror left/right artwork, do not relocate sleeve or chest details to the visible side just to make them readable; SCATTERED PATCH FIDELITY: if Image B shows multiple patches or motifs of similar size scattered all over the garment, reproduce ALL of them at their original relative sizes — do NOT scale up any single patch and do NOT merge multiple scattered patches into one oversized center graphic;`,
       featureClause,
       antiLayeringFor("surface"),
@@ -2661,7 +2691,7 @@ export function buildModelSwapPromptVariants(
       : "preserve every visible detail of the garment from Image B;";
     return [
       `Take Image A and preserve everything exactly as it is — ${mi}, pose (${ps}), scene (${sc}), face, hair, posture, lighting, shadows, camera angle, and the rest of the visible outfit aside from the swap area;`,
-      `extract the ${ng} from Image B and integrate it onto the model — ${scopeClauseFor("integrate", ng)} remove the ${cg} entirely (none of it survives as a sleeve, collar, hem or inner layer),${sleevelessClause} and ensure consistent lighting, skin-tone interaction, perspective, and depth across the new garment;`,
+      `extract the ${ng} from Image B and integrate it onto the model — ${scopeClauseFor("integrate", ng)} ${removalFor(cg, ng)},${sleevelessClause}${underLayerClause} and ensure consistent lighting, skin-tone interaction, perspective, and depth across the new garment;`,
       `CRITICAL DO-NOTS: (1) ${antiLayeringFor("strict").replace(/^[a-z]/, (c) => c.toUpperCase())} (2) do not split the garment from Image B into multiple pieces, even if the hem is asymmetric. (3) Do not change garment color, pattern, hardware position, trim placement, neckline, sleeve shape, or hem geometry away from Image B. (4) Do not change the model's face, body, pose, hair, expression, or proportions. (5) Do not change the background, lighting, exposure, or camera perspective. (6) Do not invent text, logos, or branding not present in Image B.`,
       featureClause,
       `the result must look like a single authentic fashion catalog photograph of this model in this pose, wearing the new ${ng} as ONE continuous garment with correct silhouette, drape, hem geometry, sleeve length, and trim placement — not a flat-lay reproduction and not split into multiple pieces;`,
