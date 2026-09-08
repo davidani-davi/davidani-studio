@@ -182,6 +182,52 @@ export function fillHole(rgb: Uint8Array | Buffer, hole: Uint8Array, width: numb
   return out;
 }
 
+/**
+ * Normalised low-pass of an RGB field over a domain: a wide box blur (two
+ * passes) of the pixels inside the domain, divided by the blurred domain,
+ * which also extrapolates the field into the pixels outside it. With no
+ * domain every pixel counts.
+ */
+export function lowpass(rgb: Uint8Array | Buffer, domain: Uint8Array | null, width: number, height: number, r: number): Uint8Array {
+  const n = width * height;
+  const acc = new Float32Array(n * 3), wgt = new Float32Array(n);
+  for (let p = 0; p < n; p++) {
+    if (domain && !domain[p]) continue;
+    wgt[p] = 1;
+    acc[p * 3] = rgb[p * 3]; acc[p * 3 + 1] = rgb[p * 3 + 1]; acc[p * 3 + 2] = rgb[p * 3 + 2];
+  }
+  let a: Float32Array = acc, w: Float32Array = wgt;
+  for (let pass = 0; pass < 2; pass++) { a = boxBlur(a, width, height, 3, r); w = boxBlur(w, width, height, 1, r); }
+  const out = new Uint8Array(n * 3);
+  for (let p = 0; p < n; p++) {
+    const k = w[p] > 1e-6 ? 1 / w[p] : 0;
+    out[p * 3] = clamp8(a[p * 3] * k); out[p * 3 + 1] = clamp8(a[p * 3 + 1] * k); out[p * 3 + 2] = clamp8(a[p * 3 + 2] * k);
+  }
+  return out;
+}
+
+/** The rows of a figure box's lowest `share`, as a mask of the matte there. */
+function bottomBand(alpha: Uint8Array | Buffer, width: number, height: number, box: Box | null, share: number, min: number): Uint8Array {
+  const m = new Uint8Array(width * height);
+  if (!box) return m;
+  const y0 = Math.max(0, Math.round(box.y1 - (box.y1 - box.y0) * share));
+  for (let y = y0; y <= box.y1; y++) for (let x = 0; x < width; x++) { const p = y * width + x; if (alpha[p] >= min) m[p] = 255; }
+  return m;
+}
+
+/**
+ * The restore, second design (2026-09-08 pm). The first cut the figure out
+ * through its matte and dropped it on the plate: David's verdict on the
+ * first live run was "kind of bad" — a mask edge round the boots, the
+ * render's contact shadow gone, the fill's tone showing as a band. So the
+ * figure is not cut out any more. A feathered KEEP ZONE round it carries
+ * the render's own pixels — its photographed edges and its floor shadow
+ * — re-toned to the plate by a low-frequency colour match (render minus
+ * its own backdrop's low-pass, plus the plate backdrop's low-pass, weighted
+ * away from the figure so the garment keeps its colour). Beyond the zone
+ * the plate's real sweep takes over. The plate's model is still lifted out
+ * (hole filled row-wise), with its floor shadow taken along.
+ */
 export async function restoreOnPlate(
   render: Buffer, plate: Buffer, mattes: { render: Matte; plate: Matte }
 ): Promise<{ buffer: Buffer; report: PlateRestoreReport }> {
@@ -202,9 +248,12 @@ export async function restoreOnPlate(
     return one;
   };
   const raw1 = (m: Matte) => sharp(m.alpha, { raw: { width: m.width, height: m.height, channels: 1 } });
-  const [alphaRSmall, alphaPSmall] = await Promise.all(
-    [mattes.render, mattes.plate].map((m) => gray(raw1(m).resize(w, h, { fit: "fill" })))
-  );
+  const [alphaRSmall, alphaPSmall, renderSmall, plateSmall] = await Promise.all([
+    gray(raw1(mattes.render).resize(w, h, { fit: "fill" })),
+    gray(raw1(mattes.plate).resize(w, h, { fit: "fill" })),
+    sharp(render).resize(w, h, { fit: "fill" }).removeAlpha().raw().toBuffer(),
+    sharp(plate).resize(w, h, { fit: "fill" }).removeAlpha().raw().toBuffer(),
+  ]);
 
   let figurePx = 0;
   for (let i = 0; i < alphaRSmall.length; i++) if (alphaRSmall[i] >= 128) figurePx++;
@@ -212,58 +261,91 @@ export async function restoreOnPlate(
   if (coverage < 0.02) return skip("matte found no figure in the render", coverage);
   if (coverage > 0.9) return skip("matte called the whole render figure", coverage);
 
-  const shiftSmall = horizontalShift(figureBox(alphaRSmall, w, h), figureBox(alphaPSmall, w, h), w);
+  const boxR = figureBox(alphaRSmall, w, h), boxP = figureBox(alphaPSmall, w, h);
+  const shiftSmall = horizontalShift(boxR, boxP, w);
   const shiftX = Math.round((shiftSmall * W) / w);
 
-  // the plate without its model: everything the plate's matte touches, grown
-  // a little past the soft edge, is a hole filled from the sweep around it
+  // The plate without its model: the matte grown past its soft edge, and
+  // the floor round its feet grown wider so the model's contact shadow goes
+  // with it (the render brings its own).
   const holeSmall = new Uint8Array(w * h);
   for (let i = 0; i < holeSmall.length; i++) holeSmall[i] = alphaPSmall[i] >= 24 ? 255 : 0;
   const hole = grow(holeSmall, w, h, Math.max(2, Math.round(h * 0.012)));
-  const plateSmall = await sharp(plate).resize(w, h, { fit: "fill" }).removeAlpha().raw().toBuffer();
+  const feetP = grow(bottomBand(alphaPSmall, w, h, boxP, 0.08, 24), w, h, Math.max(2, Math.round(h * 0.05)));
+  for (let i = 0; i < hole.length; i++) if (feetP[i]) hole[i] = 255;
   const fillSmall = fillHole(plateSmall, hole, w, h);
+  const backSmall = new Uint8Array(plateSmall.length);
+  for (let p = 0; p < w * h; p++) { const o = p * 3, f = hole[p] ? fillSmall : plateSmall; backSmall[o] = f[o]; backSmall[o + 1] = f[o + 1]; backSmall[o + 2] = f[o + 2]; }
+
+  // Low-frequency tone of each backdrop: the render's from its non-figure
+  // pixels only (extrapolated under the figure), the plate's from the whole
+  // lifted plate. Their difference is what re-tones the keep zone.
+  const notFigure = new Uint8Array(w * h);
+  for (let i = 0; i < notFigure.length; i++) notFigure[i] = alphaRSmall[i] < 8 ? 255 : 0;
+  const lpR = Math.max(4, Math.round(h / 6));
+  const lowR = lowpass(renderSmall, notFigure, w, h, lpR);
+  const lowP = lowpass(backSmall, null, w, h, lpR);
+
+  // The keep zone: the figure grown a few percent, wider under the feet
+  // for the shadow, feathered.
+  const keepHard = grow(alphaRSmall.map((a) => (a >= 128 ? 255 : 0)) as Uint8Array, w, h, Math.max(2, Math.round(h * 0.04)));
+  const feetR = grow(bottomBand(alphaRSmall, w, h, boxR, 0.08, 128), w, h, Math.max(2, Math.round(h * 0.08)));
+  for (let i = 0; i < keepHard.length; i++) if (feetR[i]) keepHard[i] = 255;
+  // feathered here, not with sharp's blur: a wide sharp blur on a 1-channel
+  // raw came back scaled (a 255 plateau read 180 after the resize)
+  const keepF = new Float32Array(keepHard.length);
+  for (let i = 0; i < keepF.length; i++) keepF[i] = keepHard[i];
+  const kr = Math.max(1, Math.round(h * 0.015));
+  const keepBlur = boxBlur(boxBlur(keepF, w, h, 1, kr), w, h, 1, kr);
+  const keepSoft = new Uint8Array(keepHard.length);
+  for (let i = 0; i < keepSoft.length; i++) keepSoft[i] = clamp8(keepBlur[i]);
 
   const up = (px: Uint8Array | Buffer, channels: 1 | 3, extra?: (s: sharp.Sharp) => sharp.Sharp) => {
     let s = sharp(Buffer.from(px.buffer, px.byteOffset, px.byteLength), { raw: { width: w, height: h, channels } });
     if (extra) s = extra(s);
     return s.resize(W, H, { fit: "fill", kernel: "lanczos3" }).raw().toBuffer({ resolveWithObject: true });
   };
-  const [fill, holeSoft, plateFull, alphaR, rgb] = await Promise.all([
+  const [fill, holeSoft, keep, lowRUp, lowPUp, plateFull, alphaR, rgb] = await Promise.all([
     up(fillSmall, 3),
     up(hole, 1, (s) => s.blur(2)),
+    up(keepSoft, 1),
+    up(lowR, 3),
+    up(lowP, 3),
     sharp(plate).resize(W, H, { fit: "fill", kernel: "lanczos3" }).removeAlpha().raw().toBuffer(),
     gray(raw1(mattes.render).resize(W, H, { fit: "fill", kernel: "lanczos3" })),
     sharp(render).removeAlpha().raw().toBuffer(),
   ]);
-  const hStride = holeSoft.info.channels;
+  const hStride = holeSoft.info.channels, kStride = keep.info.channels;
 
   // backdrop: the plate, with the fill feathered in over the hole
-  const out = Buffer.from(plateFull);
+  const back = Buffer.from(plateFull);
   for (let p = 0; p < W * H; p++) {
     const t = holeSoft.data[p * hStride];
     if (t === 0) continue;
     const o = p * 3;
-    if (t === 255) { out[o] = fill.data[o]; out[o + 1] = fill.data[o + 1]; out[o + 2] = fill.data[o + 2]; continue; }
+    if (t === 255) { back[o] = fill.data[o]; back[o + 1] = fill.data[o + 1]; back[o + 2] = fill.data[o + 2]; continue; }
     const k = t / 255, u = 1 - k;
-    out[o] = Math.round(out[o] * u + fill.data[o] * k);
-    out[o + 1] = Math.round(out[o + 1] * u + fill.data[o + 1] * k);
-    out[o + 2] = Math.round(out[o + 2] * u + fill.data[o + 2] * k);
+    back[o] = Math.round(back[o] * u + fill.data[o] * k);
+    back[o + 1] = Math.round(back[o + 1] * u + fill.data[o + 1] * k);
+    back[o + 2] = Math.round(back[o + 2] * u + fill.data[o + 2] * k);
   }
 
-  // figure over backdrop, moved by shiftX, through the matte's own edge
+  // the render's keep zone, moved by shiftX and re-toned, over the backdrop
+  const out = Buffer.from(back);
   for (let y = 0; y < H; y++) {
     const row = y * W;
     const xStart = Math.max(0, shiftX), xEnd = Math.min(W, W + shiftX);
     for (let x = xStart; x < xEnd; x++) {
       const src = row + (x - shiftX);
-      const a = alphaR[src];
-      if (a === 0) continue;
-      const o = (row + x) * 3, s = src * 3;
-      if (a === 255) { out[o] = rgb[s]; out[o + 1] = rgb[s + 1]; out[o + 2] = rgb[s + 2]; continue; }
-      const k = a / 255, u = 1 - k;
-      out[o] = Math.round(out[o] * u + rgb[s] * k);
-      out[o + 1] = Math.round(out[o + 1] * u + rgb[s + 1] * k);
-      out[o + 2] = Math.round(out[o + 2] * u + rgb[s + 2] * k);
+      const kz = keep.data[src * kStride];
+      if (kz === 0) continue;
+      const dst = row + x, o = dst * 3, s = src * 3;
+      const cw = 1 - alphaR[src] / 255;           // no re-toning on the figure itself
+      const k = kz / 255, u = 1 - k;
+      for (let c = 0; c < 3; c++) {
+        const toned = rgb[s + c] + (lowPUp.data[o + c] - lowRUp.data[s + c]) * cw;
+        out[o + c] = clamp8(toned * k + back[o + c] * u);
+      }
     }
   }
   const buffer = await sharp(out, { raw: { width: W, height: H, channels: 3 } }).jpeg({ quality: 95, mozjpeg: true }).toBuffer();

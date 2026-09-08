@@ -59,3 +59,8 @@ Backup of the pre-engine pipeline: tag `model-maker-v1-nano-banana-2026-09-05`.
   on the crop plate). Full view with the crop is the closer likeness; side is the same either way (profile
   is plate-bound). It also showed the restore's wide-blur fill as a pale aura round the figure — fillHole
   is now a row-wise boundary blend (this commit); verified locally on the pilot's raws, not yet live.
+- David on the live restore: "kind of bad" (mask edge at the boots, shadow gone, pale band). Restore is now
+  a BLEND (this commit): a feathered keep zone round the figure carries the render's own pixels — edges and
+  floor shadow — re-toned to the plate by a low-frequency colour match; the plate's sweep takes over
+  outside it. Plate's model + its foot shadow still lifted (row-wise fill). Verified on the DJ62231 raws
+  locally; live rerun next.
