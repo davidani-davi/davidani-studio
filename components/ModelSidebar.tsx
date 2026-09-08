@@ -173,7 +173,7 @@ const IconSliders = (
 
 /** Outfits the wardrobe is meant to hold; shown dashed until a plate wears them. */
 const WARDROBE_PLAN = {
-  below: ["black trousers", "midi skirt", "denim shorts"],
+  below: ["black trousers", "midi skirt", "denim shorts", "straight jeans", "wide-leg trousers", "mini skirt"],
   above: ["white tee", "black blouse"],
 };
 
