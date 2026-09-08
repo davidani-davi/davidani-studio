@@ -505,6 +505,196 @@
       "low_ok": true,
       "legs_separated": true,
       "hem": "ankle"
+    },
+    {
+      "name": "studio 28",
+      "source_style": "DWT62133",
+      "pose": "standing straight, arms relaxed at sides",
+      "head_pct": 9,
+      "views": [
+        "back",
+        "front",
+        "full",
+        "side"
+      ],
+      "slug": "dwt62133-24-neutral",
+      "face": "vision",
+      "expression": "neutral",
+      "wears": "pants",
+      "low_ok": true,
+      "front_is": "real studio photograph, head replaced with the house AI face (GPT Image 2, masked)",
+      "others_are": "generated from the front plate, same model"
+    },
+    {
+      "name": "studio 29",
+      "source_style": "DWT62133",
+      "pose": "standing straight, arms relaxed at sides",
+      "head_pct": 9,
+      "views": [
+        "back",
+        "front",
+        "full",
+        "side"
+      ],
+      "slug": "dwt62133-24-smile",
+      "face": "vision",
+      "expression": "smile",
+      "wears": "pants",
+      "low_ok": true,
+      "front_is": "real studio photograph, head replaced with the house AI face (GPT Image 2, masked)",
+      "others_are": "generated from the front plate, same model"
+    },
+    {
+      "name": "studio 30",
+      "source_style": "DWT62133",
+      "pose": "standing straight, arms relaxed at sides",
+      "head_pct": 9,
+      "views": [
+        "back",
+        "front",
+        "full",
+        "side"
+      ],
+      "slug": "dwt62133-24-smirk",
+      "face": "vision",
+      "expression": "smirk",
+      "wears": "pants",
+      "low_ok": true,
+      "front_is": "real studio photograph, head replaced with the house AI face (GPT Image 2, masked)",
+      "others_are": "generated from the front plate, same model"
+    },
+    {
+      "name": "studio 31",
+      "source_style": "DWT62133",
+      "pose": "standing straight, arms relaxed at sides",
+      "head_pct": 9,
+      "views": [
+        "back",
+        "front",
+        "full",
+        "side"
+      ],
+      "slug": "dwt62133-24-teeth",
+      "face": "vision",
+      "expression": "teeth",
+      "wears": "pants",
+      "low_ok": true,
+      "front_is": "real studio photograph, head replaced with the house AI face (GPT Image 2, masked)",
+      "others_are": "generated from the front plate, same model"
+    },
+    {
+      "name": "studio 32",
+      "source_style": "DWT62170",
+      "pose": "standing, one arm raised to head, hand in pocket",
+      "head_pct": 10,
+      "views": [
+        "back",
+        "front",
+        "full",
+        "side"
+      ],
+      "slug": "dwt62170-20-neutral",
+      "face": "vision",
+      "expression": "neutral",
+      "wears": "pants",
+      "low_ok": true,
+      "front_is": "real studio photograph, head replaced with the house AI face (GPT Image 2, masked)",
+      "others_are": "generated from the front plate, same model"
+    },
+    {
+      "name": "studio 33",
+      "source_style": "DWT62170",
+      "pose": "standing, one arm raised to head, hand in pocket",
+      "head_pct": 10,
+      "views": [
+        "back",
+        "front",
+        "full",
+        "side"
+      ],
+      "slug": "dwt62170-20-smile",
+      "face": "vision",
+      "expression": "smile",
+      "wears": "pants",
+      "low_ok": true,
+      "front_is": "real studio photograph, head replaced with the house AI face (GPT Image 2, masked)",
+      "others_are": "generated from the front plate, same model"
+    },
+    {
+      "name": "studio 34",
+      "source_style": "DWT62170",
+      "pose": "standing, one arm raised to head, hand in pocket",
+      "head_pct": 10,
+      "views": [
+        "back",
+        "front",
+        "full",
+        "side"
+      ],
+      "slug": "dwt62170-20-teeth",
+      "face": "vision",
+      "expression": "teeth",
+      "wears": "pants",
+      "low_ok": true,
+      "front_is": "real studio photograph, head replaced with the house AI face (GPT Image 2, masked)",
+      "others_are": "generated from the front plate, same model"
+    },
+    {
+      "name": "studio 35",
+      "source_style": "DWT62170",
+      "pose": "standing, weight on one leg, hand in pocket",
+      "head_pct": 10,
+      "views": [
+        "back",
+        "front",
+        "full",
+        "side"
+      ],
+      "slug": "dwt62170-21-neutral",
+      "face": "vision",
+      "expression": "neutral",
+      "wears": "pants",
+      "low_ok": true,
+      "front_is": "real studio photograph, head replaced with the house AI face (GPT Image 2, masked)",
+      "others_are": "generated from the front plate, same model"
+    },
+    {
+      "name": "studio 36",
+      "source_style": "DWT62170",
+      "pose": "standing, weight on one leg, hand in pocket",
+      "head_pct": 10,
+      "views": [
+        "back",
+        "front",
+        "full",
+        "side"
+      ],
+      "slug": "dwt62170-21-smile",
+      "face": "vision",
+      "expression": "smile",
+      "wears": "pants",
+      "low_ok": true,
+      "front_is": "real studio photograph, head replaced with the house AI face (GPT Image 2, masked)",
+      "others_are": "generated from the front plate, same model"
+    },
+    {
+      "name": "studio 37",
+      "source_style": "DWT62170",
+      "pose": "standing, weight on one leg, hand in pocket",
+      "head_pct": 10,
+      "views": [
+        "back",
+        "front",
+        "full",
+        "side"
+      ],
+      "slug": "dwt62170-21-teeth",
+      "face": "vision",
+      "expression": "teeth",
+      "wears": "pants",
+      "low_ok": true,
+      "front_is": "real studio photograph, head replaced with the house AI face (GPT Image 2, masked)",
+      "others_are": "generated from the front plate, same model"
     }
   ],
   "families": {

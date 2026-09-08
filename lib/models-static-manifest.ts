@@ -792,6 +792,328 @@ export const STATIC_HUMAN_MODELS = [
     "lowOk": true
   },
   {
+    "id": "crop 28",
+    "name": "Crop 28",
+    "poses": [
+      {
+        "id": "crop 28",
+        "label": "Crop 28",
+        "publicPath": "/models/crop 28/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 28/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 28/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 28/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true
+  },
+  {
+    "id": "crop 29",
+    "name": "Crop 29",
+    "poses": [
+      {
+        "id": "crop 29",
+        "label": "Crop 29",
+        "publicPath": "/models/crop 29/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 29/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 29/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 29/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true
+  },
+  {
+    "id": "crop 30",
+    "name": "Crop 30",
+    "poses": [
+      {
+        "id": "crop 30",
+        "label": "Crop 30",
+        "publicPath": "/models/crop 30/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 30/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 30/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 30/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true
+  },
+  {
+    "id": "crop 31",
+    "name": "Crop 31",
+    "poses": [
+      {
+        "id": "crop 31",
+        "label": "Crop 31",
+        "publicPath": "/models/crop 31/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 31/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 31/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 31/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true
+  },
+  {
+    "id": "crop 32",
+    "name": "Crop 32",
+    "poses": [
+      {
+        "id": "crop 32",
+        "label": "Crop 32",
+        "publicPath": "/models/crop 32/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 32/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 32/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 32/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true
+  },
+  {
+    "id": "crop 33",
+    "name": "Crop 33",
+    "poses": [
+      {
+        "id": "crop 33",
+        "label": "Crop 33",
+        "publicPath": "/models/crop 33/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 33/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 33/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 33/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true
+  },
+  {
+    "id": "crop 34",
+    "name": "Crop 34",
+    "poses": [
+      {
+        "id": "crop 34",
+        "label": "Crop 34",
+        "publicPath": "/models/crop 34/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 34/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 34/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 34/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true
+  },
+  {
+    "id": "crop 35",
+    "name": "Crop 35",
+    "poses": [
+      {
+        "id": "crop 35",
+        "label": "Crop 35",
+        "publicPath": "/models/crop 35/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 35/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 35/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 35/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true
+  },
+  {
+    "id": "crop 36",
+    "name": "Crop 36",
+    "poses": [
+      {
+        "id": "crop 36",
+        "label": "Crop 36",
+        "publicPath": "/models/crop 36/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 36/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 36/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 36/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true
+  },
+  {
+    "id": "crop 37",
+    "name": "Crop 37",
+    "poses": [
+      {
+        "id": "crop 37",
+        "label": "Crop 37",
+        "publicPath": "/models/crop 37/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 37/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 37/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 37/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true
+  },
+  {
+    "id": "faces",
+    "name": "Faces",
+    "poses": [
+      {
+        "id": "vision face",
+        "label": "Vision Face",
+        "publicPath": "/models/faces/vision-face.png",
+        "filename": "vision-face.png",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "vision-face.png",
+            "publicPath": "/models/faces/vision-face.png"
+          }
+        }
+      },
+      {
+        "id": "vision smile face",
+        "label": "Vision Smile Face",
+        "publicPath": "/models/faces/vision-smile-face.png",
+        "filename": "vision-smile-face.png",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "vision-smile-face.png",
+            "publicPath": "/models/faces/vision-smile-face.png"
+          }
+        }
+      }
+    ]
+  },
+  {
     "id": "low 01",
     "name": "Low 01",
     "poses": [
@@ -1460,6 +1782,256 @@ export const STATIC_HUMAN_MODELS = [
           "side": {
             "filename": "side.jpg",
             "publicPath": "/models/low 27/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true
+  },
+  {
+    "id": "low 28",
+    "name": "Low 28",
+    "poses": [
+      {
+        "id": "low 28",
+        "label": "Low 28",
+        "publicPath": "/models/low 28/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 28/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 28/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true
+  },
+  {
+    "id": "low 29",
+    "name": "Low 29",
+    "poses": [
+      {
+        "id": "low 29",
+        "label": "Low 29",
+        "publicPath": "/models/low 29/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 29/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 29/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true
+  },
+  {
+    "id": "low 30",
+    "name": "Low 30",
+    "poses": [
+      {
+        "id": "low 30",
+        "label": "Low 30",
+        "publicPath": "/models/low 30/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 30/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 30/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true
+  },
+  {
+    "id": "low 31",
+    "name": "Low 31",
+    "poses": [
+      {
+        "id": "low 31",
+        "label": "Low 31",
+        "publicPath": "/models/low 31/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 31/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 31/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true
+  },
+  {
+    "id": "low 32",
+    "name": "Low 32",
+    "poses": [
+      {
+        "id": "low 32",
+        "label": "Low 32",
+        "publicPath": "/models/low 32/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 32/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 32/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true
+  },
+  {
+    "id": "low 33",
+    "name": "Low 33",
+    "poses": [
+      {
+        "id": "low 33",
+        "label": "Low 33",
+        "publicPath": "/models/low 33/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 33/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 33/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true
+  },
+  {
+    "id": "low 34",
+    "name": "Low 34",
+    "poses": [
+      {
+        "id": "low 34",
+        "label": "Low 34",
+        "publicPath": "/models/low 34/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 34/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 34/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true
+  },
+  {
+    "id": "low 35",
+    "name": "Low 35",
+    "poses": [
+      {
+        "id": "low 35",
+        "label": "Low 35",
+        "publicPath": "/models/low 35/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 35/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 35/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true
+  },
+  {
+    "id": "low 36",
+    "name": "Low 36",
+    "poses": [
+      {
+        "id": "low 36",
+        "label": "Low 36",
+        "publicPath": "/models/low 36/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 36/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 36/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true
+  },
+  {
+    "id": "low 37",
+    "name": "Low 37",
+    "poses": [
+      {
+        "id": "low 37",
+        "label": "Low 37",
+        "publicPath": "/models/low 37/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 37/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 37/side.jpg"
           }
         }
       }
@@ -2352,6 +2924,336 @@ export const STATIC_HUMAN_MODELS = [
           "side": {
             "filename": "side.jpg",
             "publicPath": "/models/studio 27/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true
+  },
+  {
+    "id": "studio 28",
+    "name": "Studio 28",
+    "poses": [
+      {
+        "id": "studio 28",
+        "label": "Studio 28",
+        "publicPath": "/models/studio 28/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 28/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 28/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 28/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 28/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true
+  },
+  {
+    "id": "studio 29",
+    "name": "Studio 29",
+    "poses": [
+      {
+        "id": "studio 29",
+        "label": "Studio 29",
+        "publicPath": "/models/studio 29/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 29/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 29/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 29/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 29/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true
+  },
+  {
+    "id": "studio 30",
+    "name": "Studio 30",
+    "poses": [
+      {
+        "id": "studio 30",
+        "label": "Studio 30",
+        "publicPath": "/models/studio 30/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 30/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 30/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 30/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 30/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true
+  },
+  {
+    "id": "studio 31",
+    "name": "Studio 31",
+    "poses": [
+      {
+        "id": "studio 31",
+        "label": "Studio 31",
+        "publicPath": "/models/studio 31/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 31/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 31/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 31/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 31/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true
+  },
+  {
+    "id": "studio 32",
+    "name": "Studio 32",
+    "poses": [
+      {
+        "id": "studio 32",
+        "label": "Studio 32",
+        "publicPath": "/models/studio 32/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 32/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 32/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 32/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 32/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true
+  },
+  {
+    "id": "studio 33",
+    "name": "Studio 33",
+    "poses": [
+      {
+        "id": "studio 33",
+        "label": "Studio 33",
+        "publicPath": "/models/studio 33/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 33/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 33/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 33/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 33/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true
+  },
+  {
+    "id": "studio 34",
+    "name": "Studio 34",
+    "poses": [
+      {
+        "id": "studio 34",
+        "label": "Studio 34",
+        "publicPath": "/models/studio 34/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 34/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 34/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 34/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 34/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true
+  },
+  {
+    "id": "studio 35",
+    "name": "Studio 35",
+    "poses": [
+      {
+        "id": "studio 35",
+        "label": "Studio 35",
+        "publicPath": "/models/studio 35/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 35/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 35/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 35/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 35/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true
+  },
+  {
+    "id": "studio 36",
+    "name": "Studio 36",
+    "poses": [
+      {
+        "id": "studio 36",
+        "label": "Studio 36",
+        "publicPath": "/models/studio 36/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 36/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 36/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 36/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 36/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true
+  },
+  {
+    "id": "studio 37",
+    "name": "Studio 37",
+    "poses": [
+      {
+        "id": "studio 37",
+        "label": "Studio 37",
+        "publicPath": "/models/studio 37/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 37/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 37/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 37/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 37/side.jpg"
           }
         }
       }
