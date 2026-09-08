@@ -31,9 +31,9 @@ export const HOUSE_FACES: Record<HouseFace, { label: string }> = {
   celine: { label: "Celine" },
 };
 
-/** 2:3 at the size the probe verified. 2048×3072 is unverified on 2.5 (the
- *  probe hit a locked fal account before it could tell); raise it when it is. */
-export const NO_PLATE_SIZE = { width: 1024, height: 1536 } as const;
+/** 2:3 at GPT native size (GPT_NATIVE_SIZE). 1024×1536 was the probe size; 2048×3072
+ *  went live 2026-09-08 on David's ask — see the handoff for the timing. */
+export const NO_PLATE_SIZE = { width: 2048, height: 3072 } as const;
 
 /** "vision", "celine", or the picker's "face:vision" form. */
 export function houseFaceOf(v: unknown): HouseFace | null {
