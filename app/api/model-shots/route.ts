@@ -2,7 +2,7 @@ import { NextResponse, after } from "next/server";
 import { readShotTask, writeShotTask } from "@/lib/shot-tasks";
 import { POST as analyzeModel } from "../analyze-model/route";
 import { POST as generateModel } from "../generate-model/route";
-import { listAllHumanModels, type PresetView } from "@/lib/models-registry";
+import { listAllHumanModels, plateTagStats, type PresetView } from "@/lib/models-registry";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth";
 import {
   MULTI_MODEL_VIEWS,
@@ -131,6 +131,7 @@ export async function GET(req: Request) {
   return json({
     ok: true,
     views: MULTI_MODEL_VIEWS,
+    plateTags: plateTagStats(),
     // the crop/low families are the house plates re-framed, never picked by
     // hand — but their fronts ride along as previews, so a picker can show the
     // framing a category will actually shoot on (waist-down for a bottom)

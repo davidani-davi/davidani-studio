@@ -402,6 +402,14 @@ export function listHumanModels(): HumanModel[] {
   return tagged.length > 0 ? tagged : STATIC_HUMAN_MODELS;
 }
 
+/** What the deployed function knows about plates.json — surfaced by GET
+ *  /api/model-shots so a stale bundle can be told from a broken merge. */
+export function plateTagStats(): { rows: number; autoFalse: number; sample?: PlateRow } {
+  const rows = readPlateWear(path.join(process.cwd(), "public", "models"));
+  return { rows: rows.length, autoFalse: rows.filter((r) => r.auto === false).length,
+           sample: rows.find((r) => /^studio\s*38$/i.test(String(r.name || ""))) };
+}
+
 function readPlateWear(modelsDir: string): PlateRow[] {
   const bundled = (platesDoc as { plates?: PlateRow[] })?.plates;
   if (Array.isArray(bundled) && bundled.length) return bundled;
