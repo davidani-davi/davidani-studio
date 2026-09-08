@@ -19,6 +19,11 @@ import path from "node:path";
 import { uploadToFal } from "./fal";
 import { STATIC_HUMAN_MODELS } from "./models-static-manifest";
 import { mergePlateWear, type PlateRow } from "./plate-wear";
+// Bundled at build time, so the deployed function always carries the
+// plates.json of the commit it was built from. The fs read below is the
+// fallback: on Vercel 2026-09-08 the traced copy lagged the repo (studio 38-79
+// came back autoPool:true after plates.json had auto:false for a deploy or two).
+import platesDoc from "../public/models/plates.json";
 import { listUserModels } from "./user-assets";
 
 export interface ModelPose {
@@ -398,6 +403,8 @@ export function listHumanModels(): HumanModel[] {
 }
 
 function readPlateWear(modelsDir: string): PlateRow[] {
+  const bundled = (platesDoc as { plates?: PlateRow[] })?.plates;
+  if (Array.isArray(bundled) && bundled.length) return bundled;
   try {
     const doc = JSON.parse(fs.readFileSync(path.join(modelsDir, "plates.json"), "utf8"));
     return Array.isArray(doc?.plates) ? doc.plates : [];
