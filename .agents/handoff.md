@@ -55,3 +55,7 @@ Backup of the pre-engine pipeline: tag `model-maker-v1-nano-banana-2026-09-05`.
   "SECOND-TO-LAST" and adds FACE_RULE. Response: `faceAnchored`, `face: {applied, box, method}`;
   `faceAnchor: false` in the body opts out. Tests lib/face-anchor.test.ts; 703 tests green.
 - Pilot: scratchpad pilot.py shoots front, then side/full with and without the crop on one style.
+- Pilot DJ62231 / studio 03 (2026-09-08 15:16): all 5 views ok, face crop applied (share method, box 1229²
+  on the crop plate). Full view with the crop is the closer likeness; side is the same either way (profile
+  is plate-bound). It also showed the restore's wide-blur fill as a pale aura round the figure — fillHole
+  is now a row-wise boundary blend (this commit); verified locally on the pilot's raws, not yet live.

@@ -98,35 +98,86 @@ export function grow(m: Uint8Array, width: number, height: number, r: number): U
 }
 
 /**
- * The sweep continued under a hole: a normalised box blur (two passes, so it
- * is close to Gaussian) of the pixels outside the hole only, which fills the
- * hole with what the sweep around it averages to. The radius is a tenth of
- * the height — wide enough to close a figure, narrow enough to keep the
- * sweep's top-to-floor gradient.
+ * The sweep continued under a hole, row by row: each run of hole pixels is
+ * a straight blend from the sweep just left of it to the sweep just right
+ * of it, then a small blur inside the hole hides the row seams.
+ *
+ * The first version averaged the sweep around the hole with a wide blur
+ * (a tenth of the height). On the first live run (DJ62231, 2026-09-08) that
+ * read as a pale aura around the figure: the plate's sweep is darkest right
+ * beside its model (the contact shadow), and a wide average is lighter than
+ * that, so wherever the render's figure was narrower than the plate's the
+ * fill showed 5 levels light. A row blend keeps each row's own tone.
  */
 export function fillHole(rgb: Uint8Array | Buffer, hole: Uint8Array, width: number, height: number): Uint8Array {
   const n = width * height;
-  const acc = new Float32Array(n * 3);
-  const wgt = new Float32Array(n);
-  for (let p = 0; p < n; p++) {
-    if (hole[p]) continue;
-    wgt[p] = 1;
-    acc[p * 3] = rgb[p * 3];
-    acc[p * 3 + 1] = rgb[p * 3 + 1];
-    acc[p * 3 + 2] = rgb[p * 3 + 2];
+  const out = Uint8Array.from(rgb);
+  const done = new Uint8Array(n); // hole pixels the row pass filled
+  const TAP = 6;
+  const sample = (y: number, from: number, step: number): [number, number, number] | null => {
+    let r = 0, g = 0, b = 0, k = 0;
+    for (let x = from, i = 0; i < TAP && x >= 0 && x < width; x += step, i++) {
+      const p = y * width + x;
+      if (hole[p]) break;
+      r += rgb[p * 3]; g += rgb[p * 3 + 1]; b += rgb[p * 3 + 2]; k++;
+    }
+    return k ? [r / k, g / k, b / k] : null;
+  };
+  // Row pass: every run of hole pixels is a straight blend from the sweep
+  // just left of it to the sweep just right of it, so each row keeps its
+  // own tone — the shadow beside the plate's model included.
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width;) {
+      if (!hole[y * width + x]) { x++; continue; }
+      const x0 = x;
+      while (x < width && hole[y * width + x]) x++;
+      const x1 = x - 1;
+      const L = sample(y, x0 - 1, -1), R = sample(y, x1 + 1, 1);
+      if (!L && !R) continue;
+      const a = L || R!, b = R || L!;
+      const span = Math.max(1, x1 - x0 + 2);
+      for (let xx = x0; xx <= x1; xx++) {
+        const t = L && R ? (xx - x0 + 1) / span : 0;
+        const p = y * width + xx;
+        out[p * 3] = clamp8(a[0] + (b[0] - a[0]) * t);
+        out[p * 3 + 1] = clamp8(a[1] + (b[1] - a[1]) * t);
+        out[p * 3 + 2] = clamp8(a[2] + (b[2] - a[2]) * t);
+        done[p] = 1;
+      }
+    }
   }
-  const r = Math.max(2, Math.round(height / 10));
-  let a: Float32Array = acc, w: Float32Array = wgt;
-  for (let pass = 0; pass < 2; pass++) {
-    a = boxBlur(a, width, height, 3, r);
-    w = boxBlur(w, width, height, 1, r);
+  // Column pass for runs that reached both sides of the frame: blend
+  // between the nearest settled rows above and below.
+  for (let x = 0; x < width; x++) {
+    for (let y = 0; y < height;) {
+      const p = y * width + x;
+      if (!hole[p] || done[p]) { y++; continue; }
+      const y0 = y;
+      while (y < height && hole[y * width + x] && !done[y * width + x]) y++;
+      const y1 = y - 1;
+      const up = y0 > 0 ? (y0 - 1) * width + x : -1, dn = y1 + 1 < height ? (y1 + 1) * width + x : -1;
+      if (up < 0 && dn < 0) continue;
+      const a = up >= 0 ? up : dn, b = dn >= 0 ? dn : up;
+      const span = Math.max(1, y1 - y0 + 2);
+      for (let yy = y0; yy <= y1; yy++) {
+        const t = up >= 0 && dn >= 0 ? (yy - y0 + 1) / span : 0;
+        const q = yy * width + x;
+        for (let c = 0; c < 3; c++) out[q * 3 + c] = clamp8(out[a * 3 + c] + (out[b * 3 + c] - out[a * 3 + c]) * t);
+      }
+    }
   }
-  const out = new Uint8Array(n * 3);
+  // A small blur inside the hole only, so the rows' independent blends do
+  // not read as streaks; the boundary is continuous already, so the blur
+  // moves no tone across it.
+  const r = Math.max(1, Math.round(height / 80));
+  const f = new Float32Array(n * 3);
+  for (let i = 0; i < n * 3; i++) f[i] = out[i];
+  const blurred = boxBlur(f, width, height, 3, r);
   for (let p = 0; p < n; p++) {
-    const k = w[p] > 1e-6 ? 1 / w[p] : 0;
-    out[p * 3] = clamp8(a[p * 3] * k);
-    out[p * 3 + 1] = clamp8(a[p * 3 + 1] * k);
-    out[p * 3 + 2] = clamp8(a[p * 3 + 2] * k);
+    if (!hole[p]) continue;
+    out[p * 3] = clamp8(blurred[p * 3]);
+    out[p * 3 + 1] = clamp8(blurred[p * 3 + 1]);
+    out[p * 3 + 2] = clamp8(blurred[p * 3 + 2]);
   }
   return out;
 }
