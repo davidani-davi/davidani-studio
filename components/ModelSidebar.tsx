@@ -174,7 +174,7 @@ const IconSliders = (
 /** Outfits the wardrobe is meant to hold; shown dashed until a plate wears them. */
 const WARDROBE_PLAN = {
   below: ["black trousers", "midi skirt", "denim shorts", "straight jeans", "wide-leg trousers", "mini skirt"],
-  above: ["white tee", "black blouse"],
+  above: ["white tee", "black blouse", "black tank", "striped tee", "cream knit"],
 };
 
 export default function ModelSidebar(p: Props) {

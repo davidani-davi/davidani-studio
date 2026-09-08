@@ -2097,6 +2097,330 @@ export const STATIC_HUMAN_MODELS = [
     "outfitBelow": "wide-leg trousers"
   },
   {
+    "id": "crop 62",
+    "name": "Crop 62",
+    "poses": [
+      {
+        "id": "crop 62",
+        "label": "Crop 62",
+        "publicPath": "/models/crop 62/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 62/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 62/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 62/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62133-24-black-tank-neutral",
+    "poseKey": "vision-dwt62133-24-black-tank",
+    "outfitAbove": "black tank",
+    "outfitBelow": "patchwork wide-leg chambray pants"
+  },
+  {
+    "id": "crop 63",
+    "name": "Crop 63",
+    "poses": [
+      {
+        "id": "crop 63",
+        "label": "Crop 63",
+        "publicPath": "/models/crop 63/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 63/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 63/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 63/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62133-24-cream-knit-neutral",
+    "poseKey": "vision-dwt62133-24-cream-knit",
+    "outfitAbove": "cream knit",
+    "outfitBelow": "patchwork wide-leg chambray pants"
+  },
+  {
+    "id": "crop 64",
+    "name": "Crop 64",
+    "poses": [
+      {
+        "id": "crop 64",
+        "label": "Crop 64",
+        "publicPath": "/models/crop 64/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 64/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 64/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 64/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62133-24-striped-tee-neutral",
+    "poseKey": "vision-dwt62133-24-striped-tee",
+    "outfitAbove": "striped tee",
+    "outfitBelow": "patchwork wide-leg chambray pants"
+  },
+  {
+    "id": "crop 65",
+    "name": "Crop 65",
+    "poses": [
+      {
+        "id": "crop 65",
+        "label": "Crop 65",
+        "publicPath": "/models/crop 65/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 65/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 65/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 65/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, one arm raised to head, hand in pocket",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62170-20-black-tank-neutral",
+    "poseKey": "vision-dwt62170-20-black-tank",
+    "outfitAbove": "black tank",
+    "outfitBelow": "polka-dot barrel jeans"
+  },
+  {
+    "id": "crop 66",
+    "name": "Crop 66",
+    "poses": [
+      {
+        "id": "crop 66",
+        "label": "Crop 66",
+        "publicPath": "/models/crop 66/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 66/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 66/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 66/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, one arm raised to head, hand in pocket",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62170-20-cream-knit-neutral",
+    "poseKey": "vision-dwt62170-20-cream-knit",
+    "outfitAbove": "cream knit",
+    "outfitBelow": "polka-dot barrel jeans"
+  },
+  {
+    "id": "crop 67",
+    "name": "Crop 67",
+    "poses": [
+      {
+        "id": "crop 67",
+        "label": "Crop 67",
+        "publicPath": "/models/crop 67/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 67/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 67/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 67/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, one arm raised to head, hand in pocket",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62170-20-striped-tee-neutral",
+    "poseKey": "vision-dwt62170-20-striped-tee",
+    "outfitAbove": "striped tee",
+    "outfitBelow": "polka-dot barrel jeans"
+  },
+  {
+    "id": "crop 68",
+    "name": "Crop 68",
+    "poses": [
+      {
+        "id": "crop 68",
+        "label": "Crop 68",
+        "publicPath": "/models/crop 68/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 68/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 68/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 68/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, weight on one leg, hand in pocket",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62170-21-black-tank-neutral",
+    "poseKey": "vision-dwt62170-21-black-tank",
+    "outfitAbove": "black tank",
+    "outfitBelow": "polka-dot barrel jeans"
+  },
+  {
+    "id": "crop 69",
+    "name": "Crop 69",
+    "poses": [
+      {
+        "id": "crop 69",
+        "label": "Crop 69",
+        "publicPath": "/models/crop 69/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 69/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 69/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 69/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, weight on one leg, hand in pocket",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62170-21-cream-knit-neutral",
+    "poseKey": "vision-dwt62170-21-cream-knit",
+    "outfitAbove": "cream knit",
+    "outfitBelow": "polka-dot barrel jeans"
+  },
+  {
+    "id": "crop 70",
+    "name": "Crop 70",
+    "poses": [
+      {
+        "id": "crop 70",
+        "label": "Crop 70",
+        "publicPath": "/models/crop 70/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 70/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 70/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 70/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, weight on one leg, hand in pocket",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62170-21-striped-tee-neutral",
+    "poseKey": "vision-dwt62170-21-striped-tee",
+    "outfitAbove": "striped tee",
+    "outfitBelow": "polka-dot barrel jeans"
+  },
+  {
     "id": "faces",
     "name": "Faces",
     "poses": [
@@ -3972,6 +4296,294 @@ export const STATIC_HUMAN_MODELS = [
     "poseKey": "vision-dwt62170-21-wide-leg-trousers",
     "outfitAbove": "tan rodeo graphic sweater",
     "outfitBelow": "wide-leg trousers"
+  },
+  {
+    "id": "low 62",
+    "name": "Low 62",
+    "poses": [
+      {
+        "id": "low 62",
+        "label": "Low 62",
+        "publicPath": "/models/low 62/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 62/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 62/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62133-24-black-tank-neutral",
+    "poseKey": "vision-dwt62133-24-black-tank",
+    "outfitAbove": "black tank",
+    "outfitBelow": "patchwork wide-leg chambray pants"
+  },
+  {
+    "id": "low 63",
+    "name": "Low 63",
+    "poses": [
+      {
+        "id": "low 63",
+        "label": "Low 63",
+        "publicPath": "/models/low 63/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 63/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 63/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62133-24-cream-knit-neutral",
+    "poseKey": "vision-dwt62133-24-cream-knit",
+    "outfitAbove": "cream knit",
+    "outfitBelow": "patchwork wide-leg chambray pants"
+  },
+  {
+    "id": "low 64",
+    "name": "Low 64",
+    "poses": [
+      {
+        "id": "low 64",
+        "label": "Low 64",
+        "publicPath": "/models/low 64/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 64/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 64/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62133-24-striped-tee-neutral",
+    "poseKey": "vision-dwt62133-24-striped-tee",
+    "outfitAbove": "striped tee",
+    "outfitBelow": "patchwork wide-leg chambray pants"
+  },
+  {
+    "id": "low 65",
+    "name": "Low 65",
+    "poses": [
+      {
+        "id": "low 65",
+        "label": "Low 65",
+        "publicPath": "/models/low 65/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 65/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 65/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, one arm raised to head, hand in pocket",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62170-20-black-tank-neutral",
+    "poseKey": "vision-dwt62170-20-black-tank",
+    "outfitAbove": "black tank",
+    "outfitBelow": "polka-dot barrel jeans"
+  },
+  {
+    "id": "low 66",
+    "name": "Low 66",
+    "poses": [
+      {
+        "id": "low 66",
+        "label": "Low 66",
+        "publicPath": "/models/low 66/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 66/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 66/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, one arm raised to head, hand in pocket",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62170-20-cream-knit-neutral",
+    "poseKey": "vision-dwt62170-20-cream-knit",
+    "outfitAbove": "cream knit",
+    "outfitBelow": "polka-dot barrel jeans"
+  },
+  {
+    "id": "low 67",
+    "name": "Low 67",
+    "poses": [
+      {
+        "id": "low 67",
+        "label": "Low 67",
+        "publicPath": "/models/low 67/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 67/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 67/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, one arm raised to head, hand in pocket",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62170-20-striped-tee-neutral",
+    "poseKey": "vision-dwt62170-20-striped-tee",
+    "outfitAbove": "striped tee",
+    "outfitBelow": "polka-dot barrel jeans"
+  },
+  {
+    "id": "low 68",
+    "name": "Low 68",
+    "poses": [
+      {
+        "id": "low 68",
+        "label": "Low 68",
+        "publicPath": "/models/low 68/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 68/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 68/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, weight on one leg, hand in pocket",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62170-21-black-tank-neutral",
+    "poseKey": "vision-dwt62170-21-black-tank",
+    "outfitAbove": "black tank",
+    "outfitBelow": "polka-dot barrel jeans"
+  },
+  {
+    "id": "low 69",
+    "name": "Low 69",
+    "poses": [
+      {
+        "id": "low 69",
+        "label": "Low 69",
+        "publicPath": "/models/low 69/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 69/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 69/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, weight on one leg, hand in pocket",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62170-21-cream-knit-neutral",
+    "poseKey": "vision-dwt62170-21-cream-knit",
+    "outfitAbove": "cream knit",
+    "outfitBelow": "polka-dot barrel jeans"
+  },
+  {
+    "id": "low 70",
+    "name": "Low 70",
+    "poses": [
+      {
+        "id": "low 70",
+        "label": "Low 70",
+        "publicPath": "/models/low 70/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 70/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 70/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, weight on one leg, hand in pocket",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62170-21-striped-tee-neutral",
+    "poseKey": "vision-dwt62170-21-striped-tee",
+    "outfitAbove": "striped tee",
+    "outfitBelow": "polka-dot barrel jeans"
   },
   {
     "id": "studio 01",
@@ -6305,5 +6917,365 @@ export const STATIC_HUMAN_MODELS = [
     "poseKey": "vision-dwt62170-21-wide-leg-trousers",
     "outfitAbove": "tan rodeo graphic sweater",
     "outfitBelow": "wide-leg trousers"
+  },
+  {
+    "id": "studio 62",
+    "name": "Studio 62",
+    "poses": [
+      {
+        "id": "studio 62",
+        "label": "Studio 62",
+        "publicPath": "/models/studio 62/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 62/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 62/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 62/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 62/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62133-24-black-tank-neutral",
+    "poseKey": "vision-dwt62133-24-black-tank",
+    "outfitAbove": "black tank",
+    "outfitBelow": "patchwork wide-leg chambray pants"
+  },
+  {
+    "id": "studio 63",
+    "name": "Studio 63",
+    "poses": [
+      {
+        "id": "studio 63",
+        "label": "Studio 63",
+        "publicPath": "/models/studio 63/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 63/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 63/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 63/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 63/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62133-24-cream-knit-neutral",
+    "poseKey": "vision-dwt62133-24-cream-knit",
+    "outfitAbove": "cream knit",
+    "outfitBelow": "patchwork wide-leg chambray pants"
+  },
+  {
+    "id": "studio 64",
+    "name": "Studio 64",
+    "poses": [
+      {
+        "id": "studio 64",
+        "label": "Studio 64",
+        "publicPath": "/models/studio 64/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 64/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 64/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 64/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 64/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62133-24-striped-tee-neutral",
+    "poseKey": "vision-dwt62133-24-striped-tee",
+    "outfitAbove": "striped tee",
+    "outfitBelow": "patchwork wide-leg chambray pants"
+  },
+  {
+    "id": "studio 65",
+    "name": "Studio 65",
+    "poses": [
+      {
+        "id": "studio 65",
+        "label": "Studio 65",
+        "publicPath": "/models/studio 65/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 65/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 65/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 65/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 65/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, one arm raised to head, hand in pocket",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62170-20-black-tank-neutral",
+    "poseKey": "vision-dwt62170-20-black-tank",
+    "outfitAbove": "black tank",
+    "outfitBelow": "polka-dot barrel jeans"
+  },
+  {
+    "id": "studio 66",
+    "name": "Studio 66",
+    "poses": [
+      {
+        "id": "studio 66",
+        "label": "Studio 66",
+        "publicPath": "/models/studio 66/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 66/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 66/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 66/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 66/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, one arm raised to head, hand in pocket",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62170-20-cream-knit-neutral",
+    "poseKey": "vision-dwt62170-20-cream-knit",
+    "outfitAbove": "cream knit",
+    "outfitBelow": "polka-dot barrel jeans"
+  },
+  {
+    "id": "studio 67",
+    "name": "Studio 67",
+    "poses": [
+      {
+        "id": "studio 67",
+        "label": "Studio 67",
+        "publicPath": "/models/studio 67/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 67/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 67/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 67/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 67/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, one arm raised to head, hand in pocket",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62170-20-striped-tee-neutral",
+    "poseKey": "vision-dwt62170-20-striped-tee",
+    "outfitAbove": "striped tee",
+    "outfitBelow": "polka-dot barrel jeans"
+  },
+  {
+    "id": "studio 68",
+    "name": "Studio 68",
+    "poses": [
+      {
+        "id": "studio 68",
+        "label": "Studio 68",
+        "publicPath": "/models/studio 68/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 68/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 68/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 68/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 68/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, weight on one leg, hand in pocket",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62170-21-black-tank-neutral",
+    "poseKey": "vision-dwt62170-21-black-tank",
+    "outfitAbove": "black tank",
+    "outfitBelow": "polka-dot barrel jeans"
+  },
+  {
+    "id": "studio 69",
+    "name": "Studio 69",
+    "poses": [
+      {
+        "id": "studio 69",
+        "label": "Studio 69",
+        "publicPath": "/models/studio 69/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 69/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 69/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 69/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 69/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, weight on one leg, hand in pocket",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62170-21-cream-knit-neutral",
+    "poseKey": "vision-dwt62170-21-cream-knit",
+    "outfitAbove": "cream knit",
+    "outfitBelow": "polka-dot barrel jeans"
+  },
+  {
+    "id": "studio 70",
+    "name": "Studio 70",
+    "poses": [
+      {
+        "id": "studio 70",
+        "label": "Studio 70",
+        "publicPath": "/models/studio 70/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 70/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 70/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 70/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 70/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, weight on one leg, hand in pocket",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "vision-dwt62170-21-striped-tee-neutral",
+    "poseKey": "vision-dwt62170-21-striped-tee",
+    "outfitAbove": "striped tee",
+    "outfitBelow": "polka-dot barrel jeans"
   }
 ] as unknown as HumanModel[];
