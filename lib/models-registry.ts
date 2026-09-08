@@ -18,7 +18,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { uploadToFal } from "./fal";
 import { STATIC_HUMAN_MODELS } from "./models-static-manifest";
-import { mergePlateWear } from "./plate-wear";
+import { mergePlateWear, type PlateRow } from "./plate-wear";
 import { listUserModels } from "./user-assets";
 
 export interface ModelPose {
@@ -65,6 +65,16 @@ export interface HumanModel {
   /** Leg silhouette the plate was photographed in (plates.json `silhouette`,
    *  e.g. "barrel" from DP67305) — lib/plate-wear.ts silhouetteOf. */
   silhouette?: string;
+  /** House character plates (plates.json `face` / `expression` / `slug`) and
+   *  the outfit descriptors the wardrobe picker files them under —
+   *  lib/plate-wear.ts wardrobeGroups. */
+  character?: string;
+  expression?: string;
+  slug?: string;
+  poseKey?: string;
+  pose?: string;
+  outfitAbove?: string;
+  outfitBelow?: string;
 }
 
 const IMAGE_EXTS = new Set(["png", "jpg", "jpeg", "webp"]);
@@ -384,7 +394,7 @@ export function listHumanModels(): HumanModel[] {
   return tagged.length > 0 ? tagged : STATIC_HUMAN_MODELS;
 }
 
-function readPlateWear(modelsDir: string): Array<{ name?: string; wears?: string; low_ok?: boolean; silhouette?: string }> {
+function readPlateWear(modelsDir: string): PlateRow[] {
   try {
     const doc = JSON.parse(fs.readFileSync(path.join(modelsDir, "plates.json"), "utf8"));
     return Array.isArray(doc?.plates) ? doc.plates : [];

@@ -10,6 +10,7 @@ import { resizeIfNeeded } from "@/lib/image-resize";
 // must never end up in the client bundle. Type-only imports are erased at
 // compile time.
 import type { HumanModel, ModelPose, PresetView } from "@/lib/models-registry";
+import { outfitFor, wardrobeGroups, wardrobeHalf } from "@/lib/plate-wear";
 import ImageLightbox, { ZoomButton } from "./ImageLightbox";
 
 interface Props {
@@ -170,7 +171,15 @@ const IconSliders = (
 
 /* ---------- Component ---------- */
 
+/** Outfits the wardrobe is meant to hold; shown dashed until a plate wears them. */
+const WARDROBE_PLAN = {
+  below: ["black trousers", "midi skirt", "denim shorts"],
+  above: ["white tee", "black blouse"],
+};
+
 export default function ModelSidebar(p: Props) {
+  // Outfit chip the Vision block is filtered by (null = all looks).
+  const [wardrobeFilter, setWardrobeFilter] = useState<string | null>(null);
   const [outputOpen, setOutputOpen] = useState(false);
   const [previewSrc, setPreviewSrc] = useState<string | null>(null);
   const [draggingUploads, setDraggingUploads] = useState(false);
@@ -488,13 +497,149 @@ export default function ModelSidebar(p: Props) {
             </p>
           )}
           {(() => {
+            // The house character (Vision): one card per pose × outfit,
+            // filtered by what she wears on the half the product does not
+            // replace, with the expression as a toggle — David's picking
+            // habit is "which bottom goes with this top", not "which plate".
+            const groups = wardrobeGroups(p.humanModels);
+            if (groups.length === 0) return null;
+            const half = wardrobeHalf(p.styleNumber);
+            const outfits = [...new Set(groups.map((g) => outfitFor(g, half)).filter(Boolean))];
+            const planned = (half === "above" ? WARDROBE_PLAN.above : WARDROBE_PLAN.below).filter(
+              (o) => !outfits.includes(o)
+            );
+            const selectedGroup =
+              groups.find((g) => g.plates.some((m) => m.id === p.selectedHumanModelId)) ?? null;
+            const selectedExpr =
+              selectedGroup?.plates.find((m) => m.id === p.selectedHumanModelId)?.expression ?? "neutral";
+            const visible = groups.filter((g) => !wardrobeFilter || outfitFor(g, half) === wardrobeFilter);
+            const pick = (g: (typeof groups)[number], expr: string) => {
+              const m = g.plates.find((x) => x.expression === expr) ?? g.plates[0];
+              if (m) p.onHumanModelChange(m.id);
+            };
+            return (
+              <div className="space-y-2 rounded-lg border border-neutral-200 bg-neutral-50 p-2.5">
+                <div className="flex items-center gap-2 px-0.5">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-neutral-500">
+                    Vision · house model
+                  </span>
+                  <span className="h-px flex-1 bg-neutral-200" />
+                  <span className="text-[10px] text-neutral-400">{groups.length} looks</span>
+                </div>
+                {half && (
+                  <div>
+                    <p className="mb-1 text-[10px] text-neutral-500">
+                      {half === "above" ? "She wears above" : "She wears below"}
+                      {p.styleNumber.trim() ? ` · ${p.styleNumber.trim()}` : ""}
+                    </p>
+                    <div className="flex flex-wrap gap-1">
+                      <button
+                        type="button"
+                        onClick={() => setWardrobeFilter(null)}
+                        className={`rounded-md border px-1.5 py-0.5 text-[10px] ${
+                          !wardrobeFilter ? "border-neutral-800 bg-neutral-800 text-white" : "border-neutral-200 bg-white text-neutral-600"
+                        }`}
+                      >
+                        All {groups.length}
+                      </button>
+                      {outfits.map((o) => (
+                        <button
+                          key={o}
+                          type="button"
+                          onClick={() => setWardrobeFilter(o === wardrobeFilter ? null : o)}
+                          className={`rounded-md border px-1.5 py-0.5 text-[10px] ${
+                            wardrobeFilter === o ? "border-neutral-800 bg-neutral-800 text-white" : "border-neutral-200 bg-white text-neutral-600"
+                          }`}
+                        >
+                          {o} {groups.filter((g) => outfitFor(g, half) === o).length}
+                        </button>
+                      ))}
+                      {planned.map((o) => (
+                        <span
+                          key={o}
+                          title="Not rendered yet"
+                          className="rounded-md border border-dashed border-neutral-300 px-1.5 py-0.5 text-[10px] text-neutral-400"
+                        >
+                          {o}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <div className="grid grid-cols-2 gap-2">
+                  {visible.map((g) => {
+                    const active = g === selectedGroup;
+                    const lead = g.plates[0];
+                    const thumb = lead?.poses[0]?.views?.front || lead?.poses[0]?.views?.full;
+                    return (
+                      <div
+                        key={g.key}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => pick(g, selectedExpr)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            pick(g, selectedExpr);
+                          }
+                        }}
+                        className={`group flex min-h-[60px] cursor-pointer items-center gap-2 rounded-lg border p-2 text-left transition ${
+                          active
+                            ? "border-brand-500 bg-brand-50 text-brand-700 shadow-sm"
+                            : "border-neutral-200 bg-white text-neutral-700 hover:border-neutral-400 hover:bg-neutral-50"
+                        }`}
+                      >
+                        <span className="relative h-12 w-9 shrink-0 overflow-hidden rounded-md border border-neutral-200 bg-neutral-100">
+                          {thumb ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={thumb.publicPath} alt="" className="h-full w-full object-cover" />
+                          ) : null}
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block truncate text-xs font-semibold">
+                            {outfitFor(g, half) || g.outfitBelow || lead?.name}
+                          </span>
+                          <span className="block truncate text-[10px] text-neutral-500">{g.pose}</span>
+                          <span className="block truncate text-[10px] text-neutral-400">
+                            {half === "above" ? g.outfitBelow : g.outfitAbove}
+                          </span>
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+                {selectedGroup && selectedGroup.plates.length > 1 && (
+                  <div className="flex flex-wrap items-center gap-1">
+                    <span className="mr-1 text-[10px] text-neutral-500">Expression</span>
+                    {selectedGroup.plates.map((m) => (
+                      <button
+                        key={m.id}
+                        type="button"
+                        onClick={() => p.onHumanModelChange(m.id)}
+                        className={`rounded-md border px-1.5 py-0.5 text-[10px] ${
+                          m.id === p.selectedHumanModelId
+                            ? "border-neutral-800 bg-neutral-800 text-white"
+                            : "border-neutral-200 bg-white text-neutral-600"
+                        }`}
+                      >
+                        {m.expression || m.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+          {(() => {
             // Bucket models by family prefix while preserving the registry's
             // existing sort order. The prefix is everything before the first
             // numeric token, lowercased and trimmed (e.g. "celine 1" → "celine",
-            // "pants 2" → "pants", "sydney" → "sydney").
+            // "pants 2" → "pants", "sydney" → "sydney"). House-character
+            // plates live in the Vision block above.
             const familyOrder: string[] = [];
             const buckets = new Map<string, typeof p.humanModels>();
             for (const m of p.humanModels) {
+              if (m.character) continue;
               const family = m.name.replace(/\s*\d+\s*$/, "").trim() || m.name;
               if (!buckets.has(family)) {
                 buckets.set(family, []);

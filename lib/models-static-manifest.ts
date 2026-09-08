@@ -34,7 +34,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing, one hand behind back, weight slightly shifted",
+    "outfitAbove": "navy notch-neck knit tee",
+    "outfitBelow": "navy wide-leg sweatpants"
   },
   {
     "id": "crop 02",
@@ -63,7 +66,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing side-on, weight even, arms relaxed down",
+    "outfitAbove": "leopard star print sweatshirt",
+    "outfitBelow": "leopard star wide-leg pants"
   },
   {
     "id": "crop 03",
@@ -92,7 +98,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides, feet apart",
+    "outfitAbove": "beige textured hooded button-up",
+    "outfitBelow": "cream wide-leg trousers"
   },
   {
     "id": "crop 04",
@@ -121,7 +130,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides, feet apart",
+    "outfitAbove": "leopard print bomber jacket",
+    "outfitBelow": "heather grey wide-leg sweatpants"
   },
   {
     "id": "crop 05",
@@ -150,7 +162,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing straight, both thumbs hooked in front pockets",
+    "outfitAbove": "ivory ribbed turtleneck sweater",
+    "outfitBelow": "brown plaid barrel trousers"
   },
   {
     "id": "crop 06",
@@ -179,7 +194,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing straight, one hand in pocket",
+    "outfitAbove": "distressed cable-knit sweater",
+    "outfitBelow": "acid-wash wide-leg jeans"
   },
   {
     "id": "crop 07",
@@ -208,7 +226,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "shorts",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides, feet apart",
+    "outfitAbove": "striped square-neck tank top",
+    "outfitBelow": "multicolor striped linen shorts"
   },
   {
     "id": "crop 08",
@@ -237,7 +258,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "skirt",
-    "lowOk": false
+    "lowOk": false,
+    "pose": "standing upright, arms relaxed at sides",
+    "outfitAbove": "yellow-blue striped cardigan",
+    "outfitBelow": "ivory flowy maxi skirt"
   },
   {
     "id": "crop 09",
@@ -266,7 +290,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing upright, hands in pockets, feet slightly apart",
+    "outfitAbove": "black unicorn-print cardigan",
+    "outfitBelow": "polka-dot wide-leg trousers"
   },
   {
     "id": "crop 10",
@@ -295,7 +322,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides",
+    "outfitAbove": "taupe turtleneck sweater",
+    "outfitBelow": "patchwork wide-leg jeans"
   },
   {
     "id": "crop 11",
@@ -324,7 +354,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing straight, arms at sides, feet slightly apart",
+    "outfitAbove": "distressed cable-knit sweater",
+    "outfitBelow": "acid-wash wide-leg jeans"
   },
   {
     "id": "crop 12",
@@ -353,7 +386,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "skirt",
-    "lowOk": false
+    "lowOk": false,
+    "pose": "standing relaxed, hands clasped at waist, legs crossed",
+    "outfitAbove": "red striped crewneck sweater",
+    "outfitBelow": "white eyelet ruffle miniskirt"
   },
   {
     "id": "crop 13",
@@ -382,7 +418,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides",
+    "outfitAbove": "taupe sleeveless muscle tee",
+    "outfitBelow": "leopard-print barrel trousers"
   },
   {
     "id": "crop 14",
@@ -411,7 +450,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing straight, arms at sides, head turned right",
+    "outfitAbove": "yellow cat-graphic tee",
+    "outfitBelow": "light-wash barrel jeans"
   },
   {
     "id": "crop 15",
@@ -440,7 +482,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides",
+    "outfitAbove": "navy lace-patchwork oversized hoodie",
+    "outfitBelow": "cream polka-dot wide-leg pants"
   },
   {
     "id": "crop 16",
@@ -469,7 +514,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides, smiling",
+    "outfitAbove": "charcoal star graphic tee",
+    "outfitBelow": "medium-wash wide-leg jeans"
   },
   {
     "id": "crop 17",
@@ -498,7 +546,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "shorts",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides",
+    "outfitAbove": "striped mustard oversized tee",
+    "outfitBelow": "striped mustard drawstring shorts"
   },
   {
     "id": "crop 18",
@@ -527,7 +578,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing straight, arms at sides, feet together",
+    "outfitAbove": "ivory frayed-trim tee",
+    "outfitBelow": "lace-trim barrel-leg jeans"
   },
   {
     "id": "crop 19",
@@ -556,7 +610,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing, right hand on hip, feet apart",
+    "outfitAbove": "grey layered henley tank",
+    "outfitBelow": "olive balloon barrel pants"
   },
   {
     "id": "crop 20",
@@ -585,7 +642,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing, weight on one leg, arms relaxed",
+    "outfitAbove": "black crewneck sweater layered tee",
+    "outfitBelow": "charcoal pleated wide-leg trousers"
   },
   {
     "id": "crop 21",
@@ -615,7 +675,10 @@ export const STATIC_HUMAN_MODELS = [
     ],
     "wears": "pants",
     "lowOk": true,
-    "silhouette": "barrel"
+    "silhouette": "barrel",
+    "pose": "standing upright, arms relaxed at sides, feet apart",
+    "outfitAbove": "beige cat graphic tee",
+    "outfitBelow": "polka-dot barrel jeans"
   },
   {
     "id": "crop 22",
@@ -644,7 +707,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "skirt",
-    "lowOk": false
+    "lowOk": false,
+    "pose": "standing upright, arms at sides, feet slightly apart",
+    "outfitAbove": "black sleeveless turtleneck top",
+    "outfitBelow": "leopard print lace-hem midi skirt"
   },
   {
     "id": "crop 23",
@@ -673,7 +739,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "skirt",
-    "lowOk": false
+    "lowOk": false,
+    "pose": "standing straight, arms relaxed at sides",
+    "outfitAbove": "pink patchwork knit top",
+    "outfitBelow": "white floral chiffon midi skirt"
   },
   {
     "id": "crop 24",
@@ -702,7 +771,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides",
+    "outfitAbove": "patchwork print button-down shirt",
+    "outfitBelow": "patchwork print wide-leg trousers"
   },
   {
     "id": "crop 25",
@@ -731,7 +803,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "Standing straight, one hand in pocket, feet apart",
+    "outfitAbove": "taupe graphic tee",
+    "outfitBelow": "brown polka-dot barrel pants"
   },
   {
     "id": "crop 26",
@@ -760,7 +835,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing, hands in pockets, feet slightly apart",
+    "outfitAbove": "sunset-print quarter-zip sweater",
+    "outfitBelow": "light-wash wide-leg cargo jeans"
   },
   {
     "id": "crop 27",
@@ -789,7 +867,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing straight, hands tucked in front pockets",
+    "outfitAbove": "navy cable-knit crop sweater",
+    "outfitBelow": "light-wash baggy jeans"
   },
   {
     "id": "crop 28",
@@ -818,7 +899,14 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "dwt62133-24-neutral",
+    "poseKey": "dwt62133-24",
+    "outfitAbove": "red ruffle-collar cardigan",
+    "outfitBelow": "patchwork wide-leg chambray pants"
   },
   {
     "id": "crop 29",
@@ -847,7 +935,14 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides",
+    "character": "vision",
+    "expression": "smile",
+    "slug": "dwt62133-24-smile",
+    "poseKey": "dwt62133-24",
+    "outfitAbove": "red ruffle-collar cardigan",
+    "outfitBelow": "patchwork wide-leg chambray pants"
   },
   {
     "id": "crop 30",
@@ -876,7 +971,14 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides",
+    "character": "vision",
+    "expression": "smirk",
+    "slug": "dwt62133-24-smirk",
+    "poseKey": "dwt62133-24",
+    "outfitAbove": "red ruffle-collar cardigan",
+    "outfitBelow": "patchwork wide-leg chambray pants"
   },
   {
     "id": "crop 31",
@@ -905,7 +1007,14 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides",
+    "character": "vision",
+    "expression": "teeth",
+    "slug": "dwt62133-24-teeth",
+    "poseKey": "dwt62133-24",
+    "outfitAbove": "red ruffle-collar cardigan",
+    "outfitBelow": "patchwork wide-leg chambray pants"
   },
   {
     "id": "crop 32",
@@ -934,7 +1043,14 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing, one arm raised to head, hand in pocket",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "dwt62170-20-neutral",
+    "poseKey": "dwt62170-20",
+    "outfitAbove": "tan rodeo graphic sweater",
+    "outfitBelow": "polka-dot barrel jeans"
   },
   {
     "id": "crop 33",
@@ -963,7 +1079,14 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing, one arm raised to head, hand in pocket",
+    "character": "vision",
+    "expression": "smile",
+    "slug": "dwt62170-20-smile",
+    "poseKey": "dwt62170-20",
+    "outfitAbove": "tan rodeo graphic sweater",
+    "outfitBelow": "polka-dot barrel jeans"
   },
   {
     "id": "crop 34",
@@ -992,7 +1115,14 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing, one arm raised to head, hand in pocket",
+    "character": "vision",
+    "expression": "teeth",
+    "slug": "dwt62170-20-teeth",
+    "poseKey": "dwt62170-20",
+    "outfitAbove": "tan rodeo graphic sweater",
+    "outfitBelow": "polka-dot barrel jeans"
   },
   {
     "id": "crop 35",
@@ -1021,7 +1151,14 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing, weight on one leg, hand in pocket",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "dwt62170-21-neutral",
+    "poseKey": "dwt62170-21",
+    "outfitAbove": "tan rodeo graphic sweater",
+    "outfitBelow": "polka-dot barrel jeans"
   },
   {
     "id": "crop 36",
@@ -1050,7 +1187,14 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing, weight on one leg, hand in pocket",
+    "character": "vision",
+    "expression": "smile",
+    "slug": "dwt62170-21-smile",
+    "poseKey": "dwt62170-21",
+    "outfitAbove": "tan rodeo graphic sweater",
+    "outfitBelow": "polka-dot barrel jeans"
   },
   {
     "id": "crop 37",
@@ -1079,7 +1223,14 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing, weight on one leg, hand in pocket",
+    "character": "vision",
+    "expression": "teeth",
+    "slug": "dwt62170-21-teeth",
+    "poseKey": "dwt62170-21",
+    "outfitAbove": "tan rodeo graphic sweater",
+    "outfitBelow": "polka-dot barrel jeans"
   },
   {
     "id": "faces",
@@ -1136,7 +1287,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing, one hand behind back, weight slightly shifted",
+    "outfitAbove": "navy notch-neck knit tee",
+    "outfitBelow": "navy wide-leg sweatpants"
   },
   {
     "id": "low 02",
@@ -1161,7 +1315,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing side-on, weight even, arms relaxed down",
+    "outfitAbove": "leopard star print sweatshirt",
+    "outfitBelow": "leopard star wide-leg pants"
   },
   {
     "id": "low 03",
@@ -1186,7 +1343,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides, feet apart",
+    "outfitAbove": "beige textured hooded button-up",
+    "outfitBelow": "cream wide-leg trousers"
   },
   {
     "id": "low 04",
@@ -1211,7 +1371,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides, feet apart",
+    "outfitAbove": "leopard print bomber jacket",
+    "outfitBelow": "heather grey wide-leg sweatpants"
   },
   {
     "id": "low 05",
@@ -1236,7 +1399,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing straight, both thumbs hooked in front pockets",
+    "outfitAbove": "ivory ribbed turtleneck sweater",
+    "outfitBelow": "brown plaid barrel trousers"
   },
   {
     "id": "low 06",
@@ -1261,7 +1427,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing straight, one hand in pocket",
+    "outfitAbove": "distressed cable-knit sweater",
+    "outfitBelow": "acid-wash wide-leg jeans"
   },
   {
     "id": "low 07",
@@ -1286,7 +1455,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "shorts",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides, feet apart",
+    "outfitAbove": "striped square-neck tank top",
+    "outfitBelow": "multicolor striped linen shorts"
   },
   {
     "id": "low 08",
@@ -1311,7 +1483,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "skirt",
-    "lowOk": false
+    "lowOk": false,
+    "pose": "standing upright, arms relaxed at sides",
+    "outfitAbove": "yellow-blue striped cardigan",
+    "outfitBelow": "ivory flowy maxi skirt"
   },
   {
     "id": "low 09",
@@ -1336,7 +1511,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing upright, hands in pockets, feet slightly apart",
+    "outfitAbove": "black unicorn-print cardigan",
+    "outfitBelow": "polka-dot wide-leg trousers"
   },
   {
     "id": "low 10",
@@ -1361,7 +1539,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides",
+    "outfitAbove": "taupe turtleneck sweater",
+    "outfitBelow": "patchwork wide-leg jeans"
   },
   {
     "id": "low 11",
@@ -1386,7 +1567,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing straight, arms at sides, feet slightly apart",
+    "outfitAbove": "distressed cable-knit sweater",
+    "outfitBelow": "acid-wash wide-leg jeans"
   },
   {
     "id": "low 12",
@@ -1411,7 +1595,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "skirt",
-    "lowOk": false
+    "lowOk": false,
+    "pose": "standing relaxed, hands clasped at waist, legs crossed",
+    "outfitAbove": "red striped crewneck sweater",
+    "outfitBelow": "white eyelet ruffle miniskirt"
   },
   {
     "id": "low 13",
@@ -1436,7 +1623,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides",
+    "outfitAbove": "taupe sleeveless muscle tee",
+    "outfitBelow": "leopard-print barrel trousers"
   },
   {
     "id": "low 14",
@@ -1461,7 +1651,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing straight, arms at sides, head turned right",
+    "outfitAbove": "yellow cat-graphic tee",
+    "outfitBelow": "light-wash barrel jeans"
   },
   {
     "id": "low 15",
@@ -1486,7 +1679,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides",
+    "outfitAbove": "navy lace-patchwork oversized hoodie",
+    "outfitBelow": "cream polka-dot wide-leg pants"
   },
   {
     "id": "low 16",
@@ -1511,7 +1707,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides, smiling",
+    "outfitAbove": "charcoal star graphic tee",
+    "outfitBelow": "medium-wash wide-leg jeans"
   },
   {
     "id": "low 17",
@@ -1536,7 +1735,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "shorts",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides",
+    "outfitAbove": "striped mustard oversized tee",
+    "outfitBelow": "striped mustard drawstring shorts"
   },
   {
     "id": "low 18",
@@ -1561,7 +1763,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing straight, arms at sides, feet together",
+    "outfitAbove": "ivory frayed-trim tee",
+    "outfitBelow": "lace-trim barrel-leg jeans"
   },
   {
     "id": "low 19",
@@ -1586,7 +1791,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing, right hand on hip, feet apart",
+    "outfitAbove": "grey layered henley tank",
+    "outfitBelow": "olive balloon barrel pants"
   },
   {
     "id": "low 20",
@@ -1611,7 +1819,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing, weight on one leg, arms relaxed",
+    "outfitAbove": "black crewneck sweater layered tee",
+    "outfitBelow": "charcoal pleated wide-leg trousers"
   },
   {
     "id": "low 21",
@@ -1637,7 +1848,10 @@ export const STATIC_HUMAN_MODELS = [
     ],
     "wears": "pants",
     "lowOk": true,
-    "silhouette": "barrel"
+    "silhouette": "barrel",
+    "pose": "standing upright, arms relaxed at sides, feet apart",
+    "outfitAbove": "beige cat graphic tee",
+    "outfitBelow": "polka-dot barrel jeans"
   },
   {
     "id": "low 22",
@@ -1662,7 +1876,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "skirt",
-    "lowOk": false
+    "lowOk": false,
+    "pose": "standing upright, arms at sides, feet slightly apart",
+    "outfitAbove": "black sleeveless turtleneck top",
+    "outfitBelow": "leopard print lace-hem midi skirt"
   },
   {
     "id": "low 23",
@@ -1687,7 +1904,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "skirt",
-    "lowOk": false
+    "lowOk": false,
+    "pose": "standing straight, arms relaxed at sides",
+    "outfitAbove": "pink patchwork knit top",
+    "outfitBelow": "white floral chiffon midi skirt"
   },
   {
     "id": "low 24",
@@ -1712,7 +1932,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides",
+    "outfitAbove": "patchwork print button-down shirt",
+    "outfitBelow": "patchwork print wide-leg trousers"
   },
   {
     "id": "low 25",
@@ -1737,7 +1960,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "Standing straight, one hand in pocket, feet apart",
+    "outfitAbove": "taupe graphic tee",
+    "outfitBelow": "brown polka-dot barrel pants"
   },
   {
     "id": "low 26",
@@ -1762,7 +1988,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing, hands in pockets, feet slightly apart",
+    "outfitAbove": "sunset-print quarter-zip sweater",
+    "outfitBelow": "light-wash wide-leg cargo jeans"
   },
   {
     "id": "low 27",
@@ -1787,7 +2016,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing straight, hands tucked in front pockets",
+    "outfitAbove": "navy cable-knit crop sweater",
+    "outfitBelow": "light-wash baggy jeans"
   },
   {
     "id": "low 28",
@@ -1812,7 +2044,14 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "dwt62133-24-neutral",
+    "poseKey": "dwt62133-24",
+    "outfitAbove": "red ruffle-collar cardigan",
+    "outfitBelow": "patchwork wide-leg chambray pants"
   },
   {
     "id": "low 29",
@@ -1837,7 +2076,14 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides",
+    "character": "vision",
+    "expression": "smile",
+    "slug": "dwt62133-24-smile",
+    "poseKey": "dwt62133-24",
+    "outfitAbove": "red ruffle-collar cardigan",
+    "outfitBelow": "patchwork wide-leg chambray pants"
   },
   {
     "id": "low 30",
@@ -1862,7 +2108,14 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides",
+    "character": "vision",
+    "expression": "smirk",
+    "slug": "dwt62133-24-smirk",
+    "poseKey": "dwt62133-24",
+    "outfitAbove": "red ruffle-collar cardigan",
+    "outfitBelow": "patchwork wide-leg chambray pants"
   },
   {
     "id": "low 31",
@@ -1887,7 +2140,14 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides",
+    "character": "vision",
+    "expression": "teeth",
+    "slug": "dwt62133-24-teeth",
+    "poseKey": "dwt62133-24",
+    "outfitAbove": "red ruffle-collar cardigan",
+    "outfitBelow": "patchwork wide-leg chambray pants"
   },
   {
     "id": "low 32",
@@ -1912,7 +2172,14 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing, one arm raised to head, hand in pocket",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "dwt62170-20-neutral",
+    "poseKey": "dwt62170-20",
+    "outfitAbove": "tan rodeo graphic sweater",
+    "outfitBelow": "polka-dot barrel jeans"
   },
   {
     "id": "low 33",
@@ -1937,7 +2204,14 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing, one arm raised to head, hand in pocket",
+    "character": "vision",
+    "expression": "smile",
+    "slug": "dwt62170-20-smile",
+    "poseKey": "dwt62170-20",
+    "outfitAbove": "tan rodeo graphic sweater",
+    "outfitBelow": "polka-dot barrel jeans"
   },
   {
     "id": "low 34",
@@ -1962,7 +2236,14 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing, one arm raised to head, hand in pocket",
+    "character": "vision",
+    "expression": "teeth",
+    "slug": "dwt62170-20-teeth",
+    "poseKey": "dwt62170-20",
+    "outfitAbove": "tan rodeo graphic sweater",
+    "outfitBelow": "polka-dot barrel jeans"
   },
   {
     "id": "low 35",
@@ -1987,7 +2268,14 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing, weight on one leg, hand in pocket",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "dwt62170-21-neutral",
+    "poseKey": "dwt62170-21",
+    "outfitAbove": "tan rodeo graphic sweater",
+    "outfitBelow": "polka-dot barrel jeans"
   },
   {
     "id": "low 36",
@@ -2012,7 +2300,14 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing, weight on one leg, hand in pocket",
+    "character": "vision",
+    "expression": "smile",
+    "slug": "dwt62170-21-smile",
+    "poseKey": "dwt62170-21",
+    "outfitAbove": "tan rodeo graphic sweater",
+    "outfitBelow": "polka-dot barrel jeans"
   },
   {
     "id": "low 37",
@@ -2037,7 +2332,14 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing, weight on one leg, hand in pocket",
+    "character": "vision",
+    "expression": "teeth",
+    "slug": "dwt62170-21-teeth",
+    "poseKey": "dwt62170-21",
+    "outfitAbove": "tan rodeo graphic sweater",
+    "outfitBelow": "polka-dot barrel jeans"
   },
   {
     "id": "studio 01",
@@ -2070,7 +2372,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing, one hand behind back, weight slightly shifted",
+    "outfitAbove": "navy notch-neck knit tee",
+    "outfitBelow": "navy wide-leg sweatpants"
   },
   {
     "id": "studio 02",
@@ -2103,7 +2408,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing side-on, weight even, arms relaxed down",
+    "outfitAbove": "leopard star print sweatshirt",
+    "outfitBelow": "leopard star wide-leg pants"
   },
   {
     "id": "studio 03",
@@ -2136,7 +2444,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides, feet apart",
+    "outfitAbove": "beige textured hooded button-up",
+    "outfitBelow": "cream wide-leg trousers"
   },
   {
     "id": "studio 04",
@@ -2169,7 +2480,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides, feet apart",
+    "outfitAbove": "leopard print bomber jacket",
+    "outfitBelow": "heather grey wide-leg sweatpants"
   },
   {
     "id": "studio 05",
@@ -2202,7 +2516,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing straight, both thumbs hooked in front pockets",
+    "outfitAbove": "ivory ribbed turtleneck sweater",
+    "outfitBelow": "brown plaid barrel trousers"
   },
   {
     "id": "studio 06",
@@ -2235,7 +2552,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing straight, one hand in pocket",
+    "outfitAbove": "distressed cable-knit sweater",
+    "outfitBelow": "acid-wash wide-leg jeans"
   },
   {
     "id": "studio 07",
@@ -2268,7 +2588,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "shorts",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides, feet apart",
+    "outfitAbove": "striped square-neck tank top",
+    "outfitBelow": "multicolor striped linen shorts"
   },
   {
     "id": "studio 08",
@@ -2301,7 +2624,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "skirt",
-    "lowOk": false
+    "lowOk": false,
+    "pose": "standing upright, arms relaxed at sides",
+    "outfitAbove": "yellow-blue striped cardigan",
+    "outfitBelow": "ivory flowy maxi skirt"
   },
   {
     "id": "studio 09",
@@ -2334,7 +2660,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing upright, hands in pockets, feet slightly apart",
+    "outfitAbove": "black unicorn-print cardigan",
+    "outfitBelow": "polka-dot wide-leg trousers"
   },
   {
     "id": "studio 10",
@@ -2367,7 +2696,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides",
+    "outfitAbove": "taupe turtleneck sweater",
+    "outfitBelow": "patchwork wide-leg jeans"
   },
   {
     "id": "studio 11",
@@ -2400,7 +2732,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing straight, arms at sides, feet slightly apart",
+    "outfitAbove": "distressed cable-knit sweater",
+    "outfitBelow": "acid-wash wide-leg jeans"
   },
   {
     "id": "studio 12",
@@ -2433,7 +2768,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "skirt",
-    "lowOk": false
+    "lowOk": false,
+    "pose": "standing relaxed, hands clasped at waist, legs crossed",
+    "outfitAbove": "red striped crewneck sweater",
+    "outfitBelow": "white eyelet ruffle miniskirt"
   },
   {
     "id": "studio 13",
@@ -2466,7 +2804,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides",
+    "outfitAbove": "taupe sleeveless muscle tee",
+    "outfitBelow": "leopard-print barrel trousers"
   },
   {
     "id": "studio 14",
@@ -2499,7 +2840,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing straight, arms at sides, head turned right",
+    "outfitAbove": "yellow cat-graphic tee",
+    "outfitBelow": "light-wash barrel jeans"
   },
   {
     "id": "studio 15",
@@ -2532,7 +2876,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides",
+    "outfitAbove": "navy lace-patchwork oversized hoodie",
+    "outfitBelow": "cream polka-dot wide-leg pants"
   },
   {
     "id": "studio 16",
@@ -2565,7 +2912,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides, smiling",
+    "outfitAbove": "charcoal star graphic tee",
+    "outfitBelow": "medium-wash wide-leg jeans"
   },
   {
     "id": "studio 17",
@@ -2598,7 +2948,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "shorts",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides",
+    "outfitAbove": "striped mustard oversized tee",
+    "outfitBelow": "striped mustard drawstring shorts"
   },
   {
     "id": "studio 18",
@@ -2631,7 +2984,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing straight, arms at sides, feet together",
+    "outfitAbove": "ivory frayed-trim tee",
+    "outfitBelow": "lace-trim barrel-leg jeans"
   },
   {
     "id": "studio 19",
@@ -2664,7 +3020,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing, right hand on hip, feet apart",
+    "outfitAbove": "grey layered henley tank",
+    "outfitBelow": "olive balloon barrel pants"
   },
   {
     "id": "studio 20",
@@ -2697,7 +3056,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing, weight on one leg, arms relaxed",
+    "outfitAbove": "black crewneck sweater layered tee",
+    "outfitBelow": "charcoal pleated wide-leg trousers"
   },
   {
     "id": "studio 21",
@@ -2731,7 +3093,10 @@ export const STATIC_HUMAN_MODELS = [
     ],
     "wears": "pants",
     "lowOk": true,
-    "silhouette": "barrel"
+    "silhouette": "barrel",
+    "pose": "standing upright, arms relaxed at sides, feet apart",
+    "outfitAbove": "beige cat graphic tee",
+    "outfitBelow": "polka-dot barrel jeans"
   },
   {
     "id": "studio 22",
@@ -2764,7 +3129,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "skirt",
-    "lowOk": false
+    "lowOk": false,
+    "pose": "standing upright, arms at sides, feet slightly apart",
+    "outfitAbove": "black sleeveless turtleneck top",
+    "outfitBelow": "leopard print lace-hem midi skirt"
   },
   {
     "id": "studio 23",
@@ -2797,7 +3165,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "skirt",
-    "lowOk": false
+    "lowOk": false,
+    "pose": "standing straight, arms relaxed at sides",
+    "outfitAbove": "pink patchwork knit top",
+    "outfitBelow": "white floral chiffon midi skirt"
   },
   {
     "id": "studio 24",
@@ -2830,7 +3201,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides",
+    "outfitAbove": "patchwork print button-down shirt",
+    "outfitBelow": "patchwork print wide-leg trousers"
   },
   {
     "id": "studio 25",
@@ -2863,7 +3237,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "Standing straight, one hand in pocket, feet apart",
+    "outfitAbove": "taupe graphic tee",
+    "outfitBelow": "brown polka-dot barrel pants"
   },
   {
     "id": "studio 26",
@@ -2896,7 +3273,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing, hands in pockets, feet slightly apart",
+    "outfitAbove": "sunset-print quarter-zip sweater",
+    "outfitBelow": "light-wash wide-leg cargo jeans"
   },
   {
     "id": "studio 27",
@@ -2929,7 +3309,10 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing straight, hands tucked in front pockets",
+    "outfitAbove": "navy cable-knit crop sweater",
+    "outfitBelow": "light-wash baggy jeans"
   },
   {
     "id": "studio 28",
@@ -2962,7 +3345,14 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "dwt62133-24-neutral",
+    "poseKey": "dwt62133-24",
+    "outfitAbove": "red ruffle-collar cardigan",
+    "outfitBelow": "patchwork wide-leg chambray pants"
   },
   {
     "id": "studio 29",
@@ -2995,7 +3385,14 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides",
+    "character": "vision",
+    "expression": "smile",
+    "slug": "dwt62133-24-smile",
+    "poseKey": "dwt62133-24",
+    "outfitAbove": "red ruffle-collar cardigan",
+    "outfitBelow": "patchwork wide-leg chambray pants"
   },
   {
     "id": "studio 30",
@@ -3028,7 +3425,14 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides",
+    "character": "vision",
+    "expression": "smirk",
+    "slug": "dwt62133-24-smirk",
+    "poseKey": "dwt62133-24",
+    "outfitAbove": "red ruffle-collar cardigan",
+    "outfitBelow": "patchwork wide-leg chambray pants"
   },
   {
     "id": "studio 31",
@@ -3061,7 +3465,14 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides",
+    "character": "vision",
+    "expression": "teeth",
+    "slug": "dwt62133-24-teeth",
+    "poseKey": "dwt62133-24",
+    "outfitAbove": "red ruffle-collar cardigan",
+    "outfitBelow": "patchwork wide-leg chambray pants"
   },
   {
     "id": "studio 32",
@@ -3094,7 +3505,14 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing, one arm raised to head, hand in pocket",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "dwt62170-20-neutral",
+    "poseKey": "dwt62170-20",
+    "outfitAbove": "tan rodeo graphic sweater",
+    "outfitBelow": "polka-dot barrel jeans"
   },
   {
     "id": "studio 33",
@@ -3127,7 +3545,14 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing, one arm raised to head, hand in pocket",
+    "character": "vision",
+    "expression": "smile",
+    "slug": "dwt62170-20-smile",
+    "poseKey": "dwt62170-20",
+    "outfitAbove": "tan rodeo graphic sweater",
+    "outfitBelow": "polka-dot barrel jeans"
   },
   {
     "id": "studio 34",
@@ -3160,7 +3585,14 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing, one arm raised to head, hand in pocket",
+    "character": "vision",
+    "expression": "teeth",
+    "slug": "dwt62170-20-teeth",
+    "poseKey": "dwt62170-20",
+    "outfitAbove": "tan rodeo graphic sweater",
+    "outfitBelow": "polka-dot barrel jeans"
   },
   {
     "id": "studio 35",
@@ -3193,7 +3625,14 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing, weight on one leg, hand in pocket",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "dwt62170-21-neutral",
+    "poseKey": "dwt62170-21",
+    "outfitAbove": "tan rodeo graphic sweater",
+    "outfitBelow": "polka-dot barrel jeans"
   },
   {
     "id": "studio 36",
@@ -3226,7 +3665,14 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing, weight on one leg, hand in pocket",
+    "character": "vision",
+    "expression": "smile",
+    "slug": "dwt62170-21-smile",
+    "poseKey": "dwt62170-21",
+    "outfitAbove": "tan rodeo graphic sweater",
+    "outfitBelow": "polka-dot barrel jeans"
   },
   {
     "id": "studio 37",
@@ -3259,6 +3705,13 @@ export const STATIC_HUMAN_MODELS = [
       }
     ],
     "wears": "pants",
-    "lowOk": true
+    "lowOk": true,
+    "pose": "standing, weight on one leg, hand in pocket",
+    "character": "vision",
+    "expression": "teeth",
+    "slug": "dwt62170-21-teeth",
+    "poseKey": "dwt62170-21",
+    "outfitAbove": "tan rodeo graphic sweater",
+    "outfitBelow": "polka-dot barrel jeans"
   }
 ] as unknown as HumanModel[];

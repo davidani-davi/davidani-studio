@@ -34,7 +34,9 @@
       "wears": "pants",
       "low_ok": true,
       "legs_separated": true,
-      "hem": "ankle"
+      "hem": "ankle",
+      "outfit_below": "navy wide-leg sweatpants",
+      "outfit_above": "navy notch-neck knit tee"
     },
     {
       "name": "studio 02",
@@ -52,7 +54,9 @@
       "wears": "pants",
       "low_ok": true,
       "legs_separated": true,
-      "hem": "ankle"
+      "hem": "ankle",
+      "outfit_below": "leopard star wide-leg pants",
+      "outfit_above": "leopard star print sweatshirt"
     },
     {
       "name": "studio 03",
@@ -70,7 +74,9 @@
       "wears": "pants",
       "low_ok": true,
       "legs_separated": true,
-      "hem": "floor"
+      "hem": "floor",
+      "outfit_below": "cream wide-leg trousers",
+      "outfit_above": "beige textured hooded button-up"
     },
     {
       "name": "studio 04",
@@ -88,7 +94,9 @@
       "wears": "pants",
       "low_ok": true,
       "legs_separated": true,
-      "hem": "ankle"
+      "hem": "floor",
+      "outfit_below": "heather grey wide-leg sweatpants",
+      "outfit_above": "leopard print bomber jacket"
     },
     {
       "name": "studio 05",
@@ -106,7 +114,9 @@
       "wears": "pants",
       "low_ok": true,
       "legs_separated": true,
-      "hem": "ankle"
+      "hem": "floor",
+      "outfit_below": "brown plaid barrel trousers",
+      "outfit_above": "ivory ribbed turtleneck sweater"
     },
     {
       "name": "studio 06",
@@ -124,7 +134,9 @@
       "wears": "pants",
       "low_ok": true,
       "legs_separated": true,
-      "hem": "ankle"
+      "hem": "floor",
+      "outfit_below": "acid-wash wide-leg jeans",
+      "outfit_above": "distressed cable-knit sweater"
     },
     {
       "name": "studio 07",
@@ -142,7 +154,9 @@
       "wears": "shorts",
       "low_ok": true,
       "legs_separated": true,
-      "hem": "above-knee"
+      "hem": "above-knee",
+      "outfit_below": "multicolor striped linen shorts",
+      "outfit_above": "striped square-neck tank top"
     },
     {
       "name": "studio 08",
@@ -160,7 +174,9 @@
       "wears": "skirt",
       "low_ok": false,
       "legs_separated": false,
-      "hem": "ankle"
+      "hem": "ankle",
+      "outfit_below": "ivory flowy maxi skirt",
+      "outfit_above": "yellow-blue striped cardigan"
     },
     {
       "name": "studio 09",
@@ -178,7 +194,9 @@
       "wears": "pants",
       "low_ok": true,
       "legs_separated": true,
-      "hem": "ankle"
+      "hem": "ankle",
+      "outfit_below": "polka-dot wide-leg trousers",
+      "outfit_above": "black unicorn-print cardigan"
     },
     {
       "name": "studio 10",
@@ -196,7 +214,9 @@
       "wears": "pants",
       "low_ok": true,
       "legs_separated": true,
-      "hem": "floor"
+      "hem": "floor",
+      "outfit_below": "patchwork wide-leg jeans",
+      "outfit_above": "taupe turtleneck sweater"
     },
     {
       "name": "studio 11",
@@ -214,7 +234,9 @@
       "wears": "pants",
       "low_ok": true,
       "legs_separated": true,
-      "hem": "ankle"
+      "hem": "ankle",
+      "outfit_below": "acid-wash wide-leg jeans",
+      "outfit_above": "distressed cable-knit sweater"
     },
     {
       "name": "studio 12",
@@ -232,7 +254,9 @@
       "wears": "skirt",
       "low_ok": false,
       "legs_separated": false,
-      "hem": "above-knee"
+      "hem": "above-knee",
+      "outfit_below": "white eyelet ruffle miniskirt",
+      "outfit_above": "red striped crewneck sweater"
     },
     {
       "name": "studio 13",
@@ -250,7 +274,9 @@
       "wears": "pants",
       "low_ok": true,
       "legs_separated": true,
-      "hem": "ankle"
+      "hem": "ankle",
+      "outfit_below": "leopard-print barrel trousers",
+      "outfit_above": "taupe sleeveless muscle tee"
     },
     {
       "name": "studio 14",
@@ -268,7 +294,9 @@
       "wears": "pants",
       "low_ok": true,
       "legs_separated": true,
-      "hem": "ankle"
+      "hem": "ankle",
+      "outfit_below": "light-wash barrel jeans",
+      "outfit_above": "yellow cat-graphic tee"
     },
     {
       "name": "studio 15",
@@ -286,7 +314,9 @@
       "wears": "pants",
       "low_ok": true,
       "legs_separated": true,
-      "hem": "ankle"
+      "hem": "ankle",
+      "outfit_below": "cream polka-dot wide-leg pants",
+      "outfit_above": "navy lace-patchwork oversized hoodie"
     },
     {
       "name": "studio 16",
@@ -304,7 +334,9 @@
       "wears": "pants",
       "low_ok": true,
       "legs_separated": true,
-      "hem": "ankle"
+      "hem": "ankle",
+      "outfit_below": "medium-wash wide-leg jeans",
+      "outfit_above": "charcoal star graphic tee"
     },
     {
       "name": "studio 17",
@@ -321,8 +353,10 @@
       "others_are": "generated from the front plate, same model",
       "wears": "shorts",
       "low_ok": true,
-      "legs_separated": false,
-      "hem": "above-knee"
+      "legs_separated": true,
+      "hem": "above-knee",
+      "outfit_below": "striped mustard drawstring shorts",
+      "outfit_above": "striped mustard oversized tee"
     },
     {
       "name": "studio 18",
@@ -340,7 +374,9 @@
       "wears": "pants",
       "low_ok": true,
       "legs_separated": true,
-      "hem": "ankle"
+      "hem": "ankle",
+      "outfit_below": "lace-trim barrel-leg jeans",
+      "outfit_above": "ivory frayed-trim tee"
     },
     {
       "name": "studio 19",
@@ -358,7 +394,9 @@
       "wears": "pants",
       "low_ok": true,
       "legs_separated": true,
-      "hem": "ankle"
+      "hem": "ankle",
+      "outfit_below": "olive balloon barrel pants",
+      "outfit_above": "grey layered henley tank"
     },
     {
       "name": "studio 20",
@@ -376,7 +414,9 @@
       "wears": "pants",
       "low_ok": true,
       "legs_separated": true,
-      "hem": "floor"
+      "hem": "floor",
+      "outfit_below": "charcoal pleated wide-leg trousers",
+      "outfit_above": "black crewneck sweater layered tee"
     },
     {
       "name": "studio 21",
@@ -396,7 +436,9 @@
       "legs_separated": true,
       "hem": "ankle",
       "silhouette": "barrel",
-      "silhouette_note": "DP67305 is the barrel body (David, 2026-09-06): barrel-leg bottoms shoot on this plate"
+      "silhouette_note": "DP67305 is the barrel body (David, 2026-09-06): barrel-leg bottoms shoot on this plate",
+      "outfit_below": "polka-dot barrel jeans",
+      "outfit_above": "beige cat graphic tee"
     },
     {
       "name": "studio 22",
@@ -414,7 +456,9 @@
       "wears": "skirt",
       "low_ok": false,
       "legs_separated": false,
-      "hem": "ankle"
+      "hem": "ankle",
+      "outfit_below": "leopard print lace-hem midi skirt",
+      "outfit_above": "black sleeveless turtleneck top"
     },
     {
       "name": "studio 23",
@@ -432,7 +476,9 @@
       "wears": "skirt",
       "low_ok": false,
       "legs_separated": false,
-      "hem": "ankle"
+      "hem": "midi",
+      "outfit_below": "white floral chiffon midi skirt",
+      "outfit_above": "pink patchwork knit top"
     },
     {
       "name": "studio 24",
@@ -449,8 +495,10 @@
       "others_are": "generated from the front plate, same model",
       "wears": "pants",
       "low_ok": true,
-      "legs_separated": true,
-      "hem": "floor"
+      "legs_separated": false,
+      "hem": "floor",
+      "outfit_below": "patchwork print wide-leg trousers",
+      "outfit_above": "patchwork print button-down shirt"
     },
     {
       "name": "studio 25",
@@ -468,7 +516,9 @@
       "wears": "pants",
       "low_ok": true,
       "legs_separated": true,
-      "hem": "ankle"
+      "hem": "ankle",
+      "outfit_below": "brown polka-dot barrel pants",
+      "outfit_above": "taupe graphic tee"
     },
     {
       "name": "studio 26",
@@ -486,7 +536,9 @@
       "wears": "pants",
       "low_ok": true,
       "legs_separated": true,
-      "hem": "ankle"
+      "hem": "ankle",
+      "outfit_below": "light-wash wide-leg cargo jeans",
+      "outfit_above": "sunset-print quarter-zip sweater"
     },
     {
       "name": "studio 27",
@@ -504,7 +556,9 @@
       "wears": "pants",
       "low_ok": true,
       "legs_separated": true,
-      "hem": "ankle"
+      "hem": "ankle",
+      "outfit_below": "light-wash baggy jeans",
+      "outfit_above": "navy cable-knit crop sweater"
     },
     {
       "name": "studio 28",
@@ -523,7 +577,11 @@
       "wears": "pants",
       "low_ok": true,
       "front_is": "real studio photograph, head replaced with the house AI face (GPT Image 2, masked)",
-      "others_are": "generated from the front plate, same model"
+      "others_are": "generated from the front plate, same model",
+      "legs_separated": true,
+      "hem": "floor",
+      "outfit_below": "patchwork wide-leg chambray pants",
+      "outfit_above": "red ruffle-collar cardigan"
     },
     {
       "name": "studio 29",
@@ -542,7 +600,11 @@
       "wears": "pants",
       "low_ok": true,
       "front_is": "real studio photograph, head replaced with the house AI face (GPT Image 2, masked)",
-      "others_are": "generated from the front plate, same model"
+      "others_are": "generated from the front plate, same model",
+      "legs_separated": true,
+      "hem": "floor",
+      "outfit_below": "patchwork wide-leg chambray pants",
+      "outfit_above": "red ruffle-collar cardigan"
     },
     {
       "name": "studio 30",
@@ -561,7 +623,11 @@
       "wears": "pants",
       "low_ok": true,
       "front_is": "real studio photograph, head replaced with the house AI face (GPT Image 2, masked)",
-      "others_are": "generated from the front plate, same model"
+      "others_are": "generated from the front plate, same model",
+      "legs_separated": true,
+      "hem": "floor",
+      "outfit_below": "patchwork wide-leg chambray pants",
+      "outfit_above": "red ruffle-collar cardigan"
     },
     {
       "name": "studio 31",
@@ -580,7 +646,11 @@
       "wears": "pants",
       "low_ok": true,
       "front_is": "real studio photograph, head replaced with the house AI face (GPT Image 2, masked)",
-      "others_are": "generated from the front plate, same model"
+      "others_are": "generated from the front plate, same model",
+      "legs_separated": true,
+      "hem": "floor",
+      "outfit_below": "patchwork wide-leg chambray pants",
+      "outfit_above": "red ruffle-collar cardigan"
     },
     {
       "name": "studio 32",
@@ -599,7 +669,11 @@
       "wears": "pants",
       "low_ok": true,
       "front_is": "real studio photograph, head replaced with the house AI face (GPT Image 2, masked)",
-      "others_are": "generated from the front plate, same model"
+      "others_are": "generated from the front plate, same model",
+      "legs_separated": true,
+      "hem": "ankle",
+      "outfit_below": "polka-dot barrel jeans",
+      "outfit_above": "tan rodeo graphic sweater"
     },
     {
       "name": "studio 33",
@@ -618,7 +692,11 @@
       "wears": "pants",
       "low_ok": true,
       "front_is": "real studio photograph, head replaced with the house AI face (GPT Image 2, masked)",
-      "others_are": "generated from the front plate, same model"
+      "others_are": "generated from the front plate, same model",
+      "legs_separated": true,
+      "hem": "ankle",
+      "outfit_below": "polka-dot barrel jeans",
+      "outfit_above": "tan rodeo graphic sweater"
     },
     {
       "name": "studio 34",
@@ -637,7 +715,11 @@
       "wears": "pants",
       "low_ok": true,
       "front_is": "real studio photograph, head replaced with the house AI face (GPT Image 2, masked)",
-      "others_are": "generated from the front plate, same model"
+      "others_are": "generated from the front plate, same model",
+      "legs_separated": true,
+      "hem": "ankle",
+      "outfit_below": "polka-dot barrel jeans",
+      "outfit_above": "tan rodeo graphic sweater"
     },
     {
       "name": "studio 35",
@@ -656,7 +738,11 @@
       "wears": "pants",
       "low_ok": true,
       "front_is": "real studio photograph, head replaced with the house AI face (GPT Image 2, masked)",
-      "others_are": "generated from the front plate, same model"
+      "others_are": "generated from the front plate, same model",
+      "legs_separated": true,
+      "hem": "ankle",
+      "outfit_below": "polka-dot barrel jeans",
+      "outfit_above": "tan rodeo graphic sweater"
     },
     {
       "name": "studio 36",
@@ -675,7 +761,11 @@
       "wears": "pants",
       "low_ok": true,
       "front_is": "real studio photograph, head replaced with the house AI face (GPT Image 2, masked)",
-      "others_are": "generated from the front plate, same model"
+      "others_are": "generated from the front plate, same model",
+      "legs_separated": true,
+      "hem": "ankle",
+      "outfit_below": "polka-dot barrel jeans",
+      "outfit_above": "tan rodeo graphic sweater"
     },
     {
       "name": "studio 37",
@@ -694,7 +784,11 @@
       "wears": "pants",
       "low_ok": true,
       "front_is": "real studio photograph, head replaced with the house AI face (GPT Image 2, masked)",
-      "others_are": "generated from the front plate, same model"
+      "others_are": "generated from the front plate, same model",
+      "legs_separated": true,
+      "hem": "ankle",
+      "outfit_below": "polka-dot barrel jeans",
+      "outfit_above": "tan rodeo graphic sweater"
     }
   ],
   "families": {
