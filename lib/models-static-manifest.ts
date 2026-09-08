@@ -741,6 +741,286 @@ export const STATIC_HUMAN_MODELS = [
     "autoPool": true
   },
   {
+    "id": "crop 53",
+    "name": "Crop 53",
+    "poses": [
+      {
+        "id": "crop 53",
+        "label": "Crop 53",
+        "publicPath": "/models/crop 53/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 53/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 53/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 53/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides",
+    "character": "celine",
+    "expression": "neutral",
+    "slug": "dwt62133-24-celine-neutral",
+    "poseKey": "dwt62133-24-celine",
+    "autoPool": true
+  },
+  {
+    "id": "crop 54",
+    "name": "Crop 54",
+    "poses": [
+      {
+        "id": "crop 54",
+        "label": "Crop 54",
+        "publicPath": "/models/crop 54/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 54/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 54/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 54/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides",
+    "character": "celine",
+    "expression": "smile",
+    "slug": "dwt62133-24-celine-smile",
+    "poseKey": "dwt62133-24-celine",
+    "autoPool": true
+  },
+  {
+    "id": "crop 55",
+    "name": "Crop 55",
+    "poses": [
+      {
+        "id": "crop 55",
+        "label": "Crop 55",
+        "publicPath": "/models/crop 55/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 55/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 55/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 55/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides",
+    "character": "celine",
+    "expression": "smirk",
+    "slug": "dwt62133-24-celine-smirk",
+    "poseKey": "dwt62133-24-celine",
+    "autoPool": true
+  },
+  {
+    "id": "crop 56",
+    "name": "Crop 56",
+    "poses": [
+      {
+        "id": "crop 56",
+        "label": "Crop 56",
+        "publicPath": "/models/crop 56/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 56/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 56/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 56/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides",
+    "character": "celine",
+    "expression": "teeth",
+    "slug": "dwt62133-24-celine-teeth",
+    "poseKey": "dwt62133-24-celine",
+    "autoPool": true
+  },
+  {
+    "id": "crop 57",
+    "name": "Crop 57",
+    "poses": [
+      {
+        "id": "crop 57",
+        "label": "Crop 57",
+        "publicPath": "/models/crop 57/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 57/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 57/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 57/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, weight on one leg, hand in pocket",
+    "character": "celine",
+    "expression": "neutral",
+    "slug": "dwt62170-21-celine-neutral",
+    "poseKey": "dwt62170-21-celine",
+    "autoPool": true
+  },
+  {
+    "id": "crop 58",
+    "name": "Crop 58",
+    "poses": [
+      {
+        "id": "crop 58",
+        "label": "Crop 58",
+        "publicPath": "/models/crop 58/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 58/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 58/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 58/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, weight on one leg, hand in pocket",
+    "character": "celine",
+    "expression": "smile",
+    "slug": "dwt62170-21-celine-smile",
+    "poseKey": "dwt62170-21-celine",
+    "autoPool": true
+  },
+  {
+    "id": "crop 59",
+    "name": "Crop 59",
+    "poses": [
+      {
+        "id": "crop 59",
+        "label": "Crop 59",
+        "publicPath": "/models/crop 59/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 59/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 59/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 59/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, weight on one leg, hand in pocket",
+    "character": "celine",
+    "expression": "smirk",
+    "slug": "dwt62170-21-celine-smirk",
+    "poseKey": "dwt62170-21-celine",
+    "autoPool": true
+  },
+  {
+    "id": "crop 60",
+    "name": "Crop 60",
+    "poses": [
+      {
+        "id": "crop 60",
+        "label": "Crop 60",
+        "publicPath": "/models/crop 60/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/crop 60/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/crop 60/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/crop 60/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, weight on one leg, hand in pocket",
+    "character": "celine",
+    "expression": "teeth",
+    "slug": "dwt62170-21-celine-teeth",
+    "poseKey": "dwt62170-21-celine",
+    "autoPool": true
+  },
+  {
     "id": "low 03",
     "name": "Low 03",
     "poses": [
@@ -1387,6 +1667,254 @@ export const STATIC_HUMAN_MODELS = [
     "poseKey": "dwt62170-21",
     "outfitAbove": "tan rodeo graphic sweater",
     "outfitBelow": "polka-dot barrel jeans",
+    "autoPool": true
+  },
+  {
+    "id": "low 53",
+    "name": "Low 53",
+    "poses": [
+      {
+        "id": "low 53",
+        "label": "Low 53",
+        "publicPath": "/models/low 53/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 53/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 53/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides",
+    "character": "celine",
+    "expression": "neutral",
+    "slug": "dwt62133-24-celine-neutral",
+    "poseKey": "dwt62133-24-celine",
+    "autoPool": true
+  },
+  {
+    "id": "low 54",
+    "name": "Low 54",
+    "poses": [
+      {
+        "id": "low 54",
+        "label": "Low 54",
+        "publicPath": "/models/low 54/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 54/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 54/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides",
+    "character": "celine",
+    "expression": "smile",
+    "slug": "dwt62133-24-celine-smile",
+    "poseKey": "dwt62133-24-celine",
+    "autoPool": true
+  },
+  {
+    "id": "low 55",
+    "name": "Low 55",
+    "poses": [
+      {
+        "id": "low 55",
+        "label": "Low 55",
+        "publicPath": "/models/low 55/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 55/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 55/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides",
+    "character": "celine",
+    "expression": "smirk",
+    "slug": "dwt62133-24-celine-smirk",
+    "poseKey": "dwt62133-24-celine",
+    "autoPool": true
+  },
+  {
+    "id": "low 56",
+    "name": "Low 56",
+    "poses": [
+      {
+        "id": "low 56",
+        "label": "Low 56",
+        "publicPath": "/models/low 56/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 56/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 56/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides",
+    "character": "celine",
+    "expression": "teeth",
+    "slug": "dwt62133-24-celine-teeth",
+    "poseKey": "dwt62133-24-celine",
+    "autoPool": true
+  },
+  {
+    "id": "low 57",
+    "name": "Low 57",
+    "poses": [
+      {
+        "id": "low 57",
+        "label": "Low 57",
+        "publicPath": "/models/low 57/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 57/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 57/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, weight on one leg, hand in pocket",
+    "character": "celine",
+    "expression": "neutral",
+    "slug": "dwt62170-21-celine-neutral",
+    "poseKey": "dwt62170-21-celine",
+    "autoPool": true
+  },
+  {
+    "id": "low 58",
+    "name": "Low 58",
+    "poses": [
+      {
+        "id": "low 58",
+        "label": "Low 58",
+        "publicPath": "/models/low 58/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 58/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 58/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, weight on one leg, hand in pocket",
+    "character": "celine",
+    "expression": "smile",
+    "slug": "dwt62170-21-celine-smile",
+    "poseKey": "dwt62170-21-celine",
+    "autoPool": true
+  },
+  {
+    "id": "low 59",
+    "name": "Low 59",
+    "poses": [
+      {
+        "id": "low 59",
+        "label": "Low 59",
+        "publicPath": "/models/low 59/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 59/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 59/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, weight on one leg, hand in pocket",
+    "character": "celine",
+    "expression": "smirk",
+    "slug": "dwt62170-21-celine-smirk",
+    "poseKey": "dwt62170-21-celine",
+    "autoPool": true
+  },
+  {
+    "id": "low 60",
+    "name": "Low 60",
+    "poses": [
+      {
+        "id": "low 60",
+        "label": "Low 60",
+        "publicPath": "/models/low 60/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 60/front.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/low 60/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, weight on one leg, hand in pocket",
+    "character": "celine",
+    "expression": "teeth",
+    "slug": "dwt62170-21-celine-teeth",
+    "poseKey": "dwt62170-21-celine",
     "autoPool": true
   },
   {
@@ -2204,6 +2732,318 @@ export const STATIC_HUMAN_MODELS = [
     "poseKey": "dwt62170-21",
     "outfitAbove": "tan rodeo graphic sweater",
     "outfitBelow": "polka-dot barrel jeans",
+    "autoPool": true
+  },
+  {
+    "id": "studio 53",
+    "name": "Studio 53",
+    "poses": [
+      {
+        "id": "studio 53",
+        "label": "Studio 53",
+        "publicPath": "/models/studio 53/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 53/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 53/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 53/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 53/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides",
+    "character": "celine",
+    "expression": "neutral",
+    "slug": "dwt62133-24-celine-neutral",
+    "poseKey": "dwt62133-24-celine",
+    "autoPool": true
+  },
+  {
+    "id": "studio 54",
+    "name": "Studio 54",
+    "poses": [
+      {
+        "id": "studio 54",
+        "label": "Studio 54",
+        "publicPath": "/models/studio 54/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 54/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 54/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 54/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 54/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides",
+    "character": "celine",
+    "expression": "smile",
+    "slug": "dwt62133-24-celine-smile",
+    "poseKey": "dwt62133-24-celine",
+    "autoPool": true
+  },
+  {
+    "id": "studio 55",
+    "name": "Studio 55",
+    "poses": [
+      {
+        "id": "studio 55",
+        "label": "Studio 55",
+        "publicPath": "/models/studio 55/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 55/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 55/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 55/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 55/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides",
+    "character": "celine",
+    "expression": "smirk",
+    "slug": "dwt62133-24-celine-smirk",
+    "poseKey": "dwt62133-24-celine",
+    "autoPool": true
+  },
+  {
+    "id": "studio 56",
+    "name": "Studio 56",
+    "poses": [
+      {
+        "id": "studio 56",
+        "label": "Studio 56",
+        "publicPath": "/models/studio 56/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 56/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 56/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 56/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 56/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing straight, arms relaxed at sides",
+    "character": "celine",
+    "expression": "teeth",
+    "slug": "dwt62133-24-celine-teeth",
+    "poseKey": "dwt62133-24-celine",
+    "autoPool": true
+  },
+  {
+    "id": "studio 57",
+    "name": "Studio 57",
+    "poses": [
+      {
+        "id": "studio 57",
+        "label": "Studio 57",
+        "publicPath": "/models/studio 57/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 57/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 57/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 57/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 57/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, weight on one leg, hand in pocket",
+    "character": "celine",
+    "expression": "neutral",
+    "slug": "dwt62170-21-celine-neutral",
+    "poseKey": "dwt62170-21-celine",
+    "autoPool": true
+  },
+  {
+    "id": "studio 58",
+    "name": "Studio 58",
+    "poses": [
+      {
+        "id": "studio 58",
+        "label": "Studio 58",
+        "publicPath": "/models/studio 58/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 58/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 58/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 58/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 58/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, weight on one leg, hand in pocket",
+    "character": "celine",
+    "expression": "smile",
+    "slug": "dwt62170-21-celine-smile",
+    "poseKey": "dwt62170-21-celine",
+    "autoPool": true
+  },
+  {
+    "id": "studio 59",
+    "name": "Studio 59",
+    "poses": [
+      {
+        "id": "studio 59",
+        "label": "Studio 59",
+        "publicPath": "/models/studio 59/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 59/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 59/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 59/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 59/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, weight on one leg, hand in pocket",
+    "character": "celine",
+    "expression": "smirk",
+    "slug": "dwt62170-21-celine-smirk",
+    "poseKey": "dwt62170-21-celine",
+    "autoPool": true
+  },
+  {
+    "id": "studio 60",
+    "name": "Studio 60",
+    "poses": [
+      {
+        "id": "studio 60",
+        "label": "Studio 60",
+        "publicPath": "/models/studio 60/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.jpg",
+            "publicPath": "/models/studio 60/back.jpg"
+          },
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 60/front.jpg"
+          },
+          "full": {
+            "filename": "full.jpg",
+            "publicPath": "/models/studio 60/full.jpg"
+          },
+          "side": {
+            "filename": "side.jpg",
+            "publicPath": "/models/studio 60/side.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "standing, weight on one leg, hand in pocket",
+    "character": "celine",
+    "expression": "teeth",
+    "slug": "dwt62170-21-celine-teeth",
+    "poseKey": "dwt62170-21-celine",
     "autoPool": true
   }
 ] as unknown as HumanModel[];
