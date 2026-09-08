@@ -178,6 +178,42 @@ export const PLAIN_BACK_RULE =
   "Do not mirror, copy or reinvent the front design onto the back; a plain back panel is correct. " +
   "The model must face away from camera in a true rear view; do not show the model's face or an over-the-shoulder glance. ";
 
+/**
+ * The rendered FRONT of this set, handed to the side, back and full views as
+ * one more input image (2026-09-08). Until then every view was rendered blind
+ * to the others: four independent edits of four plate photos, tied together
+ * by words alone. DV67214 came back hip-length on the front and longer on the
+ * full shot, bare-armed on the front and over a sweater on the full shot, with
+ * a different face each time. The front render settles all of that once.
+ */
+export const ANCHOR_RULE =
+  "CONTINUITY ANCHOR: the LAST input image is the FRONT view of this very set, already rendered and approved on this same model. " +
+  "It settles everything the garment photo leaves open: the garment's exact length on her body, its fit and volume, its colour and texture, whether it is worn open or closed, " +
+  "what shows under and around it (bare arms or an inner layer, the bottoms, the shoes), and her face, hair and skin. Match all of that exactly, so this view and the front read as one photoshoot of one garment, with only the camera angle changed. " +
+  "It is a continuity reference, never a pose or framing reference: the pose, framing and crop come from the first image only. ";
+
+export function applyAnchor(basePrompt: string, hasAnchor: boolean): string {
+  const p = String(basePrompt || "");
+  return hasAnchor && p ? insertBeforeNegative(p, ANCHOR_RULE.trim()) : p;
+}
+
+/**
+ * The analyzer's base prompt ends in "Negative prompt: ..."; the GPT optimizer
+ * (lib/prompt-strategy.ts) strips from that marker to the END of the string.
+ * Every suffix appended after the base prompt — the consistency contract, the
+ * view directive, the framing rule — therefore never reached GPT Image 2, the
+ * default engine since 2026-09-05; the renders were being asked for one view
+ * of a set without ever being told so. Found 2026-09-08 (DV67214). This puts
+ * the suffixes ahead of the negative prompt, which stays last.
+ */
+export function assembleViewPrompt(basePrompt: string, ...suffixes: string[]): string {
+  const p = String(basePrompt || "").trim();
+  const extra = suffixes.map((x) => String(x || "").trim()).filter(Boolean).join(" ");
+  if (!extra) return p;
+  const neg = p.search(/\s*Negative prompt:/i);
+  return neg >= 0 ? `${p.slice(0, neg)} ${extra}${p.slice(neg)}` : `${p} ${extra}`;
+}
+
 export function buildMultiModelViewSuffix(
   view: PresetView,
   hasBackReference: boolean,

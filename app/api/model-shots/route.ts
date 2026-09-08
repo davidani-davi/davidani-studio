@@ -6,8 +6,10 @@ import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth";
 import {
   MULTI_MODEL_VIEWS,
   buildMultiModelConsistencySuffix,
+  applyAnchor,
   applyOperatorNote,
   applyPlainBack,
+  assembleViewPrompt,
   applyProportions,
   applyStyling,
   buildMultiModelViewSuffix,
@@ -177,6 +179,12 @@ export async function POST(req: Request) {
   // A Redo's fix note from the extension: what the operator says is wrong
   // with this one view. Empty on a normal run.
   const note = sanitizeOperatorNote(body.note);
+  // The set's rendered FRONT, for the views shot after it (ANCHOR_RULE): the
+  // extension shoots the front first and hands its URL to the other three.
+  const anchorImageUrl: string =
+    typeof body.anchorImageUrl === "string" && /^https?:\/\//.test(body.anchorImageUrl) && view !== "front"
+      ? body.anchorImageUrl
+      : "";
   if (!garmentImageUrls.length) return json({ ok: false, error: "garmentImageUrls is required" }, 400);
 
   // What is being shot decides the views and the plate framing
@@ -321,28 +329,36 @@ export async function POST(req: Request) {
       });
     }
 
-    // The styling goes into the base prompt itself: the GPT optimizer drops
-    // everything after the analyzer's negative prompt, suffixes included.
-    const basePrompt = applyOperatorNote(
-      applyPlainBack(applyProportions(applyStyling(String(analyzeData.prompt || "").trim(), styling)), view, hasBackReference),
-      note,
-      view
+    // The rules go into the base prompt itself, ahead of the analyzer's
+    // negative prompt; assembleViewPrompt keeps the suffixes there too, since
+    // the GPT optimizer drops everything after that marker.
+    const basePrompt = applyAnchor(
+      applyOperatorNote(
+        applyPlainBack(applyProportions(applyStyling(String(analyzeData.prompt || "").trim(), styling)), view, hasBackReference),
+        note,
+        view
+      ),
+      Boolean(anchorImageUrl)
     );
     if (!basePrompt) throw new Error(`analyzer returned an empty ${view} prompt`);
 
     const identity = mergeMultiModelGarmentIdentity(analyzeData);
+    // Optimized once, here; generate-model gets it as given (rawPrompt), where
+    // before it stacked the same GPT prefix a second time.
     const v1Prompt = optimizePromptForModel(
       modelId,
-      `${basePrompt}${buildMultiModelConsistencySuffix(identity.garment, identity.features, views)}` +
-        `${buildMultiModelViewSuffix(view, hasBackReference, { framing, views, styling })}` +
-        ``
+      assembleViewPrompt(
+        basePrompt,
+        buildMultiModelConsistencySuffix(identity.garment, identity.features, views),
+        buildMultiModelViewSuffix(view, hasBackReference, { framing, views, styling })
+      )
     );
 
     // GPT Image 2 variants (lib/gpt-variants.ts). Each isolates one change
     // against the v1 run: the output size, the prompt, or a repaint mask.
     const gptVariant = modelId === "gpt-image" ? gptVariantOf(body.gptVariant ?? "native4k") : "auto";
     let prompt = v1Prompt;
-    let rawPrompt = false;
+    let rawPrompt = true;
     let imageSize: { width: number; height: number } | undefined;
     let maskUrl: string | undefined;
     let canvasImageUrl: string | undefined;
@@ -385,13 +401,14 @@ export async function POST(req: Request) {
       humanModelId,
       poseId,
       view,
-      garmentImageUrls,
+      // the anchor rides after the garment photos: "the LAST input image"
+      garmentImageUrls: anchorImageUrl ? [...garmentImageUrls, anchorImageUrl] : garmentImageUrls,
       aspectRatio: "2:3",
       resolution,
       format: "png",
       numImages: 1,
       poseVariantIndex: multiModelPoseVariantIndex(view),
-      preserveSecondaryReferences: hasBackReference,
+      preserveSecondaryReferences: hasBackReference || Boolean(anchorImageUrl),
       prompt,
       ...(rawPrompt ? { rawPrompt: true } : {}),
       ...(imageSize ? { imageSize } : {}),
@@ -405,7 +422,7 @@ export async function POST(req: Request) {
     return json({
       ok: true, view, url, prompt,
       ...(gptVariant !== "auto" ? { gptVariant, ...(maskInfo ? { mask: maskInfo } : {}) } : {}),
-      garment: identity.garment,
+      garment: identity.garment, anchored: Boolean(anchorImageUrl),
       humanModelId, poseId, assigned, category, hem, framing, note: note || undefined,
       // What the known facts changed, so a wrong contract is visible in the
       // panel and countable in the eval rather than silent.

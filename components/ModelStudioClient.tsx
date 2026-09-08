@@ -33,6 +33,7 @@ import type { HumanModel, PresetView } from "@/lib/models-registry";
 import {
   MULTI_MODEL_VIEWS,
   MULTI_MODEL_WORKERS,
+  assembleViewPrompt,
   buildMultiModelConsistencySuffix,
   buildMultiModelViewSuffix,
   mergeMultiModelGarmentIdentity,
@@ -1628,7 +1629,7 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
             if (!basePrompt) throw new Error(`Analyzer returned empty ${targetView} prompt`);
 	            const optimizedPrompt = optimizePromptForModel(
 	              modelId,
-	              `${basePrompt}${consistencySuffix}${buildMultiModelViewSuffix(targetView, hasBackReference)}${feedbackMemorySuffix(cloudHistoryStudio)}`
+	              assembleViewPrompt(basePrompt, consistencySuffix, buildMultiModelViewSuffix(targetView, hasBackReference), feedbackMemorySuffix(cloudHistoryStudio))
 	            );
             slotPrompts[idx] = optimizedPrompt;
             upsertPartialItem(targetView, { status: "generating", prompt: optimizedPrompt });
@@ -1659,6 +1660,8 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
                   overlay,
                   poseVariantIndex: multiModelPoseVariantIndex(targetView),
                   preserveSecondaryReferences: hasBackReference,
+                  // optimized above; generate() must not stack the GPT prefix a second time
+                  rawPrompt: true,
                   prompt: optimizedPrompt,
                 }),
               });
@@ -1901,7 +1904,7 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
                 if (!basePrompt) throw new Error(`Analyzer returned empty ${targetView} prompt`);
                 const optimizedPrompt = optimizePromptForModel(
                   modelId,
-                  `${basePrompt}${consistencySuffix}${buildMultiModelViewSuffix(targetView, hasBackReference)}${feedbackMemorySuffix(cloudHistoryStudio)}`
+                  assembleViewPrompt(basePrompt, consistencySuffix, buildMultiModelViewSuffix(targetView, hasBackReference), feedbackMemorySuffix(cloudHistoryStudio))
                 );
 
                 applySlot(targetView, { status: "generating", prompt: optimizedPrompt, error: "" });
@@ -1922,6 +1925,8 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
                     overlay,
                     poseVariantIndex: multiModelPoseVariantIndex(targetView),
                     preserveSecondaryReferences: hasBackReference,
+                    // optimized above; generate() must not stack the GPT prefix a second time
+                    rawPrompt: true,
                     prompt: optimizedPrompt,
                   }),
                 });

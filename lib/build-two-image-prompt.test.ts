@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildTwoImagePrompt, buildTwoPiecePrompt } from "./fal";
+import { buildModelSwapPromptVariants, buildTwoImagePrompt, buildTwoPiecePrompt, isSleevelessGarment, isTransientUpstreamError } from "./fal";
 
 const FEATURES = "a ribbed cream collar, a full-length center front zipper, two front welt pockets";
 const slots = (out: string) =>
@@ -291,5 +291,43 @@ describe("set layout separates the two pieces", () => {
   it("keeps the silhouette override the layout must not outrank", () => {
     expect(out).toContain("WHILE RETAINING");
     expect(out).toContain("Layout discipline must NOT override the reference silhouette");
+  });
+});
+
+describe("the plate's own top comes off entirely; a sleeveless garment means bare arms (DV67214, 2026-09-08)", () => {
+  const model = {
+    currentGarment: "peach knit cardigan with line-drawn graphic motif",
+    modelIdentity: "long straight blonde hair",
+    poseSummary: "standing, arms at sides",
+    sceneSummary: "off-white seamless backdrop, blue polka-dot jeans, bare feet",
+  } as any;
+  it("never asks to keep the part of the plate's top that does not conflict", () => {
+    for (const p of buildModelSwapPromptVariants("hip-length gray faux fur quilted zip-front vest", "sleeveless silhouette", model)) {
+      expect(p).not.toMatch(/remove (from the current look )?only the portion/);
+      expect(p).toContain("remove the peach knit cardigan with line-drawn graphic motif");
+      expect(p).toContain("none of it survives as a sleeve");
+      expect(p).toContain("comes off completely");
+    }
+  });
+  it("adds the bare-arms rule for a sleeveless garment only", () => {
+    const vest = buildModelSwapPromptVariants("gray faux fur vest", "", model);
+    const tee = buildModelSwapPromptVariants("white cotton tee", "short sleeves", model);
+    for (const p of vest) expect(p).toContain("SLEEVELESS: the gray faux fur vest has no sleeves");
+    for (const p of tee) expect(p).not.toContain("SLEEVELESS:");
+  });
+  it("reads sleeveless from the words we have", () => {
+    expect(isSleevelessGarment("quilted puffer vest")).toBe(true);
+    expect(isSleevelessGarment("ribbed tank top")).toBe(true);
+    expect(isSleevelessGarment("knit dress", "sleeveless silhouette, high neck")).toBe(true);
+    expect(isSleevelessGarment("long-sleeve vest jacket")).toBe(false);
+    expect(isSleevelessGarment("crew neck sweater", "long sleeves")).toBe(false);
+  });
+});
+
+describe("transient upstream errors are retried, everything else is not", () => {
+  it("recognises fal's downstream_service_error and 5xx statuses", () => {
+    expect(isTransientUpstreamError({ status: 500, body: { detail: [{ loc: ["body"], msg: "Downstream service error", type: "downstream_service_error", input: { prompt: "x" } }] } })).toBe(true);
+    expect(isTransientUpstreamError({ status: 503, message: "Service Unavailable" })).toBe(true);
+    expect(isTransientUpstreamError({ status: 422, body: { detail: [{ msg: "content_policy_violation" }] } })).toBe(false);
   });
 });

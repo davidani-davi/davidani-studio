@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  ANCHOR_RULE,
   LONG_LAYER_STYLING,
+  applyAnchor,
+  assembleViewPrompt,
   applyOperatorNote,
   applyPlainBack,
   applyProportions,
@@ -139,5 +142,34 @@ describe("applyOperatorNote — the Redo note inside the base prompt", () => {
   });
   it("leaves the prompt alone without a note", () => {
     expect(applyOperatorNote(base, "", "back")).toBe(base);
+  });
+});
+
+describe("assembleViewPrompt — the suffixes ahead of the negative prompt, where the GPT optimizer keeps them", () => {
+  const base = "Use Image A; take the vest from Image B. Negative prompt: grid, collage";
+  it("moves the negative prompt to the very end, after every suffix", () => {
+    const out = assembleViewPrompt(base, " Combined garment identity contract: a vest.", " Multi Model Studio directive: generate the side view only.");
+    expect(out.replace(/\s*Negative prompt:[\s\S]*$/i, "")).toContain("generate the side view only");
+    expect(out.replace(/\s*Negative prompt:[\s\S]*$/i, "")).toContain("Combined garment identity contract");
+    expect(out.endsWith("Negative prompt: grid, collage")).toBe(true);
+    expect(out.indexOf("Negative prompt:")).toBe(out.lastIndexOf("Negative prompt:"));
+  });
+  it("appends at the end without a negative prompt, and leaves a prompt alone without suffixes", () => {
+    expect(assembleViewPrompt("Use Image A.", "", " extra")).toBe("Use Image A. extra");
+    expect(assembleViewPrompt(base)).toBe(base);
+  });
+});
+
+describe("applyAnchor — the rendered front as the continuity reference", () => {
+  const base = "Use Image A; take the vest from Image B. Negative prompt: grid";
+  it("puts the anchor rule before the negative prompt when there is an anchor", () => {
+    const out = applyAnchor(base, true);
+    expect(out).toContain(ANCHOR_RULE.trim());
+    expect(out.indexOf("CONTINUITY ANCHOR")).toBeLessThan(out.indexOf("Negative prompt:"));
+    expect(ANCHOR_RULE).toContain("LAST input image is the FRONT view");
+    expect(ANCHOR_RULE).toContain("never a pose or framing reference");
+  });
+  it("leaves the prompt alone without one", () => {
+    expect(applyAnchor(base, false)).toBe(base);
   });
 });

@@ -2368,6 +2368,15 @@ export interface GarmentAdjustments {
 
 export type SwapScope = "upper-body" | "lower-body" | "full-look";
 
+/** Whether the garment being put on has no sleeves, read from the analyzer's own words. */
+export function isSleevelessGarment(garment: string, features = ""): boolean {
+  const text = `${garment} ${features}`.toLowerCase();
+  if (/\b(sleeveless|tank|cami|camisole|halter|strapless|tube top|racerback|waistcoat|gilet)\b/.test(text)) return true;
+  // a vest is sleeveless unless the copy says otherwise ("vest jacket" with sleeves is not a vest)
+  if (/\bvests?\b/.test(text) && !/\b(long|short|puff|bell|3\/4|three-quarter|cap)[- ]sleeves?\b/.test(text)) return true;
+  return false;
+}
+
 export function inferSwapScope(garment: string): SwapScope {
   const text = garment.toLowerCase();
 
@@ -2560,12 +2569,19 @@ export function buildModelSwapPromptVariants(
   const swapScope = swapScopeOverride ?? inferSwapScope(newGarment);
   const adjustmentClause = buildGarmentAdjustmentClause(adjustments);
   const lengthAuthorityClause = buildProductLengthAuthorityClause(swapScope);
+  // A sleeveless garment on a plate whose own top has sleeves (2026-09-08,
+  // DV67214 on studio 35): "remove only the portion that conflicts" kept the
+  // plate's sweater sleeves under the vest on the full shot and fused them
+  // into fur sleeves on the back. The arms are bare, in every view, full stop.
+  const sleevelessClause = isSleevelessGarment(newGarment, newGarmentFeatures)
+    ? ` SLEEVELESS: the ${newGarment} has no sleeves — the model's arms are bare skin from the shoulder to the hand, and no sleeve, undershirt or inner layer of any garment shows on either arm;`
+    : "";
 
   // Scope clause — vary the verb across variants for prompt diversity but
   // keep the underlying instruction identical.
   const scopeClauseFor = (verb: "replace" | "transfer" | "integrate", ng: string): string =>
     swapScope === "upper-body"
-      ? `${verb} only the upper-body garment area with the new ${ng}; preserve any visible skirt, pants, shorts, or other lower-body garment from Image A exactly as-is — same color, shape, hem, waistband, drape, and coverage; do not remove, crop out, fade out, or simplify the lower-body garment.`
+      ? `${verb} the upper-body garment area with the new ${ng}: the top the model wears in Image A comes off completely — none of its sleeves, cuffs, collar, hem or fabric remains visible under, beside or below the new ${ng}, and it is never kept as an inner layer; what shows under and around the new ${ng} is decided by Image B alone — if Image B shows a sleeveless garment or bare arms, the model's arms are bare skin from the shoulder down with no sleeve, undershirt or inner layer of any kind, and if Image B shows a top under an open layer, render that top as Image B shows it; preserve any visible skirt, pants, shorts, or other lower-body garment from Image A exactly as-is — same color, shape, hem, waistband, drape, and coverage; do not remove, crop out, fade out, or simplify the lower-body garment.`
       : swapScope === "lower-body"
       ? `${verb} only the lower-body garment area with the new ${ng}; preserve any visible top, jacket, sweater, blouse, shirt, or upper-body garment from Image A exactly as-is, and obey the specified leg silhouette exactly — preserve barrel curvature, wide-leg width, straight-leg vertical line, flare opening, taper, cuff, hem length, waistband rise, pocket placement, and fabric break without straightening, widening, or flattening.`
       : `${verb} the full visible outfit with the new ${ng}, since it is a full-look garment.`;
@@ -2594,7 +2610,7 @@ export function buildModelSwapPromptVariants(
       : "preserve every structural detail of the garment from Image B exactly;";
     return [
       `Use Image A as the base image and keep the model's body, face, identity (${mi}), pose (${ps}), hair, expression, lighting, shadows, camera angle, depth of field, and background (${sc}) completely unchanged;`,
-      `take the ${ng} from Image B and apply it onto the model — ${scopeClauseFor("replace", ng)} remove only the portion of ${cg} that conflicts with the new ${ng}, and carefully match lighting direction, fabric drape, body contour, perspective, and shadow behavior so everything blends naturally;`,
+      `take the ${ng} from Image B and apply it onto the model — ${scopeClauseFor("replace", ng)} remove the ${cg} entirely (none of it survives as a sleeve, collar, hem or inner layer),${sleevelessClause} and carefully match lighting direction, fabric drape, body contour, perspective, and shadow behavior so everything blends naturally;`,
       `STRUCTURE PRIORITY: render the garment with the EXACT silhouette and construction visible in Image B — body length, hem geometry (preserve any high-low, shirttail, stepped, or asymmetric hem with the back panel longer than the front exactly as shown), sleeve length and volume, cuff shape, neckline depth and shape, collar height, waistband, drape, and overall body fit;`,
       featureClause,
       antiLayeringFor("structure"),
@@ -2620,7 +2636,7 @@ export function buildModelSwapPromptVariants(
       : "keep every visible surface detail from Image B intact;";
     return [
       `Build the final image from Image A as the foundation, preserving every visual element exactly as shown — ${mi}, pose (${ps}), scene (${sc}), face, hair, posture, lighting setup, shadows, camera perspective, and depth of field, plus the rest of the visible outfit aside from the swap area;`,
-      `transfer the ${ng} from Image B onto the subject in Image A — ${scopeClauseFor("transfer", ng)} remove from the current look only the portion of ${cg} that the new ${ng} replaces, and adapt the garment to Image A's lighting intensity, body geometry, perspective, and shadow placement for seamless realism;`,
+      `transfer the ${ng} from Image B onto the subject in Image A — ${scopeClauseFor("transfer", ng)} remove the ${cg} from the current look entirely (none of it survives as a sleeve, collar, hem or inner layer),${sleevelessClause} and adapt the garment to Image A's lighting intensity, body geometry, perspective, and shadow placement for seamless realism;`,
       `SURFACE PRIORITY: the garment must match Image B's color exactly (every hue and saturation), the print pattern (every motif placement, density, and orientation), all trim and tape placement, hardware positions on the wearer-correct side (zippers, buttons, snaps, drawstrings), hem stitching color and width, and the precise fabric texture and sheen visible in Image B; do not mirror left/right artwork, do not relocate sleeve or chest details to the visible side just to make them readable; SCATTERED PATCH FIDELITY: if Image B shows multiple patches or motifs of similar size scattered all over the garment, reproduce ALL of them at their original relative sizes — do NOT scale up any single patch and do NOT merge multiple scattered patches into one oversized center graphic;`,
       featureClause,
       antiLayeringFor("surface"),
@@ -2645,7 +2661,7 @@ export function buildModelSwapPromptVariants(
       : "preserve every visible detail of the garment from Image B;";
     return [
       `Take Image A and preserve everything exactly as it is — ${mi}, pose (${ps}), scene (${sc}), face, hair, posture, lighting, shadows, camera angle, and the rest of the visible outfit aside from the swap area;`,
-      `extract the ${ng} from Image B and integrate it onto the model — ${scopeClauseFor("integrate", ng)} remove only the portion of ${cg} that the new garment replaces, and ensure consistent lighting, skin-tone interaction, perspective, and depth across the new garment;`,
+      `extract the ${ng} from Image B and integrate it onto the model — ${scopeClauseFor("integrate", ng)} remove the ${cg} entirely (none of it survives as a sleeve, collar, hem or inner layer),${sleevelessClause} and ensure consistent lighting, skin-tone interaction, perspective, and depth across the new garment;`,
       `CRITICAL DO-NOTS: (1) ${antiLayeringFor("strict").replace(/^[a-z]/, (c) => c.toUpperCase())} (2) do not split the garment from Image B into multiple pieces, even if the hem is asymmetric. (3) Do not change garment color, pattern, hardware position, trim placement, neckline, sleeve shape, or hem geometry away from Image B. (4) Do not change the model's face, body, pose, hair, expression, or proportions. (5) Do not change the background, lighting, exposure, or camera perspective. (6) Do not invent text, logos, or branding not present in Image B.`,
       featureClause,
       `the result must look like a single authentic fashion catalog photograph of this model in this pose, wearing the new ${ng} as ONE continuous garment with correct silhouette, drape, hem geometry, sleeve length, and trim placement — not a flat-lay reproduction and not split into multiple pieces;`,
@@ -3175,12 +3191,43 @@ export function sanitizeRejectedPortraitPrompt(prompt: string): string {
   );
 }
 
+/**
+ * fal returns `downstream_service_error` when the provider behind the endpoint
+ * (OpenAI for GPT Image 2) hiccups; the same request succeeds a moment later
+ * (six of six retried cleanly in the 2026-09-07 wardrobe batch). A render is
+ * two minutes of someone's time, so it is retried here rather than surfaced
+ * as a failed view. Anything else — a 422, a content check — throws at once.
+ */
+export function isTransientUpstreamError(err: any): boolean {
+  const status = Number(err?.status || 0);
+  if (status === 502 || status === 503 || status === 504) return true;
+  const text = validationErrorDetail(err);
+  return /downstream_service_error|Downstream service error|temporarily unavailable|upstream (?:error|timeout)/i.test(text);
+}
+
+async function subscribeWithRetry(endpoint: string, input: Record<string, unknown>, retries = 2): Promise<any> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await fal.subscribe(endpoint, { input, logs: false });
+    } catch (err: any) {
+      if (attempt >= retries || !isTransientUpstreamError(err)) throw err;
+      console.warn(`[generate] ${endpoint} transient upstream error, retry ${attempt + 1}/${retries}: ${validationErrorDetail(err)}`);
+      await new Promise((r) => setTimeout(r, 4000 * (attempt + 1)));
+    }
+  }
+}
+
 function validationErrorDetail(err: any): string {
   const detail = err?.body?.detail ?? err?.body?.error;
   if (typeof detail === "string") return detail;
   if (detail) {
     try {
-      return JSON.stringify(detail);
+      // fal echoes the whole request `input` (the prompt, thousands of
+      // characters) inside every error entry; the person reading the error
+      // needs the message, not the prompt.
+      const strip = (d: unknown) =>
+        d && typeof d === "object" && !Array.isArray(d) ? Object.fromEntries(Object.entries(d).filter(([k]) => k !== "input")) : d;
+      return JSON.stringify(Array.isArray(detail) ? detail.map(strip) : strip(detail));
     } catch {
       return String(detail);
     }
@@ -3618,7 +3665,7 @@ export async function generate(params: GenerateParams): Promise<GenerationResult
 
   let result: any;
   try {
-    result = await fal.subscribe(model.endpoint, { input, logs: false });
+    result = await subscribeWithRetry(model.endpoint, input);
   } catch (err: any) {
     const isRejectedPortrait =
       model.inputShape === "gpt" &&
