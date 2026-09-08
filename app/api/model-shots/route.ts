@@ -30,6 +30,7 @@ import { uploadToFal } from "@/lib/fal";
 import { restoreRenderOnPlate } from "@/lib/plate-restore-run";
 import type { PlateRestoreReport } from "@/lib/plate-restore";
 import { faceAnchorFor, HEAD_SHARE, type FaceAnchorReport } from "@/lib/face-anchor";
+import { houseFaceOf, noPlateVariantOf, shootNoPlate } from "@/lib/no-plate";
 import sharp from "sharp";
 import { getPosePublicPath, getPoseUrl, isKnownHumanModel } from "@/lib/models-registry";
 import { findUserModelViewUrl } from "@/lib/user-assets";
@@ -247,6 +248,26 @@ async function renderShot(req: Request, body: any): Promise<Response> {
   known.hem = known.hem || hem;
   const framing = framingFor(category, view, hem);
   const views = shotViews(category);
+
+  /**
+   * The no-plate path (lib/no-plate.ts, 2026-09-08): GPT Image 2.5 renders
+   * the frame from the house face references and the garment photo. No plate
+   * is assigned, no analyzer runs and there is nothing to restore onto; the
+   * anchor still rides last for the views after the front. The extension asks
+   * for it with `engine: "gpt25"` and names the face (`face` or the picker's
+   * humanModelId "face:vision"); the variant is flare unless asked otherwise.
+   */
+  if (body.engine === "gpt25") {
+    const face = houseFaceOf(body.face) ?? houseFaceOf(humanModelId) ?? "vision";
+    try {
+      return json(await shootNoPlate({
+        origin: new URL(req.url).origin, face, variant: noPlateVariantOf(body.variant),
+        view, framing, category, hem, known, note, garmentImageUrls, anchorImageUrl,
+      }));
+    } catch (err: any) {
+      return json({ ok: false, view, engine: "gpt25", face, error: String(err?.message || err) }, 502);
+    }
+  }
   // The head crop for the side and full views (FACE_RULE, lib/face-anchor.ts):
   // cut from the front while the analyzer runs. The back shows no face, and
   // a waist-down front (bottoms) has none to cut. A failure ships the view
