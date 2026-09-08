@@ -192,9 +192,24 @@ export const ANCHOR_RULE =
   "what shows under and around it (bare arms or an inner layer, the bottoms, the shoes), and her face, hair and skin. Match all of that exactly, so this view and the front read as one photoshoot of one garment, with only the camera angle changed. " +
   "It is a continuity reference, never a pose or framing reference: the pose, framing and crop come from the first image only. ";
 
-export function applyAnchor(basePrompt: string, hasAnchor: boolean): string {
+/**
+ * The face anchor (2026-09-08, lib/face-anchor.ts): a close crop of the head
+ * cut from the front render, sent as one more reference on the side and
+ * full views, where the whole-front anchor leaves the face too small to
+ * hold. It rides after the front, so the front becomes the second-to-last
+ * input and the ANCHOR_RULE's ordinal moves with it.
+ */
+export const FACE_RULE =
+  "FACE ANCHOR: the LAST input image is a close crop of this same model's head, cut from that approved front view. " +
+  "The face in this view must be that person: the same bone structure, eyes, brows, nose, lips, skin tone, hair colour, hairstyle and hairline, seen from this view's angle. " +
+  "Copy the likeness, not the picture: it is a small head crop and sets nothing about the pose, framing, crop, scale or what she wears. ";
+
+export function applyAnchor(basePrompt: string, hasAnchor: boolean, hasFace = false): string {
   const p = String(basePrompt || "");
-  return hasAnchor && p ? insertBeforeNegative(p, ANCHOR_RULE.trim()) : p;
+  if (!hasAnchor || !p) return p;
+  if (!hasFace) return insertBeforeNegative(p, ANCHOR_RULE.trim());
+  const anchor = ANCHOR_RULE.replace("the LAST input image is the FRONT view", "the SECOND-TO-LAST input image is the FRONT view");
+  return insertBeforeNegative(p, `${anchor.trim()} ${FACE_RULE.trim()}`);
 }
 
 /**

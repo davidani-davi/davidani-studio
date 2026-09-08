@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   ANCHOR_RULE,
+  FACE_RULE,
   LONG_LAYER_STYLING,
   applyAnchor,
   assembleViewPrompt,
@@ -171,5 +172,15 @@ describe("applyAnchor — the rendered front as the continuity reference", () =>
   });
   it("leaves the prompt alone without one", () => {
     expect(applyAnchor(base, false)).toBe(base);
+  });
+  it("moves the front to second-to-last and names the head crop when a face anchor follows", () => {
+    const out = applyAnchor(base, true, true);
+    expect(out).toContain("SECOND-TO-LAST input image is the FRONT view");
+    expect(out).not.toContain("the LAST input image is the FRONT view");
+    expect(out).toContain(FACE_RULE.trim());
+    expect(out.indexOf("FACE ANCHOR")).toBeGreaterThan(out.indexOf("CONTINUITY ANCHOR"));
+    expect(out.indexOf("FACE ANCHOR")).toBeLessThan(out.indexOf("Negative prompt:"));
+    // without a face crop the wording is untouched
+    expect(applyAnchor(base, true, false)).toContain("the LAST input image is the FRONT view");
   });
 });

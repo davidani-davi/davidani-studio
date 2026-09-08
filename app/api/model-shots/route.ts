@@ -29,6 +29,7 @@ import { GPT_NATIVE_SIZE, garmentMaskFromDiff, gptVariantOf, leanBrief, maskCove
 import { uploadToFal } from "@/lib/fal";
 import { restoreRenderOnPlate } from "@/lib/plate-restore-run";
 import type { PlateRestoreReport } from "@/lib/plate-restore";
+import { faceAnchorFor, HEAD_SHARE, type FaceAnchorReport } from "@/lib/face-anchor";
 import sharp from "sharp";
 import { getPosePublicPath, getPoseUrl, isKnownHumanModel } from "@/lib/models-registry";
 import { findUserModelViewUrl } from "@/lib/user-assets";
@@ -246,6 +247,17 @@ async function renderShot(req: Request, body: any): Promise<Response> {
   known.hem = known.hem || hem;
   const framing = framingFor(category, view, hem);
   const views = shotViews(category);
+  // The head crop for the side and full views (FACE_RULE, lib/face-anchor.ts):
+  // cut from the front while the analyzer runs. The back shows no face, and
+  // a waist-down front (bottoms) has none to cut. A failure ships the view
+  // without it, the reason attached.
+  const frontFraming = framingFor(category, "front", hem);
+  const faceAnchorPromise: Promise<{ url: string | null; report: FaceAnchorReport }> | null =
+    anchorImageUrl && (view === "side" || view === "full") && frontFraming !== "low" && body.faceAnchor !== false
+      ? faceAnchorFor(anchorImageUrl, HEAD_SHARE[frontFraming])
+          .then((r) => { console.log(`[face-anchor] ${view} ${r.report.applied ? `cut ${r.report.method} ${JSON.stringify(r.report.box)}` : `skipped: ${r.report.skipReason}`} (${r.ms}ms)`); return r; })
+          .catch((err: any) => { const reason = String(err?.message || err); console.warn(`[face-anchor] ${view} failed: ${reason}`); return { url: null, report: { applied: false, failed: true, skipReason: reason } }; })
+      : null;
   const catalogue = await listAllHumanModels();
 
   /**
@@ -386,13 +398,16 @@ async function renderShot(req: Request, body: any): Promise<Response> {
     // The rules go into the base prompt itself, ahead of the analyzer's
     // negative prompt; assembleViewPrompt keeps the suffixes there too, since
     // the GPT optimizer drops everything after that marker.
+    const face = faceAnchorPromise ? await faceAnchorPromise : null;
+    const faceUrl = face?.url || "";
     const basePrompt = applyAnchor(
       applyOperatorNote(
         applyPlainBack(applyProportions(applyStyling(String(analyzeData.prompt || "").trim(), styling)), view, hasBackReference),
         note,
         view
       ),
-      Boolean(anchorImageUrl)
+      Boolean(anchorImageUrl),
+      Boolean(faceUrl)
     );
     if (!basePrompt) throw new Error(`analyzer returned an empty ${view} prompt`);
 
@@ -455,8 +470,9 @@ async function renderShot(req: Request, body: any): Promise<Response> {
       humanModelId,
       poseId,
       view,
-      // the anchor rides after the garment photos: "the LAST input image"
-      garmentImageUrls: anchorImageUrl ? [...garmentImageUrls, anchorImageUrl] : garmentImageUrls,
+      // the anchor rides after the garment photos ("the LAST input image"),
+      // and the head crop after the anchor when there is one (FACE_RULE)
+      garmentImageUrls: anchorImageUrl ? [...garmentImageUrls, anchorImageUrl, ...(faceUrl ? [faceUrl] : [])] : garmentImageUrls,
       aspectRatio: "2:3",
       resolution,
       format: "png",
@@ -496,7 +512,8 @@ async function renderShot(req: Request, body: any): Promise<Response> {
       ...(url !== rawUrl ? { rawUrl } : {}),
       ...(restore ? { restore } : {}),
       ...(gptVariant !== "auto" ? { gptVariant, ...(maskInfo ? { mask: maskInfo } : {}) } : {}),
-      garment: identity.garment, anchored: Boolean(anchorImageUrl),
+      garment: identity.garment, anchored: Boolean(anchorImageUrl), faceAnchored: Boolean(faceUrl),
+      ...(face ? { face: face.report } : {}),
       humanModelId, poseId, assigned, category, hem, framing, note: note || undefined,
       // What the known facts changed, so a wrong contract is visible in the
       // panel and countable in the eval rather than silent.
