@@ -64,3 +64,6 @@ Backup of the pre-engine pipeline: tag `model-maker-v1-nano-banana-2026-09-05`.
   floor shadow — re-toned to the plate by a low-frequency colour match; the plate's sweep takes over
   outside it. Plate's model + its foot shadow still lifted (row-wise fill). Verified on the DJ62231 raws
   locally; live rerun next.
+- Live rerun DJ62231 on 31d3fb8 (2026-09-08 15:55): all 5 views ok, no halo, boots and floor shadow are the
+  render's own, plate sweep outside. Sheet in the session scratchpad (pilot2/). Restore is live for every
+  shot from here; `restore: false` still opts out.
