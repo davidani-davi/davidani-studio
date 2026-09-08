@@ -367,7 +367,7 @@ function displayModelName(modelId: string, folderName: string): string {
  */
 export function listHumanModels(): HumanModel[] {
   const modelsDir = path.join(process.cwd(), "public", "models");
-  if (!fs.existsSync(modelsDir)) return STATIC_HUMAN_MODELS;
+  if (!fs.existsSync(modelsDir)) return staticModelsTagged();
 
   const entries = fs.readdirSync(modelsDir, { withFileTypes: true });
   const models: HumanModel[] = [];
@@ -399,7 +399,18 @@ export function listHumanModels(): HumanModel[] {
   });
   // what each model wears below the waist, from plates.json (lib/plate-wear.ts)
   const tagged = mergePlateWear(models, readPlateWear(modelsDir));
-  return tagged.length > 0 ? tagged : STATIC_HUMAN_MODELS;
+  return tagged.length > 0 ? tagged : staticModelsTagged();
+}
+
+/**
+ * The generated manifest with plates.json's tags merged in. On Vercel the
+ * function has no public/models on disk, so THIS is what serves — and it is
+ * where studio 38-79 kept coming back autoPool:true (2026-09-08): the manifest
+ * was snapshotted before plates.json learned `auto: false`, and the fallback
+ * skipped the merge. The bundled plates.json is always current.
+ */
+export function staticModelsTagged(): HumanModel[] {
+  return mergePlateWear(STATIC_HUMAN_MODELS, readPlateWear(path.join(process.cwd(), "public", "models")));
 }
 
 /** What the deployed function knows about plates.json — surfaced by GET
