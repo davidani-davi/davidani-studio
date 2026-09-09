@@ -1,3 +1,5 @@
+**Update 2026-09-08 21:25 — saved shots.** `lib/saved-shots.ts` + `/api/saved-shots` (GET/POST/DELETE, token or cookie, PUBLIC_PATHS): per-style saved model shots, images copied to Blob `saved-shots/<STYLE>/<id>`, index `saved-shots/index.json`. Extension 2.55.0 panel section 4 and `saved_shots.py` (faire-management) use it. Commit 003f3ee, live.
+
 # Handoff
 
 **Update 2026-09-08 19:10:** GPT Image 2.5 (`gpt-image-25`) is now the DEFAULT modelId of
