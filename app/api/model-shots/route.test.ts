@@ -157,6 +157,31 @@ describe("/api/model-shots known-facts contract", () => {
 });
 
 describe("/api/model-shots async tasks", () => {
+  it("reserves a client request once and recovers it without another paid render", async () => {
+    process.env.MODEL_SHOTS_TOKEN = "s3cret";
+    delete process.env.BLOB_READ_WRITE_TOKEN;
+    const scheduled: (() => Promise<unknown>)[] = [];
+    vi.doMock("next/server", async (importOriginal) => {
+      const orig = await importOriginal<typeof import("next/server")>();
+      return { ...orig, after: (fn: () => Promise<unknown>) => { scheduled.push(fn); } };
+    });
+    const { POST } = await load();
+    const auth = { "X-DDTO-TOKEN": "s3cret" };
+    const body = { async: true, requestId: crypto.randomUUID(), view: "front" };
+    const responses = await Promise.all([POST(req(auth, body)), POST(req(auth, body))]);
+    expect(responses.every(r => [200, 503].includes(r.status))).toBe(true);
+    expect(scheduled).toHaveLength(1);
+    const recovered = await POST(req(auth, body));
+    expect(recovered.status).toBe(200);
+    expect((await recovered.json()).taskId).toBe(body.requestId);
+    expect(scheduled).toHaveLength(1);
+    expect((await POST(req(auth, { ...body, view: "side" }))).status).toBe(409);
+    expect((await POST(req(auth, { ...body, requestId: "../bad" }))).status).toBe(400);
+    await scheduled[0](); // invalid garment fails before any paid API call
+    expect((await POST(req(auth, body))).status).toBe(200);
+    expect(scheduled).toHaveLength(1);
+    vi.doUnmock("next/server");
+  });
   it("answers with a task id, renders after the response, and GET ?taskId= hands the outcome back", async () => {
     process.env.MODEL_SHOTS_TOKEN = "s3cret";
     delete process.env.BLOB_READ_WRITE_TOKEN;

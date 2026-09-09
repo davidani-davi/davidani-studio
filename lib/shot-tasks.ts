@@ -26,6 +26,7 @@ export interface ShotTask {
   updatedAt: number;
   /** the exact JSON the synchronous POST would have answered with */
   result?: Record<string, unknown>;
+  requestFingerprint?: string;
 }
 
 const BLOB_PREFIX = "shot-tasks/";
@@ -65,10 +66,31 @@ export async function writeShotTask(task: ShotTask): Promise<void> {
   }
   await put(blobKey(task.id), payload, {
     access: "public",
+    addRandomSuffix: false,
     contentType: "application/json",
     allowOverwrite: true,
     cacheControlMaxAge: 60,
   });
+}
+
+/** Reserve a client request exactly once before scheduling a paid render. */
+export async function createShotTask(task: ShotTask): Promise<boolean> {
+  if (!isSafeTaskId(task.id)) throw new Error("Invalid task ID");
+  const payload = JSON.stringify(task);
+  if (!canUseBlob()) {
+    if (process.env.VERCEL) throw new Error("Persistent shot storage is required");
+    await fs.mkdir(LOCAL_DIR, { recursive: true });
+    try { await fs.writeFile(localPath(task.id), payload, { flag: "wx" }); return true; }
+    catch (error: any) { if (error?.code === "EEXIST") return false; throw error; }
+  }
+  try {
+    await put(blobKey(task.id), payload, { access: "public", addRandomSuffix: false,
+      allowOverwrite: false, contentType: "application/json", cacheControlMaxAge: 60 });
+    return true;
+  } catch (error: any) {
+    if (error?.name === "BlobPreconditionFailedError" || /already exists/i.test(String(error?.message || ""))) return false;
+    throw error;
+  }
 }
 
 export async function readShotTask(id: string): Promise<ShotTask | null> {

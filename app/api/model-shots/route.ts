@@ -1,5 +1,6 @@
 import { NextResponse, after } from "next/server";
-import { readShotTask, writeShotTask } from "@/lib/shot-tasks";
+import { readShotTask, writeShotTask, createShotTask, isSafeTaskId } from "@/lib/shot-tasks";
+import { createHash } from "node:crypto";
 import { POST as analyzeModel } from "../analyze-model/route";
 import { POST as generateModel } from "../generate-model/route";
 import { listAllHumanModels, plateTagStats, type PresetView } from "@/lib/models-registry";
@@ -187,10 +188,22 @@ export async function POST(req: Request) {
    * whole 800 s inside after().
    */
   if (body.async === true) {
-    const id = crypto.randomUUID();
+    if (body.requestId != null && (typeof body.requestId !== "string" || !isSafeTaskId(body.requestId)))
+      return json({ ok: false, error: "invalid requestId" }, 400);
+    const id = body.requestId || crypto.randomUUID();
+    // The exact saved request is resent on recovery; changed inputs require a
+    // new ID. The reservation prevents parallel devices from scheduling twice.
+    const requestFingerprint = createHash("sha256").update(JSON.stringify(body)).digest("hex");
     const view = String(MULTI_MODEL_VIEWS.includes(body.view) ? body.view : "front");
     const createdAt = Date.now();
-    await writeShotTask({ id, status: "running", view, createdAt, updatedAt: createdAt });
+    const reserved = await createShotTask({ id, status: "running", view, createdAt, updatedAt: createdAt, requestFingerprint });
+    if (!reserved) {
+      const existing = await readShotTask(id);
+      if (!existing) return json({ ok: false, error: "request reserved; retry the same request shortly" }, 503);
+      if (existing.requestFingerprint !== requestFingerprint)
+        return json({ ok: false, error: "requestId already used with different inputs" }, 409);
+      return json({ ok: true, taskId: id, view: existing.view, status: existing.status });
+    }
     after(async () => {
       let result: Record<string, unknown>;
       try {
@@ -199,7 +212,7 @@ export async function POST(req: Request) {
       } catch (err: any) {
         result = { ok: false, view, error: String(err?.message || err) };
       }
-      await writeShotTask({ id, status: result.ok ? "done" : "failed", view, createdAt, updatedAt: Date.now(), result });
+      await writeShotTask({ id, status: result.ok ? "done" : "failed", view, createdAt, updatedAt: Date.now(), result, requestFingerprint });
     });
     return json({ ok: true, taskId: id, view });
   }
