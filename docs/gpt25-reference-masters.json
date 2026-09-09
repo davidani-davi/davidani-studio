@@ -1,0 +1,76 @@
+{
+  "date": "2026-09-09T18:50:40.379Z",
+  "engine": "openai/gpt-image-2.5/sunburst/edit",
+  "scope": "Four front reference masters and identical crop/front copies. Celine 1 is the exact user-approved comparison winner; other three are one original-photo edit each. Other views unchanged.",
+  "settings": {
+    "image_size": {
+      "width": 2048,
+      "height": 3072
+    },
+    "quality": "high",
+    "output_format": "png"
+  },
+  "assets": [
+    {
+      "id": "97",
+      "name": "vision-1",
+      "asset": "public/models/studio 97/front.png",
+      "sha256": "39b452d760166b19319ecdcbd192383d5b22602945e061c9f16670ae9c6539f0"
+    },
+    {
+      "id": "98",
+      "name": "celine-1",
+      "asset": "public/models/studio 98/front.png",
+      "sha256": "f10f3e9a0ed8b61cd0adfacb1c143c11b2a20cef77ca3713e80780df2176e808"
+    },
+    {
+      "id": "99",
+      "name": "vision-2",
+      "asset": "public/models/studio 99/front.png",
+      "sha256": "19857087a5f93f53dcf93c6864dfed8234c0b8e9f98e615e6b4a5940d5c59db8"
+    },
+    {
+      "id": "100",
+      "name": "celine-2",
+      "asset": "public/models/studio 100/front.png",
+      "sha256": "ace430066ea5af42b88e5a86f2c61815c5afe014b4fcdc820af19c93b15b78ea"
+    }
+  ],
+  "sources": [
+    {
+      "key": "pink",
+      "file": "detp58027-house-references/originals/DETP58027_6.jpg",
+      "sha256": "672ff6715e8b333cb25387610ad0f0b0c80ae404c263145208373d418f140ec1"
+    },
+    {
+      "key": "brown",
+      "file": "reference-02-dt60007n/source/original.jpg",
+      "sha256": "05af804182f05a946b42733d782f7fba88f35374aa6991dfc871f2122fe45c03"
+    },
+    {
+      "key": "vision",
+      "file": "detp58027-house-references/identity/vision-face.png",
+      "sha256": "344623a50d91767fc0e146a5a471a0bb537d408211fc4a74f69aa02a1ea88dbb"
+    },
+    {
+      "key": "celine",
+      "file": "detp58027-house-references/identity/celine-face.png",
+      "sha256": "e8b9d964a09e51560436c6efd98440984fd82e193c73c530518c4d2e4b3d991d"
+    }
+  ],
+  "prompts": [
+    {
+      "id": 97,
+      "prompt": "Photo 1 is the original studio photograph to edit. Photo 2 supplies only Vision's facial identity and golden blonde hair.\nReplace the woman’s face and hair in photo 1 with Vision’s recognizable face and hair, adapted to photo 1’s head angle and neutral expression. Keep the original head size and natural neck length. Match the soft photographic skin finish, lighting and skin color of photo 1; do not copy exaggerated skin texture from photo 2. No added pores, stippling, flaky texture, grain or sharpening. Keep the eyes and lips naturally in focus, with gentle skin tones and no blurry face or plastic sheen.\nPreserve photo 1’s exact body, pose, hands, jewelry, pink and yellow striped shirt and shorts, garment folds, background, shadows and full original framing. The only other edit is removing the small “22” tattoo from the upper arm. Do not restyle the clothes, invent details or add text. Return one seamless photograph."
+    },
+    {
+      "id": 99,
+      "prompt": "Photo 1 is the original studio photograph to edit. Photo 2 supplies only Vision's facial identity and golden blonde hair.\nReplace the woman’s face and hair in photo 1 with Vision’s recognizable face and hair, adapted to photo 1’s head angle and neutral expression. Keep the original head size and natural neck length. Match the soft photographic skin finish, lighting and skin color of photo 1; do not copy exaggerated skin texture from photo 2. No added pores, stippling, flaky texture, grain or sharpening. Keep the eyes and lips naturally in focus, with gentle skin tones and no blurry face or plastic sheen.\nPreserve photo 1’s exact body, pose, hands, jewelry, brown printed long-sleeve top and white trousers, garment folds, background, shadows and full original framing. Do not restyle the clothes, invent details or add text. Return one seamless photograph."
+    },
+    {
+      "id": 100,
+      "prompt": "Photo 1 is the original studio photograph to edit. Photo 2 supplies only Celine's facial identity and dark brown hair.\nReplace the woman’s face and hair in photo 1 with Celine’s recognizable face and hair, adapted to photo 1’s head angle and neutral expression. Keep the original head size and natural neck length. Match the soft photographic skin finish, lighting and skin color of photo 1; do not copy exaggerated skin texture from photo 2. No added pores, stippling, flaky texture, grain or sharpening. Keep the eyes and lips naturally in focus, with gentle skin tones and no blurry face or plastic sheen.\nPreserve photo 1’s exact body, pose, hands, jewelry, brown printed long-sleeve top and white trousers, garment folds, background, shadows and full original framing. Do not restyle the clothes, invent details or add text. Return one seamless photograph."
+    }
+  ],
+  "celine1Prompt": "Photo 1 is the original studio photograph to edit. Photo 2 supplies only Celine's facial identity and dark brown hair.\nReplace the woman’s face and hair in photo 1 with Celine’s recognizable face and hair, adapted to photo 1’s head angle and neutral expression. Keep the original head size and natural neck length. Match the soft photographic skin finish, lighting and skin color of photo 1; do not copy exaggerated skin texture from photo 2. No added pores, stippling, flaky texture, grain or sharpening. Keep the eyes and lips naturally in focus, with gentle skin tones and no blurry face or plastic sheen.\nPreserve photo 1’s exact body, pose, hands, jewelry, pink and yellow striped shirt and shorts, garment folds, background, shadows and full original framing. The only other edit is removing the small “22” tattoo from the upper arm. Do not restyle the clothes, invent details or add text. Return one seamless photograph."
+}
