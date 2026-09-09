@@ -22,7 +22,7 @@ export const maxDuration = 60;
  *   GET    ?style=DT78080          → { ok, style, shots }
  *   GET                            → { ok, styles: [{ style, count, updatedAt }] }
  *   POST   { style, shots: [{ view, url, humanModelId?, engine?, note?, by? }] }
- *                                  → { ok, style, shots, added }
+ *                                  → { ok, style, shots, added, failed } (422 when nothing could be saved)
  *   DELETE { style, id }           → { ok, style, shots }
  *   DELETE { gc: true }            → { ok, removed: [pathnames] }  (orphaned images, legacy index)
  */
@@ -76,8 +76,13 @@ export async function POST(req: Request) {
   if (!inputs.length) return bad("shots must list at least one { view, url }");
   if (inputs.length > 16) return bad("at most 16 shots per save");
   try {
-    const { entry, added } = await saveShots(style, inputs);
-    return NextResponse.json({ ok: true, style, shots: entry.shots, added, updatedAt: entry.updatedAt });
+    const { entry, added, failed } = await saveShots(style, inputs);
+    // Nothing saved and something failed = the caller's request failed (a
+    // dead render URL); a partial save still answers ok with `failed` listed.
+    if (!added.length && failed.length) {
+      return NextResponse.json({ ok: false, error: `not saved — ${failed.map((f) => `${f.view}: ${f.error}`).join("; ")}`, failed, style, shots: entry.shots }, { status: 422 });
+    }
+    return NextResponse.json({ ok: true, style, shots: entry.shots, added, failed, updatedAt: entry.updatedAt });
   } catch (err: any) {
     return bad(String(err?.message || err), 500);
   }

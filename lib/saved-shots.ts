@@ -179,26 +179,27 @@ export function imageType(bytes: Uint8Array, hint = "", url = ""): { contentType
   return { contentType: `image/${ext === "jpg" ? "jpeg" : ext}`, ext };
 }
 
-/** Copy the image into Blob storage so the saved shot outlives its source URL. */
+/**
+ * Copy the image into Blob storage so the saved shot outlives its source URL.
+ * A source that cannot be read is an error, not a saved shot: the first cut
+ * kept the URL with durable:false and a dead link sat in the panel as a
+ * broken picture. Without a Blob token (dev) the source URL is kept as is.
+ */
 async function copyImage(style: string, id: string, url: string): Promise<{ url: string; durable: boolean }> {
   if (!canUseBlob()) return { url, durable: false };
-  try {
-    const res = await fetch(url, { cache: "no-store" });
-    if (!res.ok) throw new Error(`source HTTP ${res.status}`);
-    const bytes = Buffer.from(await res.arrayBuffer());
-    if (!bytes.length) throw new Error("empty image");
-    const { contentType, ext } = imageType(bytes, res.headers.get("content-type") || "", url);
-    const blob = await put(`${PREFIX}${style}/${id}.${ext}`, bytes, {
-      access: "public",
-      contentType,
-      addRandomSuffix: false,
-      allowOverwrite: true,
-    });
-    return { url: blob.url, durable: true };
-  } catch (err) {
-    console.warn(`[saved-shots] copy failed for ${style} ${id}, keeping the source URL:`, err);
-    return { url, durable: false };
-  }
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) throw new Error(`source HTTP ${res.status}`);
+  const bytes = Buffer.from(await res.arrayBuffer());
+  if (!bytes.length) throw new Error("empty image");
+  const { contentType, ext } = imageType(bytes, res.headers.get("content-type") || "", url);
+  if (!/^image\//.test(contentType)) throw new Error("source is not an image");
+  const blob = await put(`${PREFIX}${style}/${id}.${ext}`, bytes, {
+    access: "public",
+    contentType,
+    addRandomSuffix: false,
+    allowOverwrite: true,
+  });
+  return { url: blob.url, durable: true };
 }
 
 export async function readSavedStyle(style: string): Promise<SavedStyle> {
@@ -228,16 +229,27 @@ export async function listSavedStyles(): Promise<{ style: string; count: number;
   return [...byStyle.entries()].map(([style, v]) => ({ style, ...v })).sort((a, b) => b.updatedAt - a.updatedAt);
 }
 
-export async function saveShots(style: string, inputs: SaveInput[]): Promise<{ entry: SavedStyle; added: SavedShot[] }> {
+export interface SaveFailure { view: string; url: string; error: string; }
+
+export async function saveShots(style: string, inputs: SaveInput[]): Promise<{ entry: SavedStyle; added: SavedShot[]; failed: SaveFailure[] }> {
   const current = await readShots(style);
   // Skip the copy for anything already saved (by source URL) — the merge would drop it anyway.
   const known = new Set(current.flatMap((s) => [s.url, s.source].filter(Boolean) as string[]));
   const fresh = inputs.filter((i, n) => !known.has(i.url) && inputs.findIndex((o) => o.url === i.url) === n);
   const now = Date.now();
-  const incoming: SavedShot[] = await Promise.all(
-    fresh.map(async (i, n) => {
+  const failed: SaveFailure[] = [];
+  const incoming = (await Promise.all(
+    fresh.map(async (i, n): Promise<SavedShot | null> => {
       const id = shotId();
-      const copy = await copyImage(style, id, i.url);
+      let copy: { url: string; durable: boolean };
+      try {
+        copy = await copyImage(style, id, i.url);
+      } catch (err: any) {
+        const error = String(err?.message || err);
+        console.warn(`[saved-shots] ${style} ${i.view} not saved — ${error} (${i.url})`);
+        failed.push({ view: i.view, url: i.url, error });
+        return null;
+      }
       const shot: SavedShot = {
         id, view: i.view, url: copy.url, source: i.url, savedAt: now + n, durable: copy.durable,
         ...(i.humanModelId ? { humanModelId: i.humanModelId } : {}),
@@ -252,12 +264,12 @@ export async function saveShots(style: string, inputs: SaveInput[]): Promise<{ e
       } else await localWrite(style, shot);
       return shot;
     })
-  );
+  )).filter(Boolean) as SavedShot[];
   const merged = mergeShots(current, incoming);
   // Past the cap, the oldest go — the pure merge already left them out of `shots`.
   const kept = new Set(merged.shots.map((s) => s.id));
   await Promise.all([...current, ...incoming].filter((s) => !kept.has(s.id)).map((s) => dropShot(style, s.id, s)));
-  return { entry: { style, shots: merged.shots, updatedAt: now }, added: merged.added };
+  return { entry: { style, shots: merged.shots, updatedAt: now }, added: merged.added, failed };
 }
 
 /** Delete one shot: its metadata blob and, when we hold the copy, its image. */
