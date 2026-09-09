@@ -1,28 +1,21 @@
-# Handoff — resumable cross-device Model Studio requests
-Written 2026-09-09 by Codex. Branch main; prior 54ece9f (assets ac8104c).
+# Handoff — resumable Model Studio shipped
+Written 2026-09-09 09:36 PDT by Codex. Branch main; last code d4b8369.
 
 ## Accomplished
-- Model Shots accepts requestId for async requests. Exclusive Blob/file claim
-  schedules each ID once; identical retries return its task; changed inputs 409.
-- Shot tasks retain request fingerprint. Production refuses local /tmp claims
-  when persistent Blob storage is missing. Explicit fixed Blob filenames.
-- 726 tests pass; npm run build passes. No paid generation or ERP/Faire writes.
-- This commit will be pushed; verify production deployment before integrating.
+- d4b8369 is deployed. Model Shots accepts requestId for async requests.
+  Exclusive Blob/file claim schedules each ID once; retries return the task;
+  changed inputs conflict. Production refuses temporary local task claims.
+- 726 tests and production build passed. Live duplicate-ID probe passed.
+- Faire management repo now ships shared listing workspaces: app 2.14.0,
+  extension 2.62.0, dedicated private Blob state and server Studio/ERP/Faire bridge.
+- One real GPT2.5 Vision1 front for pink DET62209 completed and survived
+  phone-layout reload + second client. Saved a durable copy via Saved Shots.
+- No real Faire draft or ERP photo upload made by this verification.
 
-## Active work (Faire management repo)
-- User /goal: shared unlisted POs, Model Studio and drafting across extension,
-  Faire Daily web, iPhone/iPad PWA. Root agent continues there.
-- New encrypted conditional-write workspace API, revision-aware client and
-  durable generation intents in ~/Services/davidani-faire-management.
-- New mobile Listings workbench is in progress, not yet ready/deployed.
-- Next: connect shared Studio controls, server adapters and draft jobs; verify
-  request recovery live without rendering (invalid garment request), then one
-  controlled end-to-end render, plus cross-device browser tests and deployment.
-
-## Existing references / gotchas
-- Live options Vision 1/2 = studio 97/99; Celine 1/2 = studio 98/100.
-- 36 assets previously byte-verified; four GPT2.5 front tests passed.
-- Original reference PNGs 1024x1536; generated garment outputs 2048x3072.
-- Main repo output/model-studio-four-options and output/model-studio-colorway-input.
-- Extension 2.61.0 already has colorways, Front/Back source slots, preview first.
-- Do not commit pre-existing dirty tsconfig.tsbuildinfo.
+## References / next steps
+- Four options: Vision 1/2 = studio 97/99; Celine 1/2 = studio 98/100.
+- Original reference PNGs 1024x1536; garment output 2048x3072.
+- Evidence: ~/Services/davidani-faire-management/output/listing-sync/.
+- Shared workflow maintenance: that repo's docs/faire-daily/LISTING-SYNC.md.
+- Actual phone/iPad hardware was unavailable; browser viewports verified.
+- Preserve the pre-existing dirty tsconfig.tsbuildinfo; no other Studio edits pending.
