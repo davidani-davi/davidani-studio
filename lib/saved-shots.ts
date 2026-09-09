@@ -157,12 +157,18 @@ export function latestPerView(shots: SavedShot[]): SavedShot[] {
   return ["front", "side", "back", "full"].map((v) => seen.get(v)).filter(Boolean) as SavedShot[];
 }
 
-function extFor(contentType: string, url: string): string {
-  if (/png/.test(contentType)) return "png";
-  if (/webp/.test(contentType)) return "webp";
-  if (/jpe?g/.test(contentType)) return "jpg";
-  const m = url.match(/\.(png|webp|jpe?g)(?:$|\?)/i);
-  return m ? m[1].toLowerCase().replace("jpeg", "jpg") : "jpg";
+/**
+ * The image type from the bytes themselves — fal serves its results as
+ * application/octet-stream, and a copy stored under that type came back
+ * with `nosniff`, so the Blob copy must carry a real image type.
+ */
+export function imageType(bytes: Uint8Array, hint = "", url = ""): { contentType: string; ext: string } {
+  if (bytes.length > 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return { contentType: "image/jpeg", ext: "jpg" };
+  if (bytes.length > 7 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47) return { contentType: "image/png", ext: "png" };
+  if (bytes.length > 11 && bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46 && bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50) return { contentType: "image/webp", ext: "webp" };
+  const fromHint = hint.match(/image\/(png|webp|jpe?g)/i)?.[1] || url.match(/\.(png|webp|jpe?g)(?:$|\?)/i)?.[1] || "jpeg";
+  const ext = fromHint.toLowerCase().replace("jpeg", "jpg");
+  return { contentType: `image/${ext === "jpg" ? "jpeg" : ext}`, ext };
 }
 
 /** Copy the image into Blob storage so the saved shot outlives its source URL. */
@@ -171,10 +177,10 @@ async function copyImage(style: string, id: string, url: string): Promise<{ url:
   try {
     const res = await fetch(url, { cache: "no-store" });
     if (!res.ok) throw new Error(`source HTTP ${res.status}`);
-    const contentType = res.headers.get("content-type") || "image/jpeg";
     const bytes = Buffer.from(await res.arrayBuffer());
     if (!bytes.length) throw new Error("empty image");
-    const blob = await put(`${IMAGE_PREFIX}${style}/${id}.${extFor(contentType, url)}`, bytes, {
+    const { contentType, ext } = imageType(bytes, res.headers.get("content-type") || "", url);
+    const blob = await put(`${IMAGE_PREFIX}${style}/${id}.${ext}`, bytes, {
       access: "public",
       contentType,
       addRandomSuffix: false,

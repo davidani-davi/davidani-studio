@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { latestPerView, mergeShots, normalizeStyle, normalizeView, type SavedShot } from "./saved-shots";
+import { imageType, latestPerView, mergeShots, normalizeStyle, normalizeView, type SavedShot } from "./saved-shots";
 
 const shot = (id: string, view: string, savedAt: number, extra: Partial<SavedShot> = {}): SavedShot => ({
   id, view, url: `https://blob/${id}.jpg`, savedAt, durable: true, ...extra,
@@ -40,5 +40,16 @@ describe("saved-shots: load set", () => {
   it("picks the newest per view, in view order", () => {
     const shots = [shot("f1", "front", 1), shot("f2", "front", 5), shot("b", "back", 3), shot("s", "side", 2)];
     expect(latestPerView(shots).map((s) => s.id)).toEqual(["f2", "s", "b"]);
+  });
+});
+
+describe("saved-shots: image type from the bytes", () => {
+  it("reads JPEG, PNG and WebP magic and ignores fal's octet-stream header", () => {
+    expect(imageType(new Uint8Array([0xff, 0xd8, 0xff, 0xe0]), "application/octet-stream")).toEqual({ contentType: "image/jpeg", ext: "jpg" });
+    expect(imageType(new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), "")).toEqual({ contentType: "image/png", ext: "png" });
+    const webp = new Uint8Array([0x52, 0x49, 0x46, 0x46, 0, 0, 0, 0, 0x57, 0x45, 0x42, 0x50]);
+    expect(imageType(webp, "")).toEqual({ contentType: "image/webp", ext: "webp" });
+    expect(imageType(new Uint8Array([0, 0]), "application/octet-stream", "https://x/y.png")).toEqual({ contentType: "image/png", ext: "png" });
+    expect(imageType(new Uint8Array([0, 0]), "", "")).toEqual({ contentType: "image/jpeg", ext: "jpg" });
   });
 });
