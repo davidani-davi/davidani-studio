@@ -1,4 +1,4 @@
-**Update 2026-09-08 21:25 — saved shots.** `lib/saved-shots.ts` + `/api/saved-shots` (GET/POST/DELETE, token or cookie, PUBLIC_PATHS): per-style saved model shots, images copied to Blob `saved-shots/<STYLE>/<id>`, index `saved-shots/index.json`. Extension 2.55.0 panel section 4 and `saved_shots.py` (faire-management) use it. Commit 003f3ee, live.
+**Update 2026-09-08 21:25 — saved shots.** `lib/saved-shots.ts` + `/api/saved-shots` (GET/POST/DELETE, token or cookie, PUBLIC_PATHS): per-style saved model shots: ONE metadata blob per shot `saved-shots/<STYLE>/<id>.json` + the image copy beside it (type sniffed from bytes). No index file — an overwritten index.json read stale through the Blob CDN and lost quick writes (e86733b). `DELETE {gc:true}` sweeps orphans. Extension 2.55.0 panel section 4 and `saved_shots.py` (faire-management) use it. Live, verified.
 
 # Handoff
 
