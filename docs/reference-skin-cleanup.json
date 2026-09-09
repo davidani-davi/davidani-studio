@@ -1,0 +1,31 @@
+{
+  "date": "2026-09-09",
+  "tool": "built-in image_gen",
+  "scope": "Four front reference masters, plus identical crop/front copies. Natural subtle skin finish; face identity, sharpness, pose, garment, composition preserved. Other angles unchanged.",
+  "edits": [
+    {
+      "id": 97,
+      "name": "Vision 1",
+      "prompt": "Use case: identity-preserve. Edit target: the attached existing Vision 1 fashion model reference photograph. Retouch ONLY the artificial skin surface texture at its source. Remove the flaky, etched, stippled, crunchy, over-sharpened pattern on the forehead, cheeks, nose, chin, neck and exposed skin. Give her clean, natural professionally photographed skin with gentle tonal transitions and subtle fine skin detail, not conspicuous pore patterns or artificial grain. Preserve exact identity, age, facial anatomy, expression, makeup, skin color, natural beauty marks, head size, neck length and body proportions. The eyes, eyelashes, eyebrows, lips and hair must remain crisp, focused and identical; do not blur the face or image, add haze, or create waxy plastic skin. Keep the exact pose, hands, jewelry, garment, all stripes or prints and fabric textures, background, exposure, lighting, colors and 2:3 composition unchanged. Preserve the tattoo-free arm in the pink outfit. No new tattoos. Output the complete retouched photo at the same 1024x1536 size. This is a restrained skin-only cleanup, not a new person or restyled photograph.",
+      "asset": "public/models/studio 97/front.png"
+    },
+    {
+      "id": 99,
+      "name": "Vision 2",
+      "prompt": "Use case: identity-preserve. Edit target: the attached existing Vision 2 fashion model reference photograph. Retouch ONLY the artificial skin surface texture at its source. Remove the flaky, etched, stippled, crunchy, over-sharpened pattern on the forehead, cheeks, nose, chin, neck and exposed skin. Give her clean, natural professionally photographed skin with gentle tonal transitions and subtle fine skin detail, not conspicuous pore patterns or artificial grain. Preserve exact identity, age, facial anatomy, expression, makeup, skin color, natural beauty marks, head size, neck length and body proportions. The eyes, eyelashes, eyebrows, lips and hair must remain crisp, focused and identical; do not blur the face or image, add haze, or create waxy plastic skin. Keep the exact pose, hands, jewelry, garment, all stripes or prints and fabric textures, background, exposure, lighting, colors and 2:3 composition unchanged. Preserve the tattoo-free arm in the pink outfit. No new tattoos. Output the complete retouched photo at the same 1024x1536 size. This is a restrained skin-only cleanup, not a new person or restyled photograph.",
+      "asset": "public/models/studio 99/front.png"
+    },
+    {
+      "id": 98,
+      "name": "Celine 1",
+      "prompt": "Use case: identity-preserve. Edit target: the attached existing Celine 1 fashion model reference photograph. Retouch ONLY the artificial skin surface texture at its source. Remove the flaky, etched, stippled, crunchy, over-sharpened pattern on the forehead, cheeks, nose, chin, neck and exposed skin. Give her clean, natural professionally photographed skin with gentle tonal transitions and subtle fine skin detail, not conspicuous pore patterns or artificial grain. Preserve exact identity, age, facial anatomy, expression, makeup, skin color, natural beauty marks, head size, neck length and body proportions. The eyes, eyelashes, eyebrows, lips and hair must remain crisp, focused and identical; do not blur the face or image, add haze, or create waxy plastic skin. Keep the exact pose, hands, jewelry, garment, all stripes or prints and fabric textures, background, exposure, lighting, colors and 2:3 composition unchanged. Preserve the tattoo-free arm in the pink outfit. No new tattoos. Output the complete retouched photo at the same 1024x1536 size. This is a restrained skin-only cleanup, not a new person or restyled photograph.",
+      "asset": "public/models/studio 98/front.png"
+    },
+    {
+      "id": 100,
+      "name": "Celine 2",
+      "prompt": "Use case: identity-preserve. Edit target: the attached existing Celine 2 fashion model reference photograph. Retouch ONLY the artificial skin surface texture at its source. Remove the flaky, etched, stippled, crunchy, over-sharpened pattern on the forehead, cheeks, nose, chin, neck and exposed skin. Give her clean, natural professionally photographed skin with gentle tonal transitions and subtle fine skin detail, not conspicuous pore patterns or artificial grain. Preserve exact identity, age, facial anatomy, expression, makeup, skin color, natural beauty marks, head size, neck length and body proportions. The eyes, eyelashes, eyebrows, lips and hair must remain crisp, focused and identical; do not blur the face or image, add haze, or create waxy plastic skin. Keep the exact pose, hands, jewelry, garment, all stripes or prints and fabric textures, background, exposure, lighting, colors and 2:3 composition unchanged. Preserve the tattoo-free arm in the pink outfit. No new tattoos. Output the complete retouched photo at the same 1024x1536 size. This is a restrained skin-only cleanup, not a new person or restyled photograph.",
+      "asset": "public/models/studio 100/front.png"
+    }
+  ]
+}

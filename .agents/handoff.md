@@ -1,22 +1,24 @@
-# Handoff — Vision 1 / Celine 1 tattoo removal
-Written 2026-09-09 11:24 PDT by Codex. Branch main; prior eed4e59.
+# Handoff — cleaner model reference skin
+Written 2026-09-09 11:37 PDT by Codex. Branch main; prior 13a5631.
 
 ## Accomplished
-- David requested removing the small “22” arm tattoo from the two pink striped
-  front reference images shown in Model Studio (Vision 1 and Celine 1).
-- Two built-in imagegen localized edits, visually inspected: tattoo removed;
-  identity, pose, garment and framing retained. Native PNGs are 1024×1536.
-- Replaced public/models/studio 97/front.png and studio 98/front.png,
-  plus identical crop 97/98 front files used by top-garment generation.
-- Other views and Vision 2/Celine 2 assets unchanged.
-- Exact prompts and method: docs/reference-tattoo-removal.json.
-- All 726 tests and production build passed. Git push triggers deployment;
-  verify four live assets match the local SHA256 before calling this live.
+- David sees flaky/over-textured generated skin and requested fixing references
+  at the source. Four built-in imagegen skin-only edits on front reference masters:
+  Vision 1/2 = studio 97/99, Celine 1/2 = studio 98/100.
+- Reduced etched/stippled skin texture while retaining subtle natural detail,
+  clear eyes/lips, identity, proportions, pose, outfit and lighting.
+- Replaced all four studio front.png and identical crop front.png assets.
+  Pink reference arms remain tattoo-free. Other view files unchanged.
+- Prompts: docs/reference-skin-cleanup.json. Native files remain 1024×1536.
+- All 726 tests and production build passed. Push triggers Vercel deployment;
+  live verification is recorded in Faire repo output/reference-skin-cleanup/.
+- No generation prompt/engine changes or new garment renders in this task;
+  downstream quality improvement still needs a real garment comparison.
 
 ## Next / preserved context
-- Reload Model Studio after deployment. Assets use max-age=0/must-revalidate.
-- Four options: Vision 1/2 = studio 97/99; Celine 1/2 = studio 98/100.
-- Resumable generation/request IDs, shared listing work and Studio A preserved.
-- Faire repo remains app 2.19.0 / extension 2.67.0; no extension update needed.
+- Refresh Model Studio to see the cleaned four front references.
+- Studio images use max-age=0/must-revalidate; no extension release needed.
+- Prior tattoo cleanup 13a5631 was verified live, all four copies matched.
+- Faire app 2.19.0 / extension 2.67.0 and Studio A remain current.
+- Resumable request IDs, shared listing state and saved shots preserved.
 - Preserve pre-existing dirty tsconfig.tsbuildinfo; do not stage it.
-- Prior real generation / device-sync evidence lives in Faire repo output/listing-sync.
