@@ -10,13 +10,25 @@
   photo(s) + the front anchor (last). 1024×1536, quality high. Live: front on DJ62106 in 23 s.
 - Reference sets vision/celine on the three live poses installed as studio 61, 80–96 (c15dab0).
 
+- **House reference sets (00abf88):** `engine:"gpt25", reference:true` renders the model
+  herself in the house outfit (black ribbed tank, ecru trousers, tan sandals), no garment;
+  front anchors side/back. Rendered vision + celine front/side/back at sunburst/max/2048×3072
+  (65–77 s a view); files in faire-management data root `measurement/plates/ref25/`,
+  sheets sent to David 2026-09-08 17:25. Backdrop corners r-b 18–25, all in band.
+
 ## Next
+- David reviews the ref25 sheets. If kept: install as plates (candidates.json rows →
+  plate_install --only → plate_crop → manifest) and/or feed them as body refs to the
+  no-plate prompt (third reference image after the faces).
 - David reviews the no-plate output in the extension (2.53.0) vs plates.
   2048×3072 is live (679a0e8): DJ62106 front in 28.5 s vs 23 s at 1024×1536.
 - Retire rejected reference plates via `git mv public/models/<name> public/models/hide/` +
   hide/plates.json; decide whether studio 03/05/19 stay in the auto pool.
 
 ## Gotchas
+- **fal burst limit on the studio key:** 4 (even 2) anchored 2.5 renders fired together came
+  back `Forbidden` in 0 s; the same call alone, or 20 s later, succeeds. Run the no-plate
+  engine ≤2 concurrent and retry Forbidden after 20 s (ref25/rerun.py pattern).
 - Another session may work in this checkout: commit with explicit pathspecs only
   (`tsconfig.tsbuildinfo` is dirty and must not be committed).
 - Vercel's FAL key is NOT the davistudio-batch one (that account is locked, exhausted
