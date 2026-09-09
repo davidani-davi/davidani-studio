@@ -12,13 +12,13 @@ describe("staticModelsTagged — the manifest the deployed function serves", () 
     expect(by["studio 28"]).toBeUndefined();
     expect(by["studio 57"]).toBeUndefined();
     expect(by["studio 03"]).toBeUndefined();
-    expect(by["studio 97"]).toMatchObject({ name: "Vision", character: "vision", autoPool: true, poseKey: "detp58027-vision" });
-    expect(by["studio 98"]).toMatchObject({ name: "Celine", character: "celine", autoPool: true, poseKey: "detp58027-celine" });
+    expect(by["studio 97"]).toMatchObject({ name: "Vision 1", character: "vision", autoPool: true, poseKey: "detp58027-vision" });
+    expect(by["studio 98"]).toMatchObject({ name: "Celine 1", character: "celine", autoPool: true, poseKey: "detp58027-celine" });
   });
-  it("offers only Vision and Celine, each with four existing linked photographs", () => {
+  it("offers two looks each for Vision and Celine, each with four existing linked photographs", () => {
     const models = staticModelsTagged();
     const visible = models.filter(m => !isDerivedPlate(m.id));
-    expect(visible.map(m => m.name)).toEqual(["Vision", "Celine"]);
+    expect(visible.map(m => m.name)).toEqual(["Vision 1", "Vision 2", "Celine 1", "Celine 2"]);
     for (const model of visible) {
       expect(model.poses).toHaveLength(1);
       for (const view of ["front", "side", "back", "full"] as const) {

@@ -8,148 +8,8 @@ import type { HumanModel } from "./models-registry";
 
 export const STATIC_HUMAN_MODELS = [
   {
-    "id": "crop 97",
-    "name": "Vision",
-    "poses": [
-      {
-        "id": "crop 97",
-        "label": "Crop 97",
-        "publicPath": "/models/crop 97/front.png",
-        "filename": "front.png",
-        "subdir": "",
-        "views": {
-          "back": {
-            "filename": "back.png",
-            "publicPath": "/models/crop 97/back.png"
-          },
-          "front": {
-            "filename": "front.png",
-            "publicPath": "/models/crop 97/front.png"
-          },
-          "side": {
-            "filename": "side.png",
-            "publicPath": "/models/crop 97/side.png"
-          }
-        }
-      }
-    ],
-    "wears": "shorts",
-    "lowOk": true,
-    "pose": "Vision",
-    "character": "vision",
-    "expression": "neutral",
-    "slug": "detp58027-vision-neutral",
-    "poseKey": "detp58027-vision",
-    "outfitAbove": "original pink and yellow striped tee",
-    "outfitBelow": "original matching striped shorts",
-    "autoPool": true
-  },
-  {
-    "id": "crop 98",
-    "name": "Celine",
-    "poses": [
-      {
-        "id": "crop 98",
-        "label": "Crop 98",
-        "publicPath": "/models/crop 98/front.png",
-        "filename": "front.png",
-        "subdir": "",
-        "views": {
-          "back": {
-            "filename": "back.png",
-            "publicPath": "/models/crop 98/back.png"
-          },
-          "front": {
-            "filename": "front.png",
-            "publicPath": "/models/crop 98/front.png"
-          },
-          "side": {
-            "filename": "side.png",
-            "publicPath": "/models/crop 98/side.png"
-          }
-        }
-      }
-    ],
-    "wears": "shorts",
-    "lowOk": true,
-    "pose": "Celine",
-    "character": "celine",
-    "expression": "neutral",
-    "slug": "detp58027-celine-neutral",
-    "poseKey": "detp58027-celine",
-    "outfitAbove": "original pink and yellow striped tee",
-    "outfitBelow": "original matching striped shorts",
-    "autoPool": true
-  },
-  {
-    "id": "low 97",
-    "name": "Vision",
-    "poses": [
-      {
-        "id": "low 97",
-        "label": "Low 97",
-        "publicPath": "/models/low 97/front.png",
-        "filename": "front.png",
-        "subdir": "",
-        "views": {
-          "front": {
-            "filename": "front.png",
-            "publicPath": "/models/low 97/front.png"
-          },
-          "side": {
-            "filename": "side.png",
-            "publicPath": "/models/low 97/side.png"
-          }
-        }
-      }
-    ],
-    "wears": "shorts",
-    "lowOk": true,
-    "pose": "Vision",
-    "character": "vision",
-    "expression": "neutral",
-    "slug": "detp58027-vision-neutral",
-    "poseKey": "detp58027-vision",
-    "outfitAbove": "original pink and yellow striped tee",
-    "outfitBelow": "original matching striped shorts",
-    "autoPool": true
-  },
-  {
-    "id": "low 98",
-    "name": "Celine",
-    "poses": [
-      {
-        "id": "low 98",
-        "label": "Low 98",
-        "publicPath": "/models/low 98/front.png",
-        "filename": "front.png",
-        "subdir": "",
-        "views": {
-          "front": {
-            "filename": "front.png",
-            "publicPath": "/models/low 98/front.png"
-          },
-          "side": {
-            "filename": "side.png",
-            "publicPath": "/models/low 98/side.png"
-          }
-        }
-      }
-    ],
-    "wears": "shorts",
-    "lowOk": true,
-    "pose": "Celine",
-    "character": "celine",
-    "expression": "neutral",
-    "slug": "detp58027-celine-neutral",
-    "poseKey": "detp58027-celine",
-    "outfitAbove": "original pink and yellow striped tee",
-    "outfitBelow": "original matching striped shorts",
-    "autoPool": true
-  },
-  {
     "id": "studio 97",
-    "name": "Vision",
+    "name": "Vision 1",
     "poses": [
       {
         "id": "studio 97",
@@ -179,7 +39,7 @@ export const STATIC_HUMAN_MODELS = [
     ],
     "wears": "shorts",
     "lowOk": true,
-    "pose": "Vision",
+    "pose": "Vision 1",
     "character": "vision",
     "expression": "neutral",
     "slug": "detp58027-vision-neutral",
@@ -189,8 +49,49 @@ export const STATIC_HUMAN_MODELS = [
     "autoPool": true
   },
   {
+    "id": "studio 99",
+    "name": "Vision 2",
+    "poses": [
+      {
+        "id": "studio 99",
+        "label": "Studio 99",
+        "publicPath": "/models/studio 99/front.png",
+        "filename": "front.png",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.png",
+            "publicPath": "/models/studio 99/back.png"
+          },
+          "front": {
+            "filename": "front.png",
+            "publicPath": "/models/studio 99/front.png"
+          },
+          "full": {
+            "filename": "full.png",
+            "publicPath": "/models/studio 99/full.png"
+          },
+          "side": {
+            "filename": "side.png",
+            "publicPath": "/models/studio 99/side.png"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "Vision 2",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "dt60007n-vision-neutral",
+    "poseKey": "dt60007n-vision",
+    "outfitAbove": "brown western-print top",
+    "outfitBelow": "white wide-leg trousers",
+    "autoPool": true
+  },
+  {
     "id": "studio 98",
-    "name": "Celine",
+    "name": "Celine 1",
     "poses": [
       {
         "id": "studio 98",
@@ -220,13 +121,334 @@ export const STATIC_HUMAN_MODELS = [
     ],
     "wears": "shorts",
     "lowOk": true,
-    "pose": "Celine",
+    "pose": "Celine 1",
     "character": "celine",
     "expression": "neutral",
     "slug": "detp58027-celine-neutral",
     "poseKey": "detp58027-celine",
     "outfitAbove": "original pink and yellow striped tee",
     "outfitBelow": "original matching striped shorts",
+    "autoPool": true
+  },
+  {
+    "id": "studio 100",
+    "name": "Celine 2",
+    "poses": [
+      {
+        "id": "studio 100",
+        "label": "Studio 100",
+        "publicPath": "/models/studio 100/front.png",
+        "filename": "front.png",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.png",
+            "publicPath": "/models/studio 100/back.png"
+          },
+          "front": {
+            "filename": "front.png",
+            "publicPath": "/models/studio 100/front.png"
+          },
+          "full": {
+            "filename": "full.png",
+            "publicPath": "/models/studio 100/full.png"
+          },
+          "side": {
+            "filename": "side.png",
+            "publicPath": "/models/studio 100/side.png"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "Celine 2",
+    "character": "celine",
+    "expression": "neutral",
+    "slug": "dt60007n-celine-neutral",
+    "poseKey": "dt60007n-celine",
+    "outfitAbove": "brown western-print top",
+    "outfitBelow": "white wide-leg trousers",
+    "autoPool": true
+  },
+  {
+    "id": "crop 100",
+    "name": "Celine 2",
+    "poses": [
+      {
+        "id": "crop 100",
+        "label": "Crop 100",
+        "publicPath": "/models/crop 100/front.png",
+        "filename": "front.png",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.png",
+            "publicPath": "/models/crop 100/back.png"
+          },
+          "front": {
+            "filename": "front.png",
+            "publicPath": "/models/crop 100/front.png"
+          },
+          "side": {
+            "filename": "side.png",
+            "publicPath": "/models/crop 100/side.png"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "Celine 2",
+    "character": "celine",
+    "expression": "neutral",
+    "slug": "dt60007n-celine-neutral",
+    "poseKey": "dt60007n-celine",
+    "outfitAbove": "brown western-print top",
+    "outfitBelow": "white wide-leg trousers",
+    "autoPool": true
+  },
+  {
+    "id": "crop 97",
+    "name": "Vision 1",
+    "poses": [
+      {
+        "id": "crop 97",
+        "label": "Crop 97",
+        "publicPath": "/models/crop 97/front.png",
+        "filename": "front.png",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.png",
+            "publicPath": "/models/crop 97/back.png"
+          },
+          "front": {
+            "filename": "front.png",
+            "publicPath": "/models/crop 97/front.png"
+          },
+          "side": {
+            "filename": "side.png",
+            "publicPath": "/models/crop 97/side.png"
+          }
+        }
+      }
+    ],
+    "wears": "shorts",
+    "lowOk": true,
+    "pose": "Vision 1",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "detp58027-vision-neutral",
+    "poseKey": "detp58027-vision",
+    "outfitAbove": "original pink and yellow striped tee",
+    "outfitBelow": "original matching striped shorts",
+    "autoPool": true
+  },
+  {
+    "id": "crop 98",
+    "name": "Celine 1",
+    "poses": [
+      {
+        "id": "crop 98",
+        "label": "Crop 98",
+        "publicPath": "/models/crop 98/front.png",
+        "filename": "front.png",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.png",
+            "publicPath": "/models/crop 98/back.png"
+          },
+          "front": {
+            "filename": "front.png",
+            "publicPath": "/models/crop 98/front.png"
+          },
+          "side": {
+            "filename": "side.png",
+            "publicPath": "/models/crop 98/side.png"
+          }
+        }
+      }
+    ],
+    "wears": "shorts",
+    "lowOk": true,
+    "pose": "Celine 1",
+    "character": "celine",
+    "expression": "neutral",
+    "slug": "detp58027-celine-neutral",
+    "poseKey": "detp58027-celine",
+    "outfitAbove": "original pink and yellow striped tee",
+    "outfitBelow": "original matching striped shorts",
+    "autoPool": true
+  },
+  {
+    "id": "crop 99",
+    "name": "Vision 2",
+    "poses": [
+      {
+        "id": "crop 99",
+        "label": "Crop 99",
+        "publicPath": "/models/crop 99/front.png",
+        "filename": "front.png",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.png",
+            "publicPath": "/models/crop 99/back.png"
+          },
+          "front": {
+            "filename": "front.png",
+            "publicPath": "/models/crop 99/front.png"
+          },
+          "side": {
+            "filename": "side.png",
+            "publicPath": "/models/crop 99/side.png"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "Vision 2",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "dt60007n-vision-neutral",
+    "poseKey": "dt60007n-vision",
+    "outfitAbove": "brown western-print top",
+    "outfitBelow": "white wide-leg trousers",
+    "autoPool": true
+  },
+  {
+    "id": "low 100",
+    "name": "Celine 2",
+    "poses": [
+      {
+        "id": "low 100",
+        "label": "Low 100",
+        "publicPath": "/models/low 100/front.png",
+        "filename": "front.png",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.png",
+            "publicPath": "/models/low 100/front.png"
+          },
+          "side": {
+            "filename": "side.png",
+            "publicPath": "/models/low 100/side.png"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "Celine 2",
+    "character": "celine",
+    "expression": "neutral",
+    "slug": "dt60007n-celine-neutral",
+    "poseKey": "dt60007n-celine",
+    "outfitAbove": "brown western-print top",
+    "outfitBelow": "white wide-leg trousers",
+    "autoPool": true
+  },
+  {
+    "id": "low 97",
+    "name": "Vision 1",
+    "poses": [
+      {
+        "id": "low 97",
+        "label": "Low 97",
+        "publicPath": "/models/low 97/front.png",
+        "filename": "front.png",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.png",
+            "publicPath": "/models/low 97/front.png"
+          },
+          "side": {
+            "filename": "side.png",
+            "publicPath": "/models/low 97/side.png"
+          }
+        }
+      }
+    ],
+    "wears": "shorts",
+    "lowOk": true,
+    "pose": "Vision 1",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "detp58027-vision-neutral",
+    "poseKey": "detp58027-vision",
+    "outfitAbove": "original pink and yellow striped tee",
+    "outfitBelow": "original matching striped shorts",
+    "autoPool": true
+  },
+  {
+    "id": "low 98",
+    "name": "Celine 1",
+    "poses": [
+      {
+        "id": "low 98",
+        "label": "Low 98",
+        "publicPath": "/models/low 98/front.png",
+        "filename": "front.png",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.png",
+            "publicPath": "/models/low 98/front.png"
+          },
+          "side": {
+            "filename": "side.png",
+            "publicPath": "/models/low 98/side.png"
+          }
+        }
+      }
+    ],
+    "wears": "shorts",
+    "lowOk": true,
+    "pose": "Celine 1",
+    "character": "celine",
+    "expression": "neutral",
+    "slug": "detp58027-celine-neutral",
+    "poseKey": "detp58027-celine",
+    "outfitAbove": "original pink and yellow striped tee",
+    "outfitBelow": "original matching striped shorts",
+    "autoPool": true
+  },
+  {
+    "id": "low 99",
+    "name": "Vision 2",
+    "poses": [
+      {
+        "id": "low 99",
+        "label": "Low 99",
+        "publicPath": "/models/low 99/front.png",
+        "filename": "front.png",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.png",
+            "publicPath": "/models/low 99/front.png"
+          },
+          "side": {
+            "filename": "side.png",
+            "publicPath": "/models/low 99/side.png"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "pose": "Vision 2",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "dt60007n-vision-neutral",
+    "poseKey": "dt60007n-vision",
+    "outfitAbove": "brown western-print top",
+    "outfitBelow": "white wide-leg trousers",
     "autoPool": true
   }
 ] as unknown as HumanModel[];

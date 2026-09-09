@@ -29,12 +29,12 @@
   "plates": [
     {
       "name": "studio 97",
-      "display_name": "Vision",
+      "display_name": "Vision 1",
       "source_style": "DETP58027",
       "face": "vision",
       "expression": "neutral",
       "slug": "detp58027-vision-neutral",
-      "pose": "Vision",
+      "pose": "Vision 1",
       "auto": true,
       "views": [
         "front",
@@ -53,12 +53,12 @@
     },
     {
       "name": "studio 98",
-      "display_name": "Celine",
+      "display_name": "Celine 1",
       "source_style": "DETP58027",
       "face": "celine",
       "expression": "neutral",
       "slug": "detp58027-celine-neutral",
-      "pose": "Celine",
+      "pose": "Celine 1",
       "auto": true,
       "views": [
         "front",
@@ -74,6 +74,54 @@
       "front_is": "DETP58027_6 original photograph with one identity edit to the head/hair",
       "others_are": "independent original photographs with one head/hair edit each; back has no visible face",
       "low_source": "face-free crops of original DETP58027_2 and DETP58027_7; no generation"
+    },
+    {
+      "name": "studio 99",
+      "display_name": "Vision 2",
+      "source_style": "DT60007N / DP52336",
+      "face": "vision",
+      "expression": "neutral",
+      "slug": "dt60007n-vision-neutral",
+      "pose": "Vision 2",
+      "auto": true,
+      "views": [
+        "front",
+        "side",
+        "back",
+        "full"
+      ],
+      "wears": "pants",
+      "low_ok": true,
+      "legs_separated": true,
+      "outfit_above": "brown western-print top",
+      "outfit_below": "white wide-leg trousers",
+      "front_is": "Original attached DT60007N, DP52336_4.jpg with one identity edit",
+      "others_are": "Independent originals: side _10, back _12, full _2; one identity edit each",
+      "low_source": "Face-free crops of original DT60007N, DP52336_2 and _9; no generation"
+    },
+    {
+      "name": "studio 100",
+      "display_name": "Celine 2",
+      "source_style": "DT60007N / DP52336",
+      "face": "celine",
+      "expression": "neutral",
+      "slug": "dt60007n-celine-neutral",
+      "pose": "Celine 2",
+      "auto": true,
+      "views": [
+        "front",
+        "side",
+        "back",
+        "full"
+      ],
+      "wears": "pants",
+      "low_ok": true,
+      "legs_separated": true,
+      "outfit_above": "brown western-print top",
+      "outfit_below": "white wide-leg trousers",
+      "front_is": "Original attached DT60007N, DP52336_4.jpg with one identity edit",
+      "others_are": "Independent originals: side _10, back _12, full _2; one identity edit each",
+      "low_source": "Face-free crops of original DT60007N, DP52336_2 and _9; no generation"
     }
   ],
   "families": {
@@ -95,6 +143,23 @@
         1200,
         1800
       ]
+    }
+  },
+  "reference_2": {
+    "source_style": "DT60007N / DP52336",
+    "source_size": [
+      2000,
+      3000
+    ],
+    "edit_native_size": [
+      1024,
+      1536
+    ],
+    "views": {
+      "front": "DT60007N, DP52336_4.jpg",
+      "side": "DT60007N, DP52336_10.jpg",
+      "back": "DT60007N, DP52336_12.jpg",
+      "full": "DT60007N, DP52336_2.jpg"
     }
   }
 }
