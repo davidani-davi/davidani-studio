@@ -30,6 +30,7 @@ import { buildTryOnInput, garmentForView, runTryOn, tryOnSeed, type GarmentPhoto
 import { GPT_NATIVE_SIZE, garmentMaskFromDiff, gptVariantOf, leanBrief, maskCoverage } from "@/lib/gpt-variants";
 import { uploadToFal } from "@/lib/fal";
 import { restoreRenderOnPlate } from "@/lib/plate-restore-run";
+import { applyModelPhotoFinish } from "@/lib/model-photo-finish";
 import type { PlateRestoreReport } from "@/lib/plate-restore";
 import { faceAnchorFor, HEAD_SHARE, type FaceAnchorReport } from "@/lib/face-anchor";
 import { houseFaceOf, noPlateQualityOf, noPlateVariantOf, shootNoPlate, shootReference } from "@/lib/no-plate";
@@ -518,6 +519,7 @@ async function renderShot(req: Request, body: any): Promise<Response> {
     }
 
     if (continuity) prompt += "\n\n" + continuity.rule;
+    prompt = applyModelPhotoFinish(prompt, humanModelId);
 
     const generated = await call(generateModel, "/api/generate-model", {
       modelId,

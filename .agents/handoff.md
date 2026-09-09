@@ -1,5 +1,5 @@
 # Handoff — original garment concepts deployed
-Updated 2026-09-09 by Codex. Main; prior7abf261.
+Updated 2026-09-09 by Codex. Main; prior372ff16.
 
 ## Latest approved Vision references
 - Installed approved 1024x1536 Vision1/2 from Faire output/imagegen/vision-rework-20260909.
@@ -7,7 +7,11 @@ Updated 2026-09-09 by Codex. Main; prior7abf261.
   as canvas (approved master fallback), explicit turn/framing/skin instructions.
 - Side/full retain face crop; Celine untouched.741 tests + build pass.
 - Start a NEW front for existing shoots: old front anchors preserve the old look.
-- Deploy and verify public files; no paid garment-generation test in this change.
+- Vision public files deployed and hash verified; no paid garment-generation test.
+- Celine2 texture: applyModelPhotoFinish restrains amplification for house97–100;
+  preserves real textile facts, forbids old outfit pattern on underside.749 tests+build pass.
+  Built-in previews in Faire output/imagegen/celine-2-texture-review/ are NOT installed.
+  Still some cheek texture; needs real pipeline visual validation, not a proven complete fix.
 
 ## Completed
 - PR7 merged7abf261; original /api/design-concepts live on production alias.
