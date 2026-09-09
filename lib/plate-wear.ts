@@ -11,6 +11,8 @@
  * the extension's picker keep bottoms to the tagged subset.
  */
 export type PlateWear = {
+  /** Human-facing name supplied by a curated reference set. */
+  name?: string;
   wears?: string; lowOk?: boolean; silhouette?: string;
   /** House character plates (plates.json `face`): the same AI face on a real
    *  photograph, several to a pose — one per expression. */
@@ -25,6 +27,7 @@ export type PlateWear = {
 
 /** One plates.json row, as written by faire-management plate_install.py / plate_wear.py. */
 export type PlateRow = {
+  display_name?: string;
   name?: string; wears?: string; low_ok?: boolean; silhouette?: string; pose?: string;
   face?: string; expression?: string; slug?: string; outfit_above?: string; outfit_below?: string;
   /** false = kept out of automatic assignment (still pickable by hand) until it passes plate QC. */
@@ -150,6 +153,7 @@ export function mergePlateWear<T extends { id: string } & PlateWear>(
     if (m && p.wears !== undefined) {
       const slug = p.slug ? String(p.slug) : undefined;
       byNum.set(Number(m[1]), {
+        ...(p.display_name?.trim() ? { name: p.display_name.trim() } : {}),
         wears: String(p.wears), lowOk: p.low_ok === true,
         ...(p.silhouette ? { silhouette: String(p.silhouette).toLowerCase() } : {}),
         ...(p.pose ? { pose: String(p.pose) } : {}),

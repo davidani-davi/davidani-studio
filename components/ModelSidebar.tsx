@@ -497,11 +497,11 @@ export default function ModelSidebar(p: Props) {
             </p>
           )}
           {(() => {
-            // The house character (Vision): one card per pose × outfit,
+            // House characters: one card per pose × outfit,
             // filtered by what she wears on the half the product does not
             // replace, with the expression as a toggle — David's picking
             // habit is "which bottom goes with this top", not "which plate".
-            const groups = wardrobeGroups(p.humanModels);
+            const groups = ["vision", "celine"].flatMap(character => wardrobeGroups(p.humanModels, character));
             if (groups.length === 0) return null;
             const half = wardrobeHalf(p.styleNumber);
             const outfits = [...new Set(groups.map((g) => outfitFor(g, half)).filter(Boolean))];
@@ -521,7 +521,7 @@ export default function ModelSidebar(p: Props) {
               <div className="space-y-2 rounded-lg border border-neutral-200 bg-neutral-50 p-2.5">
                 <div className="flex items-center gap-2 px-0.5">
                   <span className="text-[10px] font-semibold uppercase tracking-wider text-neutral-500">
-                    Vision · house model
+                    House models
                   </span>
                   <span className="h-px flex-1 bg-neutral-200" />
                   <span className="text-[10px] text-neutral-400">{groups.length} looks</span>
@@ -597,9 +597,9 @@ export default function ModelSidebar(p: Props) {
                         </span>
                         <span className="min-w-0">
                           <span className="block truncate text-xs font-semibold">
-                            {outfitFor(g, half) || g.outfitBelow || lead?.name}
+                            {lead?.name}
                           </span>
-                          <span className="block truncate text-[10px] text-neutral-500">{g.pose}</span>
+                          <span className="block truncate text-[10px] text-neutral-500">{outfitFor(g, half) || g.outfitBelow}</span>
                           <span className="block truncate text-[10px] text-neutral-400">
                             {half === "above" ? g.outfitBelow : g.outfitAbove}
                           </span>

@@ -1,648 +1,98 @@
 {
-  "standard": {
-    "bg": [
-      249,
-      237,
-      226
-    ],
-    "bg_tol": 30,
-    "warmth_min": 16,
-    "warmth_max": 26,
-    "corner_spread_max": 34,
-    "head_pct_max": 14,
-    "head_pct_min": 5,
-    "ratio": 0.6666666666666666,
-    "ratio_tol": 0.06,
-    "min_width": 1200
-  },
   "delivery": [
     2000,
     3000
   ],
+  "reset": {
+    "date": "2026-09-09",
+    "source_style": "DETP58027",
+    "source_size": [
+      2000,
+      3000
+    ],
+    "edit_native_size": [
+      1024,
+      1536
+    ],
+    "edits_per_view": 1,
+    "method": "Original photographed view plus original identity reference; built-in imagegen head/hair edit. No synthesized poses or chained image edits.",
+    "archive": "hide/retired-before-detp58027-2026-09-09",
+    "source_views": {
+      "front": "DETP58027_6.jpg",
+      "side": "DETP58027_8.jpg",
+      "back": "DETP58027_11.jpg",
+      "full": "DETP58027_2.jpg"
+    }
+  },
   "plates": [
     {
-      "name": "studio 03",
-      "source_style": "DJ40155LS",
-      "pose": "standing straight, arms relaxed at sides, feet apart",
-      "head_pct": 9,
-      "views": [
-        "back",
-        "front",
-        "full",
-        "side"
-      ],
-      "front_is": "real studio photograph",
-      "others_are": "generated from the front plate, same model",
-      "wears": "pants",
-      "low_ok": true,
-      "legs_separated": true,
-      "hem": "floor",
-      "outfit_below": "cream wide-leg trousers",
-      "outfit_above": "black ribbed tank top, tucked in",
-      "tank": "2026-09-08"
-    },
-    {
-      "name": "studio 05",
-      "source_style": "DP62140AP",
-      "pose": "standing straight, both thumbs hooked in front pockets",
-      "head_pct": 9,
-      "views": [
-        "back",
-        "front",
-        "full",
-        "side"
-      ],
-      "front_is": "real studio photograph",
-      "others_are": "generated from the front plate, same model",
-      "wears": "pants",
-      "low_ok": true,
-      "legs_separated": true,
-      "hem": "floor",
-      "outfit_below": "brown plaid barrel trousers",
-      "outfit_above": "black ribbed tank top, tucked in",
-      "tank": "2026-09-08"
-    },
-    {
-      "name": "studio 19",
-      "source_style": "DP60197B",
-      "pose": "standing, right hand on hip, feet apart",
-      "head_pct": 9,
-      "views": [
-        "back",
-        "front",
-        "full",
-        "side"
-      ],
-      "front_is": "real studio photograph",
-      "others_are": "generated from the front plate, same model",
-      "wears": "pants",
-      "low_ok": true,
-      "legs_separated": true,
-      "hem": "ankle",
-      "outfit_below": "olive balloon barrel pants",
-      "outfit_above": "black ribbed tank top, tucked in",
-      "tank": "2026-09-08"
-    },
-    {
-      "name": "studio 57",
-      "source_style": "DWT62170",
-      "pose": "standing, weight on one leg, hand in pocket",
-      "head_pct": 10,
-      "views": [
-        "back",
-        "front",
-        "full",
-        "side"
-      ],
-      "slug": "dwt62170-21-celine-neutral",
-      "face": "celine",
-      "expression": "neutral",
-      "wears": "pants",
-      "low_ok": true,
-      "front_is": "real studio photograph, head replaced with the house AI face (GPT Image 2, masked)",
-      "others_are": "generated from the front plate, same model"
-    },
-    {
-      "name": "studio 58",
-      "source_style": "DWT62170",
-      "pose": "standing, weight on one leg, hand in pocket",
-      "head_pct": 10,
-      "views": [
-        "back",
-        "front",
-        "full",
-        "side"
-      ],
-      "slug": "dwt62170-21-celine-smile",
-      "face": "celine",
-      "expression": "smile",
-      "wears": "pants",
-      "low_ok": true,
-      "front_is": "real studio photograph, head replaced with the house AI face (GPT Image 2, masked)",
-      "others_are": "generated from the front plate, same model"
-    },
-    {
-      "name": "studio 59",
-      "source_style": "DWT62170",
-      "pose": "standing, weight on one leg, hand in pocket",
-      "head_pct": 10,
-      "views": [
-        "back",
-        "front",
-        "full",
-        "side"
-      ],
-      "slug": "dwt62170-21-celine-smirk",
-      "face": "celine",
-      "expression": "smirk",
-      "wears": "pants",
-      "low_ok": true,
-      "front_is": "real studio photograph, head replaced with the house AI face (GPT Image 2, masked)",
-      "others_are": "generated from the front plate, same model"
-    },
-    {
-      "name": "studio 60",
-      "source_style": "DWT62170",
-      "pose": "standing, weight on one leg, hand in pocket",
-      "head_pct": 10,
-      "views": [
-        "back",
-        "front",
-        "full",
-        "side"
-      ],
-      "slug": "dwt62170-21-celine-teeth",
-      "face": "celine",
-      "expression": "teeth",
-      "wears": "pants",
-      "low_ok": true,
-      "front_is": "real studio photograph, head replaced with the house AI face (GPT Image 2, masked)",
-      "others_are": "generated from the front plate, same model"
-    },
-    {
-      "name": "studio 61",
-      "source_style": "DJ40155LS",
-      "pose": "standing straight, arms relaxed at sides, feet apart",
-      "head_pct": 9,
-      "views": [
-        "back",
-        "front",
-        "full",
-        "side"
-      ],
-      "slug": "dj40155ls-42-celine-neutral",
-      "face": "celine",
-      "expression": "neutral",
-      "wears": "pants",
-      "low_ok": true,
-      "front_is": "real studio photograph, head replaced with the house AI face (GPT Image 2, masked)",
-      "others_are": "generated from the front plate, same model",
-      "hem": "floor",
-      "legs_separated": true,
-      "outfit_below": "cream wide-leg trousers",
-      "outfit_above": "black ribbed tank top, tucked in",
-      "tank": "2026-09-08",
-      "base_plate": "studio 03"
-    },
-    {
-      "name": "studio 80",
-      "source_style": "DJ40155LS",
-      "pose": "standing straight, arms relaxed at sides, feet apart",
-      "head_pct": 9,
-      "views": [
-        "back",
-        "front",
-        "full",
-        "side"
-      ],
-      "slug": "dj40155ls-42-celine-smile",
-      "face": "celine",
-      "expression": "smile",
-      "wears": "pants",
-      "low_ok": true,
-      "front_is": "real studio photograph, head replaced with the house AI face (GPT Image 2, masked)",
-      "others_are": "generated from the front plate, same model",
-      "hem": "floor",
-      "legs_separated": true,
-      "outfit_below": "cream wide-leg trousers",
-      "outfit_above": "black ribbed tank top, tucked in",
-      "tank": "2026-09-08",
-      "base_plate": "studio 03"
-    },
-    {
-      "name": "studio 81",
-      "source_style": "DJ40155LS",
-      "pose": "standing straight, arms relaxed at sides, feet apart",
-      "head_pct": 9,
-      "views": [
-        "back",
-        "front",
-        "full",
-        "side"
-      ],
-      "slug": "dj40155ls-42-celine-teeth",
-      "face": "celine",
-      "expression": "teeth",
-      "wears": "pants",
-      "low_ok": true,
-      "front_is": "real studio photograph, head replaced with the house AI face (GPT Image 2, masked)",
-      "others_are": "generated from the front plate, same model",
-      "hem": "floor",
-      "legs_separated": true,
-      "outfit_below": "cream wide-leg trousers",
-      "outfit_above": "black ribbed tank top, tucked in",
-      "tank": "2026-09-08",
-      "base_plate": "studio 03"
-    },
-    {
-      "name": "studio 82",
-      "source_style": "DJ40155LS",
-      "pose": "standing straight, arms relaxed at sides, feet apart",
-      "head_pct": 9,
-      "views": [
-        "back",
-        "front",
-        "full",
-        "side"
-      ],
-      "slug": "dj40155ls-42-neutral",
+      "name": "studio 97",
+      "display_name": "Vision",
+      "source_style": "DETP58027",
       "face": "vision",
       "expression": "neutral",
-      "wears": "pants",
+      "slug": "detp58027-vision-neutral",
+      "pose": "Vision",
+      "auto": true,
+      "views": [
+        "front",
+        "side",
+        "back",
+        "full"
+      ],
+      "wears": "shorts",
       "low_ok": true,
-      "front_is": "real studio photograph, head replaced with the house AI face (GPT Image 2, masked)",
-      "others_are": "generated from the front plate, same model",
-      "hem": "floor",
       "legs_separated": true,
-      "outfit_below": "cream wide-leg trousers",
-      "outfit_above": "black ribbed tank top, tucked in",
-      "tank": "2026-09-08",
-      "base_plate": "studio 03"
+      "outfit_above": "original pink and yellow striped tee",
+      "outfit_below": "original matching striped shorts",
+      "front_is": "DETP58027_6 original photograph with one identity edit to the head/hair",
+      "others_are": "independent original photographs with one head/hair edit each; back has no visible face",
+      "low_source": "face-free crops of original DETP58027_2 and DETP58027_7; no generation"
     },
     {
-      "name": "studio 83",
-      "source_style": "DJ40155LS",
-      "pose": "standing straight, arms relaxed at sides, feet apart",
-      "head_pct": 9,
-      "views": [
-        "back",
-        "front",
-        "full",
-        "side"
-      ],
-      "slug": "dj40155ls-42-smile",
-      "face": "vision",
-      "expression": "smile",
-      "wears": "pants",
-      "low_ok": true,
-      "front_is": "real studio photograph, head replaced with the house AI face (GPT Image 2, masked)",
-      "others_are": "generated from the front plate, same model",
-      "hem": "floor",
-      "legs_separated": true,
-      "outfit_below": "cream wide-leg trousers",
-      "outfit_above": "black ribbed tank top, tucked in",
-      "tank": "2026-09-08",
-      "base_plate": "studio 03"
-    },
-    {
-      "name": "studio 84",
-      "source_style": "DJ40155LS",
-      "pose": "standing straight, arms relaxed at sides, feet apart",
-      "head_pct": 9,
-      "views": [
-        "back",
-        "front",
-        "full",
-        "side"
-      ],
-      "slug": "dj40155ls-42-teeth",
-      "face": "vision",
-      "expression": "teeth",
-      "wears": "pants",
-      "low_ok": true,
-      "front_is": "real studio photograph, head replaced with the house AI face (GPT Image 2, masked)",
-      "others_are": "generated from the front plate, same model",
-      "hem": "floor",
-      "legs_separated": true,
-      "outfit_below": "cream wide-leg trousers",
-      "outfit_above": "black ribbed tank top, tucked in",
-      "tank": "2026-09-08",
-      "base_plate": "studio 03"
-    },
-    {
-      "name": "studio 85",
-      "source_style": "DP60197B",
-      "pose": "standing, right hand on hip, feet apart",
-      "head_pct": 9,
-      "views": [
-        "back",
-        "front",
-        "full",
-        "side"
-      ],
-      "slug": "dp60197b-44-celine-neutral",
+      "name": "studio 98",
+      "display_name": "Celine",
+      "source_style": "DETP58027",
       "face": "celine",
       "expression": "neutral",
-      "wears": "pants",
-      "low_ok": true,
-      "front_is": "real studio photograph, head replaced with the house AI face (GPT Image 2, masked)",
-      "others_are": "generated from the front plate, same model",
-      "hem": "ankle",
-      "legs_separated": true,
-      "outfit_below": "olive balloon barrel pants",
-      "outfit_above": "black ribbed tank top, tucked in",
-      "tank": "2026-09-08",
-      "base_plate": "studio 19"
-    },
-    {
-      "name": "studio 86",
-      "source_style": "DP60197B",
-      "pose": "standing, right hand on hip, feet apart",
-      "head_pct": 9,
+      "slug": "detp58027-celine-neutral",
+      "pose": "Celine",
+      "auto": true,
       "views": [
-        "back",
         "front",
-        "full",
-        "side"
-      ],
-      "slug": "dp60197b-44-celine-smile",
-      "face": "celine",
-      "expression": "smile",
-      "wears": "pants",
-      "low_ok": true,
-      "front_is": "real studio photograph, head replaced with the house AI face (GPT Image 2, masked)",
-      "others_are": "generated from the front plate, same model",
-      "hem": "ankle",
-      "legs_separated": true,
-      "outfit_below": "olive balloon barrel pants",
-      "outfit_above": "black ribbed tank top, tucked in",
-      "tank": "2026-09-08",
-      "base_plate": "studio 19"
-    },
-    {
-      "name": "studio 87",
-      "source_style": "DP60197B",
-      "pose": "standing, right hand on hip, feet apart",
-      "head_pct": 9,
-      "views": [
+        "side",
         "back",
-        "front",
-        "full",
-        "side"
+        "full"
       ],
-      "slug": "dp60197b-44-celine-teeth",
-      "face": "celine",
-      "expression": "teeth",
-      "wears": "pants",
+      "wears": "shorts",
       "low_ok": true,
-      "front_is": "real studio photograph, head replaced with the house AI face (GPT Image 2, masked)",
-      "others_are": "generated from the front plate, same model",
-      "hem": "ankle",
       "legs_separated": true,
-      "outfit_below": "olive balloon barrel pants",
-      "outfit_above": "black ribbed tank top, tucked in",
-      "tank": "2026-09-08",
-      "base_plate": "studio 19"
-    },
-    {
-      "name": "studio 88",
-      "source_style": "DP60197B",
-      "pose": "standing, right hand on hip, feet apart",
-      "head_pct": 9,
-      "views": [
-        "back",
-        "front",
-        "full",
-        "side"
-      ],
-      "slug": "dp60197b-44-neutral",
-      "face": "vision",
-      "expression": "neutral",
-      "wears": "pants",
-      "low_ok": true,
-      "front_is": "real studio photograph, head replaced with the house AI face (GPT Image 2, masked)",
-      "others_are": "generated from the front plate, same model",
-      "hem": "ankle",
-      "legs_separated": true,
-      "outfit_below": "olive balloon barrel pants",
-      "outfit_above": "black ribbed tank top, tucked in",
-      "tank": "2026-09-08",
-      "base_plate": "studio 19"
-    },
-    {
-      "name": "studio 89",
-      "source_style": "DP60197B",
-      "pose": "standing, right hand on hip, feet apart",
-      "head_pct": 9,
-      "views": [
-        "back",
-        "front",
-        "full",
-        "side"
-      ],
-      "slug": "dp60197b-44-smile",
-      "face": "vision",
-      "expression": "smile",
-      "wears": "pants",
-      "low_ok": true,
-      "front_is": "real studio photograph, head replaced with the house AI face (GPT Image 2, masked)",
-      "others_are": "generated from the front plate, same model",
-      "hem": "ankle",
-      "legs_separated": true,
-      "outfit_below": "olive balloon barrel pants",
-      "outfit_above": "black ribbed tank top, tucked in",
-      "tank": "2026-09-08",
-      "base_plate": "studio 19"
-    },
-    {
-      "name": "studio 90",
-      "source_style": "DP60197B",
-      "pose": "standing, right hand on hip, feet apart",
-      "head_pct": 9,
-      "views": [
-        "back",
-        "front",
-        "full",
-        "side"
-      ],
-      "slug": "dp60197b-44-teeth",
-      "face": "vision",
-      "expression": "teeth",
-      "wears": "pants",
-      "low_ok": true,
-      "front_is": "real studio photograph, head replaced with the house AI face (GPT Image 2, masked)",
-      "others_are": "generated from the front plate, same model",
-      "hem": "ankle",
-      "legs_separated": true,
-      "outfit_below": "olive balloon barrel pants",
-      "outfit_above": "black ribbed tank top, tucked in",
-      "tank": "2026-09-08",
-      "base_plate": "studio 19"
-    },
-    {
-      "name": "studio 91",
-      "source_style": "DP62140AP",
-      "pose": "standing straight, both thumbs hooked in front pockets",
-      "head_pct": 9,
-      "views": [
-        "back",
-        "front",
-        "full",
-        "side"
-      ],
-      "slug": "dp62140ap-43-celine-neutral",
-      "face": "celine",
-      "expression": "neutral",
-      "wears": "pants",
-      "low_ok": true,
-      "front_is": "real studio photograph, head replaced with the house AI face (GPT Image 2, masked)",
-      "others_are": "generated from the front plate, same model",
-      "hem": "floor",
-      "legs_separated": true,
-      "outfit_below": "brown plaid barrel trousers",
-      "outfit_above": "black ribbed tank top, tucked in",
-      "tank": "2026-09-08",
-      "base_plate": "studio 05"
-    },
-    {
-      "name": "studio 92",
-      "source_style": "DP62140AP",
-      "pose": "standing straight, both thumbs hooked in front pockets",
-      "head_pct": 9,
-      "views": [
-        "back",
-        "front",
-        "full",
-        "side"
-      ],
-      "slug": "dp62140ap-43-celine-smile",
-      "face": "celine",
-      "expression": "smile",
-      "wears": "pants",
-      "low_ok": true,
-      "front_is": "real studio photograph, head replaced with the house AI face (GPT Image 2, masked)",
-      "others_are": "generated from the front plate, same model",
-      "hem": "floor",
-      "legs_separated": true,
-      "outfit_below": "brown plaid barrel trousers",
-      "outfit_above": "black ribbed tank top, tucked in",
-      "tank": "2026-09-08",
-      "base_plate": "studio 05"
-    },
-    {
-      "name": "studio 93",
-      "source_style": "DP62140AP",
-      "pose": "standing straight, both thumbs hooked in front pockets",
-      "head_pct": 9,
-      "views": [
-        "back",
-        "front",
-        "full",
-        "side"
-      ],
-      "slug": "dp62140ap-43-celine-teeth",
-      "face": "celine",
-      "expression": "teeth",
-      "wears": "pants",
-      "low_ok": true,
-      "front_is": "real studio photograph, head replaced with the house AI face (GPT Image 2, masked)",
-      "others_are": "generated from the front plate, same model",
-      "hem": "floor",
-      "legs_separated": true,
-      "outfit_below": "brown plaid barrel trousers",
-      "outfit_above": "black ribbed tank top, tucked in",
-      "tank": "2026-09-08",
-      "base_plate": "studio 05"
-    },
-    {
-      "name": "studio 94",
-      "source_style": "DP62140AP",
-      "pose": "standing straight, both thumbs hooked in front pockets",
-      "head_pct": 9,
-      "views": [
-        "back",
-        "front",
-        "full",
-        "side"
-      ],
-      "slug": "dp62140ap-43-neutral",
-      "face": "vision",
-      "expression": "neutral",
-      "wears": "pants",
-      "low_ok": true,
-      "front_is": "real studio photograph, head replaced with the house AI face (GPT Image 2, masked)",
-      "others_are": "generated from the front plate, same model",
-      "hem": "floor",
-      "legs_separated": true,
-      "outfit_below": "brown plaid barrel trousers",
-      "outfit_above": "black ribbed tank top, tucked in",
-      "tank": "2026-09-08",
-      "base_plate": "studio 05"
-    },
-    {
-      "name": "studio 95",
-      "source_style": "DP62140AP",
-      "pose": "standing straight, both thumbs hooked in front pockets",
-      "head_pct": 9,
-      "views": [
-        "back",
-        "front",
-        "full",
-        "side"
-      ],
-      "slug": "dp62140ap-43-smile",
-      "face": "vision",
-      "expression": "smile",
-      "wears": "pants",
-      "low_ok": true,
-      "front_is": "real studio photograph, head replaced with the house AI face (GPT Image 2, masked)",
-      "others_are": "generated from the front plate, same model",
-      "hem": "floor",
-      "legs_separated": true,
-      "outfit_below": "brown plaid barrel trousers",
-      "outfit_above": "black ribbed tank top, tucked in",
-      "tank": "2026-09-08",
-      "base_plate": "studio 05"
-    },
-    {
-      "name": "studio 96",
-      "source_style": "DP62140AP",
-      "pose": "standing straight, both thumbs hooked in front pockets",
-      "head_pct": 9,
-      "views": [
-        "back",
-        "front",
-        "full",
-        "side"
-      ],
-      "slug": "dp62140ap-43-teeth",
-      "face": "vision",
-      "expression": "teeth",
-      "wears": "pants",
-      "low_ok": true,
-      "front_is": "real studio photograph, head replaced with the house AI face (GPT Image 2, masked)",
-      "others_are": "generated from the front plate, same model",
-      "hem": "floor",
-      "legs_separated": true,
-      "outfit_below": "brown plaid barrel trousers",
-      "outfit_above": "black ribbed tank top, tucked in",
-      "tank": "2026-09-08",
-      "base_plate": "studio 05"
+      "outfit_above": "original pink and yellow striped tee",
+      "outfit_below": "original matching striped shorts",
+      "front_is": "DETP58027_6 original photograph with one identity edit to the head/hair",
+      "others_are": "independent original photographs with one head/hair edit each; back has no visible face",
+      "low_source": "face-free crops of original DETP58027_2 and DETP58027_7; no generation"
     }
   ],
   "families": {
     "crop": {
-      "from": "studio NN, same photograph",
+      "from": "identical front/side/back files, already head-to-thigh",
       "views": [
         "front",
         "side",
         "back"
-      ],
-      "framing": "head to mid-thigh, garment fills the frame, head about 20% of the frame",
-      "size": [
-        1200,
-        1800
-      ],
-      "geometry_of_figure_height": {
-        "top": -0.03,
-        "bottom": 0.58
-      }
+      ]
     },
     "low": {
-      "from": "studio NN, same photograph",
+      "from": "original DETP58027_2 / DETP58027_7, no face or generation",
       "views": [
         "front",
         "side"
       ],
-      "framing": "waist to shoes, no head or shoulders in frame",
       "size": [
         1200,
         1800
-      ],
-      "geometry_of_figure_height": {
-        "top": 0.4,
-        "bottom": 1.03
-      }
+      ]
     }
   }
 }

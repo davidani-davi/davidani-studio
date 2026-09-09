@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { listAllHumanModels } from "@/lib/models-registry";
+import { isDerivedPlate } from "@/lib/plate-framing";
 
 export const runtime = "nodejs";
 
@@ -14,7 +15,7 @@ export const runtime = "nodejs";
 export async function GET() {
   try {
     const models = await listAllHumanModels();
-    return NextResponse.json({ ok: true, models });
+    return NextResponse.json({ ok: true, models: models.filter(m => !isDerivedPlate(m.id)) });
   } catch (err: any) {
     console.error("[api/models] error:", err);
     return NextResponse.json(

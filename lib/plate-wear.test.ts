@@ -14,6 +14,16 @@ const MODELS: any[] = [
 ];
 
 describe("mergePlateWear", () => {
+  it("uses a curated display name without replacing stable plate IDs or unnamed labels", () => {
+    const models = [{ id: "studio 97", name: "Studio 97" }, { id: "crop 97", name: "Crop 97" },
+      { id: "studio 98", name: "Studio 98" }];
+    const rows = [{ name: "studio 97", display_name: " Vision ", wears: "shorts" },
+      { name: "studio 98", display_name: " ", wears: "shorts" }];
+    expect(mergePlateWear(models, rows).map(({ id, name }) => ({ id, name }))).toEqual([
+      { id: "studio 97", name: "Vision" }, { id: "crop 97", name: "Vision" },
+      { id: "studio 98", name: "Studio 98" },
+    ]);
+  });
   it("tags the house plate and its crop/low siblings from plates.json", () => {
     const by = Object.fromEntries(mergePlateWear(MODELS, PLATES).map((m: any) => [m.id, [m.wears, m.lowOk]]));
     expect(by["studio 05"]).toEqual(["pants", true]);

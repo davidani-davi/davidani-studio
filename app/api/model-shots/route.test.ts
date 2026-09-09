@@ -59,22 +59,31 @@ describe("/api/model-shots auth", () => {
     const { GET } = await load();
     const { models } = await (await GET(req({ "X-DDTO-TOKEN": "s3cret" }))).json();
     const byId = (id: string) => models.find((m: any) => m.id === id);
-    const house = byId("studio 57");
-    expect(house).toMatchObject({ character: "celine", expression: "neutral", autoPool: true });
+    const house = byId("studio 98");
+    expect(house).toMatchObject({ name: "Celine", character: "celine", expression: "neutral", autoPool: true });
     // poseKey strips only the expression, so it still carries the face tag — two faces on
     // one photograph group separately today. Folding them wants the picker's face chips first,
     // or a pose group would silently hold two different women behind one tile.
-    expect(house.poseKey).toBe("dwt62170-21-celine");
-    expect(house.pose).toMatch(/hand in pocket/);
+    expect(house.poseKey).toBe("detp58027-celine");
+    expect(house.pose).toBe("Celine");
     // the warm DWT62133 backdrop family went to hide/ on 2026-09-08
     expect(byId("studio 28")).toBeUndefined();
     // the wardrobe variants were retired to hide/ (2026-09-08): not listed at all
     expect(byId("studio 38")).toBeUndefined();
     expect(byId("faces")).toBeUndefined();
-    // a photographed model carries no character at all
-    const real = byId("studio 03");
-    expect(real.autoPool).toBe(true);
-    expect(real.character).toBeUndefined();
+    expect(byId("studio 03")).toBeUndefined();
+    expect(byId("studio 57")).toBeUndefined();
+    expect(models.map((m: any) => m.name)).toEqual(["Vision", "Celine"]);
+    expect(byId("studio 97")).toMatchObject({ character: "vision", expression: "neutral", autoPool: true });
+  });
+
+  it("offers the same two named models in the standalone Studio without internal crop variants", async () => {
+    const { GET } = await import("../models/route");
+    const { models } = await (await GET()).json();
+    expect(models.map((m: any) => m.name)).toEqual(["Vision", "Celine"]);
+    const { wardrobeGroups } = await import("@/lib/plate-wear");
+    const cards = ["vision", "celine"].flatMap(character => wardrobeGroups(models, character));
+    expect(cards.map(g => g.plates[0].name)).toEqual(["Vision", "Celine"]);
   });
 
   it("prefers MODEL_SHOTS_TOKEN once it is set, so the extension key can be rotated alone", async () => {

@@ -1,53 +1,36 @@
-**Update 2026-09-08 21:25 — saved shots.** `lib/saved-shots.ts` + `/api/saved-shots` (GET/POST/DELETE, token or cookie, PUBLIC_PATHS): per-style saved model shots: ONE metadata blob per shot `saved-shots/<STYLE>/<id>.json` + the image copy beside it (type sniffed from bytes). No index file — an overwritten index.json read stale through the Blob CDN and lost quick writes (e86733b). `DELETE {gc:true}` sweeps orphans. Extension 2.55.0 panel section 4 and `saved_shots.py` (faire-management) use it. Live, verified.
+# Handoff — davidani-studio
 
-# Handoff
+Written 2026-09-09T05:51:09+00:00 by Codex. Branch main; prior commit 41c1439.
 
-**Update 2026-09-08 19:10:** GPT Image 2.5 (`gpt-image-25`) is now the DEFAULT modelId of
-`/api/model-shots` (57f502e) after David picked it over GPT 2 on the DJ62106 / studio 03
-comparison. Extension 2.54.0 sends `modelId` explicitly (gpt-image-25 / gpt-image). The
-no-plate engine (`lib/no-plate.ts`, engine "gpt25") is unused by the extension now. — davidani-studio
+## Accomplished
+- David rejected the current reference library and requested just Vision/Celine,
+  based on the real pink/yellow DETP58027 shoot with minimal generations.
+- Archived all 25 prior active sets / 75 folders intact to
+  public/models/hide/retired-before-detp58027-2026-09-09/ (includes old plates.json).
+- New studio 97 = Vision, studio 98 = Celine; four linked PNGs each.
+- Originals: front _6 (byte-identical to attachment), side _8, back _11, full _2.
+- One built-in imagegen head/hair edit per original/identity: 8 calls, no chains,
+  generated poses, expression variants, outfit replacements or AI upscale.
+- Originals 2000x3000; outputs native 1024x1536, no upsampling disguised as detail.
+- crop 97/98 reuse front/side/back bytes. low 97/98 are face-free pixel crops of
+  original _2 and _7, preserving pants workflow with no additional generation.
+- Added metadata display_name so identities show as Vision/Celine; rebuilt manifest.
+- /api/models hides internal crops; standalone sidebar now includes both characters.
+- Validation: 722 tests pass; production build passes; image sets visually inspected.
+- Source photos, PNGs, prompts, ZIPs and review sheets are in faire-management:
+  output/imagegen/detp58027-house-references/.
 
-2026-09-08 16:55 · written by Claude Code · branch main · last commit d3bb4f3
-
-## Just done
-- **No-plate engine (GPT Image 2.5)** — `lib/no-plate.ts` + `lib/no-plate.test.ts`;
-  `POST /api/model-shots` with `engine:"gpt25"` (+ `face` "vision"|"celine" or humanModelId
-  `face:<name>`, optional `variant` flare|sunburst) skips plate/analyzer/restore and renders
-  the frame from `public/models/hide/faces/<face>-face.png` + `-smile-face.png` + the garment
-  photo(s) + the front anchor (last). 1024×1536, quality high. Live: front on DJ62106 in 23 s.
-- Reference sets vision/celine on the three live poses installed as studio 61, 80–96 (c15dab0).
-
-- **House reference sets (00abf88):** `engine:"gpt25", reference:true` renders the model
-  herself in the house outfit (black ribbed tank, ecru trousers, tan sandals), no garment;
-  front anchors side/back. Rendered vision + celine front/side/back at sunburst/max/2048×3072
-  (65–77 s a view); files in faire-management data root `measurement/plates/ref25/`,
-  sheets sent to David 2026-09-08 17:25. Backdrop corners r-b 18–25, all in band.
-
-- **DIRECTION CHANGE 17:35 — David rejected the 2.5 no-plate reference sets:** "these are not good.
-  just like studio 03, 05 and 19. the base model needs to be our actual models for the most
-  realistic output." Rule: the base of every shot is one of OUR photographed plates. So 2.5 is
-  now an EDITOR on the plate pipeline: `modelId:"gpt-image-25"` (ca8f64d, sunburst, native
-  2048×3072, analyzer/anchors/restore unchanged). The gpt25 no-plate engine + `reference:true`
-  stay in the code but are superseded; rejected renders in data root `plates/ref25-rejected/`.
-  A bare fal 403 "Forbidden" is now retried as transient (burst refusals).
-
-## Next
-- Read the DJ62106 comparison (studio 03 plate, GPT Image 2 vs 2.5) David gets from this session;
-  if 2.5 wins, make it the route default and drop the no-plate engine from the extension.
-- David reviews the ref25 sheets. If kept: install as plates (candidates.json rows →
-  plate_install --only → plate_crop → manifest) and/or feed them as body refs to the
-  no-plate prompt (third reference image after the faces).
-- David reviews the no-plate output in the extension (2.53.0) vs plates.
-  2048×3072 is live (679a0e8): DJ62106 front in 28.5 s vs 23 s at 1024×1536.
-- Retire rejected reference plates via `git mv public/models/<name> public/models/hide/` +
-  hide/plates.json. Studio 03/05/19 tank plates: David confirmed "good" 2026-09-08 17:30 — they stay.
+## Next steps
+1. Verify live /api/model-shots has exactly studio 97 Vision / studio 98 Celine,
+   and deployed image bytes match local files; refresh Model Studio to reload catalog.
+2. David reviews the new sets. Revisions should start from the original shoot photos
+   and original identity refs, not re-generate an already edited reference.
+3. Model generation engine stays GPT Image 2.5 by default; no pipeline prompt change.
 
 ## Gotchas
-- fal account: the studio's Vercel FAL_KEY and the davistudio-batch shell key are the SAME key
-  (id prefix d4b21623, one account). David topped it up 2026-09-08 ~18:30 (36.08); the lock
-  ("User is locked. Reason: Exhausted balance", surfaced as bare 403 "Forbidden") lifted a few
-  minutes after. `GET /api/fal-account` with `X-DDTO-TOKEN` reports the deployed key's prefix
-  and balance — use it before blaming code for Forbidden. OPENAI_API_KEY is NOT set on Vercel,
-  so GPT renders bill the fal balance.
-- Another session may work in this checkout: commit with explicit pathspecs only
-  (`tsconfig.tsbuildinfo` is dirty and must not be committed).
+- Front/side/back follow original head-to-thigh crops; full is a different real pose.
+- Raw source means original published JPEGs, not camera-RAW sensor files.
+- npm run models:manifest lacks vite-node locally; ran existing script with installed
+  Vite createServer({configFile:false}).ssrLoadModule instead. No dependency change.
+- Existing tsconfig.tsbuildinfo edits belong to build state; exclude from commit.
+- Saved-shot deletion deletes Blob image: re-save from original before dropping.
