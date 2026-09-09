@@ -16,7 +16,17 @@
   (65–77 s a view); files in faire-management data root `measurement/plates/ref25/`,
   sheets sent to David 2026-09-08 17:25. Backdrop corners r-b 18–25, all in band.
 
+- **DIRECTION CHANGE 17:35 — David rejected the 2.5 no-plate reference sets:** "these are not good.
+  just like studio 03, 05 and 19. the base model needs to be our actual models for the most
+  realistic output." Rule: the base of every shot is one of OUR photographed plates. So 2.5 is
+  now an EDITOR on the plate pipeline: `modelId:"gpt-image-25"` (ca8f64d, sunburst, native
+  2048×3072, analyzer/anchors/restore unchanged). The gpt25 no-plate engine + `reference:true`
+  stay in the code but are superseded; rejected renders in data root `plates/ref25-rejected/`.
+  A bare fal 403 "Forbidden" is now retried as transient (burst refusals).
+
 ## Next
+- Read the DJ62106 comparison (studio 03 plate, GPT Image 2 vs 2.5) David gets from this session;
+  if 2.5 wins, make it the route default and drop the no-plate engine from the extension.
 - David reviews the ref25 sheets. If kept: install as plates (candidates.json rows →
   plate_install --only → plate_crop → manifest) and/or feed them as body refs to the
   no-plate prompt (third reference image after the faces).
