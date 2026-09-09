@@ -11,8 +11,8 @@
 - Reference sets vision/celine on the three live poses installed as studio 61, 80–96 (c15dab0).
 
 ## Next
-- David reviews the no-plate output in the extension (2.53.0) vs plates; if kept, try
-  2048×3072 (`NO_PLATE_SIZE`) — unverified on 2.5.
+- David reviews the no-plate output in the extension (2.53.0) vs plates.
+  2048×3072 is live (679a0e8): DJ62106 front in 28.5 s vs 23 s at 1024×1536.
 - Retire rejected reference plates via `git mv public/models/<name> public/models/hide/` +
   hide/plates.json; decide whether studio 03/05/19 stay in the auto pool.
 
