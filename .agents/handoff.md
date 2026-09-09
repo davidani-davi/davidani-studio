@@ -1,5 +1,5 @@
 # Handoff — Model Studio photographic finish
-Updated 2026-09-09 by Codex. Main; prior0259508.
+Updated 2026-09-09 by Codex. Main; implementation9318261.
 
 ## Current work
 - Added house-photo-brief for default GPT2.5 house97–100 Model Studio shots.
@@ -28,7 +28,7 @@ Updated 2026-09-09 by Codex. Main; prior0259508.
   idempotent paid submissions, persistent PNG, callbacks recover saved handle.
 - Arc Quilt/Barrel jobs DONE; /tmp/faire-real-design.json and
   /tmp/faire-live-design.json. Do not resubmit paid concepts.
-- Faire research goal remains separate and incomplete; buyer sign-in pending.
-  Never navigate its research browser before David confirms sign-in.
+- Faire research is separate; latest state is in the Faire repo handoff.
+  Buyer verification/collection resumed in concurrent task; do not interfere.
 - Preserve pre-existing dirty tsconfig.tsbuildinfo; never stage it.
 - Private pulled env files stay outside repos; never print values.
