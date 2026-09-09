@@ -169,6 +169,9 @@ describe("applyAnchor — the rendered front as the continuity reference", () =>
     expect(out.indexOf("CONTINUITY ANCHOR")).toBeLessThan(out.indexOf("Negative prompt:"));
     expect(ANCHOR_RULE).toContain("LAST input image is the FRONT view");
     expect(ANCHOR_RULE).toContain("never a pose or framing reference");
+    // DP60418: the split-leg print swapped sides on the back view
+    expect(ANCHOR_RULE).toContain("LEFT AND RIGHT ARE HERS");
+    expect(ANCHOR_RULE).toContain("Never mirror or swap the sides");
   });
   it("leaves the prompt alone without one", () => {
     expect(applyAnchor(base, false)).toBe(base);

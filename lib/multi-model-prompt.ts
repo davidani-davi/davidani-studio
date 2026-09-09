@@ -190,7 +190,14 @@ export const ANCHOR_RULE =
   "CONTINUITY ANCHOR: the LAST input image is the FRONT view of this very set, already rendered and approved on this same model. " +
   "It settles everything the garment photo leaves open: the garment's exact length on her body, its fit and volume, its colour and texture, whether it is worn open or closed, " +
   "what shows under and around it (bare arms or an inner layer, the bottoms, the shoes), and her face, hair and skin. Match all of that exactly, so this view and the front read as one photoshoot of one garment, with only the camera angle changed. " +
-  "It is a continuity reference, never a pose or framing reference: the pose, framing and crop come from the first image only. ";
+  "It is a continuity reference, never a pose or framing reference: the pose, framing and crop come from the first image only. " +
+  // DP60418 (2026-09-08): split floral/leopard jeans came back with the prints
+  // swapped between the legs on the back view — the front had floral on HER
+  // right leg, the back put floral on her left. Left and right are hers, not
+  // the viewer's, so a print that sits on the viewer's left in the front sits
+  // on the viewer's right from behind.
+  "LEFT AND RIGHT ARE HERS, NOT THE CAMERA'S: any asymmetry in the front view — a print, colour block, panel, slit, pocket, stripe or trim on one leg, one sleeve or one side of the body — stays on that same limb or side of HER body in this view. " +
+  "Seen from behind, what was on the viewer's left in the front appears on the viewer's right; in profile it sits on the near or far side accordingly. Never mirror or swap the sides. ";
 
 /**
  * The face anchor (2026-09-08, lib/face-anchor.ts): a close crop of the head
