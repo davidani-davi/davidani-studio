@@ -36,10 +36,11 @@
   hide/plates.json. Studio 03/05/19 tank plates: David confirmed "good" 2026-09-08 17:30 — they stay.
 
 ## Gotchas
-- **THE STUDIO'S fal ACCOUNT IS OUT OF BALANCE (18:00, Vercel runtime logs: "User is locked.
-  Reason: Exhausted balance").** The "Forbidden" refusals earlier were the balance edge, not a
-  burst limit. Analyzer (vision) and plate restore (BiRefNet) fail first, GPT renders flicker.
-  David tops up at fal.ai/dashboard/billing; until then no render is trustworthy.
+- fal account: the studio's Vercel FAL_KEY and the davistudio-batch shell key are the SAME key
+  (id prefix d4b21623, one account). David topped it up 2026-09-08 ~18:30 (36.08); the lock
+  ("User is locked. Reason: Exhausted balance", surfaced as bare 403 "Forbidden") lifted a few
+  minutes after. `GET /api/fal-account` with `X-DDTO-TOKEN` reports the deployed key's prefix
+  and balance — use it before blaming code for Forbidden. OPENAI_API_KEY is NOT set on Vercel,
+  so GPT renders bill the fal balance.
 - Another session may work in this checkout: commit with explicit pathspecs only
   (`tsconfig.tsbuildinfo` is dirty and must not be committed).
-- Both fal keys (davistudio-batch shell key and the studio's Vercel key) are exhausted.
