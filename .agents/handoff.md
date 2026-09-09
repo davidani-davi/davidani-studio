@@ -1,21 +1,22 @@
-# Handoff — resumable Model Studio shipped
-Written 2026-09-09 09:36 PDT by Codex. Branch main; last code d4b8369.
+# Handoff — Vision 1 / Celine 1 tattoo removal
+Written 2026-09-09 11:24 PDT by Codex. Branch main; prior eed4e59.
 
 ## Accomplished
-- d4b8369 is deployed. Model Shots accepts requestId for async requests.
-  Exclusive Blob/file claim schedules each ID once; retries return the task;
-  changed inputs conflict. Production refuses temporary local task claims.
-- 726 tests and production build passed. Live duplicate-ID probe passed.
-- Faire management repo now ships shared listing workspaces: app 2.14.0,
-  extension 2.62.0, dedicated private Blob state and server Studio/ERP/Faire bridge.
-- One real GPT2.5 Vision1 front for pink DET62209 completed and survived
-  phone-layout reload + second client. Saved a durable copy via Saved Shots.
-- No real Faire draft or ERP photo upload made by this verification.
+- David requested removing the small “22” arm tattoo from the two pink striped
+  front reference images shown in Model Studio (Vision 1 and Celine 1).
+- Two built-in imagegen localized edits, visually inspected: tattoo removed;
+  identity, pose, garment and framing retained. Native PNGs are 1024×1536.
+- Replaced public/models/studio 97/front.png and studio 98/front.png,
+  plus identical crop 97/98 front files used by top-garment generation.
+- Other views and Vision 2/Celine 2 assets unchanged.
+- Exact prompts and method: docs/reference-tattoo-removal.json.
+- All 726 tests and production build passed. Git push triggers deployment;
+  verify four live assets match the local SHA256 before calling this live.
 
-## References / next steps
+## Next / preserved context
+- Reload Model Studio after deployment. Assets use max-age=0/must-revalidate.
 - Four options: Vision 1/2 = studio 97/99; Celine 1/2 = studio 98/100.
-- Original reference PNGs 1024x1536; garment output 2048x3072.
-- Evidence: ~/Services/davidani-faire-management/output/listing-sync/.
-- Shared workflow maintenance: that repo's docs/faire-daily/LISTING-SYNC.md.
-- Actual phone/iPad hardware was unavailable; browser viewports verified.
-- Preserve the pre-existing dirty tsconfig.tsbuildinfo; no other Studio edits pending.
+- Resumable generation/request IDs, shared listing work and Studio A preserved.
+- Faire repo remains app 2.19.0 / extension 2.67.0; no extension update needed.
+- Preserve pre-existing dirty tsconfig.tsbuildinfo; do not stage it.
+- Prior real generation / device-sync evidence lives in Faire repo output/listing-sync.

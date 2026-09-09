@@ -1,0 +1,17 @@
+{
+  "date": "2026-09-09",
+  "tool": "built-in image_gen",
+  "scope": "Vision 1 and Celine 1 front reference tattoo removal; identical copies installed in crop variants",
+  "edits": [
+    {
+      "id": 97,
+      "prompt": "Use case: precise-object-edit. Input image is the edit target: the existing Vision 1 blonde fashion model reference. Remove ONLY the tiny black \"22\" tattoo on her exposed upper arm on the viewer’s right, just below the short sleeve (approximately x750 y785 in the 1024x1536 source). Restore natural skin texture and the existing skin tone and lighting in that tiny spot. Keep the rest of the photograph unchanged: exact face and identity, facial detail/sharpness, hair, head size, neck, body proportions, pose, hands, jewelry, pink and yellow striped outfit, fabric folds, framing, resolution and cream background. This is a localized skin retouch, not a new rendering of the person. Output the complete same portrait photo with no tattoo, no other changes.",
+      "asset": "public/models/studio 97/front.png"
+    },
+    {
+      "id": 98,
+      "prompt": "Use case: precise-object-edit. Input image is the edit target: the existing Celine 1 brunette fashion model reference. Remove ONLY the tiny black \"22\" tattoo on her exposed upper arm on the viewer’s right, just below the short sleeve (approximately x750 y785 in the 1024x1536 source). Restore natural skin texture and the existing skin tone and lighting in that tiny spot. Keep the rest of the photograph unchanged: exact face and identity, facial detail/sharpness, hair, head size, neck, body proportions, pose, hands, jewelry, pink and yellow striped outfit, fabric folds, framing, resolution and cream background. This is a localized skin retouch, not a new rendering of the person. Output the complete same portrait photo with no tattoo, no other changes.",
+      "asset": "public/models/studio 98/front.png"
+    }
+  ]
+}
