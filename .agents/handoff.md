@@ -1,6 +1,6 @@
 # Handoff — davidani-studio
 
-Written 2026-09-09T05:56:43+00:00 by Codex. Branch main; previous commit f7b69e8; reference revision 2 in this commit.
+Written 2026-09-09T05:56:43+00:00 by Codex. Branch main; last asset commit a6af7f9; revision 2 verified live.
 
 ## Accomplished
 - David rejected the current reference library and requested just Vision/Celine,
@@ -23,8 +23,8 @@ Written 2026-09-09T05:56:43+00:00 by Codex. Branch main; previous commit f7b69e8
   output/imagegen/detp58027-house-references/.
 
 ## Next steps
-1. Verify revision 2 deployment and all eight live PNG bytes; refresh Studio.
-   Previous revision is live; IDs/catalog are unchanged (97 Vision / 98 Celine).
+1. LIVE revision 2 (a6af7f9): deployment/test check passed and all eight PNG bytes
+   match saved outputs. Refresh Studio; IDs remain 97 Vision / 98 Celine.
 2. David reviews remaining views. Revisions should start from original shoot photos
    and original identity refs, not re-generate an already edited reference.
 3. Model generation engine stays GPT Image 2.5 by default; no pipeline prompt change.
