@@ -1,33 +1,26 @@
-# Handoff — original garment concept generation
-Written 2026-09-09 by Codex. Branch codex/design-concepts; base 44a5c4a.
-Worktree /tmp/davidani-design-concepts; current checkpoint is implementation.
+# Handoff — original garment concepts deployed
+Written 2026-09-09 15:23 PDT by Codex. Branch codex/design-concepts; base7abf261.
 
-## Accomplished
-- New authenticated /api/design-concepts: original front/back garment concept
-  from title/direction/month. Fixed Nano Banana Pro, one 2:3 requested-2K PNG.
-- Encrypted immutable job records; reserve-before-spend, stable request IDs,
-  no automatic submission retry, persistent provider handle and saved PNG.
-- Signed completion callback polls the stored provider job, ignores supplied
-  payload, saves result while app is closed; GET remains a recovery path.
-- Faire Daily branch codex/design-evidence adds generator/feedback UI and bridge.
-- Real first concept generated, saved, read back: Arc Quilt, 1696×2528 PNG.
-  Job 0eef5ed5-0174-49a3-aea1-eddccd3ec3e6; evidence/artifact in Faire worktree
-  output/design-concepts/arc-quilt/. Independent exploration, no sales claim.
-- 738 tests + production build pass. docs/design-concepts.md has contracts.
+## Completed
+- PR7 merged7abf261; original /api/design-concepts live on production alias.
+- Encrypted immutable intents/stages, idempotent paid submission, persistent PNG,
+  callback polls saved provider handle and ignores external payload.
+- Arc Quilt jacket + Arc Barrel trouser real completed concepts, both1696×2528.
+  Artifacts/evidence in Faire repo output/design-concepts/.
+- Barrel job267d8bb9-d7da-4516-b7dc-8f4694c58934 completed via callback,
+  confirmed directly in encrypted Blob BEFORE any client poll.
+- Faire Daily2.25.0/SW57 deployed: briefs, concept UI, recovery and savedfeedback.
+- Faire production Studio credential corrected; live catalog bridge200.
+- Studio738 tests and production build pass; Faire72 mock/15 live browser checks.
 
-## Next steps / verify before claiming live
-1. Merge/push this branch and verify production routes/auth + completion callback.
-   Then finish/release Faire branch after merging latest main (other task edits).
-2. Verify a live callback writes completionSource=callback without UI polling.
-3. Overall Faire research goal remains ACTIVE: buyer access, real per-variant
-   capture, dormant winners, backups, year+ history and sales learning unfinished.
-4. Local built server session 31087 :8812; revalidate handle before reuse.
-   Real saved request state /tmp/faire-real-design.json; never resubmit blindly.
-
-## Preserved / gotchas
-- Existing GPT 2.5 reference masters 97/98/99/100 untouched; prior 726 tests.
-- Main still has pre-existing dirty tsconfig.tsbuildinfo; do not stage it.
-- /tmp/studio-concepts-production.env is PRIVATE. No tokens in git or logs.
-- Keep pulled env outside Next project; dotenv expansion changed local auth
-  interpretation. Keychain import of buyer cookies also failed; user input pending.
-- Generated concepts need sampling validation; no finished techpack claims.
+## Next / gotchas
+- Overall Faire research goal ACTIVE: buyer access, real variant capture,
+  dormant winners, backups, year+ history and sales learning incomplete.
+- No buyers available in in-app browser; Chrome cookie import Keychain failed,
+  gstack sees Cloudflare. Pending user question asks signed-in browser/profile.
+- Real states /tmp/faire-real-design.json and /tmp/faire-live-design.json DONE.
+  Never resubmit these paid jobs. Existing result is already in persistent storage.
+- Main pre-existing dirty tsconfig.tsbuildinfo must not be staged.
+- Private pulled env files remain outside repos; never print values.
+- Existing model-photo routes and approved97–100 masters preserved.
+- Concepts require designer/pattern/fit sampling review, no techpack/sales claims.

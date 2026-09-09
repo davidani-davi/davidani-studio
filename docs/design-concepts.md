@@ -47,3 +47,9 @@ them into the process. Next's dotenv expansion altered a literal password when
 a pulled .env.production.local lived inside the project. No secret value was
 changed on Vercel. The failed local auth attempt was checked as 404 before the
 same saved request was recovered; one paid render was submitted.
+
+Production verified September9: PR7 merged7abf261. Arc Barrel
+267d8bb9-d7da-4516-b7dc-8f4694c58934 saved a1696×2528 PNG at
+2026-09-09T22:02:49.650Z with completionSource=callback. The result record was
+read directly from encrypted storage before client polling, proving app-closed
+completion. Faire Daily2.25.0 reads both real concepts successfully.
