@@ -2,7 +2,7 @@ import type { PresetView } from './models-registry';
 
 /** Retired side plates must not supply the model's face or skin to new renders. */
 export function houseModelContinuity(modelId: string, view: PresetView, anchor: string, origin: string) {
-  const match = modelId.match(/^(?:studio|crop|low) (97|99|100)$/);
+  const match = modelId.match(/^(?:studio|crop|low) (97|98|99|100)$/);
   if (!match || view === 'front') return null;
   const direction = view === 'side' ? 'Turn the same woman into a true side view.'
     : view === 'back' ? 'Turn the same woman fully away from the camera; show the back of her head and outfit, with no face visible.'

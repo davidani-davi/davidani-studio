@@ -1,3 +1,4 @@
+import { housePhotoBrief, usesHousePhotoBrief, HOUSE_PHOTO_FINISH } from '@/lib/house-photo-brief';
 import { houseModelContinuity } from "@/lib/house-model-continuity";
 import { NextResponse, after } from "next/server";
 import { readShotTask, writeShotTask, createShotTask, isSafeTaskId } from "@/lib/shot-tasks";
@@ -519,7 +520,12 @@ async function renderShot(req: Request, body: any): Promise<Response> {
     }
 
     if (continuity) prompt += "\n\n" + continuity.rule;
-    prompt = applyModelPhotoFinish(prompt, humanModelId);
+    const referencePhotoFinish = usesHousePhotoBrief(modelId, humanModelId, gptVariant);
+    prompt = referencePhotoFinish ? housePhotoBrief({
+      known, garment: identity.garment, category, view, framing,
+      hasBackPhoto: hasBackReference, hasAnchor: Boolean(anchorImageUrl),
+      hasFace: Boolean(faceUrl), styling, note,
+    }) : applyModelPhotoFinish(prompt, humanModelId);
 
     const generated = await call(generateModel, "/api/generate-model", {
       modelId,
@@ -565,6 +571,7 @@ async function renderShot(req: Request, body: any): Promise<Response> {
 
     return json({
       ok: true, view, url, prompt,
+      ...(referencePhotoFinish ? { photoFinish: HOUSE_PHOTO_FINISH } : {}),
       ...(url !== rawUrl ? { rawUrl } : {}),
       ...(restore ? { restore } : {}),
       ...(gptVariant !== "auto" ? { gptVariant, ...(maskInfo ? { mask: maskInfo } : {}) } : {}),
@@ -573,7 +580,9 @@ async function renderShot(req: Request, body: any): Promise<Response> {
       humanModelId, poseId, assigned, category, hem, framing, note: note || undefined,
       // What the known facts changed, so a wrong contract is visible in the
       // panel and countable in the eval rather than silent.
-      corrections: contract?.corrections ?? [],
+      // The photo brief uses product fields directly, not the analyzer's
+      // rewritten fit/features. Do not report those unused rewrites as sent.
+      corrections: referencePhotoFinish ? [] : contract?.corrections ?? [],
     });
   } catch (err: any) {
     return json({ ok: false, view, error: String(err?.message || err) }, 502);
