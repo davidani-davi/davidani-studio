@@ -109,7 +109,12 @@ async function readIndex(): Promise<SavedIndex> {
     const found = await list({ prefix: STORE_KEY, limit: 1 });
     const blob = found.blobs.find((item) => item.pathname === STORE_KEY) ?? found.blobs[0];
     if (!blob) return { styles: {} };
-    const res = await fetch(blob.url, { cache: "no-store" });
+    // The Blob CDN caches the public URL by its exact string: a read right
+    // after a write got the previous index back (a shot deleted a second
+    // earlier still "existed", a save could be folded over a stale list).
+    // A fresh query string is a fresh cache key, and the origin holds the
+    // latest write.
+    const res = await fetch(`${blob.url}?t=${Date.now()}`, { cache: "no-store" });
     if (!res.ok) return { styles: {} };
     return normalizeIndex(await res.json());
   } catch (err) {
