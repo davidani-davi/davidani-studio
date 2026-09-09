@@ -6,7 +6,7 @@ import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth";
 // and failing closed when MODEL_SHOTS_TOKEN is unset — and its caller is the
 // Faire extension's service worker, which has no session cookie and no way to
 // get one. Everything else still redirects to /login.
-const PUBLIC_PATHS = ["/login", "/api/auth", "/api/history/cleanup", "/api/model-shots", "/api/square"];
+const PUBLIC_PATHS = ["/login", "/api/auth", "/api/history/cleanup", "/api/model-shots", "/api/square", "/api/fal-account"];
 
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
