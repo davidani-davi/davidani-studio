@@ -89,6 +89,7 @@ const EXPECTED_RUN_SECONDS: Partial<Record<ModelId, number>> = {
   "nano-banana": 60,
   "seedream-4": 75,
   "gpt-image": 140,
+  "gpt-image-25": 60,
 };
 
 function expectedSecondsFor(modelId: ModelId): number {

@@ -214,12 +214,14 @@ async function renderShot(req: Request, body: any): Promise<Response> {
   let humanModelId: string = body.humanModelId || "";
   let poseId: string = body.poseId || "";
   const view: PresetView = MULTI_MODEL_VIEWS.includes(body.view) ? body.view : "front";
-  // Default engine since 2026-09-05: GPT Image 2 at native 2048x3072. David
-  // judged the six-style bake-off (GPT "the clear winner") and round two
-  // (native size holds the frame the auto size broke on a low plate). Pass
-  // modelId: "nano-banana" for the pre-change editor, gptVariant: "auto" for
-  // the 1200x1792 benchmark, engine: "tryon" for FASHN.
-  const modelId: ModelId = body.modelId || "gpt-image";
+  // Default engine since 2026-09-08: GPT Image 2.5 (sunburst edit) on the
+  // plate, native 2048x3072. David picked it over GPT Image 2 on the DJ62106 /
+  // studio 03 comparison (same body and face, patches more legible, 47 s vs
+  // 113 s). GPT Image 2 won the 2026-09-05 six-style bake-off before that.
+  // Pass modelId: "gpt-image" for GPT 2, "nano-banana" for the pre-change
+  // editor, gptVariant: "auto" for the 1200x1792 benchmark, engine: "tryon"
+  // for FASHN.
+  const modelId: ModelId = body.modelId || "gpt-image-25";
   const resolution: string = body.resolution || "4K";
   // What the caller already knows about this style — style code, garment type,
   // the listing title we approved, ERP fabric and colourway. Optional: without
