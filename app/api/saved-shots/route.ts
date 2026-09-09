@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth";
 import {
+  collectGarbage,
   dropShot,
   listSavedStyles,
   normalizeStyle,
@@ -23,6 +24,7 @@ export const maxDuration = 60;
  *   POST   { style, shots: [{ view, url, humanModelId?, engine?, note?, by? }] }
  *                                  → { ok, style, shots, added }
  *   DELETE { style, id }           → { ok, style, shots }
+ *   DELETE { gc: true }            → { ok, removed: [pathnames] }  (orphaned images, legacy index)
  */
 async function authorized(req: Request): Promise<boolean> {
   const expected = process.env.MODEL_SHOTS_TOKEN || process.env.APP_PASSWORD;
@@ -85,6 +87,13 @@ export async function DELETE(req: Request) {
   if (!(await authorized(req))) return bad("unauthorized", 401);
   const url = new URL(req.url);
   const body = await req.json().catch(() => ({}));
+  if (body?.gc === true) {
+    try {
+      return NextResponse.json({ ok: true, removed: await collectGarbage() });
+    } catch (err: any) {
+      return bad(String(err?.message || err), 500);
+    }
+  }
   const style = normalizeStyle(body?.style ?? url.searchParams.get("style"));
   const id = String(body?.id ?? url.searchParams.get("id") ?? "").trim();
   if (!style || !id) return bad("style and id are required");

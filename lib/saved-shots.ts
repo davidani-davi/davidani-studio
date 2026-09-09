@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { list, put } from "@vercel/blob";
+import { del, list, put } from "@vercel/blob";
 
 /**
  * Saved model shots, per style (David, 2026-09-08: "create a 'saved' images
@@ -11,7 +11,10 @@ import { list, put } from "@vercel/blob";
  * shell run that never touched the panel.
  *
  * The image itself is copied into Blob storage (fal's result URLs are not
- * forever); the index is one JSON file, the cloud-history pattern.
+ * forever). One small metadata blob per shot, never overwritten, deleted
+ * outright: the first cut kept one index.json (the cloud-history pattern)
+ * and a read right after a write came back stale from the Blob CDN, so four
+ * quick deletes lost three of them. Unique paths have no such problem.
  */
 
 export interface SavedShot {
@@ -46,11 +49,11 @@ export interface SaveInput {
   by?: string;
 }
 
-const STORE_KEY = "saved-shots/index.json";
-const IMAGE_PREFIX = "saved-shots/";
-const LOCAL_STORE = process.env.VERCEL
-  ? path.join("/tmp", "saved-shots.json")
-  : path.join(process.cwd(), ".data", "saved-shots.json");
+const PREFIX = "saved-shots/";
+const LEGACY_INDEX = "saved-shots/index.json";
+const LOCAL_ROOT = process.env.VERCEL
+  ? path.join("/tmp", "saved-shots")
+  : path.join(process.cwd(), ".data", "saved-shots");
 export const MAX_PER_STYLE = 48;
 const VIEWS = new Set(["front", "side", "back", "full"]);
 
@@ -73,67 +76,67 @@ function shotId(): string {
   return `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
 }
 
-function normalizeIndex(value: unknown): SavedIndex {
-  const styles = (value as Partial<SavedIndex> | undefined)?.styles;
-  const out: SavedIndex = { styles: {} };
-  if (styles && typeof styles === "object") {
-    for (const [key, entry] of Object.entries(styles as Record<string, SavedStyle>)) {
-      const style = normalizeStyle(key);
-      if (!style || !entry || !Array.isArray(entry.shots)) continue;
-      out.styles[style] = {
-        style,
-        shots: entry.shots.filter((s) => s && s.id && s.url && normalizeView(s.view)),
-        updatedAt: Number(entry.updatedAt) || 0,
-      };
-    }
-  }
+function isShot(value: unknown): value is SavedShot {
+  const s = value as Partial<SavedShot> | null;
+  return Boolean(s && typeof s.id === "string" && s.id && typeof s.url === "string" && s.url && normalizeView(s.view));
+}
+
+const metaPath = (style: string, id: string) => `${PREFIX}${style}/${id}.json`;
+
+interface StoredBlob { pathname: string; url: string; }
+
+/** Every blob under a prefix (paginated). */
+async function listAll(prefix: string): Promise<StoredBlob[]> {
+  const out: StoredBlob[] = [];
+  let cursor: string | undefined;
+  do {
+    const page = await list({ prefix, cursor, limit: 1000 });
+    out.push(...page.blobs.map((b) => ({ pathname: b.pathname, url: b.url })));
+    cursor = page.hasMore ? page.cursor : undefined;
+  } while (cursor);
   return out;
 }
 
-async function readLocalIndex(): Promise<SavedIndex> {
+async function fetchShot(url: string): Promise<SavedShot | null> {
   try {
-    return normalizeIndex(JSON.parse(await fs.readFile(LOCAL_STORE, "utf8")));
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return isShot(data) ? data : null;
   } catch {
-    return { styles: {} };
+    return null;
   }
 }
 
-async function writeLocalIndex(index: SavedIndex): Promise<void> {
-  await fs.mkdir(path.dirname(LOCAL_STORE), { recursive: true });
-  await fs.writeFile(LOCAL_STORE, JSON.stringify(index, null, 2));
-}
-
-async function readIndex(): Promise<SavedIndex> {
-  if (!canUseBlob()) return readLocalIndex();
+// ── local fallback (no Blob token: dev) ──────────────────────────────────
+async function localRead(style: string): Promise<SavedShot[]> {
   try {
-    const found = await list({ prefix: STORE_KEY, limit: 1 });
-    const blob = found.blobs.find((item) => item.pathname === STORE_KEY) ?? found.blobs[0];
-    if (!blob) return { styles: {} };
-    // The Blob CDN caches the public URL by its exact string: a read right
-    // after a write got the previous index back (a shot deleted a second
-    // earlier still "existed", a save could be folded over a stale list).
-    // A fresh query string is a fresh cache key, and the origin holds the
-    // latest write.
-    const res = await fetch(`${blob.url}?t=${Date.now()}`, { cache: "no-store" });
-    if (!res.ok) return { styles: {} };
-    return normalizeIndex(await res.json());
-  } catch (err) {
-    console.warn("[saved-shots] blob read failed, using local fallback:", err);
-    return readLocalIndex();
+    const dir = path.join(LOCAL_ROOT, style);
+    const names = (await fs.readdir(dir)).filter((n) => n.endsWith(".json"));
+    const shots = await Promise.all(names.map(async (n) => {
+      try { const v = JSON.parse(await fs.readFile(path.join(dir, n), "utf8")); return isShot(v) ? v : null; } catch { return null; }
+    }));
+    return shots.filter(Boolean) as SavedShot[];
+  } catch {
+    return [];
   }
 }
+async function localWrite(style: string, shot: SavedShot): Promise<void> {
+  await fs.mkdir(path.join(LOCAL_ROOT, style), { recursive: true });
+  await fs.writeFile(path.join(LOCAL_ROOT, style, `${shot.id}.json`), JSON.stringify(shot, null, 2));
+}
+async function localDrop(style: string, id: string): Promise<void> {
+  await fs.rm(path.join(LOCAL_ROOT, style, `${id}.json`), { force: true });
+}
 
-async function writeIndex(index: SavedIndex): Promise<void> {
-  if (!canUseBlob()) {
-    await writeLocalIndex(index);
-    return;
-  }
-  await put(STORE_KEY, JSON.stringify(index, null, 2), {
-    access: "public",
-    contentType: "application/json",
-    allowOverwrite: true,
-    cacheControlMaxAge: 0,
-  });
+/** The style's shots, newest first. */
+async function readShots(style: string): Promise<SavedShot[]> {
+  const shots = canUseBlob()
+    ? (await Promise.all(
+        (await listAll(`${PREFIX}${style}/`)).filter((b) => b.pathname.endsWith(".json")).map((b) => fetchShot(b.url))
+      )).filter(Boolean) as SavedShot[]
+    : await localRead(style);
+  return shots.sort((a, b) => b.savedAt - a.savedAt);
 }
 
 /**
@@ -185,7 +188,7 @@ async function copyImage(style: string, id: string, url: string): Promise<{ url:
     const bytes = Buffer.from(await res.arrayBuffer());
     if (!bytes.length) throw new Error("empty image");
     const { contentType, ext } = imageType(bytes, res.headers.get("content-type") || "", url);
-    const blob = await put(`${IMAGE_PREFIX}${style}/${id}.${ext}`, bytes, {
+    const blob = await put(`${PREFIX}${style}/${id}.${ext}`, bytes, {
       access: "public",
       contentType,
       addRandomSuffix: false,
@@ -199,51 +202,86 @@ async function copyImage(style: string, id: string, url: string): Promise<{ url:
 }
 
 export async function readSavedStyle(style: string): Promise<SavedStyle> {
-  const index = await readIndex();
-  return index.styles[style] ?? { style, shots: [], updatedAt: 0 };
+  const shots = await readShots(style);
+  return { style, shots, updatedAt: shots[0]?.savedAt ?? 0 };
 }
 
 export async function listSavedStyles(): Promise<{ style: string; count: number; updatedAt: number }[]> {
-  const index = await readIndex();
-  return Object.values(index.styles)
-    .filter((s) => s.shots.length)
-    .map((s) => ({ style: s.style, count: s.shots.length, updatedAt: s.updatedAt }))
-    .sort((a, b) => b.updatedAt - a.updatedAt);
+  const byStyle = new Map<string, { count: number; updatedAt: number }>();
+  if (canUseBlob()) {
+    for (const b of await listAll(PREFIX)) {
+      const m = b.pathname.match(/^saved-shots\/([^/]+)\/([^/]+)\.json$/);
+      if (!m) continue;
+      const cur = byStyle.get(m[1]) ?? { count: 0, updatedAt: 0 };
+      // ids start with the save time in base 36 — enough to order styles without fetching every record
+      const at = parseInt(m[2].slice(0, 8), 36) || 0;
+      byStyle.set(m[1], { count: cur.count + 1, updatedAt: Math.max(cur.updatedAt, at) });
+    }
+  } else {
+    let dirs: string[] = [];
+    try { dirs = await fs.readdir(LOCAL_ROOT); } catch { dirs = []; }
+    for (const style of dirs) {
+      const shots = await localRead(style);
+      if (shots.length) byStyle.set(style, { count: shots.length, updatedAt: shots[0].savedAt });
+    }
+  }
+  return [...byStyle.entries()].map(([style, v]) => ({ style, ...v })).sort((a, b) => b.updatedAt - a.updatedAt);
 }
 
 export async function saveShots(style: string, inputs: SaveInput[]): Promise<{ entry: SavedStyle; added: SavedShot[] }> {
-  const index = await readIndex();
-  const current = index.styles[style] ?? { style, shots: [], updatedAt: 0 };
+  const current = await readShots(style);
   // Skip the copy for anything already saved (by source URL) — the merge would drop it anyway.
-  const known = new Set(current.shots.flatMap((s) => [s.url, s.source].filter(Boolean) as string[]));
-  const fresh = inputs.filter((i) => !known.has(i.url));
+  const known = new Set(current.flatMap((s) => [s.url, s.source].filter(Boolean) as string[]));
+  const fresh = inputs.filter((i, n) => !known.has(i.url) && inputs.findIndex((o) => o.url === i.url) === n);
   const now = Date.now();
   const incoming: SavedShot[] = await Promise.all(
     fresh.map(async (i, n) => {
       const id = shotId();
       const copy = await copyImage(style, id, i.url);
-      return {
+      const shot: SavedShot = {
         id, view: i.view, url: copy.url, source: i.url, savedAt: now + n, durable: copy.durable,
         ...(i.humanModelId ? { humanModelId: i.humanModelId } : {}),
         ...(i.engine ? { engine: i.engine } : {}),
         ...(i.note ? { note: i.note.slice(0, 300) } : {}),
         ...(i.by ? { by: i.by } : {}),
       };
+      if (canUseBlob()) {
+        await put(metaPath(style, id), JSON.stringify(shot), {
+          access: "public", contentType: "application/json", addRandomSuffix: false, allowOverwrite: true, cacheControlMaxAge: 60,
+        });
+      } else await localWrite(style, shot);
+      return shot;
     })
   );
-  const merged = mergeShots(current.shots, incoming);
-  const entry: SavedStyle = { style, shots: merged.shots, updatedAt: now };
-  index.styles[style] = entry;
-  await writeIndex(index);
-  return { entry, added: merged.added };
+  const merged = mergeShots(current, incoming);
+  // Past the cap, the oldest go — the pure merge already left them out of `shots`.
+  const kept = new Set(merged.shots.map((s) => s.id));
+  await Promise.all([...current, ...incoming].filter((s) => !kept.has(s.id)).map((s) => dropShot(style, s.id, s)));
+  return { entry: { style, shots: merged.shots, updatedAt: now }, added: merged.added };
 }
 
-export async function dropShot(style: string, id: string): Promise<SavedStyle> {
-  const index = await readIndex();
-  const current = index.styles[style] ?? { style, shots: [], updatedAt: 0 };
-  const entry: SavedStyle = { style, shots: current.shots.filter((s) => s.id !== id), updatedAt: Date.now() };
-  if (entry.shots.length) index.styles[style] = entry;
-  else delete index.styles[style];
-  await writeIndex(index);
-  return entry;
+/** Delete one shot: its metadata blob and, when we hold the copy, its image. */
+export async function dropShot(style: string, id: string, known?: SavedShot): Promise<SavedStyle> {
+  const current = await readShots(style);
+  const shot = known ?? current.find((s) => s.id === id);
+  if (canUseBlob()) {
+    const targets = [metaPath(style, id), ...(shot?.durable && shot.url ? [shot.url] : [])];
+    try { await del(targets); } catch (err) { console.warn(`[saved-shots] delete failed for ${style} ${id}:`, err); throw err; }
+  } else await localDrop(style, id);
+  const shots = current.filter((s) => s.id !== id);
+  return { style, shots, updatedAt: shots[0]?.savedAt ?? 0 };
+}
+
+/**
+ * Housekeeping: the legacy index.json and any image with no metadata beside
+ * it (the first cut's copies, a save that died between the copy and the
+ * record). Returns what was removed.
+ */
+export async function collectGarbage(): Promise<string[]> {
+  if (!canUseBlob()) return [];
+  const all = await listAll(PREFIX);
+  const metas = new Set(all.filter((b) => b.pathname.endsWith(".json")).map((b) => b.pathname.replace(/\.json$/, "")));
+  const orphans = all.filter((b) => b.pathname === LEGACY_INDEX || (!b.pathname.endsWith(".json") && !metas.has(b.pathname.replace(/\.[a-z0-9]+$/i, ""))));
+  if (orphans.length) await del(orphans.map((b) => b.url));
+  return orphans.map((b) => b.pathname);
 }
