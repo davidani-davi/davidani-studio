@@ -1,4 +1,9 @@
-# Handoff — davidani-studio
+# Handoff
+
+**Update 2026-09-08 19:10:** GPT Image 2.5 (`gpt-image-25`) is now the DEFAULT modelId of
+`/api/model-shots` (57f502e) after David picked it over GPT 2 on the DJ62106 / studio 03
+comparison. Extension 2.54.0 sends `modelId` explicitly (gpt-image-25 / gpt-image). The
+no-plate engine (`lib/no-plate.ts`, engine "gpt25") is unused by the extension now. — davidani-studio
 
 2026-09-08 16:55 · written by Claude Code · branch main · last commit d3bb4f3
 
