@@ -1,8 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { staticModelsTagged } from "./models-registry";
+import { staticModelsTagged, getPosePublicPath } from "./models-registry";
 import { isDerivedPlate, plateForFraming } from "./plate-framing";
 import { existsSync } from "node:fs";
 import path from "node:path";
+
+it('versions the replaced Celine 2 generator reference, leaving other views unchanged', () => {
+  for (const id of ['studio 100', 'crop 100']) {
+    const model = staticModelsTagged().find(m => m.id === id)!;
+    expect(getPosePublicPath(id, model.poses[0].id, 'front')).toContain('front.png?v=f89baab006a294cb5');
+    expect(getPosePublicPath(id, model.poses[0].id, 'side')).not.toContain('?v=');
+  }
+});
 
 describe("staticModelsTagged — the manifest the deployed function serves", () => {
   it("carries plates.json's tags, auto:false included, so Vercel matches a local fs scan", () => {

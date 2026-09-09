@@ -485,6 +485,11 @@ export function getPosePublicPath(
   if (!pose) throw new Error(`Unknown pose: ${modelId}/${poseId}`);
   const chosenView = resolvePoseFile(pose, view, variantIndex);
   if (!chosenView) throw new Error(`No preset image available for ${modelId}/${poseId}`);
+  // The generator also fetches these URLs: changing only the picker revision
+  // can leave an image provider reusing a previously fetched reference.
+  if (/^(?:studio|crop) 100$/.test(modelId) && chosenView.filename === 'front.png') {
+    return chosenView.publicPath + '?v=f89baab006a294cb5';
+  }
   return chosenView.publicPath;
 }
 

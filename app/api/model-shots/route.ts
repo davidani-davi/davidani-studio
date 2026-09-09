@@ -1,4 +1,4 @@
-import { visionContinuity } from "@/lib/vision-continuity";
+import { houseModelContinuity } from "@/lib/house-model-continuity";
 import { NextResponse, after } from "next/server";
 import { readShotTask, writeShotTask, createShotTask, isSafeTaskId } from "@/lib/shot-tasks";
 import { createHash } from "node:crypto";
@@ -482,7 +482,7 @@ async function renderShot(req: Request, body: any): Promise<Response> {
     let rawPrompt = true;
     let imageSize: { width: number; height: number } | undefined;
     let maskUrl: string | undefined;
-    const continuity = visionContinuity(humanModelId, view, anchorImageUrl, req.url);
+    const continuity = houseModelContinuity(humanModelId, view, anchorImageUrl, req.url);
     let canvasImageUrl: string | undefined = continuity?.canvasImageUrl;
     let maskInfo: { coverage: number; tryonMs: number } | undefined;
     if (gptVariant === "native4k" || gptVariant === "lean") imageSize = { ...GPT_NATIVE_SIZE };

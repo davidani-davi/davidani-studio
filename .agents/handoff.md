@@ -10,8 +10,10 @@ Updated 2026-09-09 by Codex. Main; prior372ff16.
 - Vision public files deployed and hash verified; no paid garment-generation test.
 - Celine2 texture: applyModelPhotoFinish restrains amplification for house97–100;
   preserves real textile facts, forbids old outfit pattern on underside.749 tests+build pass.
-  Built-in previews in Faire output/imagegen/celine-2-texture-review/ are NOT installed.
-  Still some cheek texture; needs real pipeline visual validation, not a proven complete fix.
+- Celine2 soft skin retouch NOW installed in studio/crop100; generator URL revision
+  f89baab006a294cb5. Later100 views follow front via house-model-continuity.
+  750 tests/build pass. Live DET60277 test in Faire output/imagegen/celine-2-live-test/.
+  Check task.json/result.json before any repeat; never blindly resubmit paid test.
 
 ## Completed
 - PR7 merged7abf261; original /api/design-concepts live on production alias.
