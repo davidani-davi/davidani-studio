@@ -164,6 +164,51 @@ export function noPlatePrompt(o: NoPlatePromptInput): string {
   return parts.filter(Boolean).join(" ");
 }
 
+export type NoPlateQuality = "auto" | "low" | "medium" | "high" | "xhigh" | "max";
+export function noPlateQualityOf(v: unknown): NoPlateQuality {
+  return v === "auto" || v === "low" || v === "medium" || v === "xhigh" || v === "max" ? v : "high";
+}
+
+/**
+ * House reference set (David, 2026-09-08: "really realistic references with
+ * vision and celine"): the model herself in the house outfit, no garment
+ * photo — the full-length front / side / back a face needs so the no-plate
+ * engine (and, cut down, the plate engines) have her build, hair and the
+ * house styling on record. Inputs: faces 1–2, then the approved front LAST
+ * for the views after it.
+ */
+const HOUSE_OUTFIT =
+  "She wears the house outfit and nothing else: a plain black ribbed cotton tank top with narrow straps, tucked " +
+  "into plain ecru straight-leg cotton trousers with a flat front and a mid-rise waist, and simple flat tan leather " +
+  "sandals. No jewellery, no belt, no bag, no logos. Hair down and natural, minimal daytime make-up, natural nails.";
+
+const REALISM =
+  "This must look like a frame from a real e-commerce studio session, not a render or an illustration: full-frame " +
+  "camera, 85 mm lens at f/8, one large soft key light from the front-left with a gentle fill, true-to-life " +
+  "proportions, real skin with visible pores, fine hair and natural unevenness, no retouching, no airbrushed or waxy " +
+  "skin, no glow, fabric with real weave, creases and drape, a faint soft contact shadow under her feet.";
+
+export function referencePrompt(o: { view: PresetView; anchored: boolean; note?: string }): string {
+  const parts = [
+    "Input images 1 and 2 are the face references of our house model: this woman's exact face, bone structure, eyes, " +
+    "brows, nose, lips, skin tone, hair colour and hairstyle (image 2 shows her smiling). She must be unmistakably the " +
+    "same person; copy the likeness, not the picture — the references set nothing about pose, framing or clothing.",
+    "This is a house reference photograph of the model herself, not a product shot.",
+    HOUSE_OUTFIT,
+    o.anchored
+      ? "The LAST input image is the approved FRONT view of this same session: the same woman, the same outfit, " +
+        "shoes, hair, backdrop and light. Only the camera angle changes for this view; match her build, height, " +
+        "hair length and every detail of the outfit."
+      : "",
+    VIEW[o.view],
+    FRAMING.full,
+    HOUSE,
+    REALISM,
+    o.note ? `Operator correction for this view: ${o.note}.` : "",
+  ];
+  return parts.filter(Boolean).join(" ");
+}
+
 let configured = false;
 function ensureConfigured() {
   if (configured) return;
@@ -184,7 +229,7 @@ export async function renderNoPlate(o: {
   imageUrls: string[];
   variant: NoPlateVariant;
   size?: { width: number; height: number };
-  quality?: "auto" | "low" | "medium" | "high" | "xhigh" | "max";
+  quality?: NoPlateQuality;
 }): Promise<NoPlateRender> {
   ensureConfigured();
   const endpoint = `openai/gpt-image-2.5/${o.variant}/edit`;
@@ -209,6 +254,7 @@ export interface NoPlateShotInput {
   origin: string;
   face: HouseFace;
   variant: NoPlateVariant;
+  quality?: NoPlateQuality;
   view: PresetView;
   framing: PlateFraming;
   category: ShotCategory;
@@ -227,14 +273,35 @@ export async function shootNoPlate(o: NoPlateShotInput) {
     garmentCount: o.garmentImageUrls.length, anchored: Boolean(o.anchorImageUrl),
   });
   const r = await renderNoPlate({
-    prompt, imageUrls: noPlateImageUrls(faces, o.garmentImageUrls, o.anchorImageUrl), variant: o.variant,
+    prompt, imageUrls: noPlateImageUrls(faces, o.garmentImageUrls, o.anchorImageUrl), variant: o.variant, quality: o.quality,
   });
-  console.log(`[no-plate] ${o.view} ${o.face}/${o.variant} ${r.ms}ms`);
+  console.log(`[no-plate] ${o.view} ${o.face}/${o.variant}/${o.quality ?? "high"} ${r.ms}ms`);
   return {
     ok: true as const, view: o.view, url: r.url, prompt,
     engine: "gpt25" as const, face: o.face, variant: o.variant, ms: r.ms,
     humanModelId: `face:${o.face}`, poseId: "no-plate", assigned: null,
     category: o.category, hem: o.hem, framing: o.framing,
+    anchored: Boolean(o.anchorImageUrl), faceAnchored: false,
+    note: o.note || undefined, corrections: [] as string[],
+  };
+}
+
+/** One reference view (house outfit, no garment), as the route's response body. */
+export async function shootReference(o: {
+  origin: string; face: HouseFace; variant: NoPlateVariant; quality?: NoPlateQuality;
+  view: PresetView; note: string; anchorImageUrl: string;
+}) {
+  const faces = await faceRefUrls(o.face, o.origin);
+  const prompt = referencePrompt({ view: o.view, anchored: Boolean(o.anchorImageUrl), note: o.note });
+  const r = await renderNoPlate({
+    prompt, imageUrls: noPlateImageUrls(faces, [], o.anchorImageUrl), variant: o.variant, quality: o.quality,
+  });
+  console.log(`[no-plate:reference] ${o.view} ${o.face}/${o.variant}/${o.quality ?? "high"} ${r.ms}ms`);
+  return {
+    ok: true as const, view: o.view, url: r.url, prompt, reference: true as const,
+    engine: "gpt25" as const, face: o.face, variant: o.variant, ms: r.ms,
+    humanModelId: `face:${o.face}`, poseId: "no-plate", assigned: null,
+    category: "other", hem: "", framing: "full" as const,
     anchored: Boolean(o.anchorImageUrl), faceAnchored: false,
     note: o.note || undefined, corrections: [] as string[],
   };

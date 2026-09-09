@@ -30,7 +30,7 @@ import { uploadToFal } from "@/lib/fal";
 import { restoreRenderOnPlate } from "@/lib/plate-restore-run";
 import type { PlateRestoreReport } from "@/lib/plate-restore";
 import { faceAnchorFor, HEAD_SHARE, type FaceAnchorReport } from "@/lib/face-anchor";
-import { houseFaceOf, noPlateVariantOf, shootNoPlate } from "@/lib/no-plate";
+import { houseFaceOf, noPlateQualityOf, noPlateVariantOf, shootNoPlate, shootReference } from "@/lib/no-plate";
 import sharp from "sharp";
 import { getPosePublicPath, getPoseUrl, isKnownHumanModel } from "@/lib/models-registry";
 import { findUserModelViewUrl } from "@/lib/user-assets";
@@ -235,6 +235,19 @@ async function renderShot(req: Request, body: any): Promise<Response> {
     typeof body.anchorImageUrl === "string" && /^https?:\/\//.test(body.anchorImageUrl) && view !== "front"
       ? body.anchorImageUrl
       : "";
+  // House reference set (lib/no-plate.ts shootReference): the model herself in
+  // the house outfit, no garment photo. `engine: "gpt25", reference: true`.
+  if (body.engine === "gpt25" && body.reference === true) {
+    const face = houseFaceOf(body.face) ?? houseFaceOf(humanModelId) ?? "vision";
+    try {
+      return json(await shootReference({
+        origin: new URL(req.url).origin, face, variant: noPlateVariantOf(body.variant),
+        quality: noPlateQualityOf(body.quality), view, note, anchorImageUrl,
+      }));
+    } catch (err: any) {
+      return json({ ok: false, view, engine: "gpt25", face, reference: true, error: String(err?.message || err) }, 502);
+    }
+  }
   if (!garmentImageUrls.length) return json({ ok: false, error: "garmentImageUrls is required" }, 400);
 
   // What is being shot decides the views and the plate framing
@@ -262,6 +275,7 @@ async function renderShot(req: Request, body: any): Promise<Response> {
     try {
       return json(await shootNoPlate({
         origin: new URL(req.url).origin, face, variant: noPlateVariantOf(body.variant),
+        quality: noPlateQualityOf(body.quality),
         view, framing, category, hem, known, note, garmentImageUrls, anchorImageUrl,
       }));
     } catch (err: any) {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { faceRefPaths, houseFaceOf, noPlateImageUrls, noPlatePrompt, noPlateVariantOf } from "./no-plate";
+import { faceRefPaths, houseFaceOf, noPlateImageUrls, noPlatePrompt, noPlateQualityOf, noPlateVariantOf, referencePrompt } from "./no-plate";
 
 describe("no-plate: faces and variants", () => {
   it("reads a face from its name or the picker's face: form, and nothing else", () => {
@@ -57,5 +57,29 @@ describe("no-plate: prompt", () => {
     const p = noPlatePrompt({ ...base, view: "back", framing: "full", note: "hem is hip length" });
     expect(p.endsWith("Operator correction for this view: hem is hip length.")).toBe(true);
     expect(p).toMatch(/From directly behind/);
+  });
+});
+
+describe("no-plate: house reference set", () => {
+  it("dresses her in the house outfit with no garment photo, full-length, realism spelled out", () => {
+    const p = referencePrompt({ view: "front", anchored: false });
+    expect(p).toMatch(/house reference photograph of the model herself/);
+    expect(p).toMatch(/black ribbed cotton tank top/);
+    expect(p).toMatch(/Full-length/);
+    expect(p).toMatch(/no retouching/);
+    expect(p).not.toMatch(/product photograph/);
+    expect(p).not.toMatch(/LAST input image/);
+  });
+
+  it("anchors side and back on the approved front", () => {
+    const p = referencePrompt({ view: "back", anchored: true });
+    expect(p).toMatch(/LAST input image is the approved FRONT view of this same session/);
+    expect(p).toMatch(/From directly behind/);
+  });
+
+  it("only knows the five fal qualities and falls back to high", () => {
+    expect(noPlateQualityOf("max")).toBe("max");
+    expect(noPlateQualityOf("ultra")).toBe("high");
+    expect(noPlateQualityOf(undefined)).toBe("high");
   });
 });
