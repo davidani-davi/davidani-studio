@@ -1,6 +1,6 @@
 # Handoff — davidani-studio
 
-Written 2026-09-09T05:51:09+00:00 by Codex. Branch main; reference reset b9edd97; this follow-up fixes the initial picker.
+Written 2026-09-09T05:56:43+00:00 by Codex. Branch main; last implementation 1470179 (reset b9edd97).
 
 ## Accomplished
 - David rejected the current reference library and requested just Vision/Celine,
@@ -21,8 +21,8 @@ Written 2026-09-09T05:51:09+00:00 by Codex. Branch main; reference reset b9edd97
   output/imagegen/detp58027-house-references/.
 
 ## Next steps
-1. Verify live /api/model-shots has exactly studio 97 Vision / studio 98 Celine,
-   and deployed image bytes match local files; refresh Model Studio to reload catalog.
+1. LIVE verified: Vercel deployed 1470179; catalog has exactly Vision/Celine and
+   all eight deployed PNGs match local bytes. Refresh Model Studio to reload catalog.
 2. David reviews the new sets. Revisions should start from the original shoot photos
    and original identity refs, not re-generate an already edited reference.
 3. Model generation engine stays GPT Image 2.5 by default; no pipeline prompt change.
