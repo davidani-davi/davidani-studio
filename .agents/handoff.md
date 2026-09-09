@@ -1,6 +1,6 @@
 # Handoff — davidani-studio
 
-Written 2026-09-09T05:56:43+00:00 by Codex. Branch main; last implementation 1470179 (reset b9edd97).
+Written 2026-09-09T05:56:43+00:00 by Codex. Branch main; previous commit f7b69e8; reference revision 2 in this commit.
 
 ## Accomplished
 - David rejected the current reference library and requested just Vision/Celine,
@@ -9,21 +9,23 @@ Written 2026-09-09T05:56:43+00:00 by Codex. Branch main; last implementation 147
   public/models/hide/retired-before-detp58027-2026-09-09/ (includes old plates.json).
 - New studio 97 = Vision, studio 98 = Celine; four linked PNGs each.
 - Originals: front _6 (byte-identical to attachment), side _8, back _11, full _2.
-- One built-in imagegen head/hair edit per original/identity: 8 calls, no chains,
-  generated poses, expression variants, outfit replacements or AI upscale.
+- Revision 2: David approved clearer side retries with fuller head/shorter neck.
+  Six new front/back/full edits from originals + faces; approved sides reused.
+  revision-02/ holds all eight outputs/prompts/ZIPs; no edit chains or upscale.
 - Originals 2000x3000; outputs native 1024x1536, no upsampling disguised as detail.
 - crop 97/98 reuse front/side/back bytes. low 97/98 are face-free pixel crops of
   original _2 and _7, preserving pants workflow with no additional generation.
 - Added metadata display_name so identities show as Vision/Celine; rebuilt manifest.
 - /api/models and both page initializers hide internal crops; sidebar shows both faces.
-- Validation: 723 tests pass; production build passes; image sets visually inspected.
+- Revision validation: 23 registry/metadata/API tests pass; eight native PNGs and
+  matching crop bytes checked; both four-view sets visually inspected.
 - Source photos, PNGs, prompts, ZIPs and review sheets are in faire-management:
   output/imagegen/detp58027-house-references/.
 
 ## Next steps
-1. LIVE verified: Vercel deployed 1470179; catalog has exactly Vision/Celine and
-   all eight deployed PNGs match local bytes. Refresh Model Studio to reload catalog.
-2. David reviews the new sets. Revisions should start from the original shoot photos
+1. Verify revision 2 deployment and all eight live PNG bytes; refresh Studio.
+   Previous revision is live; IDs/catalog are unchanged (97 Vision / 98 Celine).
+2. David reviews remaining views. Revisions should start from original shoot photos
    and original identity refs, not re-generate an already edited reference.
 3. Model generation engine stays GPT Image 2.5 by default; no pipeline prompt change.
 
