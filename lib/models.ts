@@ -1,7 +1,13 @@
 // Model catalog — maps UI choices to fal.ai endpoints.
 // All endpoints are image-edit models that accept one or more reference images + a prompt.
 
-export type ModelId = "nano-banana" | "seedream-4" | "gpt-image";
+export type ModelId = "nano-banana" | "seedream-4" | "gpt-image" | "gpt-image-25";
+
+/** Both GPT Image editors share the fal input shape, prompt strategy and the
+ *  native-size variants; everything keyed on "gpt-image" applies to 2.5 too. */
+export function isGptModel(id: ModelId | string): boolean {
+  return id === "gpt-image" || id === "gpt-image-25";
+}
 
 export interface ModelInfo {
   id: ModelId;
@@ -48,6 +54,20 @@ export const MODELS: Record<ModelId, ModelInfo> = {
     endpoint: "openai/gpt-image-2/edit",
     inputShape: "gpt",
     description: "OpenAI GPT Image 2 edit via fal.ai — latest higher-fidelity editing with stronger detail and text rendering.",
+  },
+  // 2026-09-08: GPT Image 2.5 as the EDITOR on a real plate. David's rule the
+  // same day: the base of every shot is one of our photographed models — the
+  // 2.5 "no-plate" bodies were rejected — so 2.5 earns its place here, on the
+  // plate pipeline with restore behind it, or not at all. sunburst = the
+  // precision variant; flare is the fast one (lib/no-plate.ts has both).
+  "gpt-image-25": {
+    id: "gpt-image-25",
+    label: "ChatGPT Image Generator",
+    badge: "V2.5",
+    accentTag: "NEW",
+    endpoint: "openai/gpt-image-2.5/sunburst/edit",
+    inputShape: "gpt",
+    description: "OpenAI GPT Image 2.5 (sunburst) edit via fal.ai — same plate pipeline as V2.0, newer model.",
   },
 };
 

@@ -3233,6 +3233,10 @@ export function sanitizeRejectedPortraitPrompt(prompt: string): string {
 export function isTransientUpstreamError(err: any): boolean {
   const status = Number(err?.status || 0);
   if (status === 502 || status === 503 || status === 504) return true;
+  // 2026-09-08: fal answers a burst of concurrent GPT Image 2.5 submits with a
+  // bare 403 "Forbidden" in 0 s; the same call alone, or a few seconds later,
+  // succeeds. Only the bare word — a locked account says why it is locked.
+  if (status === 403 && /^\s*Forbidden\s*$/i.test(String(err?.message || ""))) return true;
   const text = validationErrorDetail(err);
   return /downstream_service_error|Downstream service error|temporarily unavailable|upstream (?:error|timeout)/i.test(text);
 }

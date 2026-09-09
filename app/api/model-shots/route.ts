@@ -34,7 +34,7 @@ import { houseFaceOf, noPlateQualityOf, noPlateVariantOf, shootNoPlate, shootRef
 import sharp from "sharp";
 import { getPosePublicPath, getPoseUrl, isKnownHumanModel } from "@/lib/models-registry";
 import { findUserModelViewUrl } from "@/lib/user-assets";
-import type { ModelId } from "@/lib/models";
+import { isGptModel, type ModelId } from "@/lib/models";
 
 export const runtime = "nodejs";
 export const maxDuration = 800;
@@ -460,7 +460,7 @@ async function renderShot(req: Request, body: any): Promise<Response> {
 
     // GPT Image 2 variants (lib/gpt-variants.ts). Each isolates one change
     // against the v1 run: the output size, the prompt, or a repaint mask.
-    const gptVariant = modelId === "gpt-image" ? gptVariantOf(body.gptVariant ?? "native4k") : "auto";
+    const gptVariant = isGptModel(modelId) ? gptVariantOf(body.gptVariant ?? "native4k") : "auto";
     let prompt = v1Prompt;
     let rawPrompt = true;
     let imageSize: { width: number; height: number } | undefined;

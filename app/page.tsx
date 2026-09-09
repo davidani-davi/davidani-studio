@@ -70,6 +70,7 @@ const IMAGE_STUDIO_OUTPUT_SIZE = { width: 2160, height: 2700 } as const;
  */
 const EXPECTED_RUN_SECONDS: Partial<Record<ModelId, number>> = {
   "gpt-image": 120,
+  "gpt-image-25": 90,
   "nano-banana": 50,
   "seedream-4": 60,
 };

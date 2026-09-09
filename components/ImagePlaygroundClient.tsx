@@ -26,6 +26,8 @@ const MODEL_COST_USD: Record<ModelId, { base: number; per2K?: number; per4K?: nu
   "nano-banana": { base: 0.039 },
   "seedream-4": { base: 0.03, per2K: 0.03, per4K: 0.06 },
   "gpt-image": { base: 0.19, per2K: 0.19, per4K: 0.19 },
+  // 2.5 price sheet unread — carried at the V2.0 figure until measured
+  "gpt-image-25": { base: 0.19, per2K: 0.19, per4K: 0.19 },
 };
 
 function estimateCostPerImage(modelId: ModelId, resolution: string): number {

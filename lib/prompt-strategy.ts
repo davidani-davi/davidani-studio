@@ -1,4 +1,4 @@
-import type { ModelId } from "./models";
+import { isGptModel, type ModelId } from "./models";
 
 function stripNegativePrompt(prompt: string): string {
   return prompt.replace(/\s*Negative prompt:[\s\S]*$/i, "").trim();
@@ -56,7 +56,7 @@ const PRODUCT_SHOT_PREFIX =
 
 function optimizeForProductShot(prompt: string, modelId: ModelId): string {
   const cleaned =
-    modelId === "gpt-image"
+    isGptModel(modelId)
       ? normalizeWhitespace(stripNegativePrompt(prompt))
       : normalizeWhitespace(prompt);
   return `${PRODUCT_SHOT_PREFIX} ${cleaned}`;
@@ -120,7 +120,7 @@ export function optimizePromptForModel(
   if (intent === "product-shot") {
     return optimizeForProductShot(prompt, modelId);
   }
-  if (modelId === "gpt-image") {
+  if (isGptModel(modelId)) {
     return optimizeForGptImage(prompt);
   }
   if (modelId === "nano-banana") {
