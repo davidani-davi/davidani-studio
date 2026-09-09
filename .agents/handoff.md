@@ -1,6 +1,6 @@
 # Handoff — davidani-studio
 
-Written 2026-09-09T05:51:09+00:00 by Codex. Branch main; prior commit 41c1439.
+Written 2026-09-09T05:51:09+00:00 by Codex. Branch main; reference reset b9edd97; this follow-up fixes the initial picker.
 
 ## Accomplished
 - David rejected the current reference library and requested just Vision/Celine,
@@ -15,8 +15,8 @@ Written 2026-09-09T05:51:09+00:00 by Codex. Branch main; prior commit 41c1439.
 - crop 97/98 reuse front/side/back bytes. low 97/98 are face-free pixel crops of
   original _2 and _7, preserving pants workflow with no additional generation.
 - Added metadata display_name so identities show as Vision/Celine; rebuilt manifest.
-- /api/models hides internal crops; standalone sidebar now includes both characters.
-- Validation: 722 tests pass; production build passes; image sets visually inspected.
+- /api/models and both page initializers hide internal crops; sidebar shows both faces.
+- Validation: 723 tests pass; production build passes; image sets visually inspected.
 - Source photos, PNGs, prompts, ZIPs and review sheets are in faire-management:
   output/imagegen/detp58027-house-references/.
 

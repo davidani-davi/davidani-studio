@@ -86,6 +86,17 @@ describe("/api/model-shots auth", () => {
     expect(cards.map(g => g.plates[0].name)).toEqual(["Vision", "Celine"]);
   });
 
+  it("initializes both Studio pages with complete model sets rather than a cropped internal default", async () => {
+    const pages = [await import("../../model-studio/page"), await import("../../model-studio-beta/page")];
+    for (const page of pages) {
+      const rendered = await page.default();
+      const models = rendered.props.initialHumanModels;
+      expect(models.map((m: any) => m.name)).toEqual(["Vision", "Celine"]);
+      expect(models[0].id).toBe("studio 97");
+      expect(models[0].poses[0].views.full.publicPath).toBe("/models/studio 97/full.png");
+    }
+  });
+
   it("prefers MODEL_SHOTS_TOKEN once it is set, so the extension key can be rotated alone", async () => {
     process.env.MODEL_SHOTS_TOKEN = "s3cret";
     process.env.APP_PASSWORD = "team-password";
