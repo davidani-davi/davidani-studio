@@ -1,5 +1,13 @@
 # Handoff — original garment concepts deployed
-Written 2026-09-09 15:23 PDT by Codex. Branch codex/design-concepts; base7abf261.
+Updated 2026-09-09 by Codex. Main; prior7abf261.
+
+## Latest approved Vision references
+- Installed approved 1024x1536 Vision1/2 from Faire output/imagegen/vision-rework-20260909.
+- Replaces studio/crop97/99 front files. Later Vision views use generated front
+  as canvas (approved master fallback), explicit turn/framing/skin instructions.
+- Side/full retain face crop; Celine untouched.741 tests + build pass.
+- Start a NEW front for existing shoots: old front anchors preserve the old look.
+- Deploy and verify public files; no paid garment-generation test in this change.
 
 ## Completed
 - PR7 merged7abf261; original /api/design-concepts live on production alias.

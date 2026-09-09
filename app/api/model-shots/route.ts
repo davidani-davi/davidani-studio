@@ -1,3 +1,4 @@
+import { visionContinuity } from "@/lib/vision-continuity";
 import { NextResponse, after } from "next/server";
 import { readShotTask, writeShotTask, createShotTask, isSafeTaskId } from "@/lib/shot-tasks";
 import { createHash } from "node:crypto";
@@ -480,7 +481,8 @@ async function renderShot(req: Request, body: any): Promise<Response> {
     let rawPrompt = true;
     let imageSize: { width: number; height: number } | undefined;
     let maskUrl: string | undefined;
-    let canvasImageUrl: string | undefined;
+    const continuity = visionContinuity(humanModelId, view, anchorImageUrl, req.url);
+    let canvasImageUrl: string | undefined = continuity?.canvasImageUrl;
     let maskInfo: { coverage: number; tryonMs: number } | undefined;
     if (gptVariant === "native4k" || gptVariant === "lean") imageSize = { ...GPT_NATIVE_SIZE };
     if (gptVariant === "lean") {
@@ -490,7 +492,7 @@ async function renderShot(req: Request, body: any): Promise<Response> {
       });
       rawPrompt = true;
     }
-    if (gptVariant === "masked") {
+    if (gptVariant === "masked" && !continuity) {
       // the try-on's footprint on this plate is the region a garment occupies
       const variantIndex = multiModelPoseVariantIndex(view);
       const plateUrl = await resolvePlateUrl(req, humanModelId, poseId, view, variantIndex);
@@ -514,6 +516,8 @@ async function renderShot(req: Request, body: any): Promise<Response> {
       maskUrl = maskUp;
       maskInfo = { coverage: await maskCoverage(mask), tryonMs: tryon.ms };
     }
+
+    if (continuity) prompt += "\n\n" + continuity.rule;
 
     const generated = await call(generateModel, "/api/generate-model", {
       modelId,
