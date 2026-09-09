@@ -36,10 +36,10 @@
   hide/plates.json. Studio 03/05/19 tank plates: David confirmed "good" 2026-09-08 17:30 — they stay.
 
 ## Gotchas
-- **fal burst limit on the studio key:** 4 (even 2) anchored 2.5 renders fired together came
-  back `Forbidden` in 0 s; the same call alone, or 20 s later, succeeds. Run the no-plate
-  engine ≤2 concurrent and retry Forbidden after 20 s (ref25/rerun.py pattern).
+- **THE STUDIO'S fal ACCOUNT IS OUT OF BALANCE (18:00, Vercel runtime logs: "User is locked.
+  Reason: Exhausted balance").** The "Forbidden" refusals earlier were the balance edge, not a
+  burst limit. Analyzer (vision) and plate restore (BiRefNet) fail first, GPT renders flicker.
+  David tops up at fal.ai/dashboard/billing; until then no render is trustworthy.
 - Another session may work in this checkout: commit with explicit pathspecs only
   (`tsconfig.tsbuildinfo` is dirty and must not be committed).
-- Vercel's FAL key is NOT the davistudio-batch one (that account is locked, exhausted
-  balance); production renders still work.
+- Both fal keys (davistudio-batch shell key and the studio's Vercel key) are exhausted.
