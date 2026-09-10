@@ -1,6 +1,5 @@
 # Handoff — Model Studio photographic finish
 Updated 2026-09-09 by Codex. Main; implementation9318261.
-
 ## Current work — visual result REJECTED
 - Added house-photo-brief for default GPT2.5 house97–100 Model Studio shots.
   Uses product photos for construction and model/front for photographic finish.
@@ -18,9 +17,13 @@ Updated 2026-09-09 by Codex. Main; implementation9318261.
   Do not resubmit. Results: Faire output/imagegen/softness-fix/live-poncho.
 - Prompt change remains deployed; no new generation or deployment in this review.
 - Raw output already textured before backdrop restore; crop98 reference also textured.
-- Next: establish approved clean original reference, isolate reference vs regeneration
-  artifacts, test garment-only preservation before rollout. Do not call prompt-only
-  preservation a pixel-preserving edit or technical tests visual acceptance.
+- Nine new tests: Faire output/imagegen/single-pass-comparison;8 Fal +1 built-in DONE.
+  Models GPT2/2.5, Nano Pro, FLUX2 Pro; original ERP photo + cropped identity only.
+- Most controlled method: local-face crop edit + deterministic polygon composite.
+  Preserves97.3% source pixels, all clothing exact. GPT closer identity/Nano softer.
+  Hand-defined mask is proof-of-method, not production-ready. Feedback pending.
+- Next: get visual assessment of composites; generalize local mask/alignment only
+  after finish/identity hold up. Side/back/new poses remain unvalidated. No rollout.
 
 ## Existing work to preserve
 - Approved Vision97/99 and retouched Celine2/100 reference files remain installed.
