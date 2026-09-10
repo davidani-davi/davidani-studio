@@ -122,6 +122,54 @@
       "front_is": "Original attached DT60007N, DP52336_4.jpg with one identity edit",
       "others_are": "Independent originals: side _10, back _12, full _2; one identity edit each",
       "low_source": "Face-free crops of original DT60007N, DP52336_2 and _9; no generation"
+    },
+    {
+      "name": "studio 101",
+      "display_name": "Vision 3 \u00b7 Pink Peach",
+      "source_style": "DET67046 / DP32528 \u00b7 PINK PEACH",
+      "face": "vision",
+      "expression": "neutral",
+      "slug": "det67046-pink-peach-vision-neutral",
+      "pose": "Vision 3 \u00b7 Pink Peach",
+      "auto": true,
+      "views": [
+        "front",
+        "side",
+        "back",
+        "full"
+      ],
+      "wears": "pants",
+      "low_ok": true,
+      "legs_separated": true,
+      "silhouette": "wide",
+      "outfit_above": "Pink Peach distressed paisley tee",
+      "outfit_below": "blue wide-leg jeans and brown boots",
+      "front_is": "Approved GPT 2.5 head/hair edit of original DET67046, DP32528_4.jpg",
+      "others_are": "Independent GPT 2.5 identity edits: side _12, back _15, full _1. Native 1024x1536; no restore, upscale or sharpen."
+    },
+    {
+      "name": "studio 102",
+      "display_name": "Celine 3 \u00b7 Pink Peach",
+      "source_style": "DET67046 / DP32528 \u00b7 PINK PEACH",
+      "face": "celine",
+      "expression": "neutral",
+      "slug": "det67046-pink-peach-celine-neutral",
+      "pose": "Celine 3 \u00b7 Pink Peach",
+      "auto": true,
+      "views": [
+        "front",
+        "side",
+        "back",
+        "full"
+      ],
+      "wears": "pants",
+      "low_ok": true,
+      "legs_separated": true,
+      "silhouette": "wide",
+      "outfit_above": "Pink Peach distressed paisley tee",
+      "outfit_below": "blue wide-leg jeans and brown boots",
+      "front_is": "Approved GPT 2.5 head/hair edit of original DET67046, DP32528_4.jpg",
+      "others_are": "Independent GPT 2.5 identity edits: side _12, back _15, full _1. Native 1024x1536; no restore, upscale or sharpen."
     }
   ],
   "families": {

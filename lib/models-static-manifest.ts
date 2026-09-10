@@ -90,6 +90,48 @@ export const STATIC_HUMAN_MODELS = [
     "autoPool": true
   },
   {
+    "id": "studio 101",
+    "name": "Vision 3 · Pink Peach",
+    "poses": [
+      {
+        "id": "studio 101",
+        "label": "Studio 101",
+        "publicPath": "/models/studio 101/front.png",
+        "filename": "front.png",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.png",
+            "publicPath": "/models/studio 101/back.png"
+          },
+          "front": {
+            "filename": "front.png",
+            "publicPath": "/models/studio 101/front.png"
+          },
+          "full": {
+            "filename": "full.png",
+            "publicPath": "/models/studio 101/full.png"
+          },
+          "side": {
+            "filename": "side.png",
+            "publicPath": "/models/studio 101/side.png"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "silhouette": "wide",
+    "pose": "Vision 3 · Pink Peach",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "det67046-pink-peach-vision-neutral",
+    "poseKey": "det67046-pink-peach-vision",
+    "outfitAbove": "Pink Peach distressed paisley tee",
+    "outfitBelow": "blue wide-leg jeans and brown boots",
+    "autoPool": true
+  },
+  {
     "id": "studio 98",
     "name": "Celine 1",
     "poses": [
@@ -172,6 +214,48 @@ export const STATIC_HUMAN_MODELS = [
     "autoPool": true
   },
   {
+    "id": "studio 102",
+    "name": "Celine 3 · Pink Peach",
+    "poses": [
+      {
+        "id": "studio 102",
+        "label": "Studio 102",
+        "publicPath": "/models/studio 102/front.png",
+        "filename": "front.png",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.png",
+            "publicPath": "/models/studio 102/back.png"
+          },
+          "front": {
+            "filename": "front.png",
+            "publicPath": "/models/studio 102/front.png"
+          },
+          "full": {
+            "filename": "full.png",
+            "publicPath": "/models/studio 102/full.png"
+          },
+          "side": {
+            "filename": "side.png",
+            "publicPath": "/models/studio 102/side.png"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "silhouette": "wide",
+    "pose": "Celine 3 · Pink Peach",
+    "character": "celine",
+    "expression": "neutral",
+    "slug": "det67046-pink-peach-celine-neutral",
+    "poseKey": "det67046-pink-peach-celine",
+    "outfitAbove": "Pink Peach distressed paisley tee",
+    "outfitBelow": "blue wide-leg jeans and brown boots",
+    "autoPool": true
+  },
+  {
     "id": "crop 100",
     "name": "Celine 2",
     "poses": [
@@ -206,6 +290,82 @@ export const STATIC_HUMAN_MODELS = [
     "poseKey": "dt60007n-celine",
     "outfitAbove": "brown western-print top",
     "outfitBelow": "white wide-leg trousers",
+    "autoPool": true
+  },
+  {
+    "id": "crop 101",
+    "name": "Vision 3 · Pink Peach",
+    "poses": [
+      {
+        "id": "crop 101",
+        "label": "Crop 101",
+        "publicPath": "/models/crop 101/front.png",
+        "filename": "front.png",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.png",
+            "publicPath": "/models/crop 101/back.png"
+          },
+          "front": {
+            "filename": "front.png",
+            "publicPath": "/models/crop 101/front.png"
+          },
+          "side": {
+            "filename": "side.png",
+            "publicPath": "/models/crop 101/side.png"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "silhouette": "wide",
+    "pose": "Vision 3 · Pink Peach",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "det67046-pink-peach-vision-neutral",
+    "poseKey": "det67046-pink-peach-vision",
+    "outfitAbove": "Pink Peach distressed paisley tee",
+    "outfitBelow": "blue wide-leg jeans and brown boots",
+    "autoPool": true
+  },
+  {
+    "id": "crop 102",
+    "name": "Celine 3 · Pink Peach",
+    "poses": [
+      {
+        "id": "crop 102",
+        "label": "Crop 102",
+        "publicPath": "/models/crop 102/front.png",
+        "filename": "front.png",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.png",
+            "publicPath": "/models/crop 102/back.png"
+          },
+          "front": {
+            "filename": "front.png",
+            "publicPath": "/models/crop 102/front.png"
+          },
+          "side": {
+            "filename": "side.png",
+            "publicPath": "/models/crop 102/side.png"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "silhouette": "wide",
+    "pose": "Celine 3 · Pink Peach",
+    "character": "celine",
+    "expression": "neutral",
+    "slug": "det67046-pink-peach-celine-neutral",
+    "poseKey": "det67046-pink-peach-celine",
+    "outfitAbove": "Pink Peach distressed paisley tee",
+    "outfitBelow": "blue wide-leg jeans and brown boots",
     "autoPool": true
   },
   {

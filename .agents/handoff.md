@@ -1,25 +1,20 @@
-# Handoff — original 1K full-body restored
-Updated 2026-09-10T03:14:13.126195+00:00 by Codex. Main; previous commitdd9980a.
-- FINAL USER DECISION: reject the 2K full-body variant because its background
-  shifted red/pink. Keep original DET67046 Pink Peach full-body; all views1K.
-- /api/model-shots Nano Pro path again forces native1K2:3PNG, including requests
-  from older2.76.1 clients that ask for2K. Response reports actual resolution.
-- Front=current model front + original ERP garment. Each other view independently
-  uses finished front + original model front + ERP garment. No extra edit pass,
-  restore, sharpening or upscale. Missing front blocks continuations.
-- Explicit GPT2/2.5 and try-on retained; separate multi-model editor unchanged.
--769Vitest tests and production build pass. Regression proves2K client→1K output.
-- Faire extension2.76.2/Daily2.27.2/SW68 packages the matching1K behavior.
-- Production rollback READY. Deploy log /tmp/celine-original-studio-deploy.log.
-- Approved original full.png in Faire output/imagegen/det67046-pink-peach-nano-set
-  unchanged byte-for-byte from67f3529. No new paid generation for rollback.
--2K task01a08938-9c25-7e10-b6a5-30571054724d DONE/REJECTED. Do not resubmit.
-  Same-size comparison confirmed pinker background. Do not promote2K again
-  without a new user decision. Docs updated with this decision.
-- Live native1K front taskd9f64c78-41d2-400c-9101-580bb4cf9911 DONE.
-- Current Vision/Celine references retained; Celine1 master hashf10f3e9a… matches.
-- Arc Quilt/Barrel concept jobs DONE; /tmp/faire-real-design.json and
-  /tmp/faire-live-design.json. Do not resubmit paid concepts.
-- Concurrent research state belongs to Faire handoff; preserve it.
+# Handoff — approved GPT 2.5 Pink Peach references installed
+Updated 2026-09-10T03:50:04.477273+00:00 by Codex. Main; previous9e851fe.
+- User selected GPT2.5 outfit sets as NEW references, keeping existing options.
+- Vision3 · Pink Peach = studio101; Celine3 · Pink Peach = studio102.
+  Each has exact approved front/side/back/full PNGs (1024x1536).
+- crop101/102 alias front/side/back byte-for-byte, no resizing or new generation.
+  No low family; existing fallback uses studio images with low framing request.
+- plates.json tags and static manifest updated; grouped after each identity's
+  first two outfits. Existing default remains Vision1; generation engine unchanged.
+-769Vitest tests and production build passed.14installed files verified against
+  source hashes; docs/pink-peach-reference-install.json records provenance.
+- Manifest command vite-node is absent in this checkout; regenerated with
+  node_modules/.bin/jiti scripts/build-models-manifest.mts instead.
+- Next: deploy and verify live catalog + eight approved asset hashes.
+- Production all-1K NanoPro retained. Original Pink Peach full.png retained;
+  prior2K background-shift experiment remains rejected. No paid jobs rerun.
+- Faire output/imagegen/det67046-pink-peach-gpt-comparison/ has all16comparison
+  outputs and user-approved GPT2.5 sources. All jobs DONE; do not resubmit.
+- Research/Sales state belongs to Faire handoff; preserve it.
 - Preserve pre-existing dirty tsconfig.tsbuildinfo; never stage it.
-- Private pulled env files stay outside repos; never print values.

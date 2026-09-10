@@ -23,10 +23,10 @@ describe("staticModelsTagged — the manifest the deployed function serves", () 
     expect(by["studio 97"]).toMatchObject({ name: "Vision 1", character: "vision", autoPool: true, poseKey: "detp58027-vision" });
     expect(by["studio 98"]).toMatchObject({ name: "Celine 1", character: "celine", autoPool: true, poseKey: "detp58027-celine" });
   });
-  it("offers two looks each for Vision and Celine, each with four existing linked photographs", () => {
+  it("offers three looks each for Vision and Celine, each with four existing linked photographs", () => {
     const models = staticModelsTagged();
     const visible = models.filter(m => !isDerivedPlate(m.id));
-    expect(visible.map(m => m.name)).toEqual(["Vision 1", "Vision 2", "Celine 1", "Celine 2"]);
+    expect(visible.map(m => m.name)).toEqual(["Vision 1", "Vision 2", "Vision 3 · Pink Peach", "Celine 1", "Celine 2", "Celine 3 · Pink Peach"]);
     for (const model of visible) {
       expect(model.poses).toHaveLength(1);
       for (const view of ["front", "side", "back", "full"] as const) {
@@ -36,7 +36,8 @@ describe("staticModelsTagged — the manifest the deployed function serves", () 
       }
       for (const framing of ["crop", "low"] as const) {
         const mapped = plateForFraming(model.id, model.poses[0].id, framing, models);
-        expect(mapped.humanModelId).toBe(model.id.replace("studio", framing));
+        const isNewOutfit = ["studio 101", "studio 102"].includes(model.id);
+        expect(mapped.humanModelId).toBe(isNewOutfit && framing === "low" ? model.id : model.id.replace("studio", framing));
       }
     }
   });

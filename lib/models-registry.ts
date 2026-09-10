@@ -355,9 +355,10 @@ function collectPresetImages(modelFolderName: string): ModelPose[] {
 // Explicit ordering for plates that should sort ahead of the rest. Empty since
 // the house set replaced the kylie/celine/sydney/pants plates (2026-09-05):
 // "studio NN" and its derived "crop NN" / "low NN" families sort by name.
-// Keep the two looks adjacent for each identity and preserve the original default.
+// Keep the looks adjacent for each identity and preserve the original default.
 const MODEL_ORDER_PRIORITY: Record<string, number> = {
-  "studio 97": 0, "studio 99": 1, "studio 98": 2, "studio 100": 3,
+  "studio 97": 0, "studio 99": 1, "studio 101": 2,
+  "studio 98": 3, "studio 100": 4, "studio 102": 5,
 };
 
 function displayModelName(modelId: string, folderName: string): string {

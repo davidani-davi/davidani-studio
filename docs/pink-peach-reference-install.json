@@ -1,0 +1,104 @@
+{
+  "engine": "GPT 2.5",
+  "method": "Install user-approved native outputs byte-for-byte; crop family aliases existing head-to-thigh photos. No new generation or image processing.",
+  "files": [
+    {
+      "model": "studio 101",
+      "view": "front",
+      "source": "/Users/davidani-mini/Services/davidani-faire-management/output/imagegen/det67046-pink-peach-gpt-comparison/gpt25-vision-front/render.png",
+      "destination": "public/models/studio 101/front.png",
+      "sha256": "b4bedd294fe703c858789347de6668ff792c6ba71c8bf622be35a78ece2f89bc"
+    },
+    {
+      "model": "studio 101",
+      "view": "side",
+      "source": "/Users/davidani-mini/Services/davidani-faire-management/output/imagegen/det67046-pink-peach-gpt-comparison/gpt25-vision-side/render.png",
+      "destination": "public/models/studio 101/side.png",
+      "sha256": "083448722701132d6a1d137bea37a560477366c505fdd155e943452c14e9bc02"
+    },
+    {
+      "model": "studio 101",
+      "view": "back",
+      "source": "/Users/davidani-mini/Services/davidani-faire-management/output/imagegen/det67046-pink-peach-gpt-comparison/gpt25-vision-back/render.png",
+      "destination": "public/models/studio 101/back.png",
+      "sha256": "7ffb6adf3c0fc4e09d93cd849b5704c300bc78400529ce53a2753bd0a8b2f3eb"
+    },
+    {
+      "model": "studio 101",
+      "view": "full",
+      "source": "/Users/davidani-mini/Services/davidani-faire-management/output/imagegen/det67046-pink-peach-gpt-comparison/gpt25-vision-full/render.png",
+      "destination": "public/models/studio 101/full.png",
+      "sha256": "6fcb489d5b99156c8abc0659835402edcf58ab6c5f3a4e6ca4d49a75857bb501"
+    },
+    {
+      "model": "crop 101",
+      "view": "front",
+      "source": "/Users/davidani-mini/Services/davidani-faire-management/output/imagegen/det67046-pink-peach-gpt-comparison/gpt25-vision-front/render.png",
+      "destination": "public/models/crop 101/front.png",
+      "sha256": "b4bedd294fe703c858789347de6668ff792c6ba71c8bf622be35a78ece2f89bc"
+    },
+    {
+      "model": "crop 101",
+      "view": "side",
+      "source": "/Users/davidani-mini/Services/davidani-faire-management/output/imagegen/det67046-pink-peach-gpt-comparison/gpt25-vision-side/render.png",
+      "destination": "public/models/crop 101/side.png",
+      "sha256": "083448722701132d6a1d137bea37a560477366c505fdd155e943452c14e9bc02"
+    },
+    {
+      "model": "crop 101",
+      "view": "back",
+      "source": "/Users/davidani-mini/Services/davidani-faire-management/output/imagegen/det67046-pink-peach-gpt-comparison/gpt25-vision-back/render.png",
+      "destination": "public/models/crop 101/back.png",
+      "sha256": "7ffb6adf3c0fc4e09d93cd849b5704c300bc78400529ce53a2753bd0a8b2f3eb"
+    },
+    {
+      "model": "studio 102",
+      "view": "front",
+      "source": "/Users/davidani-mini/Services/davidani-faire-management/output/imagegen/det67046-pink-peach-gpt-comparison/gpt25-celine-front/render.png",
+      "destination": "public/models/studio 102/front.png",
+      "sha256": "f4a77e3e7b031c9ffa57b2ff7c3fbbfb1532589df9b899cd015ed20e19f17c97"
+    },
+    {
+      "model": "studio 102",
+      "view": "side",
+      "source": "/Users/davidani-mini/Services/davidani-faire-management/output/imagegen/det67046-pink-peach-gpt-comparison/gpt25-celine-side/render.png",
+      "destination": "public/models/studio 102/side.png",
+      "sha256": "f7675ad0ad8ac23d7a8772fc729e2ae40b20aeaa43776459b272d79209908858"
+    },
+    {
+      "model": "studio 102",
+      "view": "back",
+      "source": "/Users/davidani-mini/Services/davidani-faire-management/output/imagegen/det67046-pink-peach-gpt-comparison/gpt25-celine-back/render.png",
+      "destination": "public/models/studio 102/back.png",
+      "sha256": "274d04219c8ea3423b62bfad03b333cce58b471e5d0e478e95438deb544ef2e7"
+    },
+    {
+      "model": "studio 102",
+      "view": "full",
+      "source": "/Users/davidani-mini/Services/davidani-faire-management/output/imagegen/det67046-pink-peach-gpt-comparison/gpt25-celine-full/render.png",
+      "destination": "public/models/studio 102/full.png",
+      "sha256": "e82ef1cab9bb254d97f7c1c8c6dfd2a853a6be033cd117d5d06f3370334c0205"
+    },
+    {
+      "model": "crop 102",
+      "view": "front",
+      "source": "/Users/davidani-mini/Services/davidani-faire-management/output/imagegen/det67046-pink-peach-gpt-comparison/gpt25-celine-front/render.png",
+      "destination": "public/models/crop 102/front.png",
+      "sha256": "f4a77e3e7b031c9ffa57b2ff7c3fbbfb1532589df9b899cd015ed20e19f17c97"
+    },
+    {
+      "model": "crop 102",
+      "view": "side",
+      "source": "/Users/davidani-mini/Services/davidani-faire-management/output/imagegen/det67046-pink-peach-gpt-comparison/gpt25-celine-side/render.png",
+      "destination": "public/models/crop 102/side.png",
+      "sha256": "f7675ad0ad8ac23d7a8772fc729e2ae40b20aeaa43776459b272d79209908858"
+    },
+    {
+      "model": "crop 102",
+      "view": "back",
+      "source": "/Users/davidani-mini/Services/davidani-faire-management/output/imagegen/det67046-pink-peach-gpt-comparison/gpt25-celine-back/render.png",
+      "destination": "public/models/crop 102/back.png",
+      "sha256": "274d04219c8ea3423b62bfad03b333cce58b471e5d0e478e95438deb544ef2e7"
+    }
+  ]
+}
