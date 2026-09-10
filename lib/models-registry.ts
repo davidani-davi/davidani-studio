@@ -358,7 +358,7 @@ function collectPresetImages(modelFolderName: string): ModelPose[] {
 // Keep the looks adjacent for each identity and preserve the original default.
 const MODEL_ORDER_PRIORITY: Record<string, number> = {
   "studio 97": 0, "studio 99": 1, "studio 101": 2,
-  "studio 98": 3, "studio 100": 4, "studio 102": 5,
+  "studio 98": 3, "studio 100": 4, "studio 102": 5, "studio 103": 6,
 };
 
 function displayModelName(modelId: string, folderName: string): string {

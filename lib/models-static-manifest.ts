@@ -256,6 +256,40 @@ export const STATIC_HUMAN_MODELS = [
     "autoPool": true
   },
   {
+    "id": "studio 103",
+    "name": "Celine · DONUTS pants",
+    "poses": [
+      {
+        "id": "studio 103",
+        "label": "Studio 103",
+        "publicPath": "/models/studio 103/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/studio 103/front.jpg"
+          },
+          "full": {
+            "filename": "full.png",
+            "publicPath": "/models/studio 103/full.png"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "silhouette": "barrel",
+    "pose": "Celine · DONUTS pants",
+    "character": "celine",
+    "expression": "neutral",
+    "slug": "dp52083-donuts-celine-neutral",
+    "poseKey": "dp52083-donuts-celine",
+    "outfitAbove": "tucked ivory tee (full shot)",
+    "outfitBelow": "DONUTS barrel pants and burgundy sneakers",
+    "autoPool": true
+  },
+  {
     "id": "crop 100",
     "name": "Celine 2",
     "poses": [
@@ -510,6 +544,36 @@ export const STATIC_HUMAN_MODELS = [
     "poseKey": "dt60007n-celine",
     "outfitAbove": "brown western-print top",
     "outfitBelow": "white wide-leg trousers",
+    "autoPool": true
+  },
+  {
+    "id": "low 103",
+    "name": "Celine · DONUTS pants",
+    "poses": [
+      {
+        "id": "low 103",
+        "label": "Low 103",
+        "publicPath": "/models/low 103/front.jpg",
+        "filename": "front.jpg",
+        "subdir": "",
+        "views": {
+          "front": {
+            "filename": "front.jpg",
+            "publicPath": "/models/low 103/front.jpg"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": true,
+    "silhouette": "barrel",
+    "pose": "Celine · DONUTS pants",
+    "character": "celine",
+    "expression": "neutral",
+    "slug": "dp52083-donuts-celine-neutral",
+    "poseKey": "dp52083-donuts-celine",
+    "outfitAbove": "tucked ivory tee (full shot)",
+    "outfitBelow": "DONUTS barrel pants and burgundy sneakers",
     "autoPool": true
   },
   {

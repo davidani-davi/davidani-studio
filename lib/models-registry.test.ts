@@ -23,11 +23,11 @@ describe("staticModelsTagged — the manifest the deployed function serves", () 
     expect(by["studio 97"]).toMatchObject({ name: "Vision 1", character: "vision", autoPool: true, poseKey: "detp58027-vision" });
     expect(by["studio 98"]).toMatchObject({ name: "Celine 1", character: "celine", autoPool: true, poseKey: "detp58027-celine" });
   });
-  it("offers three looks each for Vision and Celine, each with four existing linked photographs", () => {
+  it("offers three looks each for Vision and Celine, plus a dedicated DONUTS pants reference", () => {
     const models = staticModelsTagged();
     const visible = models.filter(m => !isDerivedPlate(m.id));
-    expect(visible.map(m => m.name)).toEqual(["Vision 1", "Vision 2", "Vision 3 · Pink Peach", "Celine 1", "Celine 2", "Celine 3 · Pink Peach"]);
-    for (const model of visible) {
+    expect(visible.map(m => m.name)).toEqual(["Vision 1", "Vision 2", "Vision 3 · Pink Peach", "Celine 1", "Celine 2", "Celine 3 · Pink Peach", "Celine · DONUTS pants"]);
+    for (const model of visible.filter(m => m.id !== "studio 103")) {
       expect(model.poses).toHaveLength(1);
       for (const view of ["front", "side", "back", "full"] as const) {
         const ref = model.poses[0].views[view]?.publicPath;
@@ -41,4 +41,17 @@ describe("staticModelsTagged — the manifest the deployed function serves", () 
       }
     }
   });
+});
+
+it("DONUTS pants use the original waist-down reference; only full shot uses Celine's full body", () => {
+  const models = staticModelsTagged();
+  const model = models.find(m => m.id === "studio 103")!;
+  expect(model).toMatchObject({ name: "Celine · DONUTS pants", lowOk: true, silhouette: "barrel", character: "celine" });
+  expect(model.poses[0].publicPath).toBe("/models/studio 103/front.jpg");
+  const low = plateForFraming(model.id, model.poses[0].id, "low", models);
+  expect(low.humanModelId).toBe("low 103");
+  expect(getPosePublicPath(low.humanModelId, low.poseId, "front")).toBe("/models/low 103/front.jpg");
+  expect(getPosePublicPath(low.humanModelId, low.poseId, "side")).toBe("/models/low 103/front.jpg");
+  const full = plateForFraming(model.id, model.poses[0].id, "full", models);
+  expect(getPosePublicPath(full.humanModelId, full.poseId, "full")).toBe("/models/studio 103/full.png");
 });

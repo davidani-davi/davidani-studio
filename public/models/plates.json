@@ -170,6 +170,28 @@
       "outfit_below": "blue wide-leg jeans and brown boots",
       "front_is": "Approved GPT 2.5 head/hair edit of original DET67046, DP32528_4.jpg",
       "others_are": "Independent GPT 2.5 identity edits: side _12, back _15, full _1. Native 1024x1536; no restore, upscale or sharpen."
+    },
+    {
+      "name": "studio 103",
+      "display_name": "Celine \u00b7 DONUTS pants",
+      "source_style": "DP52083 \u00b7 DONUTS",
+      "face": "celine",
+      "expression": "neutral",
+      "slug": "dp52083-donuts-celine-neutral",
+      "pose": "Celine \u00b7 DONUTS pants",
+      "auto": true,
+      "views": [
+        "front",
+        "full"
+      ],
+      "wears": "pants",
+      "low_ok": true,
+      "legs_separated": true,
+      "silhouette": "barrel",
+      "outfit_above": "tucked ivory tee (full shot)",
+      "outfit_below": "DONUTS barrel pants and burgundy sneakers",
+      "front_is": "Original ERP DP52083_1(7).jpg, waist to shoes; unchanged source bytes.",
+      "others_are": "Full shot: existing Celine DONUTS reference. Side uses front reference with side framing instructions; no photographed side installed."
     }
   ],
   "families": {

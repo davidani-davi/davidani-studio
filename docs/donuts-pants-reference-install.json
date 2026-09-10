@@ -1,0 +1,29 @@
+{
+  "date": "2026-09-10T16:37:57.453839+00:00",
+  "name": "Celine \u00b7 DONUTS pants",
+  "modelId": "studio 103",
+  "framing": {
+    "front": "low 103/front.jpg (original ERP waist-down)",
+    "side": "low 103/front.jpg fallback, side pose requested during generation",
+    "full": "studio 103/full.png"
+  },
+  "newGeneration": false,
+  "postediting": false,
+  "files": [
+    {
+      "asset": "public/models/studio 103/front.jpg",
+      "source": "/Users/davidani-mini/Services/davidani-faire-management/output/imagegen/dp52083-donuts-reference/erp-99.jpg",
+      "sha256": "e31e58ead4a5b89578ea003a123c3b866f1f98424663b00fe256194de3a979bf"
+    },
+    {
+      "asset": "public/models/low 103/front.jpg",
+      "source": "/Users/davidani-mini/Services/davidani-faire-management/output/imagegen/dp52083-donuts-reference/erp-99.jpg",
+      "sha256": "e31e58ead4a5b89578ea003a123c3b866f1f98424663b00fe256194de3a979bf"
+    },
+    {
+      "asset": "public/models/studio 103/full.png",
+      "source": "/Users/davidani-mini/Services/davidani-faire-management/output/imagegen/dp52083-donuts-reference/celine-donuts-full.png",
+      "sha256": "d7e19b58082985bed476aad0d998a467d071b981aee6286369811228574a70fd"
+    }
+  ]
+}

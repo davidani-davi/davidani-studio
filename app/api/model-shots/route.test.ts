@@ -73,17 +73,17 @@ describe("/api/model-shots auth", () => {
     expect(byId("faces")).toBeUndefined();
     expect(byId("studio 03")).toBeUndefined();
     expect(byId("studio 57")).toBeUndefined();
-    expect(models.map((m: any) => m.name)).toEqual(["Vision 1", "Vision 2", "Vision 3 · Pink Peach", "Celine 1", "Celine 2", "Celine 3 · Pink Peach"]);
+    expect(models.map((m: any) => m.name)).toEqual(["Vision 1", "Vision 2", "Vision 3 · Pink Peach", "Celine 1", "Celine 2", "Celine 3 · Pink Peach", "Celine · DONUTS pants"]);
     expect(byId("studio 97")).toMatchObject({ character: "vision", expression: "neutral", autoPool: true });
   });
 
-  it("offers the same six named looks in the standalone Studio without internal crop variants", async () => {
+  it("offers the same seven named looks in the standalone Studio without internal crop variants", async () => {
     const { GET } = await import("../models/route");
     const { models } = await (await GET()).json();
-    expect(models.map((m: any) => m.name)).toEqual(["Vision 1", "Vision 2", "Vision 3 · Pink Peach", "Celine 1", "Celine 2", "Celine 3 · Pink Peach"]);
+    expect(models.map((m: any) => m.name)).toEqual(["Vision 1", "Vision 2", "Vision 3 · Pink Peach", "Celine 1", "Celine 2", "Celine 3 · Pink Peach", "Celine · DONUTS pants"]);
     const { wardrobeGroups } = await import("@/lib/plate-wear");
     const cards = ["vision", "celine"].flatMap(character => wardrobeGroups(models, character));
-    expect(cards.map(g => g.plates[0].name)).toEqual(["Vision 1", "Vision 2", "Vision 3 · Pink Peach", "Celine 1", "Celine 2", "Celine 3 · Pink Peach"]);
+    expect(cards.map(g => g.plates[0].name)).toEqual(["Vision 1", "Vision 2", "Vision 3 · Pink Peach", "Celine 1", "Celine 2", "Celine 3 · Pink Peach", "Celine · DONUTS pants"]);
   });
 
   it("initializes both Studio pages with complete model sets rather than a cropped internal default", async () => {
@@ -91,7 +91,7 @@ describe("/api/model-shots auth", () => {
     for (const page of pages) {
       const rendered = await page.default();
       const models = rendered.props.initialHumanModels;
-      expect(models.map((m: any) => m.name)).toEqual(["Vision 1", "Vision 2", "Vision 3 · Pink Peach", "Celine 1", "Celine 2", "Celine 3 · Pink Peach"]);
+      expect(models.map((m: any) => m.name)).toEqual(["Vision 1", "Vision 2", "Vision 3 · Pink Peach", "Celine 1", "Celine 2", "Celine 3 · Pink Peach", "Celine · DONUTS pants"]);
       expect(models[0].id).toBe("studio 97");
       expect(models[0].poses[0].views.full.publicPath).toBe("/models/studio 97/full.png");
     }
