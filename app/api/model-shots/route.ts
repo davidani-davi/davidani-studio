@@ -1,3 +1,4 @@
+import { simpleReferenceShot, simpleFaceMask, SIMPLE_IMAGE_SIZE } from '@/lib/simple-reference-shot';
 import sharp from 'sharp';
 import { referencePixels, validateEdit, editMask, compositeGarment, providerMask, donutsFaceMask } from '@/lib/garment-only';
 import { uploadToFal } from '@/lib/fal';
@@ -200,7 +201,9 @@ export async function POST(req: Request) {
 
 /** One view, start to finish: the synchronous POST body. */
 async function renderShot(req: Request, body: any): Promise<Response> {
-  if (body.editMode && !['native','garment-only','face-locked'].includes(body.editMode)) return json({ok:false,error:'Choose a valid editing mode.'},400);
+  if (body.editMode && !['simple','native','garment-only','face-locked'].includes(body.editMode)) return json({ok:false,error:'Choose a valid editing mode.'},400);
+  const simple = body.editMode === 'simple';
+  if (simple && (body.engine === 'tryon' || body.reference || String(body.humanModelId || '').startsWith('face:'))) return json({ok:false,error:'Simple garment swap needs a matching model reference and GPT or Nano.'},400);
   const faceLocked = body.editMode === 'face-locked';
   const locked = body.editMode === 'garment-only' || faceLocked;
   if (locked && (body.engine === 'tryon' || body.engine === 'nano' || (body.modelId && !['gpt-image','gpt-image-25'].includes(body.modelId))))
@@ -322,6 +325,17 @@ async function renderShot(req: Request, body: any): Promise<Response> {
       : await getPoseUrl(humanModelId, poseId, view, 0);
     const input = buildReferenceShot({ view, referenceUrl, garmentImageUrls, category, framing,
       color: typeof known.color === "string" ? known.color : undefined, note });
+    const simpleInput = simple ? simpleReferenceShot({ view, referenceUrl, garmentImageUrls, category, framing, color: typeof known.color === 'string' ? known.color : undefined, note }) : undefined;
+    if (simpleInput) { input.prompt = simpleInput.prompt; input.image_urls = simpleInput.image_urls; }
+    let simplePrepared: { ref: Awaited<ReturnType<typeof referencePixels>>; mask: Buffer } | undefined;
+    if (simple && framing !== 'low' && view !== 'back') {
+      if (reference.reframed) throw Error('Simple garment swap needs an exact view reference. Choose a complete reference set.');
+      const response = await fetch(referenceUrl, {cache:'no-store'});
+      if (!response.ok) throw Error('Reference could not be loaded.');
+      const ref = await referencePixels(Buffer.from(await response.arrayBuffer()));
+      const mask = simpleFaceMask(ref, reference.publicPath, view, framing);
+      if (mask) simplePrepared = {ref,mask};
+    }
     let preservation: Awaited<ReturnType<typeof compositeGarment>>['report'] | undefined;
     let prepared: { ref: Awaited<ReturnType<typeof referencePixels>>; mask: Buffer; canvasUrl:string; maskUrl:string } | undefined;
     if (locked) {
@@ -345,7 +359,7 @@ async function renderShot(req: Request, body: any): Promise<Response> {
       input.prompt=`Edit the original reference photograph. Replace ONLY the ${category === 'pants' || category === 'skirt' ? 'bottoms' : 'garment'} with the garment from the other image. Keep the original pose, arm and hand positions, other clothing, shoes, background and framing. Do not add hands at the waistband or pockets. One person, two arms, two hands. Keep the head unchanged. No sharpening. ${known.color ? 'Garment color: '+known.color+'.' : ''} ${note || ''}`;
     }
     let url: string;
-    let outputResolution = nanoReference ? "1K" : "4K";
+    let outputResolution = simple || nanoReference ? "1K" : "4K";
     if (body.engine === "tryon") {
       // This engine has no prompt/framing control; do not silently substitute it
       // for a selected GPT engine or claim an unavailable pants-only crop.
@@ -360,33 +374,34 @@ async function renderShot(req: Request, body: any): Promise<Response> {
       const res = await generateModel(new Request(new URL("/api/generate-model", req.url), {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ modelId, humanModelId, poseId, view,
-          canvasImageUrl: prepared?.canvasUrl || referenceUrl, garmentImageUrls,
+          canvasImageUrl: prepared?.canvasUrl || referenceUrl, garmentImageUrls: simpleInput?.garmentImageUrls || garmentImageUrls,
           preserveSecondaryReferences: true, rawPrompt: true, prompt: input.prompt,
-          imageSize: prepared ? {width:prepared.ref.width,height:prepared.ref.height} : GPT_NATIVE_SIZE, maskUrl: prepared?.maskUrl, aspectRatio: "2:3", resolution: "4K", format: "png", numImages: 1 }),
+          imageSize: simple ? SIMPLE_IMAGE_SIZE : prepared ? {width:prepared.ref.width,height:prepared.ref.height} : GPT_NATIVE_SIZE, maskUrl: prepared?.maskUrl, aspectRatio: "2:3", resolution: simple ? "1K" : "4K", format: "png", numImages: 1 }),
       }));
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || "Image generation failed");
       url = result.images?.[0]?.url;
     }
     if (!url) throw new Error("Image model returned no image");
-    if(prepared) {
+    const protectedInput = simplePrepared || prepared;
+    if(protectedInput) {
       const response=await fetch(url);
       if(!response.ok)throw Error('Generated garment could not be loaded.');
-      const composed=await compositeGarment(prepared.ref,Buffer.from(await response.arrayBuffer()),prepared.mask);
+      const composed=await compositeGarment(protectedInput.ref,Buffer.from(await response.arrayBuffer()),protectedInput.mask);
       url=await uploadToFal(new Blob([Uint8Array.from(composed.png)],{type:'image/png'}),'garment-only.png');
       // Verify the hosted delivery too. Never expose the unverified generated frame.
       const hosted=await fetch(url,{cache:'no-store'});
       if(!hosted.ok || !Buffer.from(await hosted.arrayBuffer()).equals(composed.png))throw Error('Hosted protected image verification failed.');
-      preservation=composed.report;outputResolution=`${prepared.ref.width}×${prepared.ref.height}`;
+      preservation=composed.report;outputResolution=`${protectedInput.ref.width}×${protectedInput.ref.height}`;
     }
     // Existing mode keeps its native-output behavior. Protected mode returns lossless composition.
     return json({ ok: true, view, url, prompt: input.prompt,
       modelId: body.engine === "tryon" ? undefined : modelId,
       engine: body.engine === "tryon" ? "tryon" : nanoReference ? "nano" : modelId === "gpt-image-25" ? "gpt25" : "gpt2",
-      resolution: outputResolution, editMode: faceLocked ? "face-locked" : locked ? "garment-only" : "native", preservation, humanModelId, poseId, assigned, category, hem, framing,
+      resolution: outputResolution, editMode: simple ? "simple" : faceLocked ? "face-locked" : locked ? "garment-only" : "native", preservation, humanModelId, poseId, assigned, category, hem, framing,
       reference: { ...reference, url: referenceUrl },
       garmentBackInferred: view === "back" && garmentImageUrls.length < 2,
-      anchored: false, restore: { applied: false }, photoFinish: { method: locked ? "garment-only" : "native", applied: locked }, corrections: [] });
+      anchored: false, restore: { applied: false }, photoFinish: { method: protectedInput ? "original-face-pixels" : "native", applied: !!protectedInput }, corrections: [] });
   } catch (err: any) {
     return json({ ok: false, view, error: String(err?.message || err) }, 502);
   }

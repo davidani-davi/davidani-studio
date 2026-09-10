@@ -1,26 +1,18 @@
-# Handoff — working DONUTS face lock
-Updated 2026-09-10 by Codex. Branch codex/garment-only-pixel-lock; prior8416ac0.
-- User needed a usable result urgently. Shipped optional face-locked mode for
-  DONUTS103 pants FULL only. Preset validates exact reference hash/dimensions;
-  original rows0–520 retained; inward32px transition, coherent body below.
-- This guarantees original face/hair pixels, not unchanged hands/shoes/body.
-  Other categories/references fail before spending. Waist-down client views
-  continue normal independent generation; no head is present in those views.
-- Provider mask now RGB white-edit/black-protect like existing fal integration.
-  Shortened local-edit prompt. No generated-output chains or AI restoration.
-- Three fresh tests (RGB/custom, no-provider-mask/custom, final face-locked API)
-  produced coherent single-person pants renders; original failed joins removed
-  by protecting upper reference as one region instead of carving each hand.
-- Final DP62206 route output1024x1536:533,504 protected pixels, zero changed.
-  All original head/hair retained; generated lower body can vary (e.g. footwear).
-- 832tests pass; npm run build passes. Saved route retains face-locked metadata.
-- Production deployment h218vuqd9 is Ready with davidani-studio.vercel.app alias.
-  CLI said Not authorized after build, but inspect proved successful deployment;
-  production reference API and saved PNG library readback verified.
-- Saved final DP62206 full shot mtw1c72vmd44ip, byte-identical PNG, no ERP/Faire
-  listing mutation. Evidence in management output/garment-only-working.
-- Management release2.108.0 / PWA2.34.0 / SW83 from /tmp/davidani-face-lock-release.
-- Next: extend automatic face protection only after reviewing masks for each
-  other reference. Keep original workflow selectable; do not claim body lock.
-- Restore tag remains pushed: restore/model-studio-before-garment-only-20260910.
-- Preserve unrelated tsconfig.tsbuildinfo. Local test server3117 may be stopped.
+# Handoff — Simple garment swap
+Updated 2026-09-10 14:48 PDT by Codex. Branch codex/garment-only-pixel-lock; parent ff5c8ad.
+- Shipped `editMode:simple` for Faire Model Studio. Each view gets its matching
+  model reference + ONE original garment photo (back photo for back when supplied).
+- Short verbatim prompt, 1024×1536 GPT / native1K Nano, no provider mask,
+  generated anchors, analysis pass, forced4K, restoration or portrait retry rewrite.
+- 31 reviewed face-bearing built-in references bind SHA256 and native dimensions.
+  Original face pixels retained then verified after PNG encode and hosted readback.
+  Low/back views remain native; unreviewed/changed face references fail before spend.
+- Real deployed brown-top front + side: 393216 protected pixels each, zero changed;
+  visually reviewed. Body/hair below protected band may change. See docs/simple-garment-swap.md.
+- 874 tests passed; npm build passed. Production ixqho54vw aliased to Studio.
+- Management release /tmp/davidani-face-lock-release: Chrome2.109.0, Daily2.35.0, SW85.
+  New sessions default simple; saved method choices stay intact. Previous workflow remains.
+- Saved-shots retains simple metadata. No live ERP/Faire listing changes.
+- Restore tag before-simple-swap-20260910 points to ff5c8ad; original restore tag intact.
+- Preserve unrelated tsconfig.tsbuildinfo. Extend presets only after visual review.
+- Next: user tries the new mode; assess garment fit across their real styles.

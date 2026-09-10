@@ -1,0 +1,219 @@
+{
+  "/models/crop 97/front.png": {
+    "width": 1024,
+    "height": 1536,
+    "sha256": "ec4d56b4de844005e834de39baaffd20ab99c06284ae4e4153b54fc88ed30b81",
+    "protectedRows": 384,
+    "transitionRows": 8
+  },
+  "/models/crop 97/side.png": {
+    "width": 1024,
+    "height": 1536,
+    "sha256": "9afad809ed58d7d9734615981fdb7e1c0150456b18136a4f924402250021e307",
+    "protectedRows": 369,
+    "transitionRows": 8
+  },
+  "/models/crop 98/front.png": {
+    "width": 2048,
+    "height": 3072,
+    "sha256": "3738bc09b83e1fa42426b5ae75e47e0e0d09746ca54b87184020c2fe375d2ece",
+    "protectedRows": 768,
+    "transitionRows": 15
+  },
+  "/models/crop 98/side.png": {
+    "width": 1024,
+    "height": 1536,
+    "sha256": "9b0e47d2a5932c5581711e15d34b9ac6425f672b68d7b07172e6cef4eed9f551",
+    "protectedRows": 384,
+    "transitionRows": 8
+  },
+  "/models/crop 99/front.png": {
+    "width": 1024,
+    "height": 1536,
+    "sha256": "4fd78669f4de55ce5ccce01f42ac13394df6c9643597fbd1244a560fd649ce7d",
+    "protectedRows": 384,
+    "transitionRows": 8
+  },
+  "/models/crop 99/side.png": {
+    "width": 1024,
+    "height": 1536,
+    "sha256": "39eeaf4727739e10abe20717cbe9a55cea32d1fd36fc5af6dc0dd1d242f3ff91",
+    "protectedRows": 388,
+    "transitionRows": 8
+  },
+  "/models/crop 100/front.png": {
+    "width": 1024,
+    "height": 1536,
+    "sha256": "e99f6bf89201fde4023137d2437e1199d08cea66305bacde62e6bd96a9accc9a",
+    "protectedRows": 384,
+    "transitionRows": 8
+  },
+  "/models/crop 100/side.png": {
+    "width": 1024,
+    "height": 1536,
+    "sha256": "b4e173aafb601b20e4ce05e488afef1bbd3d2397d90beccb1ab110c91c2d2ca9",
+    "protectedRows": 384,
+    "transitionRows": 8
+  },
+  "/models/crop 101/front.png": {
+    "width": 1024,
+    "height": 1536,
+    "sha256": "7fccfd544443f8c2f49f94b6b1a16ee6acbc8a8a296f686c4bbb682ef9ebf3b0",
+    "protectedRows": 361,
+    "transitionRows": 8
+  },
+  "/models/crop 101/side.png": {
+    "width": 1024,
+    "height": 1536,
+    "sha256": "b8c8bb4f1f7e7bb28be301d320ccf15bad840f41fab3e1feaaa69d613d3e0bd4",
+    "protectedRows": 354,
+    "transitionRows": 8
+  },
+  "/models/crop 102/front.png": {
+    "width": 1024,
+    "height": 1536,
+    "sha256": "1b230aa721dc1afe37ead6248c13b076890504d33e809316277de8ef5655f12b",
+    "protectedRows": 361,
+    "transitionRows": 8
+  },
+  "/models/crop 102/side.png": {
+    "width": 1024,
+    "height": 1536,
+    "sha256": "faf3cc31df91851f0f1b64121c943be4dc856ff924519f88804ef1d21f4133dd",
+    "protectedRows": 354,
+    "transitionRows": 8
+  },
+  "/models/studio 97/front.png": {
+    "width": 1024,
+    "height": 1536,
+    "sha256": "ec4d56b4de844005e834de39baaffd20ab99c06284ae4e4153b54fc88ed30b81",
+    "protectedRows": 384,
+    "transitionRows": 8
+  },
+  "/models/studio 97/side.png": {
+    "width": 1024,
+    "height": 1536,
+    "sha256": "9afad809ed58d7d9734615981fdb7e1c0150456b18136a4f924402250021e307",
+    "protectedRows": 369,
+    "transitionRows": 8
+  },
+  "/models/studio 97/full.png": {
+    "width": 1024,
+    "height": 1536,
+    "sha256": "334d5baddd3961a4a9a006a9964b062df43336510297371c6c3f16a6721c969d",
+    "protectedRows": 300,
+    "transitionRows": 8
+  },
+  "/models/studio 98/front.png": {
+    "width": 2048,
+    "height": 3072,
+    "sha256": "3738bc09b83e1fa42426b5ae75e47e0e0d09746ca54b87184020c2fe375d2ece",
+    "protectedRows": 768,
+    "transitionRows": 15
+  },
+  "/models/studio 98/side.png": {
+    "width": 1024,
+    "height": 1536,
+    "sha256": "9b0e47d2a5932c5581711e15d34b9ac6425f672b68d7b07172e6cef4eed9f551",
+    "protectedRows": 384,
+    "transitionRows": 8
+  },
+  "/models/studio 98/full.png": {
+    "width": 1024,
+    "height": 1536,
+    "sha256": "733558411f74657b30b27439dc92870cd205215dc53ce4dcb97aeff2f5dc9362",
+    "protectedRows": 292,
+    "transitionRows": 8
+  },
+  "/models/studio 99/front.png": {
+    "width": 1024,
+    "height": 1536,
+    "sha256": "4fd78669f4de55ce5ccce01f42ac13394df6c9643597fbd1244a560fd649ce7d",
+    "protectedRows": 384,
+    "transitionRows": 8
+  },
+  "/models/studio 99/side.png": {
+    "width": 1024,
+    "height": 1536,
+    "sha256": "39eeaf4727739e10abe20717cbe9a55cea32d1fd36fc5af6dc0dd1d242f3ff91",
+    "protectedRows": 388,
+    "transitionRows": 8
+  },
+  "/models/studio 99/full.png": {
+    "width": 1024,
+    "height": 1536,
+    "sha256": "0422af44c84f7054ab0c14effc83f437c5a56f4fa4f43dce3876ef5a9e5211d6",
+    "protectedRows": 266,
+    "transitionRows": 8
+  },
+  "/models/studio 100/front.png": {
+    "width": 1024,
+    "height": 1536,
+    "sha256": "e99f6bf89201fde4023137d2437e1199d08cea66305bacde62e6bd96a9accc9a",
+    "protectedRows": 384,
+    "transitionRows": 8
+  },
+  "/models/studio 100/side.png": {
+    "width": 1024,
+    "height": 1536,
+    "sha256": "b4e173aafb601b20e4ce05e488afef1bbd3d2397d90beccb1ab110c91c2d2ca9",
+    "protectedRows": 384,
+    "transitionRows": 8
+  },
+  "/models/studio 100/full.png": {
+    "width": 1024,
+    "height": 1536,
+    "sha256": "43339a52cee7ef3d6391c0e8a82d0155fb82d2714de7238bc7668e8fcedf8314",
+    "protectedRows": 254,
+    "transitionRows": 8
+  },
+  "/models/studio 101/front.png": {
+    "width": 1024,
+    "height": 1536,
+    "sha256": "7fccfd544443f8c2f49f94b6b1a16ee6acbc8a8a296f686c4bbb682ef9ebf3b0",
+    "protectedRows": 361,
+    "transitionRows": 8
+  },
+  "/models/studio 101/side.png": {
+    "width": 1024,
+    "height": 1536,
+    "sha256": "b8c8bb4f1f7e7bb28be301d320ccf15bad840f41fab3e1feaaa69d613d3e0bd4",
+    "protectedRows": 354,
+    "transitionRows": 8
+  },
+  "/models/studio 101/full.png": {
+    "width": 1024,
+    "height": 1536,
+    "sha256": "50aa4c79d06c3a25fe9fe763ff30776b2a131f178704c27ecca9f36721edffb6",
+    "protectedRows": 242,
+    "transitionRows": 8
+  },
+  "/models/studio 102/front.png": {
+    "width": 1024,
+    "height": 1536,
+    "sha256": "1b230aa721dc1afe37ead6248c13b076890504d33e809316277de8ef5655f12b",
+    "protectedRows": 361,
+    "transitionRows": 8
+  },
+  "/models/studio 102/side.png": {
+    "width": 1024,
+    "height": 1536,
+    "sha256": "faf3cc31df91851f0f1b64121c943be4dc856ff924519f88804ef1d21f4133dd",
+    "protectedRows": 354,
+    "transitionRows": 8
+  },
+  "/models/studio 102/full.png": {
+    "width": 1024,
+    "height": 1536,
+    "sha256": "db2cc2ad1ed5fc71e7d27e5c120d564f40d0fa742baff6dbfe7ef1e2cb356cd1",
+    "protectedRows": 254,
+    "transitionRows": 8
+  },
+  "/models/studio 103/full.png": {
+    "width": 1024,
+    "height": 1536,
+    "sha256": "3fc5f5b51716759caf409869405770a1ccbb9d8e0ca3a8024000d0804b3cd1b9",
+    "protectedRows": 277,
+    "transitionRows": 8
+  }
+}

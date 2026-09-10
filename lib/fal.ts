@@ -3704,6 +3704,7 @@ export async function generate(params: GenerateParams): Promise<GenerationResult
     result = await subscribeWithRetry(model.endpoint, input);
   } catch (err: any) {
     const isRejectedPortrait =
+      !params.verbatimPrompt &&
       model.inputShape === "gpt" &&
       err?.status === 422 &&
       /\b(face|facial|portrait|identity|model|person)\b/i.test(finalPrompt);
