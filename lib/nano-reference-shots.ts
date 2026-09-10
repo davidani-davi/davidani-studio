@@ -34,7 +34,7 @@ export function buildReferenceShot(o: ReferenceShot) {
   return {
     image_urls: later ? [o.anchorImageUrl!, o.referenceUrl, garment] : [o.referenceUrl, garment],
     prompt: `${prompt}${o.color ? ` Requested color: ${o.color}; the original garment photograph is the color authority.` : ''}${o.note ? ` Operator correction: ${o.note}` : ''}`,
-    resolution: '1K' as const, aspect_ratio: '2:3' as const, output_format: 'png' as const, num_images: 1,
+    resolution: o.view === 'full' ? '2K' as const : '1K' as const, aspect_ratio: '2:3' as const, output_format: 'png' as const, num_images: 1,
   };
 }
 

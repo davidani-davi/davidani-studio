@@ -385,7 +385,7 @@ async function renderShot(req: Request, body: any): Promise<Response> {
         category, framing, color: typeof known.color === "string" ? known.color : undefined, note });
       const out = await runReferenceShot(input);
       return json({ ok: true, view, url: out.url, prompt: input.prompt,
-        modelId: NANO_REFERENCE_MODEL, engine: "nano", resolution: "1K",
+        modelId: NANO_REFERENCE_MODEL, engine: "nano", resolution: input.resolution,
         anchored: Boolean(anchorImageUrl), humanModelId, poseId, assigned, category, hem, framing,
         corrections: [], photoFinish: { method: "native-nano-pro", applied: false } });
     } catch (err: any) {
