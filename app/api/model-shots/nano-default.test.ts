@@ -23,10 +23,10 @@ describe('Model Studio Nano Pro default routing',()=>{
     const input=vi.mocked(runReferenceShot).mock.calls[0][0];
     expect(input.image_urls[0]).toBe('https://output/front.png');expect(input.image_urls[1]).toContain('/front.png');expect(input.image_urls[2]).toBe('https://erp/back.jpg');
   });
-  it('renders full-body at native 2K even from an older 1K client',async()=>{
-    const response=await POST(request({view:'full',resolution:'1K',anchorImageUrl:'https://output/front.png'}));
-    expect(response.status).toBe(200);expect((await response.json()).resolution).toBe('2K');
-    expect(vi.mocked(runReferenceShot).mock.calls[0][0].resolution).toBe('2K');
+  it('keeps full-body at approved 1K even if a previous client requests 2K',async()=>{
+    const response=await POST(request({view:'full',resolution:'2K',anchorImageUrl:'https://output/front.png'}));
+    expect(response.status).toBe(200);expect((await response.json()).resolution).toBe('1K');
+    expect(vi.mocked(runReferenceShot).mock.calls[0][0].resolution).toBe('1K');
   });
   it('refuses an unanchored continuation before spending on a render',async()=>{
     expect((await POST(request({view:'side'}))).status).toBe(400);expect(runReferenceShot).not.toHaveBeenCalled();

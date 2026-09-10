@@ -12,7 +12,7 @@ describe('approved Nano Pro reference workflow', () => {
   it.each(['side','back','full'] as const)('anchors %s directly to front and original identity', view => {
     const input=buildReferenceShot({...base,view,anchorImageUrl:'https://output/front.png'});
     expect(input.image_urls).toEqual(['https://output/front.png',base.referenceUrl,base.garmentImageUrls[view==='back'?1:0]]);
-    expect(input.resolution).toBe(view==='full'?'2K':'1K');
+    expect(input.resolution).toBe('1K');
   });
   it('requires a front before generating other views',()=>{
     expect(()=>buildReferenceShot({...base,view:'side'})).toThrow('Generate the front first');

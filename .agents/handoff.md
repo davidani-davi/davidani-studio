@@ -1,31 +1,25 @@
-# Handoff — Celine full-body clarity
-Updated 2026-09-10T02:54:05.548939+00:00 by Codex. Main; previous commit3d49f21.
-- User approved DET67046 Pink Peach / existing Celine / Nano Pro 4-view set
-  and explicitly requested it as the default.
-- /api/model-shots now defaults to fal-ai/nano-banana-pro/edit, native1K for close views,2K for full-body,
-  2:3 PNG. Front=current model front + original ERP garment. Each later view
-  independently uses finished front + original model front + ERP garment.
-- No analyzer, face crop, restore, sharpening, upscale or second edit pass.
-  Missing front blocks continuations. Optional ERP back is respected.
-- Explicit GPT2/2.5 and try-on remain; separate multi-model experiment UI unchanged.
-- Production deployment dpl_FFz5kufnT53iRtPv5iDqxax8txuK ready.
-- Live default request (no modelId): d9f64c78-41d2-400c-9101-580bb4cf9911 DONE.
-  Verified NanoPro1K response and visually inspected soft front. Do not resubmit.
-  Evidence: Faire output/imagegen/nano-default-live-check/front.png.
-- Tests769 pass; production build pass. docs/NANO_REFERENCE_DEFAULT.md explains.
-- Faire extension2.76.1 / Daily2.27.1 SW67 deployed with matching defaults and
-  explicit GPT2.5 choice. New result metadata distinguishes historical GPT jobs.
-- Celine full-body blur: reran identical prompt/inputs at native2K. Face clearer,
-  softness retained. No sharpening or extra AI pass. Task01a08938-9c25-7e10-b6a5-30571054724d
-  DONE; Faire output/imagegen/celine-full-resolution. Do not resubmit.
-- Full-view2K override works even if older client requests1K; response reports2K.
-  Latest production davidani-studio-pu65dq0jm-davidani-davis-projects.vercel.app READY.
-- Next: use new default on additional styles; inspect garment details visually.
-  Accepted softness is evidence for Pink Peach top, not a guarantee for every style.
-- Keep existing Vision/Celine references. Celine1 master hashf10f3e9a… matches test.
-- Prior face-only and GPT default softness experiments rejected; superseded.
+# Handoff — original 1K full-body restored
+Updated 2026-09-10T03:14:13.126195+00:00 by Codex. Main; previous commitdd9980a.
+- FINAL USER DECISION: reject the 2K full-body variant because its background
+  shifted red/pink. Keep original DET67046 Pink Peach full-body; all views1K.
+- /api/model-shots Nano Pro path again forces native1K2:3PNG, including requests
+  from older2.76.1 clients that ask for2K. Response reports actual resolution.
+- Front=current model front + original ERP garment. Each other view independently
+  uses finished front + original model front + ERP garment. No extra edit pass,
+  restore, sharpening or upscale. Missing front blocks continuations.
+- Explicit GPT2/2.5 and try-on retained; separate multi-model editor unchanged.
+-769Vitest tests and production build pass. Regression proves2K client→1K output.
+- Faire extension2.76.2/Daily2.27.2/SW68 packages the matching1K behavior.
+- Production rollback READY. Deploy log /tmp/celine-original-studio-deploy.log.
+- Approved original full.png in Faire output/imagegen/det67046-pink-peach-nano-set
+  unchanged byte-for-byte from67f3529. No new paid generation for rollback.
+-2K task01a08938-9c25-7e10-b6a5-30571054724d DONE/REJECTED. Do not resubmit.
+  Same-size comparison confirmed pinker background. Do not promote2K again
+  without a new user decision. Docs updated with this decision.
+- Live native1K front taskd9f64c78-41d2-400c-9101-580bb4cf9911 DONE.
+- Current Vision/Celine references retained; Celine1 master hashf10f3e9a… matches.
 - Arc Quilt/Barrel concept jobs DONE; /tmp/faire-real-design.json and
   /tmp/faire-live-design.json. Do not resubmit paid concepts.
-- Concurrent Faire research state belongs to Faire handoff; do not overwrite it.
+- Concurrent research state belongs to Faire handoff; preserve it.
 - Preserve pre-existing dirty tsconfig.tsbuildinfo; never stage it.
 - Private pulled env files stay outside repos; never print values.

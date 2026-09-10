@@ -5,7 +5,7 @@ Celine, front/side/back/full. This replaces the default used by Faire Model
 Studio (`/api/model-shots`), not the separate multi-model experiment editor.
 
 - Model ID `nano-banana-pro`, Fal endpoint `fal-ai/nano-banana-pro/edit`.
-- Native 1K for closer views, 2K for full-body, 2:3, PNG, one output. No upscale, sharpen, backdrop restoration,
+- Native 1K for every view, 2:3, PNG, one output. No upscale, sharpen, backdrop restoration,
   extra face edit or other finishing pass.
 - Front sources: current model front reference, original ERP garment front.
 - Each later view: finished front, original model front reference, ERP garment.
@@ -23,6 +23,7 @@ Evidence in Faire repo: `output/imagegen/det67046-pink-peach-nano-set/`.
 Tests cover source order, sibling continuity, no-anchor rejection, native
 output passthrough, route default dispatch and bypass of legacy render stages.
 
-Full-body follow-up: Celine’s face was blurry at 1K. A native 2K render
-using the same prompt and original inputs resolved the eyes and facial contours
-more clearly while retaining soft skin and fabric. No extra editing pass.
+Full-body follow-up: the 2K experiment was rejected by David because its
+background shifted red/pink. Keep the original 1K full-body image and 1K
+settings for all views. Preserve the original accepted set; do not regenerate
+or promote the 2K output. Older clients requesting 2K are overridden to 1K.
