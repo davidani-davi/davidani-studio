@@ -1,20 +1,25 @@
-# Handoff — complete reference routing
-Updated 2026-09-10T17:30:28.518824+00:00 by Codex. Branch main; previous commit 8853322.
-- Reference-set Model Shots now resolve exact view before one independent edit.
-- GPT2.5 default; explicit GPT2/Nano selections respected; conflicting fields rejected.
-- Removed analyzer, generated-front continuity canvas, face crops, masks and restoration
-  from this path. Native provider URL returned, irrespective of stale restore flags.
-- DONUTS103 now has native side/back PNGs, each independently generated from original
-  ERP front. Originals retained. docs/donuts-view-reference-provenance.json has hashes.
-  Back construction is synthesized pose information, not verified garment photography.
-- All7sets expose per-view/per-framing coverage. Missing low/crop view uses SAME VIEW
-  in parent with explicit framing; missing view fails before generation. No front fallback.
-- Pants: front/side/back waist-to-shoes; full head-to-shoes with reference top preserved.
-- DONUTS only for bottoms. Try-on refuses references needing reframing.
--813tests and production build pass. Live DP62206 GPT2.5 set visually inspected:
-  correct4frames, no collage, ivorytee kept, native2048x3072; back clearly inferred.
-- Management2.95.0 shows matching reference previews and migrates old3view sets.
-- Next: user reviews native test set at Faire Daily tokened reference-routing-fix page.
-  If precise back print/construction is needed, supply actual matching ERP back photo.
-- No ERP/Faire image upload or listing change from tests. No output postediting.
-- Preserve pre-existing dirty tsconfig.tsbuildinfo; not staged.
+# Handoff — garment-only pixel preservation prototype
+Updated 2026-09-10 by Codex. Branch codex/garment-only-pixel-lock; base a5653d9.
+- BEFORE edits, pushed annotated restore/model-studio-before-garment-only-20260910
+  in Studio (a5653d9) and management (43d8603). Existing production not changed.
+- Added optional editMode=garment-only: exact reference lookup, reviewed polygons,
+  stale-reference hash rejection, protected head review, mask_url + native size.
+- Original decoded RGBA pixels outside the mask copied unchanged; inward-only
+  feather; output PNG decoded/compared; hosted bytes verified before response.
+- Native mode stays default; no restoration or generated-output chaining.
+- Saved library preserves editMode so downstream ERP uses lossless PNG.
+- npm test: 829 pass; npm run build passes. Route tests include wrong view/mask,
+  missing head review, unsupported engines, changed references/hosted bytes.
+- Two REAL GPT2.5 DP62206 full tests through local route, each from original103:
+  1,296,169 / 1,295,661 protected pixels, zero changes. Independent Pillow head
+  comparison: 257,500 pixels, zero changes in both. Outputs1024x1536.
+- BOTH fail garment visual QA: donor hands at pockets, original hands retained,
+  visible boundary joins and garment remnants. This is NOT production ready.
+- Companion management branch has experimental selector, polygon editor,
+  PNG upload/readback and tests; docs/garment-only-workflow.md plus
+  output/garment-only-test holds requests/results/recoverable hosted PNG URLs.
+- Next: inspect provider multi-image mask behavior/polarity/order and donor-pose
+  leakage; test a garment-only source without donor body/hands. Improve masks
+  around actual limbs; verify front/side/back/full before any deployment.
+- Do not replace the default workflow or claim verified pixels mean a good garment.
+- No library, ERP or Faire listing mutations. Preserve dirty tsconfig.tsbuildinfo.

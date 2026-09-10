@@ -25,6 +25,7 @@ export interface SavedShot {
   savedAt: number;
   durable: boolean;
   humanModelId?: string;   // plate the render used ("crop 93")
+  editMode?: 'native' | 'garment-only';
   engine?: string;         // "gpt-image-25", "tryon", …
   note?: string;           // free text ("shell run 2026-09-08", "back split mirrored")
   by?: string;             // "panel" | "shell" | …
@@ -44,6 +45,7 @@ export interface SaveInput {
   view: string;
   url: string;
   humanModelId?: string;
+  editMode?: 'native' | 'garment-only';
   engine?: string;
   note?: string;
   by?: string;
@@ -254,6 +256,7 @@ export async function saveShots(style: string, inputs: SaveInput[]): Promise<{ e
         id, view: i.view, url: copy.url, source: i.url, savedAt: now + n, durable: copy.durable,
         ...(i.humanModelId ? { humanModelId: i.humanModelId } : {}),
         ...(i.engine ? { engine: i.engine } : {}),
+        ...(i.editMode ? { editMode: i.editMode } : {}),
         ...(i.note ? { note: i.note.slice(0, 300) } : {}),
         ...(i.by ? { by: i.by } : {}),
       };

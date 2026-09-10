@@ -1,0 +1,106 @@
+import sharp from 'sharp';
+import { createHash } from 'node:crypto';
+
+export type Point = [number, number];
+export interface GarmentEdit {
+  version: 1; referencePath: string; referenceSha256: string;
+  width: number; height: number; regions: Point[][]; protectedRegions: Point[][];
+  reviewed: true; protectedHeadReviewed: boolean;
+}
+export interface ReferencePixels { data: Buffer; width: number; height: number; sha256: string }
+const digest = (b: Buffer) => createHash('sha256').update(b).digest('hex');
+
+/** Canonical displayed reference pixels. Never resize the reference. */
+export async function referencePixels(bytes: Buffer): Promise<ReferencePixels> {
+  const { data, info } = await sharp(bytes, { limitInputPixels: 20_000_000 })
+    .rotate().toColourspace('srgb').ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  if (!info.width || !info.height || info.width > 4096 || info.height > 4096) throw Error('Reference must be at most 4096 pixels on either side.');
+  return { data, width: info.width, height: info.height, sha256: digest(data) };
+}
+
+export function validateEdit(input: unknown): GarmentEdit {
+  const e = input as GarmentEdit;
+  if (!e || e.version !== 1 || e.reviewed !== true || typeof e.protectedHeadReviewed !== 'boolean' ||
+      typeof e.referencePath !== 'string' || !e.referencePath.startsWith('/models/') || e.referencePath.length > 500 ||
+      !/^[a-f0-9]{64}$/.test(e.referenceSha256 || '') ||
+      !Number.isInteger(e.width) || !Number.isInteger(e.height) || e.width < 1 || e.height < 1 || e.width > 4096 || e.height > 4096)
+    throw Error('Review the edit area on the current reference before generating.');
+  let points = 0;
+  for (const polygons of [e.regions, e.protectedRegions]) {
+    if (!Array.isArray(polygons) || polygons.length > 32) throw Error('Use at most 32 regions per mask.');
+    for (const polygon of polygons) {
+      if (!Array.isArray(polygon) || polygon.length < 3 || polygon.length > 256) throw Error('Each region needs 3–256 points.');
+      points += polygon.length;
+      if (points > 2000 || polygon.some(p => !Array.isArray(p) || p.length !== 2 || p.some(n => typeof n !== 'number' || !Number.isFinite(n) || n < 0 || n > 1)))
+        throw Error('Invalid edit-area coordinates.');
+    }
+  }
+  if (!e.regions.length) throw Error('Mark the garment area first.');
+  return e;
+}
+
+/** White = editable; protected polygons always win, including edge pixels. */
+export async function editMask(e: GarmentEdit, ref: ReferencePixels, needsHead: boolean) {
+  validateEdit(e);
+  if (e.width !== ref.width || e.height !== ref.height || e.referenceSha256 !== ref.sha256)
+    throw Error('The reference changed. Review a new mask before generating.');
+  if (needsHead && (!e.protectedHeadReviewed || !e.protectedRegions.length))
+    throw Error('Mark and confirm the protected head region first.');
+  const render = async (polygons: Point[][]) => {
+    const shapes = polygons.map(p => `<polygon points="${p.map(([x,y]) => `${x*ref.width},${y*ref.height}`).join(' ')}" fill="white"/>`).join('');
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${ref.width}" height="${ref.height}"><rect width="100%" height="100%" fill="black"/>${shapes}</svg>`;
+    return sharp(Buffer.from(svg)).removeAlpha().greyscale().raw().toBuffer();
+  };
+  const [paint, protect] = await Promise.all([render(e.regions), render(e.protectedRegions)]);
+  // Feather inward only. No protected pixel acquires generated content.
+  const softened = await sharp(paint, { raw: { width: ref.width, height: ref.height, channels: 1 } })
+    .blur(0.7).greyscale().raw().toBuffer();
+  const alpha = Buffer.alloc(paint.length);
+  let edited = 0, headProtected = 0;
+  for (let i=0;i<alpha.length;i++) {
+    if (protect[i] > 0) headProtected++;
+    alpha[i] = protect[i] > 0 || paint[i] === 0 ? 0 : Math.min(paint[i], softened[i]);
+    if (alpha[i]) edited++;
+  }
+  if (!edited || edited === alpha.length) throw Error('The mask must contain editable and protected pixels.');
+  if (needsHead && headProtected < alpha.length * 0.005) throw Error('The protected head region is too small. Review the full head.');
+  return alpha;
+}
+
+/** Hard composition, not AI restoration. Model output can NEVER replace a zero-mask pixel. */
+export async function compositeGarment(ref: ReferencePixels, generated: Buffer, mask: Buffer) {
+  if (mask.length !== ref.width * ref.height) throw Error('Mask dimensions do not match the reference.');
+  const meta = await sharp(generated).metadata();
+  if (!meta.width || !meta.height || Math.abs(meta.width/meta.height - ref.width/ref.height) > 0.005)
+    throw Error('Generated framing differs from the reference. No protected-pixel result was produced.');
+  const candidate = await sharp(generated).rotate().resize(ref.width,ref.height,{fit:'fill'})
+    .toColourspace('srgb').ensureAlpha().raw().toBuffer();
+  const pixels = Buffer.from(ref.data);
+  let protectedPixels = 0;
+  for (let i=0;i<mask.length;i++) {
+    const a=mask[i];
+    if (!a) { protectedPixels++; continue; }
+    for (let c=0;c<4;c++) pixels[i*4+c]=Math.round((ref.data[i*4+c]*(255-a)+candidate[i*4+c]*a)/255);
+  }
+  const png = await sharp(pixels,{raw:{width:ref.width,height:ref.height,channels:4}}).png().toBuffer();
+  const decoded = await sharp(png).ensureAlpha().raw().toBuffer();
+  const originalProtected = Buffer.alloc(protectedPixels*4), resultProtected = Buffer.alloc(protectedPixels*4);
+  let j=0, changed=0;
+  for(let i=0;i<mask.length;i++) if(mask[i]===0) {
+    let different=false;
+    for(let c=0;c<4;c++) { originalProtected[j]=ref.data[i*4+c];resultProtected[j]=decoded[i*4+c];if(originalProtected[j]!==resultProtected[j])different=true;j++; }
+    if(different)changed++;
+  }
+  if(changed) throw Error('Protected-pixel verification failed. Output withheld.');
+  return { png, report: { method:'garment-only' as const, verified:true, width:ref.width, height:ref.height,
+    protectedPixels, changedProtectedPixels:changed, referenceSha256:ref.sha256,
+    protectedSourceSha256:digest(originalProtected), protectedOutputSha256:digest(resultProtected),
+    outputSha256:digest(png), maskSha256:digest(mask), generatedWidth:meta.width, generatedHeight:meta.height } };
+}
+
+/** OpenAI edit masks: transparent = editable, opaque = preserve. */
+export async function providerMask(alpha: Buffer, width: number, height: number) {
+  const rgba=Buffer.alloc(width*height*4,255);
+  for(let i=0;i<alpha.length;i++)rgba[i*4+3]=alpha[i]>0?0:255;
+  return sharp(rgba,{raw:{width,height,channels:4}}).png().toBuffer();
+}

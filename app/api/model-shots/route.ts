@@ -1,3 +1,6 @@
+import sharp from 'sharp';
+import { referencePixels, validateEdit, editMask, compositeGarment, providerMask } from '@/lib/garment-only';
+import { uploadToFal } from '@/lib/fal';
 import { buildReferenceShot, runReferenceShot, NANO_REFERENCE_MODEL } from '@/lib/nano-reference-shots';
 import { viewReference, referenceCoverage } from '@/lib/view-reference';
 import { NextResponse, after } from "next/server";
@@ -93,6 +96,20 @@ export async function GET(req: Request) {
     return json({ ok: true, task });
   }
   const models = await listAllHumanModels();
+  const requestedReference = new URL(req.url).searchParams.get("referencePath");
+  if (requestedReference) {
+    // Only installed model assets can be inspected; never fetch an arbitrary URL.
+    const pathname = requestedReference.split('?')[0];
+    const permitted = models.some(m => m.poses.some(p => Object.values(p.views).some(f => f?.publicPath === pathname)));
+    if (!permitted) return json({ ok:false,error:"Unknown model reference." },400);
+    try {
+      const url = new URL(requestedReference,req.url).href;
+      const response = await fetch(url,{cache:'no-store'});
+      if (!response.ok) throw Error('Reference could not be loaded.');
+      const ref = await referencePixels(Buffer.from(await response.arrayBuffer()));
+      return json({ok:true,referencePath:requestedReference,url,width:ref.width,height:ref.height,sha256:ref.sha256});
+    } catch (e:any) { return json({ok:false,error:e.message},400); }
+  }
   return json({
     ok: true,
     views: MULTI_MODEL_VIEWS,
@@ -183,6 +200,12 @@ export async function POST(req: Request) {
 
 /** One view, start to finish: the synchronous POST body. */
 async function renderShot(req: Request, body: any): Promise<Response> {
+  if (body.editMode && !['native','garment-only'].includes(body.editMode)) return json({ok:false,error:'Choose a valid editing mode.'},400);
+  const locked = body.editMode === 'garment-only';
+  if (locked && (body.engine === 'tryon' || body.engine === 'nano' || (body.modelId && !['gpt-image','gpt-image-25'].includes(body.modelId))))
+    return json({ok:false,error:'Garment-only mode currently supports GPT 2.5 and GPT 2. Your chosen engine was not changed.'},400);
+  if (locked && (body.humanModelId === 'auto' || String(body.humanModelId||'').startsWith('face:') || body.reference))
+    return json({ok:false,error:'Choose an explicit view reference and review its edit area.'},400);
   const garmentImageUrls: string[] = (body.garmentImageUrls || []).filter(
     (u: unknown): u is string => typeof u === "string" && u.length > 0
   );
@@ -298,6 +321,28 @@ async function renderShot(req: Request, body: any): Promise<Response> {
       : await getPoseUrl(humanModelId, poseId, view, 0);
     const input = buildReferenceShot({ view, referenceUrl, garmentImageUrls, category, framing,
       color: typeof known.color === "string" ? known.color : undefined, note });
+    let preservation: Awaited<ReturnType<typeof compositeGarment>>['report'] | undefined;
+    let prepared: { ref: Awaited<ReturnType<typeof referencePixels>>; mask: Buffer; canvasUrl:string; maskUrl:string } | undefined;
+    if (locked) {
+      if (reference.reframed) throw Error('Garment-only mode needs an exact framing reference. Choose a reference with this view already framed.');
+      const e=validateEdit(body.garmentEdit);
+      if(e.referencePath!==reference.publicPath) throw Error('This edit area belongs to another view reference. Review the matching view.');
+      const response=await fetch(referenceUrl,{cache:'no-store'});
+      if(!response.ok) throw Error('Reference could not be loaded.');
+      const ref=await referencePixels(Buffer.from(await response.arrayBuffer()));
+      const mask=await editMask(e,ref,framing!=='low');
+      const pixels=ref.width*ref.height;
+      if(ref.width%16||ref.height%16||Math.max(ref.width,ref.height)>3840||pixels<655360||pixels>8294400)
+        throw Error('This reference size is not supported for a native-size garment edit. Choose another reference.');
+      const canvas=await sharp(ref.data,{raw:{width:ref.width,height:ref.height,channels:4}}).png().toBuffer();
+      const [canvasUrl,maskUrl]=await Promise.all([
+        uploadToFal(new Blob([Uint8Array.from(canvas)],{type:'image/png'}),'protected-reference.png'),
+        providerMask(mask,ref.width,ref.height).then(b=>uploadToFal(new Blob([Uint8Array.from(b)],{type:'image/png'}),'garment-edit-mask.png'))
+      ]);
+      prepared={ref,mask,canvasUrl,maskUrl};
+      input.prompt=`Edit image 1 in place, only inside the transparent garment mask. Replace its ${category === 'pants' || category === 'skirt' ? 'bottoms' : category === 'dress' || category === 'set' ? 'outfit' : 'top or outer layer'} with the garment shown in image 2. Image 2 supplies ONLY garment design, fabric and color; ignore its wearer, hands, pose, background and other clothes. ${garmentImageUrls.length > 1 ? 'Image 3 supplies the actual back garment design.' : 'No back photograph is supplied; do not invent rear graphics.'}
+Keep image 1 at exactly the same dimensions and coordinates: same body silhouette, limb positions, hand positions, fingers, head, hair, other clothing, shoes and background. Do not put hands into pockets or add any new hands. Draw the garment around the existing person. Keep seams where they meet the original body aligned. This is a local clothing replacement, not a new photograph or pose. No sharpening or restoration. ${known.color ? 'Garment color: '+known.color+'.' : ''} ${note || ''}`;
+    }
     let url: string;
     let outputResolution = nanoReference ? "1K" : "4K";
     if (body.engine === "tryon") {
@@ -314,23 +359,33 @@ async function renderShot(req: Request, body: any): Promise<Response> {
       const res = await generateModel(new Request(new URL("/api/generate-model", req.url), {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ modelId, humanModelId, poseId, view,
-          canvasImageUrl: referenceUrl, garmentImageUrls,
+          canvasImageUrl: prepared?.canvasUrl || referenceUrl, garmentImageUrls,
           preserveSecondaryReferences: true, rawPrompt: true, prompt: input.prompt,
-          imageSize: GPT_NATIVE_SIZE, aspectRatio: "2:3", resolution: "4K", format: "png", numImages: 1 }),
+          imageSize: prepared ? {width:prepared.ref.width,height:prepared.ref.height} : GPT_NATIVE_SIZE, maskUrl: prepared?.maskUrl, aspectRatio: "2:3", resolution: "4K", format: "png", numImages: 1 }),
       }));
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || "Image generation failed");
       url = result.images?.[0]?.url;
     }
     if (!url) throw new Error("Image model returned no image");
-    // Native provider bytes only, irrespective of stale callers' restore flags.
+    if(prepared) {
+      const response=await fetch(url);
+      if(!response.ok)throw Error('Generated garment could not be loaded.');
+      const composed=await compositeGarment(prepared.ref,Buffer.from(await response.arrayBuffer()),prepared.mask);
+      url=await uploadToFal(new Blob([Uint8Array.from(composed.png)],{type:'image/png'}),'garment-only.png');
+      // Verify the hosted delivery too. Never expose the unverified generated frame.
+      const hosted=await fetch(url,{cache:'no-store'});
+      if(!hosted.ok || !Buffer.from(await hosted.arrayBuffer()).equals(composed.png))throw Error('Hosted protected image verification failed.');
+      preservation=composed.report;outputResolution=`${prepared.ref.width}×${prepared.ref.height}`;
+    }
+    // Existing mode keeps its native-output behavior. Protected mode returns lossless composition.
     return json({ ok: true, view, url, prompt: input.prompt,
       modelId: body.engine === "tryon" ? undefined : modelId,
       engine: body.engine === "tryon" ? "tryon" : nanoReference ? "nano" : modelId === "gpt-image-25" ? "gpt25" : "gpt2",
-      resolution: outputResolution, humanModelId, poseId, assigned, category, hem, framing,
+      resolution: outputResolution, editMode: locked ? "garment-only" : "native", preservation, humanModelId, poseId, assigned, category, hem, framing,
       reference: { ...reference, url: referenceUrl },
       garmentBackInferred: view === "back" && garmentImageUrls.length < 2,
-      anchored: false, restore: { applied: false }, photoFinish: { method: "native", applied: false }, corrections: [] });
+      anchored: false, restore: { applied: false }, photoFinish: { method: locked ? "garment-only" : "native", applied: locked }, corrections: [] });
   } catch (err: any) {
     return json({ ok: false, view, error: String(err?.message || err) }, 502);
   }
