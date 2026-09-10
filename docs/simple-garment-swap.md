@@ -11,3 +11,6 @@ Face-bearing built-in references have 31 reviewed presets in `lib/simple-face-pr
 Real production tests: brown mannequin top on Celine 2 front and side, independent simultaneous requests. Both delivered 1024 × 1536 PNGs with 393,216 protected pixels and zero changes. Visual review passed. Results recorded in management `output/simple-garment-swap/`.
 
 Rollback: tag `restore/model-studio-before-simple-swap-20260910` points to ff5c8ad in Studio and c04c8c0 in management. Earlier `restore/model-studio-before-garment-only-20260910` also remains intact. Roll back through a new reviewed deployment; don't reset shared working trees.
+
+## Color consistency adjustment — 2.109.1
+The garment photo is now explicitly the sole color reference: hue, saturation and midtone brightness, with natural fold shadows/highlights. The generic ERP color-name instruction is omitted so it cannot compete with the photograph. Two inputs, one generation and the exact same face-composition code remain. A fresh Celine1 brown-top four-view trial passed protected-pixel verification on front/side/full; back has no visible face. Visual comparison still shows shade variation, so this is a prompt-level consistency improvement, not an exact color-lock guarantee. No segmentation, color grading or added AI stage was introduced.

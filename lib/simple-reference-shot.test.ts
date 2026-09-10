@@ -19,6 +19,16 @@ describe('simple garment swap',()=>{
   const shot=simpleReferenceShot({...base,view:'back',category:'pants',garmentImageUrls:[base.garmentImageUrls[0]],note:'Keep ankle length.',color:'Blue'});
   expect(shot.garmentBackInferred).toBe(true);expect(shot.prompt).toContain('only the bottoms');expect(shot.prompt).toContain('Keep ankle length.');
  });
+ it('uses photographic color rather than a generic ERP color name in every view',()=>{
+  for(const view of ['front','side','back','full'] as const){
+   const shot=simpleReferenceShot({...base,view,color:'BROWN'});
+   expect(shot.prompt).toContain('sole garment-color reference');
+   expect(shot.prompt).toContain('hue, saturation and midtone brightness');
+   expect(shot.prompt).toContain('natural fold shadows and highlights');
+   expect(shot.prompt).not.toContain('BROWN');
+   expect(shot.image_urls).toHaveLength(2);
+  }
+ });
  it('requires two input roles',()=>expect(()=>simpleReferenceShot({...base,view:'front',garmentImageUrls:[]})).toThrow());
  it('requires reviewed unchanged source pixels for face protection',async()=>{
   const ref=await referencePixels(fs.readFileSync('public/models/crop 100/front.png'));
