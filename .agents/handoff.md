@@ -1,7 +1,7 @@
 # Handoff — Model Studio photographic finish
 Updated 2026-09-09 by Codex. Main; implementation9318261.
 
-## Current work
+## Current work — visual result REJECTED
 - Added house-photo-brief for default GPT2.5 house97–100 Model Studio shots.
   Uses product photos for construction and model/front for photographic finish.
   Removes repeated 4K/editorial/detail prose; native2048×3072 unchanged.
@@ -11,14 +11,16 @@ Updated 2026-09-09 by Codex. Main; implementation9318261.
 - 756 Vitest tests and production build pass. Four real DET62209 Pink views
   completed through route; two controlled prompt/size experiments also complete.
 - Evidence: Faire output/imagegen/softness-fix. New front/side/back/full retained.
-  Size-only did not help; concise prompt softened cloth with print retained.
+  User rejected pipeline-front/render.jpg as worst yet; earlier visual pass withdrawn.
 - Production deployed and verified: live DET60277 Celine2 front finished with
-  reference-photo-v1; softer skin/cloth, native2048×3072, no manual retouch.
+  reference-photo-v1; native2048×3072. Technical success only, quality unresolved.
 - Live poncho task33869582-791f-4b43-9203-36025bca6426 DONE.
   Do not resubmit. Results: Faire output/imagegen/softness-fix/live-poncho.
-- New prompts deploy to existing extension2.75.4; refresh and render a NEW front.
-- Stochastic images still require visual review; no promise of identical pixels.
-  User optional softness feedback question pending; no answer assumed as approval.
+- Prompt change remains deployed; no new generation or deployment in this review.
+- Raw output already textured before backdrop restore; crop98 reference also textured.
+- Next: establish approved clean original reference, isolate reference vs regeneration
+  artifacts, test garment-only preservation before rollout. Do not call prompt-only
+  preservation a pixel-preserving edit or technical tests visual acceptance.
 
 ## Existing work to preserve
 - Approved Vision97/99 and retouched Celine2/100 reference files remain installed.
