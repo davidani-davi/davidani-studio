@@ -1,19 +1,20 @@
-# Handoff — DONUTS pants reference installed
-Updated 2026-09-10T16:37:57.454171+00:00 by Codex. Branch main; previous commit 8dadf61.
-- User corrected intent: install DONUTS as a pants reference, not a full-body test image.
-- Added Celine · DONUTS pants (studio103), lowOk:true, barrel silhouette.
-- Picker front and low103/front.jpg are untouched original ERP DP52083_1(7).jpg,
-  waist to shoes. Existing Celine DONUTS full.png linked only as full view.
-- Pants front/side map to low103; no side photograph exists in this new set:
-  side uses front plate with side-view instructions, never a falsely named side image.
-- No new generation/crop/restoration/upscale/sharpen or ERP/Faire image writes.
-- Static manifest and registry ordering updated, original default preserved.
--770Vitest tests and production build pass. Install hashes in
-  docs/donuts-pants-reference-install.json. Deploy: davidani-studio.vercel.app.
-- Next: reopen Faire Model Studio and select Celine · DONUTS pants for DP/PP.
-- Prior approved GPT2.5 Pink Peach refs remain: Vision3 studio101, Celine3 studio102.
-  Their originals/front/side/back/full and source hashes remain unchanged.
-- Generation default GPT2.5; NanoPro native1K. No repeated render/restore chains.
-- Original Pink Peach full.png retained; rejected2K red-backdrop version stays unused.
-- Preserve pre-existing dirty tsconfig.tsbuildinfo; never stage it.
-- Cross-project operational state belongs in Faire management handoff.
+# Handoff — complete reference routing
+Updated 2026-09-10T17:30:28.518824+00:00 by Codex. Branch main; previous commit 8853322.
+- Reference-set Model Shots now resolve exact view before one independent edit.
+- GPT2.5 default; explicit GPT2/Nano selections respected; conflicting fields rejected.
+- Removed analyzer, generated-front continuity canvas, face crops, masks and restoration
+  from this path. Native provider URL returned, irrespective of stale restore flags.
+- DONUTS103 now has native side/back PNGs, each independently generated from original
+  ERP front. Originals retained. docs/donuts-view-reference-provenance.json has hashes.
+  Back construction is synthesized pose information, not verified garment photography.
+- All7sets expose per-view/per-framing coverage. Missing low/crop view uses SAME VIEW
+  in parent with explicit framing; missing view fails before generation. No front fallback.
+- Pants: front/side/back waist-to-shoes; full head-to-shoes with reference top preserved.
+- DONUTS only for bottoms. Try-on refuses references needing reframing.
+-813tests and production build pass. Live DP62206 GPT2.5 set visually inspected:
+  correct4frames, no collage, ivorytee kept, native2048x3072; back clearly inferred.
+- Management2.95.0 shows matching reference previews and migrates old3view sets.
+- Next: user reviews native test set at Faire Daily tokened reference-routing-fix page.
+  If precise back print/construction is needed, supply actual matching ERP back photo.
+- No ERP/Faire image upload or listing change from tests. No output postediting.
+- Preserve pre-existing dirty tsconfig.tsbuildinfo; not staged.

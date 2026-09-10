@@ -6,16 +6,16 @@ const base = { referenceUrl: 'https://ref/front.png', garmentImageUrls: ['https:
 describe('approved Nano Pro reference workflow', () => {
   it('front edits the existing model using original ERP, at native 1K PNG', () => {
     const input=buildReferenceShot({...base,view:'front'});
-    expect(input.image_urls).toEqual([base.referenceUrl,base.garmentImageUrls[0]]);
+    expect(input.image_urls).toEqual([base.referenceUrl,...base.garmentImageUrls]);
     expect(input).toMatchObject({resolution:'1K',aspect_ratio:'2:3',output_format:'png',num_images:1});
   });
-  it.each(['side','back','full'] as const)('anchors %s directly to front and original identity', view => {
+  it.each(['side','back','full'] as const)('uses %s reference independently', view => {
     const input=buildReferenceShot({...base,view,anchorImageUrl:'https://output/front.png'});
-    expect(input.image_urls).toEqual(['https://output/front.png',base.referenceUrl,base.garmentImageUrls[view==='back'?1:0]]);
+    expect(input.image_urls).toEqual([base.referenceUrl,...base.garmentImageUrls]);
     expect(input.resolution).toBe('1K');
   });
-  it('requires a front before generating other views',()=>{
-    expect(()=>buildReferenceShot({...base,view:'side'})).toThrow('Generate the front first');
+  it('allows side without a generated front',()=>{
+    expect(()=>buildReferenceShot({...base,view:'side'})).not.toThrow();
   });
   it('does not claim a back reference exists when absent',()=>{
     const input=buildReferenceShot({...base,view:'back',garmentImageUrls:['https://erp/front.jpg'],anchorImageUrl:'https://output/front.png'});

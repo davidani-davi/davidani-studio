@@ -86,6 +86,7 @@ export function shotPlan(category: ShotCategory, hem: Hem = ""): ShotStep[] {
     return [
       { view: "front", framing: "low" },
       { view: "side", framing: "low" },
+      { view: "back", framing: "low" },
       { view: "full", framing: "full" },
     ];
   }

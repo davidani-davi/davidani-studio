@@ -51,7 +51,7 @@ it("DONUTS pants use the original waist-down reference; only full shot uses Celi
   const low = plateForFraming(model.id, model.poses[0].id, "low", models);
   expect(low.humanModelId).toBe("low 103");
   expect(getPosePublicPath(low.humanModelId, low.poseId, "front")).toBe("/models/low 103/front.jpg");
-  expect(getPosePublicPath(low.humanModelId, low.poseId, "side")).toBe("/models/low 103/front.jpg");
+  expect(getPosePublicPath(low.humanModelId, low.poseId, "side")).toBe("/models/low 103/side.png");
   const full = plateForFraming(model.id, model.poses[0].id, "full", models);
   expect(getPosePublicPath(full.humanModelId, full.poseId, "full")).toBe("/models/studio 103/full.png");
 });

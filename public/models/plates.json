@@ -182,6 +182,8 @@
       "auto": true,
       "views": [
         "front",
+        "side",
+        "back",
         "full"
       ],
       "wears": "pants",
@@ -191,7 +193,7 @@
       "outfit_above": "tucked ivory tee (full shot)",
       "outfit_below": "DONUTS barrel pants and burgundy sneakers",
       "front_is": "Original ERP DP52083_1(7).jpg, waist to shoes; unchanged source bytes.",
-      "others_are": "Full shot: existing Celine DONUTS reference. Side uses front reference with side framing instructions; no photographed side installed."
+      "others_are": "Side and back: independent native pose generations from original ERP front. Unseen construction inferred, not verified product photography. Full: existing Celine DONUTS reference. No restoration, resizing, sharpening or generated-output chaining."
     }
   ],
   "families": {

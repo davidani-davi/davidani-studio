@@ -1,34 +1,44 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-vi.mock('@/lib/nano-reference-shots',async importOriginal=>{
-  const original=await importOriginal<typeof import('@/lib/nano-reference-shots')>();
-  return {...original,runReferenceShot:vi.fn().mockResolvedValue({url:'https://output/native.png'})};
-});
-vi.mock('../analyze-model/route',()=>({POST:vi.fn(()=>{throw Error('Unexpected analyzer');})}));
-vi.mock('../generate-model/route',()=>({POST:vi.fn(()=>{throw Error('Unexpected legacy renderer');})}));
-vi.mock('@/lib/face-anchor',()=>({faceAnchorFor:vi.fn(()=>{throw Error('Unexpected face crop');}),HEAD_SHARE:{crop:0.3,full:0.2}}));
+vi.mock('@/lib/nano-reference-shots',async importOriginal=>({...await importOriginal<typeof import('@/lib/nano-reference-shots')>(),runReferenceShot:vi.fn().mockResolvedValue({url:'https://output/native.png'})}));
+vi.mock('../generate-model/route',()=>({POST:vi.fn().mockImplementation(async()=>Response.json({images:[{url:'https://output/native.png'}]}))}));
 import { POST } from './route';
+import { POST as generate } from '../generate-model/route';
 import { runReferenceShot } from '@/lib/nano-reference-shots';
-const base={garmentImageUrls:['https://erp/front.jpg','https://erp/back.jpg'],humanModelId:'studio 98',poseId:'front',known:{styleCode:'DET67046',category:'top',color:'PINK PEACH'}};
+const base={garmentImageUrls:['https://erp/front.jpg','https://erp/back.jpg'],humanModelId:'studio 103',poseId:'studio 103',known:{styleCode:'DP62206',category:'pants',color:'LIGHT DENIM'}};
 afterEach(()=>{vi.unstubAllEnvs();vi.clearAllMocks();});
 function request(body:object){vi.stubEnv('MODEL_SHOTS_TOKEN','test');vi.stubEnv('VERCEL','1');return new Request('https://studio.test/api/model-shots',{method:'POST',headers:{'Content-Type':'application/json','X-DDTO-TOKEN':'test'},body:JSON.stringify({...base,...body})});}
-describe('Model Studio Nano Pro default routing',()=>{
-  it('uses native reference path without requiring an explicit modelId',async()=>{
-    const response=await POST(request({view:'front'}));const data=await response.json();
-    expect(response.status).toBe(200);expect(data).toMatchObject({url:'https://output/native.png',modelId:'nano-banana-pro',resolution:'1K',engine:'nano'});
-    expect(vi.mocked(runReferenceShot).mock.calls[0][0].image_urls[0]).toContain('/front.png');
+describe('independent native reference shots',()=>{
+  it('defaults to GPT2.5 and ignores stale restore=true',async()=>{
+    const response=await POST(request({view:'front',restore:true}));
+    expect(response.status).toBe(200);expect(await response.json()).toMatchObject({url:'https://output/native.png',modelId:'gpt-image-25',engine:'gpt25',restore:{applied:false}});
+    expect(runReferenceShot).not.toHaveBeenCalled();
   });
-  it('uses the original front reference and generated front for back',async()=>{
-    const response=await POST(request({view:'back',modelId:'nano-banana-pro',anchorImageUrl:'https://output/front.png'}));
-    expect(response.status).toBe(200);
-    const input=vi.mocked(runReferenceShot).mock.calls[0][0];
-    expect(input.image_urls[0]).toBe('https://output/front.png');expect(input.image_urls[1]).toContain('/front.png');expect(input.image_urls[2]).toBe('https://erp/back.jpg');
+  for(const modelId of ['gpt-image-25','gpt-image','nano-banana-pro']) {
+    it.each(['front','side','back','full'])(`${modelId} %s uses matching original view and never generated anchor`,async view=>{
+      const response=await POST(request({view,modelId,anchorImageUrl:'https://output/old-front.png',restore:true}));
+      expect(response.status).toBe(200);const data=await response.json();
+      expect(data).toMatchObject({url:'https://output/native.png',modelId,anchored:false,restore:{applied:false},reference:{view}});
+      expect(data.reference.url).toMatch(new RegExp('/'+view+'\\.'));
+      expect(data.prompt).toContain('keep the existing top');
+      if(modelId==='nano-banana-pro') {
+        const input=vi.mocked(runReferenceShot).mock.calls[0][0];
+        expect(input.image_urls).toEqual([data.reference.url,...base.garmentImageUrls]);expect(input.resolution).toBe('1K');
+      }else {
+        const payload=await vi.mocked(generate).mock.calls[0][0].json();
+        expect(payload.canvasImageUrl).toBe(data.reference.url);expect(payload.garmentImageUrls).toEqual(base.garmentImageUrls);
+        expect(payload.rawPrompt).toBe(true);expect(payload.preserveSecondaryReferences).toBe(true);
+      }
+    });
+  }
+  it.each([['gpt2','gpt-image'],['nano','nano-banana-pro']])('respects engine-only %s selections',async(engine,modelId)=>{
+    const data=await (await POST(request({view:'front',engine}))).json();expect(data.modelId).toBe(modelId);
   });
-  it('keeps full-body at approved 1K even if a previous client requests 2K',async()=>{
-    const response=await POST(request({view:'full',resolution:'2K',anchorImageUrl:'https://output/front.png'}));
-    expect(response.status).toBe(200);expect((await response.json()).resolution).toBe('1K');
-    expect(vi.mocked(runReferenceShot).mock.calls[0][0].resolution).toBe('1K');
+  it('rejects contradictory selections instead of choosing a different engine',async()=>{
+    const response=await POST(request({view:'front',engine:'gpt25',modelId:'nano-banana-pro'}));
+    expect(response.status).toBe(400);expect(generate).not.toHaveBeenCalled();expect(runReferenceShot).not.toHaveBeenCalled();
   });
-  it('refuses an unanchored continuation before spending on a render',async()=>{
-    expect((await POST(request({view:'side'}))).status).toBe(400);expect(runReferenceShot).not.toHaveBeenCalled();
+  it('flags inferred back details separately from a pose reference',async()=>{
+    const data=await (await POST(request({view:'back',garmentImageUrls:[base.garmentImageUrls[0]]}))).json();
+    expect(data.garmentBackInferred).toBe(true);expect(data.reference.view).toBe('back');
   });
 });

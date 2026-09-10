@@ -15,27 +15,28 @@ export interface ReferenceShot {
   note?: string;
 }
 
-/** Approved DET67046 method: one edit for front; each later view is its sibling. */
+/** Every output is one independent edit of its matching pose reference. */
 export function buildReferenceShot(o: ReferenceShot) {
   if (!o.referenceUrl || !o.garmentImageUrls[0]) throw new Error('Model reference and original garment photo are required');
-  if (o.view !== 'front' && !o.anchorImageUrl) throw new Error('Generate the front first, then use it for the remaining views');
-  const later = o.view !== 'front';
-  const back = o.view === 'back' && o.garmentImageUrls[1];
-  const garment = back || o.garmentImageUrls[0];
-  const scope = o.category === 'pants' || o.category === 'skirt' ? 'bottoms'
-    : o.category === 'dress' || o.category === 'set' ? 'outfit' : 'top or outer layer';
-  const framing = o.framing === 'full' ? 'Show the entire head and both shoes with small margins, natural body proportions and a soft contact shadow. Preserve existing footwear; if none is visible, use plain white low-top canvas sneakers.'
-    : o.framing === 'low' ? 'Frame from waist to both shoes, showing the entire garment.'
-    : 'Frame the entire head to mid-thigh, with the complete garment hem visible. Never shorten the garment to fit.';
-  const continuity = 'Preserve the exact facial structure, head shape, hairstyle, skin, expression, body proportions, jewelry and all clothing outside the garment being replaced. Match the soft photographic focus, gentle skin finish, warm backdrop and lighting of image 1. Do not sharpen, enhance pores or add fabric grain. One natural catalog photograph.';
-  const prompt = later
-    ? `Image 1 is the finished front of this shoot. Preserve this exact person and outfit. Image 2 is the original model identity reference only; never copy its replaced garment. Image 3 shows the actual garment construction only; never copy that model or their styling. ${continuity} ${o.view === 'side' ? 'Turn the person and head 90 degrees to the camera, facing left in true side profile. Keep hair loose and arms relaxed.' : o.view === 'back' ? 'Photograph directly from behind, shoulders and hips square to camera, no face showing. Sweep hair forward over one shoulder to show the back of the garment. Arms relaxed.' : 'Widen the frame. Keep the front-facing head, expression and relaxed pose from image 1.'} ${framing} ${o.view === 'back' ? back ? 'Reproduce the back construction from image 3, keeping the color from image 1.' : 'No back photo is supplied. Use a simple continuation of the material; do not invent back graphics, logos, seams or closures.' : 'Preserve the garment color, length, fit, print and construction from image 1; image 3 supplies construction details.'}`
-    : `Replace only the ${scope} in image 1 with the exact garment in image 2. Match its actual color, cut, neckline, sleeves, hem, print, distressing and construction. Keep the garment untucked when appropriate. Do not copy image 2 model identity, hair, pose or other clothing. ${continuity} ${framing}`;
-  return {
-    image_urls: later ? [o.anchorImageUrl!, o.referenceUrl, garment] : [o.referenceUrl, garment],
-    prompt: `${prompt}${o.color ? ` Requested color: ${o.color}; the original garment photograph is the color authority.` : ''}${o.note ? ` Operator correction: ${o.note}` : ''}`,
-    resolution: '1K' as const, aspect_ratio: '2:3' as const, output_format: 'png' as const, num_images: 1,
-  };
+  const bottoms = o.category === 'pants' || o.category === 'skirt';
+  const scope = bottoms ? 'bottoms' : o.category === 'dress' || o.category === 'set' ? 'outfit' : 'top or outer layer';
+  const framing = o.framing === 'low'
+    ? 'Frame from waist to both shoes. No head, shoulders or chest in the frame. Show the entire waistband, both hems and both shoes.'
+    : o.framing === 'full'
+    ? 'Show one complete person from the top of the head to both shoes, with small margins. Keep natural body proportions.'
+    : 'Frame the entire head to mid-thigh with the complete garment hem visible. Never shorten the garment to fit.';
+  const pose = o.view === 'side' ? 'True side profile, hips and shoulders turned 90 degrees, matching image 1.'
+    : o.view === 'back' ? 'Straight rear view, shoulders and hips facing away, no face visible, matching image 1.'
+    : 'Front-facing view, matching the pose in image 1.';
+  const back = o.garmentImageUrls.length > 1;
+  const prompt = `Image 1 is the ${o.view} pose and styling reference. Replace only the ${scope} in image 1 with the garment from image 2 (original front photograph). ${back ? 'Image 3 is the actual back garment photograph; use it for rear construction and back print placement.' : 'No back photo is supplied. Unseen details are inferred: use a plain continuation of the material without invented rear graphics or decorative details.'}
+The original garment photos determine color, fit, length, fabric, print placement, seams and construction. Never transfer the reference outfit print onto the replacement garment. Do not copy the garment-photo wearer or their other clothing.
+${bottoms ? 'PANTS-ONLY SWAP: keep the existing top, sleeves, torso, arms and footwear from image 1. In the full shot the reference top remains worn normally above the waistband. Never remove the top or extend pants over the torso.' : 'Preserve all clothing outside the replaced garment and preserve footwear.'}
+${pose} ${framing}
+Preserve the reference identity, face, head shape, hairstyle, expression and natural proportions wherever visible. Match image 1 lighting, background color and soft photographic detail. One continuous photograph, one person; no collage, split screen, duplicate person, inset or detached body parts. Do not sharpen, enhance pores or add fabric grain.
+${o.color ? `Requested color: ${o.color}; original garment photography is the color authority.` : ''}${o.note ? ` Operator correction for the replacement garment: ${o.note}` : ''}`;
+  return { image_urls: [o.referenceUrl, ...o.garmentImageUrls.slice(0,2)], prompt,
+    resolution: '1K' as const, aspect_ratio: '2:3' as const, output_format: 'png' as const, num_images: 1 };
 }
 
 export async function runReferenceShot(input: ReturnType<typeof buildReferenceShot>) {

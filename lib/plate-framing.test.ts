@@ -30,8 +30,8 @@ describe("shotCategory", () => {
 
 describe("shotPlan", () => {
   it("bottoms: front and side from the waist down plus one full shot, no back", () => {
-    expect(shotViews("pants")).toEqual(["front", "side", "full"]);
-    expect(shotViews("skirt")).toEqual(["front", "side", "full"]);
+    expect(shotViews("pants")).toEqual(["front", "side", "back", "full"]);
+    expect(shotViews("skirt")).toEqual(["front", "side", "back", "full"]);
     expect(framingFor("pants", "front")).toBe("low");
     expect(framingFor("skirt", "side")).toBe("low");
     expect(framingFor("pants", "full")).toBe("full");

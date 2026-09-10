@@ -1,0 +1,14 @@
+{
+  "side": {
+    "sha256": "937ce3b6e98a91ce939f8959f92f5506471b8e30c5de912c20178eca1e1398ed",
+    "source": "Original ERP DP52083_1(7).jpg; independent single edit",
+    "provenance": "Synthesized pose reference; unseen garment construction inferred, not verified ERP photography",
+    "native": true
+  },
+  "back": {
+    "sha256": "6ecd6d938ac20a5f7df02b25cd9fefda769d1e49a25417d769462cfb59e566a0",
+    "source": "Original ERP DP52083_1(7).jpg; independent single edit",
+    "provenance": "Synthesized pose reference; unseen garment construction inferred, not verified ERP photography",
+    "native": true
+  }
+}

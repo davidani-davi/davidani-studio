@@ -266,6 +266,10 @@ export const STATIC_HUMAN_MODELS = [
         "filename": "front.jpg",
         "subdir": "",
         "views": {
+          "back": {
+            "filename": "back.png",
+            "publicPath": "/models/studio 103/back.png"
+          },
           "front": {
             "filename": "front.jpg",
             "publicPath": "/models/studio 103/front.jpg"
@@ -273,6 +277,10 @@ export const STATIC_HUMAN_MODELS = [
           "full": {
             "filename": "full.png",
             "publicPath": "/models/studio 103/full.png"
+          },
+          "side": {
+            "filename": "side.png",
+            "publicPath": "/models/studio 103/side.png"
           }
         }
       }
@@ -557,9 +565,17 @@ export const STATIC_HUMAN_MODELS = [
         "filename": "front.jpg",
         "subdir": "",
         "views": {
+          "back": {
+            "filename": "back.png",
+            "publicPath": "/models/low 103/back.png"
+          },
           "front": {
             "filename": "front.jpg",
             "publicPath": "/models/low 103/front.jpg"
+          },
+          "side": {
+            "filename": "side.png",
+            "publicPath": "/models/low 103/side.png"
           }
         }
       }

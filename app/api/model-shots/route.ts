@@ -1,45 +1,20 @@
 import { buildReferenceShot, runReferenceShot, NANO_REFERENCE_MODEL } from '@/lib/nano-reference-shots';
-import { housePhotoBrief, usesHousePhotoBrief, HOUSE_PHOTO_FINISH } from '@/lib/house-photo-brief';
-import { houseModelContinuity } from "@/lib/house-model-continuity";
+import { viewReference, referenceCoverage } from '@/lib/view-reference';
 import { NextResponse, after } from "next/server";
 import { readShotTask, writeShotTask, createShotTask, isSafeTaskId } from "@/lib/shot-tasks";
 import { createHash } from "node:crypto";
-import { POST as analyzeModel } from "../analyze-model/route";
 import { POST as generateModel } from "../generate-model/route";
-import { listAllHumanModels, plateTagStats, type PresetView } from "@/lib/models-registry";
+import { listAllHumanModels, plateTagStats, getPoseUrl, type PresetView } from "@/lib/models-registry";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth";
-import {
-  MULTI_MODEL_VIEWS,
-  buildMultiModelConsistencySuffix,
-  applyAnchor,
-  applyOperatorNote,
-  applyPlainBack,
-  assembleViewPrompt,
-  applyProportions,
-  applyStyling,
-  buildMultiModelViewSuffix,
-  stylingFor,
-  sanitizeOperatorNote,
-  mergeMultiModelGarmentIdentity,
-  multiModelPoseVariantIndex,
-} from "@/lib/multi-model-prompt";
-import { optimizePromptForModel } from "@/lib/prompt-strategy";
-import { buildGarmentContract, hasKnownFacts, type KnownGarment } from "@/lib/garment-contract";
+import { MULTI_MODEL_VIEWS, sanitizeOperatorNote } from "@/lib/multi-model-prompt";
+import type { KnownGarment } from "@/lib/garment-contract";
 import { assignPlate } from "@/lib/plate-assign";
 import { silhouetteOf } from "@/lib/plate-wear";
-import { framingFor, hemFor, isDerivedPlate, plateForFraming, shotCategory, shotViews, swapScopeForCategory } from "@/lib/plate-framing";
-import { buildTryOnInput, garmentForView, runTryOn, tryOnSeed, type GarmentPhotoType } from "@/lib/tryon-engine";
-import { GPT_NATIVE_SIZE, garmentMaskFromDiff, gptVariantOf, leanBrief, maskCoverage } from "@/lib/gpt-variants";
-import { uploadToFal } from "@/lib/fal";
-import { restoreRenderOnPlate } from "@/lib/plate-restore-run";
-import { applyModelPhotoFinish } from "@/lib/model-photo-finish";
-import type { PlateRestoreReport } from "@/lib/plate-restore";
-import { faceAnchorFor, HEAD_SHARE, type FaceAnchorReport } from "@/lib/face-anchor";
+import { framingFor, hemFor, isDerivedPlate, shotCategory } from "@/lib/plate-framing";
+import { buildTryOnInput, garmentForView, runTryOn, tryOnSeed } from "@/lib/tryon-engine";
+import { GPT_NATIVE_SIZE } from "@/lib/gpt-variants";
 import { houseFaceOf, noPlateQualityOf, noPlateVariantOf, shootNoPlate, shootReference } from "@/lib/no-plate";
-import sharp from "sharp";
-import { getPosePublicPath, getPoseUrl, isKnownHumanModel } from "@/lib/models-registry";
-import { findUserModelViewUrl } from "@/lib/user-assets";
-import { isGptModel, type ModelId } from "@/lib/models";
+import { isGptModel } from "@/lib/models";
 
 export const runtime = "nodejs";
 export const maxDuration = 800;
@@ -57,12 +32,9 @@ export const maxDuration = 800;
  * fire all four at once and show each as it lands, and so a single failed view
  * is a retry rather than a lost run.
  *
- * SAME PROMPTS, NOT A COPY
- * ------------------------
- * The analyze and generate steps are the studio's own route handlers, called
- * as functions (no HTTP hop, so no session cookie and no proxy), and the
- * four-view directives come from lib/multi-model-prompt.ts, which the studio
- * client imports too. Nothing about how a shot is asked for lives here.
+ * Each view is one independent native edit from its exact view reference and
+ * original garment photographs. No generated-front anchor, analyzer rewrite,
+ * restoration, sharpening, or resizing runs on the reference-set path.
  *
  * AUTH
  * ----
@@ -110,22 +82,6 @@ async function authorized(req: Request): Promise<boolean> {
   return match ? verifySessionToken(decodeURIComponent(match[1]), secret) : false;
 }
 
-/**
- * The plate as a URL the try-on model can fetch — the same resolution rule as
- * /api/generate-model: a user-added model's stored URL, the public path on
- * Vercel, a fal-storage upload in local dev.
- */
-async function resolvePlateUrl(
-  req: Request, modelId: string, poseId: string, view: PresetView, variantIndex: number
-): Promise<string> {
-  if (!isKnownHumanModel(modelId)) {
-    const userUrl = await findUserModelViewUrl(modelId, view);
-    if (userUrl) return userUrl.startsWith("http") ? userUrl : new URL(userUrl, req.url).toString();
-  }
-  if (process.env.VERCEL) return new URL(getPosePublicPath(modelId, poseId, view, variantIndex), req.url).toString();
-  return getPoseUrl(modelId, poseId, view, variantIndex);
-}
-
 /** GET — the model catalog the extension's picker shows. */
 export async function GET(req: Request) {
   if (!(await authorized(req))) return json({ ok: false, error: "unauthorized" }, 401);
@@ -151,6 +107,7 @@ export async function GET(req: Request) {
       return {
         id: m.id,
         name: m.name,
+        categories: m.id === "studio 103" ? ["pants", "skirt"] : undefined,
         userAdded: Boolean(m.userAdded),
         wears: m.wears,
         lowOk: m.lowOk === true,
@@ -167,6 +124,7 @@ export async function GET(req: Request) {
           id: p.id,
           label: p.label,
           preview: p.publicPath,
+          references: referenceCoverage(models, m.id, p.id),
           previews: { full: p.publicPath, crop: sibling("crop"), low: sibling("low") },
         })),
       };
@@ -231,10 +189,13 @@ async function renderShot(req: Request, body: any): Promise<Response> {
   let humanModelId: string = body.humanModelId || "";
   let poseId: string = body.poseId || "";
   const view: PresetView = MULTI_MODEL_VIEWS.includes(body.view) ? body.view : "front";
-  const nanoReference = !body.modelId || body.modelId === NANO_REFERENCE_MODEL;
-  // Legacy editors remain explicit alternatives; Nano Pro returns before that pipeline.
-  const modelId: ModelId = body.modelId || "gpt-image-25";
-  const resolution: string = body.resolution || (nanoReference ? "1K" : "4K");
+  const engines: Record<string, string> = { gpt25: "gpt-image-25", gpt2: "gpt-image", nano: NANO_REFERENCE_MODEL };
+  if (body.engine && body.engine !== "tryon" && !engines[body.engine])
+    return json({ ok: false, error: "Choose a supported image engine." }, 400);
+  if (body.modelId && engines[body.engine] && body.modelId !== engines[body.engine])
+    return json({ ok: false, error: "Engine and model selections conflict. Choose the image model again." }, 400);
+  const modelId: string = body.modelId || engines[body.engine] || "gpt-image-25";
+  const nanoReference = modelId === NANO_REFERENCE_MODEL;
   // What the caller already knows about this style — style code, garment type,
   // the listing title we approved, ERP fabric and colourway. Optional: without
   // it the run behaves exactly as before, on vision alone.
@@ -274,7 +235,7 @@ async function renderShot(req: Request, body: any): Promise<Response> {
   const hem = hemFor({ ...known, hem: body.hem ?? known.hem });
   known.hem = known.hem || hem;
   const framing = framingFor(category, view, hem);
-  const views = shotViews(category);
+
 
   /**
    * The no-plate path (lib/no-plate.ts, 2026-09-08): GPT Image 2.5 renders
@@ -284,7 +245,7 @@ async function renderShot(req: Request, body: any): Promise<Response> {
    * for it with `engine: "gpt25"` and names the face (`face` or the picker's
    * humanModelId "face:vision"); the variant is flare unless asked otherwise.
    */
-  if (body.engine === "gpt25") {
+  if (body.engine === "gpt25" && humanModelId.startsWith("face:")) {
     const face = houseFaceOf(body.face) ?? houseFaceOf(humanModelId) ?? "vision";
     try {
       return json(await shootNoPlate({
@@ -296,17 +257,6 @@ async function renderShot(req: Request, body: any): Promise<Response> {
       return json({ ok: false, view, engine: "gpt25", face, error: String(err?.message || err) }, 502);
     }
   }
-  // The head crop for the side and full views (FACE_RULE, lib/face-anchor.ts):
-  // cut from the front while the analyzer runs. The back shows no face, and
-  // a waist-down front (bottoms) has none to cut. A failure ships the view
-  // without it, the reason attached.
-  const frontFraming = framingFor(category, "front", hem);
-  const faceAnchorPromise: Promise<{ url: string | null; report: FaceAnchorReport }> | null =
-    !nanoReference && anchorImageUrl && (view === "side" || view === "full") && frontFraming !== "low" && body.faceAnchor !== false
-      ? faceAnchorFor(anchorImageUrl, HEAD_SHARE[frontFraming])
-          .then((r) => { console.log(`[face-anchor] ${view} ${r.report.applied ? `cut ${r.report.method} ${JSON.stringify(r.report.box)}` : `skipped: ${r.report.skipReason}`} (${r.ms}ms)`); return r; })
-          .catch((err: any) => { const reason = String(err?.message || err); console.warn(`[face-anchor] ${view} failed: ${reason}`); return { url: null, report: { applied: false, failed: true, skipReason: reason } }; })
-      : null;
   const catalogue = await listAllHumanModels();
 
   /**
@@ -320,7 +270,7 @@ async function renderShot(req: Request, body: any): Promise<Response> {
     if (!styleCode) {
       return json({ ok: false, error: "auto model needs a styleCode to assign from" }, 400);
     }
-    const choice = assignPlate(styleCode, catalogue, {
+    const choice = assignPlate(styleCode, catalogue.filter(m => m.id !== "studio 103" || category === "pants" || category === "skirt"), {
       preferPrefix: body.platePrefix, category,
       silhouette: silhouetteOf((known as { title?: unknown }).title ?? body.title),
     });
@@ -331,275 +281,56 @@ async function renderShot(req: Request, body: any): Promise<Response> {
   }
   if (!humanModelId || !poseId) return json({ ok: false, error: "humanModelId and poseId are required" }, 400);
 
-  // The house plate is full-length; a top's front is shot on its "crop NN"
-  // sibling and a pant's on "low NN" -- the same photograph, re-framed. When
-  // the family is not installed the full-length plate stands in.
-  const plate = plateForFraming(humanModelId, poseId, framing, catalogue);
-  humanModelId = plate.humanModelId;
-  poseId = plate.poseId;
+  if (humanModelId === "studio 103" && category !== "pants" && category !== "skirt")
+    return json({ ok: false, error: "DONUTS is a bottoms reference. Choose a top reference for this garment." }, 400);
+  if (body.engine !== "tryon" && !nanoReference && !isGptModel(modelId))
+    return json({ ok: false, error: `Unsupported image model: ${modelId}` }, 400);
 
-  /**
-   * The try-on engine (lib/tryon-engine.ts): the plate and the garment photo go
-   * straight into a purpose-built try-on model — no vision reads, no prompt.
-   * The person is kept and only the garment is generated, which is the whole
-   * difference between a photograph and a render. Off by default; the
-   * extension asks for it with `engine: "tryon"`.
-   */
-  const engine: "nano" | "tryon" = body.engine === "tryon" ? "tryon" : "nano";
-  if (engine === "tryon") {
-    try {
-      const variantIndex = multiModelPoseVariantIndex(view);
-      const plateUrl = await resolvePlateUrl(req, humanModelId, poseId, view, variantIndex);
-      const garmentUrl = garmentForView(view, garmentImageUrls);
-      const styleCode = String(known.styleCode || body.styleCode || "").trim();
-      const photoType: GarmentPhotoType =
-        body.garmentPhotoType === "flat-lay" || body.garmentPhotoType === "model" ? body.garmentPhotoType : "auto";
-      const input = buildTryOnInput({
-        plateUrl, garmentUrl, category, garmentPhotoType: photoType,
-        seed: tryOnSeed(styleCode, view, note),
-        samples: Number(body.samples) || 1,
-        segmentationFree: body.segmentationFree === true,
-      });
-      const out = await runTryOn(input);
-      return json({
-        ok: true, view, url: out.urls[0], urls: out.urls, engine,
-        garment: garmentUrl, prompt: "",
-        humanModelId, poseId, assigned, category, hem, framing, note: note || undefined,
-        corrections: [],
-        tryon: { endpoint: out.endpoint, category: input.category, seed: input.seed, ms: out.ms },
-      });
-    } catch (err: any) {
-      return json({ ok: false, view, engine, error: String(err?.message || err) }, 502);
-    }
-  }
-
-  if (nanoReference) {
-    if (view !== "front" && !anchorImageUrl) {
-      return json({ ok: false, view, error: "Generate the front first, then use it for the remaining views" }, 400);
-    }
-    try {
-      // Always the current FRONT identity reference, never a retired side/back plate.
-      const frontPlate = plateForFraming(humanModelId, poseId, frontFraming, catalogue);
-      const referenceUrl = await resolvePlateUrl(req, frontPlate.humanModelId, frontPlate.poseId, "front", 0);
-      const input = buildReferenceShot({ view, referenceUrl, garmentImageUrls, anchorImageUrl,
-        category, framing, color: typeof known.color === "string" ? known.color : undefined, note });
-      const out = await runReferenceShot(input);
-      return json({ ok: true, view, url: out.url, prompt: input.prompt,
-        modelId: NANO_REFERENCE_MODEL, engine: "nano", resolution: input.resolution,
-        anchored: Boolean(anchorImageUrl), humanModelId, poseId, assigned, category, hem, framing,
-        corrections: [], photoFinish: { method: "native-nano-pro", applied: false } });
-    } catch (err: any) {
-      return json({ ok: false, view, error: String(err?.message || err) }, 502);
-    }
-  }
-
-  const origin = new URL(req.url).origin;
-  const call = async (
-    handler: (r: Request) => Promise<Response>,
-    path: string,
-    payload: unknown
-  ) => {
-    const res = await handler(
-      new Request(`${origin}${path}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      })
-    );
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data?.error || `${path} failed (${res.status})`);
-    return data as any;
-  };
-
+  // Exact view selection happens before any paid request. Never fall back to front.
+  let reference;
+  try { reference = viewReference(catalogue, humanModelId, poseId, view, framing); }
+  catch (err: any) { return json({ ok: false, view, error: err.message }, 400); }
+  humanModelId = reference.humanModelId;
+  poseId = reference.poseId;
   try {
-    // The back reference is the second garment photo when there is one — the
-    // same contract Multi Model Studio uses: two photos are the front and back
-    // of ONE garment, not two garments.
-    const hasBackReference = garmentImageUrls.length > 1;
-
-    // A long layer's hem is in every frame, so the whole look changes — the
-    // coat and the house bottoms under it — not just the upper body: the
-    // upper-body scope would order the plate's own trousers kept "as-is".
-    const styling = stylingFor(category, hem);
-    const analyzeBody = {
-      modelId: humanModelId,
-      poseId,
-      view,
-      garmentImageUrl: garmentImageUrls[0],
-      garmentImageUrls,
-      twoPiece: false,
-      promptMode: "classic" as const,
-      // the scope comes from the category we know, never from a word in the
-      // vision read; a long layer restyles the whole look (stylingFor)
-      ...(styling
-        ? { swapScopeOverride: "full-look" as const }
-        : swapScopeForCategory(category)
-        ? { swapScopeOverride: swapScopeForCategory(category) }
-        : {}),
-    };
-    let analyzeData = await call(analyzeModel, "/api/analyze-model", analyzeBody);
-
-    /**
-     * Correct the vision read with what we already know, then rebuild the
-     * prompt around the corrected garment.
-     *
-     * The garment is 13 words of a 1,348-word prompt and everything the render
-     * knows about the product rides on them — on DWJ62218 vision read an open
-     * placket as a "keyhole cutout" and the cardigan came back a pullover. The
-     * style code, the listing title and the ERP already held the answer.
-     *
-     * The second analyze call is cheap: garmentOverride skips the garment
-     * vision pass entirely and the pose read is cached, so this is prompt
-     * assembly, not a second look at the photographs.
-     */
-    let contract: ReturnType<typeof buildGarmentContract> | null = null;
-    if (hasKnownFacts(known)) {
-      contract = buildGarmentContract(known, {
-        garment: String(analyzeData.garment || ""),
-        features: String(analyzeData.features || ""),
-      });
-      analyzeData = await call(analyzeModel, "/api/analyze-model", {
-        ...analyzeBody,
-        garmentOverride: { garment: contract.garment, features: contract.features },
-      });
-    }
-
-    // The rules go into the base prompt itself, ahead of the analyzer's
-    // negative prompt; assembleViewPrompt keeps the suffixes there too, since
-    // the GPT optimizer drops everything after that marker.
-    const face = faceAnchorPromise ? await faceAnchorPromise : null;
-    const faceUrl = face?.url || "";
-    const basePrompt = applyAnchor(
-      applyOperatorNote(
-        applyPlainBack(applyProportions(applyStyling(String(analyzeData.prompt || "").trim(), styling)), view, hasBackReference),
-        note,
-        view
-      ),
-      Boolean(anchorImageUrl),
-      Boolean(faceUrl)
-    );
-    if (!basePrompt) throw new Error(`analyzer returned an empty ${view} prompt`);
-
-    const identity = mergeMultiModelGarmentIdentity(analyzeData);
-    // Optimized once, here; generate-model gets it as given (rawPrompt), where
-    // before it stacked the same GPT prefix a second time.
-    const v1Prompt = optimizePromptForModel(
-      modelId,
-      assembleViewPrompt(
-        basePrompt,
-        buildMultiModelConsistencySuffix(identity.garment, identity.features, views),
-        buildMultiModelViewSuffix(view, hasBackReference, { framing, views, styling })
-      )
-    );
-
-    // GPT Image 2 variants (lib/gpt-variants.ts). Each isolates one change
-    // against the v1 run: the output size, the prompt, or a repaint mask.
-    const gptVariant = isGptModel(modelId) ? gptVariantOf(body.gptVariant ?? "native4k") : "auto";
-    let prompt = v1Prompt;
-    let rawPrompt = true;
-    let imageSize: { width: number; height: number } | undefined;
-    let maskUrl: string | undefined;
-    const continuity = houseModelContinuity(humanModelId, view, anchorImageUrl, req.url);
-    let canvasImageUrl: string | undefined = continuity?.canvasImageUrl;
-    let maskInfo: { coverage: number; tryonMs: number } | undefined;
-    if (gptVariant === "native4k" || gptVariant === "lean") imageSize = { ...GPT_NATIVE_SIZE };
-    if (gptVariant === "lean") {
-      prompt = leanBrief({
-        garment: identity.garment, features: identity.features, category, view,
-        hasBackPhoto: hasBackReference, note,
-      });
-      rawPrompt = true;
-    }
-    if (gptVariant === "masked" && !continuity) {
-      // the try-on's footprint on this plate is the region a garment occupies
-      const variantIndex = multiModelPoseVariantIndex(view);
-      const plateUrl = await resolvePlateUrl(req, humanModelId, poseId, view, variantIndex);
-      const tryon = await runTryOn(buildTryOnInput({
-        plateUrl, garmentUrl: garmentForView(view, garmentImageUrls), category,
-        seed: tryOnSeed(String(known.styleCode || body.styleCode || ""), view, note),
+    const referenceUrl = process.env.VERCEL || catalogue.find(m => m.id === humanModelId)?.userAdded
+      ? new URL(reference.publicPath, req.url).toString()
+      : await getPoseUrl(humanModelId, poseId, view, 0);
+    const input = buildReferenceShot({ view, referenceUrl, garmentImageUrls, category, framing,
+      color: typeof known.color === "string" ? known.color : undefined, note });
+    let url: string;
+    let outputResolution = nanoReference ? "1K" : "4K";
+    if (body.engine === "tryon") {
+      // This engine has no prompt/framing control; do not silently substitute it
+      // for a selected GPT engine or claim an unavailable pants-only crop.
+      if (reference.reframed) return json({ ok: false, error: "Try-on needs a reference with this framing. Choose GPT 2.5 for this view." }, 400);
+      const out = await runTryOn(buildTryOnInput({ plateUrl: referenceUrl,
+        garmentUrl: garmentForView(view, garmentImageUrls), category,
+        seed: tryOnSeed(String(known.styleCode || ""), view, note), samples: 1 }));
+      url = out.urls[0]; outputResolution = "native";
+    } else if (nanoReference) {
+      url = (await runReferenceShot(input)).url;
+    } else {
+      const res = await generateModel(new Request(new URL("/api/generate-model", req.url), {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ modelId, humanModelId, poseId, view,
+          canvasImageUrl: referenceUrl, garmentImageUrls,
+          preserveSecondaryReferences: true, rawPrompt: true, prompt: input.prompt,
+          imageSize: GPT_NATIVE_SIZE, aspectRatio: "2:3", resolution: "4K", format: "png", numImages: 1 }),
       }));
-      const [plateBuf, tryonBuf] = await Promise.all(
-        [plateUrl, tryon.urls[0]].map(async (u) => Buffer.from(await (await fetch(u)).arrayBuffer()))
-      );
-      const size = { ...GPT_NATIVE_SIZE };
-      const [plateUp, mask] = await Promise.all([
-        sharp(plateBuf).resize(size.width, size.height, { fit: "fill", kernel: "lanczos3" }).jpeg({ quality: 95 }).toBuffer(),
-        garmentMaskFromDiff(plateBuf, tryonBuf, { size }),
-      ]);
-      const [plateUpUrl, maskUp] = await Promise.all([
-        uploadToFal(new Blob([Uint8Array.from(plateUp)], { type: "image/jpeg" }), "plate-4k.jpg"),
-        uploadToFal(new Blob([Uint8Array.from(mask)], { type: "image/png" }), "garment-mask.png"),
-      ]);
-      canvasImageUrl = plateUpUrl;
-      maskUrl = maskUp;
-      maskInfo = { coverage: await maskCoverage(mask), tryonMs: tryon.ms };
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Image generation failed");
+      url = result.images?.[0]?.url;
     }
-
-    if (continuity) prompt += "\n\n" + continuity.rule;
-    const referencePhotoFinish = usesHousePhotoBrief(modelId, humanModelId, gptVariant);
-    prompt = referencePhotoFinish ? housePhotoBrief({
-      known, garment: identity.garment, category, view, framing,
-      hasBackPhoto: hasBackReference, hasAnchor: Boolean(anchorImageUrl),
-      hasFace: Boolean(faceUrl), styling, note,
-    }) : applyModelPhotoFinish(prompt, humanModelId);
-
-    const generated = await call(generateModel, "/api/generate-model", {
-      modelId,
-      humanModelId,
-      poseId,
-      view,
-      // the anchor rides after the garment photos ("the LAST input image"),
-      // and the head crop after the anchor when there is one (FACE_RULE)
-      garmentImageUrls: anchorImageUrl ? [...garmentImageUrls, anchorImageUrl, ...(faceUrl ? [faceUrl] : [])] : garmentImageUrls,
-      aspectRatio: "2:3",
-      resolution,
-      format: "png",
-      numImages: 1,
-      poseVariantIndex: multiModelPoseVariantIndex(view),
-      preserveSecondaryReferences: hasBackReference || Boolean(anchorImageUrl),
-      prompt,
-      ...(rawPrompt ? { rawPrompt: true } : {}),
-      ...(imageSize ? { imageSize } : {}),
-      ...(maskUrl ? { maskUrl } : {}),
-      ...(canvasImageUrl ? { canvasImageUrl } : {}),
-    });
-
-    const rawUrl = generated?.images?.[0]?.url;
-    if (typeof rawUrl !== "string") throw new Error(`${view} view did not return an image`);
-
-    // Back onto the plate's own backdrop, figure re-centred (lib/plate-restore.ts).
-    // Every view goes through it — the front too, so all four share one sweep.
-    // A failure ships the raw render with the reason attached, never an error.
-    let url = rawUrl;
-    let restore: PlateRestoreReport | undefined;
-    if (body.restore !== false) {
-      try {
-        const plateUrl = await resolvePlateUrl(req, humanModelId, poseId, view, multiModelPoseVariantIndex(view));
-        const r = await restoreRenderOnPlate(rawUrl, plateUrl);
-        restore = r.report;
-        if (r.url) url = r.url;
-        console.log(`[plate-restore] ${view} ${r.report.applied ? `applied shift ${r.report.shiftX}px` : `skipped: ${r.report.skipReason}`} (${r.ms}ms)`);
-      } catch (err: any) {
-        restore = { applied: false, coverage: 0, shiftX: 0, failed: true, skipReason: String(err?.message || err) };
-        console.warn(`[plate-restore] ${view} failed: ${restore.skipReason}`);
-      }
-    }
-
-    return json({
-      ok: true, view, url, prompt,
-      ...(referencePhotoFinish ? { photoFinish: HOUSE_PHOTO_FINISH } : {}),
-      ...(url !== rawUrl ? { rawUrl } : {}),
-      ...(restore ? { restore } : {}),
-      ...(gptVariant !== "auto" ? { gptVariant, ...(maskInfo ? { mask: maskInfo } : {}) } : {}),
-      garment: identity.garment, anchored: Boolean(anchorImageUrl), faceAnchored: Boolean(faceUrl),
-      ...(face ? { face: face.report } : {}),
-      humanModelId, poseId, assigned, category, hem, framing, note: note || undefined,
-      // What the known facts changed, so a wrong contract is visible in the
-      // panel and countable in the eval rather than silent.
-      // The photo brief uses product fields directly, not the analyzer's
-      // rewritten fit/features. Do not report those unused rewrites as sent.
-      corrections: referencePhotoFinish ? [] : contract?.corrections ?? [],
-    });
+    if (!url) throw new Error("Image model returned no image");
+    // Native provider bytes only, irrespective of stale callers' restore flags.
+    return json({ ok: true, view, url, prompt: input.prompt,
+      modelId: body.engine === "tryon" ? undefined : modelId,
+      engine: body.engine === "tryon" ? "tryon" : nanoReference ? "nano" : modelId === "gpt-image-25" ? "gpt25" : "gpt2",
+      resolution: outputResolution, humanModelId, poseId, assigned, category, hem, framing,
+      reference: { ...reference, url: referenceUrl },
+      garmentBackInferred: view === "back" && garmentImageUrls.length < 2,
+      anchored: false, restore: { applied: false }, photoFinish: { method: "native", applied: false }, corrections: [] });
   } catch (err: any) {
     return json({ ok: false, view, error: String(err?.message || err) }, 502);
   }
