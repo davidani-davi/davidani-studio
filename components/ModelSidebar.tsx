@@ -263,7 +263,10 @@ export default function ModelSidebar(p: Props) {
     if (!confirm(`Delete model "${name}"? This removes it for the whole team.`)) return;
     deleteInFlight.current = true;
     try {
-      const res = await fetch(`/api/user-models?id=${id}`, { method: "DELETE" });
+      const managed = p.humanModels.find(m => m.id === id)?.managed;
+      const res = managed
+        ? await fetch('/api/admin/models', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'deleteModel',modelId:id})})
+        : await fetch(`/api/user-models?id=${id}`, { method: "DELETE" });
       const data = await res.json();
       if (!data?.ok) throw new Error(data?.error || "Delete failed");
       // Optimistic local removal — instant, and immune to the blob index's
@@ -472,6 +475,7 @@ export default function ModelSidebar(p: Props) {
       </section>
 
       {/* ========== MODEL + POSE PICKER ========== */}
+      <a href="/admin/models" target="_blank" rel="noreferrer" className="block px-5 py-3 text-sm underline">Manage models &amp; references ↗</a>
       <section className="model-sidebar-card border-b border-neutral-100 p-5">
         <SectionHeader
           icon={IconModel}

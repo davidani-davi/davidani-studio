@@ -1,15 +1,15 @@
-# Handoff — color instruction tightened
-Updated 2026-09-10 15:06 PDT by Codex. Branch codex/garment-only-pixel-lock; parent db0e2ba.
-- Simple swap now makes garment photo sole color reference (hue/saturation/midtones);
-  removed generic ERP color-name instruction. Same two inputs and one generation.
-- Face presets, composition, verification and routing untouched.
-- 875 tests and build passed. Studio jnyip60se deployed and aliased.
-- Real Celine1 brown-top four-view comparison completed. New prompt verified in results;
-  front/side/full protected pixels unchanged. Back has no face. Some shade variation
-  remains: do not claim exact garment color lock or measured improvement.
-- Evidence in management output/color-consistency; original/new image URLs in results.
-- Management2.109.1 / Daily2.35.1 / SW86 deployed gb8f53ppx; inferred-back note now
-  BELOW image/actions. Browser alignment/save/upload checks and45 client tests passed.
-- Preserve unrelated tsconfig.tsbuildinfo. All prior restore tags remain.
-- User prefers simplicity: no new color stage, masks, third image or face restoration.
-- Next:user assesses new generations; only add complexity with explicit agreement.
+# Handoff — reference library admin
+Updated 2026-09-10 by Codex. Branch codex/garment-only-pixel-lock; base bc5ce55.
+- Added /admin/models: model/pose CRUD, four independent upload/replace/remove slots,
+  built-in crop/low/full variants, Trash/restore, photo-specific face protection.
+- Shared immutable Blob events now feed picker and generation routes; source images
+  remain original. Upload ownership, decoding, dimensions, session and origin checked.
+- Model picker refreshes on focus; linked from Studio + management release.
+- Added docs/model-reference-admin.md and local scripts/test-model-admin.cjs.
+- Verified real local browser create/4 uploads/replace/remove/reload/trash/restore,
+  catalog propagation and phone scrolling/overflow; 894 tests + production build.
+- Next: deploy Studio, verify cloud direct upload/admin URL, then release management
+  2.110.0 / Daily2.36.0 / SW87, verify hosted ZIP, update this handoff.
+- Keep pre-existing tsconfig.tsbuildinfo out of commits. Local QA data is ignored.
+- Reference image-generation requests are separate: no generated masters installed.
+- Existing restore tags preserved; admin deletion is reversible, never erases outputs.

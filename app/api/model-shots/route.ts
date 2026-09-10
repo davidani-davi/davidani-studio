@@ -119,14 +119,12 @@ export async function GET(req: Request) {
     // hand — but their fronts ride along as previews, so a picker can show the
     // framing a category will actually shoot on (waist-down for a bottom)
     models: models.filter((m) => m.userAdded || !isDerivedPlate(m.id)).map((m) => {
-      const num = /^studio\s*(\d+)$/i.exec(m.id)?.[1];
-      const sibling = (family: string) =>
-        (num ? models.find((x) => x.id.toLowerCase() === `${family} ${num}`) : undefined)?.poses[0]?.publicPath;
       return {
         id: m.id,
         name: m.name,
         categories: m.id === "studio 103" ? ["pants", "skirt"] : undefined,
         userAdded: Boolean(m.userAdded),
+        managed: Boolean(m.managed),
         wears: m.wears,
         lowOk: m.lowOk === true,
         silhouette: m.silhouette,
@@ -138,13 +136,15 @@ export async function GET(req: Request) {
         ...(m.poseKey ? { poseKey: m.poseKey } : {}),
         ...(m.pose ? { pose: m.pose } : {}),
         autoPool: m.autoPool !== false,
-        poses: m.poses.map((p) => ({
+        poses: m.poses.map((p) => {
+          const references = referenceCoverage(models, m.id, p.id);
+          return ({
           id: p.id,
           label: p.label,
           preview: p.publicPath,
-          references: referenceCoverage(models, m.id, p.id),
-          previews: { full: p.publicPath, crop: sibling("crop"), low: sibling("low") },
-        })),
+          references,
+          previews: { full: references.full.front?.publicPath || p.publicPath, crop: references.crop.front?.publicPath, low: references.low.front?.publicPath },
+        }); }),
       };
     }),
   });
@@ -320,7 +320,7 @@ async function renderShot(req: Request, body: any): Promise<Response> {
   humanModelId = reference.humanModelId;
   poseId = reference.poseId;
   try {
-    const referenceUrl = process.env.VERCEL || catalogue.find(m => m.id === humanModelId)?.userAdded
+    const referenceUrl = process.env.VERCEL || /^https?:|^\/user-assets\//.test(reference.publicPath) || catalogue.find(m => m.id === humanModelId)?.userAdded
       ? new URL(reference.publicPath, req.url).toString()
       : await getPoseUrl(humanModelId, poseId, view, 0);
     const input = buildReferenceShot({ view, referenceUrl, garmentImageUrls, category, framing,
@@ -328,12 +328,12 @@ async function renderShot(req: Request, body: any): Promise<Response> {
     const simpleInput = simple ? simpleReferenceShot({ view, referenceUrl, garmentImageUrls, category, framing, color: typeof known.color === 'string' ? known.color : undefined, note }) : undefined;
     if (simpleInput) { input.prompt = simpleInput.prompt; input.image_urls = simpleInput.image_urls; }
     let simplePrepared: { ref: Awaited<ReturnType<typeof referencePixels>>; mask: Buffer } | undefined;
-    if (simple && framing !== 'low' && view !== 'back') {
+    if (simple && ((framing !== 'low' && view !== 'back') || reference.protection)) {
       if (reference.reframed) throw Error('Simple garment swap needs an exact view reference. Choose a complete reference set.');
       const response = await fetch(referenceUrl, {cache:'no-store'});
       if (!response.ok) throw Error('Reference could not be loaded.');
       const ref = await referencePixels(Buffer.from(await response.arrayBuffer()));
-      const mask = simpleFaceMask(ref, reference.publicPath, view, framing);
+      const mask = simpleFaceMask(ref, reference.publicPath, view, framing, reference.protection);
       if (mask) simplePrepared = {ref,mask};
     }
     let preservation: Awaited<ReturnType<typeof compositeGarment>>['report'] | undefined;

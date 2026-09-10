@@ -10,6 +10,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
  */
 
 const ORIGINAL = { ...process.env };
+// This suite asserts the bundled catalog, independent of local admin edits.
+vi.mock('@/lib/model-admin', async () => ({...await vi.importActual<any>('@/lib/model-admin'),readCatalogChanges:async()=>[]}));
 
 async function load() {
   vi.resetModules();

@@ -25,6 +25,7 @@ import { mergePlateWear, type PlateRow } from "./plate-wear";
 // came back autoPool:true after plates.json had auto:false for a deploy or two).
 import platesDoc from "../public/models/plates.json";
 import { listUserModels } from "./user-assets";
+import { applyCatalogChanges, readCatalogChanges, type ReferencePhoto } from "./model-admin";
 
 export interface ModelPose {
   /** Stable preset ID, derived from the filename stem (e.g. "bianca1"). */
@@ -42,7 +43,9 @@ export interface ModelPose {
    * Backward-compatible — every existing reader of pose.views[view] still
    * resolves to a single object.
    */
-  views: Partial<Record<PresetView, { filename: string; publicPath: string }>>;
+  views: Partial<Record<PresetView, ReferencePhoto>>;
+  deleted?: boolean;
+  framing?: "crop" | "low" | "full";
   /**
    * Optional alternate pose photos for the same view, sorted by their
    * numeric suffix ("front2" → index 0, "front3" → index 1, etc.). The
@@ -63,6 +66,7 @@ export interface HumanModel {
   poses: ModelPose[];
   /** True for user-uploaded models stored in Blob (deletable in the UI). */
   userAdded?: boolean;
+  managed?: boolean;
   /** What the model wears below the waist (plates.json `wears`) and whether a
    *  bottom can be painted onto the plate (`low_ok`) — lib/plate-wear.ts. */
   wears?: string;
@@ -547,7 +551,7 @@ export async function getPoseUrl(
  * Filesystem/static models followed by user-uploaded (Blob) models converted
  * to the HumanModel shape. Async because user models live in Blob storage.
  */
-export async function listAllHumanModels(): Promise<HumanModel[]> {
+export async function listBaseHumanModels(): Promise<HumanModel[]> {
   const userModels = await listUserModels().catch((err) => {
     console.warn("[models-registry] user models unavailable:", err);
     return [];
@@ -575,4 +579,19 @@ export async function listAllHumanModels(): Promise<HumanModel[]> {
     };
   });
   return [...listHumanModels(), ...converted];
+}
+
+/** Shared source of truth for the picker, admin and generation routes. */
+export async function listAllHumanModels(): Promise<HumanModel[]> {
+  const [base, changes] = await Promise.all([listBaseHumanModels(), readCatalogChanges()]);
+  return applyCatalogChanges(base, changes);
+}
+export async function managedPosePath(modelId: string, poseId: string, view: PresetView, variantIndex = 0): Promise<string> {
+  const model = (await listAllHumanModels()).find(m => m.id === modelId);
+  if (!model) throw Error(`Unknown model: ${modelId}`);
+  const pose = model.poses.find(p => p.id === poseId);
+  if (!pose) throw Error(`Unknown pose: ${modelId}/${poseId}`);
+  const file = variantIndex > 0 ? pose.viewVariants?.[view]?.[variantIndex-1] || pose.views[view] : pose.views[view];
+  if (!file) throw Error(`Missing ${view} reference for ${model.name}. Add this view in Manage references.`);
+  return file.publicPath + (/^(studio|crop) 100$/.test(modelId) && file.filename === 'front.png' ? '?v=f89baab006a294cb5' : '');
 }

@@ -386,6 +386,12 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
     return null;
   }
 
+  useEffect(() => {
+    const refreshCatalog = () => { fetchModelsOnce().then(models => { if(models) setHumanModels(models); }); };
+    window.addEventListener("focus", refreshCatalog);
+    return () => window.removeEventListener("focus", refreshCatalog);
+  }, []);
+
   // After a successful add, poll until the new model id shows up (or we run
   // out of attempts), then select it. Never leaves the UI looking like the
   // save was ignored. Returns the last-seen models array so the caller can

@@ -3,6 +3,7 @@ import { listAllHumanModels } from "@/lib/models-registry";
 import { isDerivedPlate } from "@/lib/plate-framing";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 /**
  * GET /api/models
@@ -15,7 +16,7 @@ export const runtime = "nodejs";
 export async function GET() {
   try {
     const models = await listAllHumanModels();
-    return NextResponse.json({ ok: true, models: models.filter(m => !isDerivedPlate(m.id)) });
+    return NextResponse.json({ ok: true, models: models.filter(m => !isDerivedPlate(m.id)) }, {headers:{'Cache-Control':'no-store'}});
   } catch (err: any) {
     console.error("[api/models] error:", err);
     return NextResponse.json(

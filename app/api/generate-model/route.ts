@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { generate, type OverlayOptions } from "@/lib/fal";
 import { MODELS, type ModelId } from "@/lib/models";
-import { getPosePublicPath, getPoseUrl, isKnownHumanModel, type PresetView } from "@/lib/models-registry";
-import { findUserModelViewUrl } from "@/lib/user-assets";
+import { managedPosePath, type PresetView } from "@/lib/models-registry";
 
 export const runtime = "nodejs";
 export const maxDuration = 800;
@@ -18,22 +17,7 @@ async function resolvePoseUrl(
   view: PresetView,
   poseVariantIndex: number
 ): Promise<string> {
-  // Built-in models resolve from the filesystem registry with no network
-  // hop. Only ids the registry doesn't know can be user-added models — those
-  // store absolute Blob URLs (dev: /user-assets/ paths), resolved directly.
-  // Checking the registry first keeps the Vercel Blob round-trip off the hot
-  // path for every built-in generation.
-  if (!isKnownHumanModel(modelId)) {
-    const userUrl = await findUserModelViewUrl(modelId, view);
-    if (userUrl) {
-      return userUrl.startsWith("http") ? userUrl : new URL(userUrl, req.url).toString();
-    }
-  }
-  if (process.env.VERCEL) {
-    const publicPath = getPosePublicPath(modelId, poseId, view, poseVariantIndex);
-    return new URL(publicPath, req.url).toString();
-  }
-  return getPoseUrl(modelId, poseId, view, poseVariantIndex);
+  return new URL(await managedPosePath(modelId, poseId, view, poseVariantIndex), req.url).toString();
 }
 
 const MODEL_POSE_GARMENT_FIREWALL =

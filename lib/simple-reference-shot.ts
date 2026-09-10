@@ -13,9 +13,9 @@ export function simpleReferenceShot(o: ReferenceShot) {
 }
 
 /** Reviewed original pixels only; no face detector or second AI pass. */
-export function simpleFaceMask(ref: ReferencePixels, publicPath: string, view: string, framing: string): Buffer | undefined {
-  if (framing === 'low' || view === 'back') return undefined;
-  const preset = presets[publicPath.split('?')[0] as keyof typeof presets];
+export function simpleFaceMask(ref: ReferencePixels, publicPath: string, view: string, framing: string, reviewed?: import('./model-admin').FaceProtection): Buffer | undefined {
+  if (!reviewed && (framing === 'low' || view === 'back')) return undefined;
+  const preset = reviewed || presets[publicPath.split('?')[0] as keyof typeof presets];
   if (!preset) throw Error('This reference has no reviewed face protection yet. Choose an installed reference or Previous workflow.');
   if (ref.width !== preset.width || ref.height !== preset.height || ref.sha256 !== preset.sha256)
     throw Error('The model reference changed. Its face protection must be reviewed before generating.');
