@@ -1,3 +1,4 @@
+import { buildReferenceShot, runReferenceShot, NANO_REFERENCE_MODEL } from '@/lib/nano-reference-shots';
 import { housePhotoBrief, usesHousePhotoBrief, HOUSE_PHOTO_FINISH } from '@/lib/house-photo-brief';
 import { houseModelContinuity } from "@/lib/house-model-continuity";
 import { NextResponse, after } from "next/server";
@@ -230,15 +231,10 @@ async function renderShot(req: Request, body: any): Promise<Response> {
   let humanModelId: string = body.humanModelId || "";
   let poseId: string = body.poseId || "";
   const view: PresetView = MULTI_MODEL_VIEWS.includes(body.view) ? body.view : "front";
-  // Default engine since 2026-09-08: GPT Image 2.5 (sunburst edit) on the
-  // plate, native 2048x3072. David picked it over GPT Image 2 on the DJ62106 /
-  // studio 03 comparison (same body and face, patches more legible, 47 s vs
-  // 113 s). GPT Image 2 won the 2026-09-05 six-style bake-off before that.
-  // Pass modelId: "gpt-image" for GPT 2, "nano-banana" for the pre-change
-  // editor, gptVariant: "auto" for the 1200x1792 benchmark, engine: "tryon"
-  // for FASHN.
+  const nanoReference = !body.modelId || body.modelId === NANO_REFERENCE_MODEL;
+  // Legacy editors remain explicit alternatives; Nano Pro returns before that pipeline.
   const modelId: ModelId = body.modelId || "gpt-image-25";
-  const resolution: string = body.resolution || "4K";
+  const resolution: string = body.resolution || (nanoReference ? "1K" : "4K");
   // What the caller already knows about this style — style code, garment type,
   // the listing title we approved, ERP fabric and colourway. Optional: without
   // it the run behaves exactly as before, on vision alone.
@@ -306,7 +302,7 @@ async function renderShot(req: Request, body: any): Promise<Response> {
   // without it, the reason attached.
   const frontFraming = framingFor(category, "front", hem);
   const faceAnchorPromise: Promise<{ url: string | null; report: FaceAnchorReport }> | null =
-    anchorImageUrl && (view === "side" || view === "full") && frontFraming !== "low" && body.faceAnchor !== false
+    !nanoReference && anchorImageUrl && (view === "side" || view === "full") && frontFraming !== "low" && body.faceAnchor !== false
       ? faceAnchorFor(anchorImageUrl, HEAD_SHARE[frontFraming])
           .then((r) => { console.log(`[face-anchor] ${view} ${r.report.applied ? `cut ${r.report.method} ${JSON.stringify(r.report.box)}` : `skipped: ${r.report.skipReason}`} (${r.ms}ms)`); return r; })
           .catch((err: any) => { const reason = String(err?.message || err); console.warn(`[face-anchor] ${view} failed: ${reason}`); return { url: null, report: { applied: false, failed: true, skipReason: reason } }; })
@@ -374,6 +370,26 @@ async function renderShot(req: Request, body: any): Promise<Response> {
       });
     } catch (err: any) {
       return json({ ok: false, view, engine, error: String(err?.message || err) }, 502);
+    }
+  }
+
+  if (nanoReference) {
+    if (view !== "front" && !anchorImageUrl) {
+      return json({ ok: false, view, error: "Generate the front first, then use it for the remaining views" }, 400);
+    }
+    try {
+      // Always the current FRONT identity reference, never a retired side/back plate.
+      const frontPlate = plateForFraming(humanModelId, poseId, frontFraming, catalogue);
+      const referenceUrl = await resolvePlateUrl(req, frontPlate.humanModelId, frontPlate.poseId, "front", 0);
+      const input = buildReferenceShot({ view, referenceUrl, garmentImageUrls, anchorImageUrl,
+        category, framing, color: typeof known.color === "string" ? known.color : undefined, note });
+      const out = await runReferenceShot(input);
+      return json({ ok: true, view, url: out.url, prompt: input.prompt,
+        modelId: NANO_REFERENCE_MODEL, engine: "nano", resolution: "1K",
+        anchored: Boolean(anchorImageUrl), humanModelId, poseId, assigned, category, hem, framing,
+        corrections: [], photoFinish: { method: "native-nano-pro", applied: false } });
+    } catch (err: any) {
+      return json({ ok: false, view, error: String(err?.message || err) }, 502);
     }
   }
 
