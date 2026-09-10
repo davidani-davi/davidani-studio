@@ -67,7 +67,7 @@ export async function POST(req: Request) {
     if (!view || !/^https?:\/\//.test(url)) continue;
     inputs.push({
       view, url,
-      editMode: s.editMode === "garment-only" ? "garment-only" : undefined,
+      editMode: s.editMode === "garment-only" || s.editMode === "face-locked" ? s.editMode : undefined,
       humanModelId: typeof s.humanModelId === "string" ? s.humanModelId : undefined,
       engine: typeof s.engine === "string" ? s.engine : undefined,
       note: typeof s.note === "string" ? s.note : undefined,

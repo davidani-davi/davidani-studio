@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import {beforeEach,afterEach,describe,it,expect,vi} from 'vitest';
 import sharp from 'sharp';
 import {referencePixels,type GarmentEdit} from '@/lib/garment-only';
@@ -26,6 +27,18 @@ describe('protected model-shot route',()=>{
   expect(input.modelId).toBe('gpt-image-25');expect(input.garmentImageUrls).toEqual(['https://erp/peacock.png']);
   expect(data.url).toBe('https://host/garment-only.png');expect(data.preservation).toMatchObject({verified:true,changedProtectedPixels:0,width:1024,height:1536});
   expect(data.preservation.protectedSourceSha256).toBe(data.preservation.protectedOutputSha256);
+ });
+ it('face lock needs no drawn mask and preserves the reviewed original head',async()=>{
+  original=fs.readFileSync('public/models/studio 103/full.png');
+  const response=await POST(request({editMode:'face-locked',garmentEdit:undefined}));
+  const data=await response.json();expect(data.ok).toBe(true);expect(data.editMode).toBe('face-locked');
+  expect(data.preservation.changedProtectedPixels).toBe(0);expect(data.preservation.protectedPixels).toBe(533504);
+ });
+ it('face lock refuses unreviewed references and categories before generation',async()=>{
+  for(const body of [{editMode:'face-locked'},{editMode:'face-locked',view:'front'},{editMode:'face-locked',known:{category:'top'}}]){
+   expect((await(await POST(request(body))).json()).ok).toBe(false);
+  }
+  expect(mocks.generate).not.toHaveBeenCalled();
  });
  it.each([{garmentEdit:null},{garmentEdit:{reviewed:false}},{editMode:'unknown'},{engine:'nano',modelId:'nano-banana-pro'},{engine:'tryon',modelId:undefined},{humanModelId:'auto'},{view:'side'}])('fails before spending for invalid input %j',async body=>{
   const r=await POST(request(body));expect((await r.json()).ok).toBe(false);expect(mocks.generate).not.toHaveBeenCalled();

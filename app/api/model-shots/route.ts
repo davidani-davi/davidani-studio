@@ -1,5 +1,5 @@
 import sharp from 'sharp';
-import { referencePixels, validateEdit, editMask, compositeGarment, providerMask } from '@/lib/garment-only';
+import { referencePixels, validateEdit, editMask, compositeGarment, providerMask, donutsFaceMask } from '@/lib/garment-only';
 import { uploadToFal } from '@/lib/fal';
 import { buildReferenceShot, runReferenceShot, NANO_REFERENCE_MODEL } from '@/lib/nano-reference-shots';
 import { viewReference, referenceCoverage } from '@/lib/view-reference';
@@ -200,8 +200,9 @@ export async function POST(req: Request) {
 
 /** One view, start to finish: the synchronous POST body. */
 async function renderShot(req: Request, body: any): Promise<Response> {
-  if (body.editMode && !['native','garment-only'].includes(body.editMode)) return json({ok:false,error:'Choose a valid editing mode.'},400);
-  const locked = body.editMode === 'garment-only';
+  if (body.editMode && !['native','garment-only','face-locked'].includes(body.editMode)) return json({ok:false,error:'Choose a valid editing mode.'},400);
+  const faceLocked = body.editMode === 'face-locked';
+  const locked = body.editMode === 'garment-only' || faceLocked;
   if (locked && (body.engine === 'tryon' || body.engine === 'nano' || (body.modelId && !['gpt-image','gpt-image-25'].includes(body.modelId))))
     return json({ok:false,error:'Garment-only mode currently supports GPT 2.5 and GPT 2. Your chosen engine was not changed.'},400);
   if (locked && (body.humanModelId === 'auto' || String(body.humanModelId||'').startsWith('face:') || body.reference))
@@ -325,12 +326,13 @@ async function renderShot(req: Request, body: any): Promise<Response> {
     let prepared: { ref: Awaited<ReturnType<typeof referencePixels>>; mask: Buffer; canvasUrl:string; maskUrl:string } | undefined;
     if (locked) {
       if (reference.reframed) throw Error('Garment-only mode needs an exact framing reference. Choose a reference with this view already framed.');
-      const e=validateEdit(body.garmentEdit);
-      if(e.referencePath!==reference.publicPath) throw Error('This edit area belongs to another view reference. Review the matching view.');
+      if(faceLocked && (category!=='pants'||view!=='full'))throw Error('Keep original face is available for DONUTS pants full shots.');
+      const e=faceLocked?null:validateEdit(body.garmentEdit);
+      if(e && e.referencePath!==reference.publicPath) throw Error('This edit area belongs to another view reference. Review the matching view.');
       const response=await fetch(referenceUrl,{cache:'no-store'});
       if(!response.ok) throw Error('Reference could not be loaded.');
       const ref=await referencePixels(Buffer.from(await response.arrayBuffer()));
-      const mask=await editMask(e,ref,framing!=='low');
+      const mask=faceLocked?donutsFaceMask(ref,reference.publicPath):await editMask(e!,ref,framing!=='low');
       const pixels=ref.width*ref.height;
       if(ref.width%16||ref.height%16||Math.max(ref.width,ref.height)>3840||pixels<655360||pixels>8294400)
         throw Error('This reference size is not supported for a native-size garment edit. Choose another reference.');
@@ -340,8 +342,7 @@ async function renderShot(req: Request, body: any): Promise<Response> {
         providerMask(mask,ref.width,ref.height).then(b=>uploadToFal(new Blob([Uint8Array.from(b)],{type:'image/png'}),'garment-edit-mask.png'))
       ]);
       prepared={ref,mask,canvasUrl,maskUrl};
-      input.prompt=`Edit image 1 in place, only inside the transparent garment mask. Replace its ${category === 'pants' || category === 'skirt' ? 'bottoms' : category === 'dress' || category === 'set' ? 'outfit' : 'top or outer layer'} with the garment shown in image 2. Image 2 supplies ONLY garment design, fabric and color; ignore its wearer, hands, pose, background and other clothes. ${garmentImageUrls.length > 1 ? 'Image 3 supplies the actual back garment design.' : 'No back photograph is supplied; do not invent rear graphics.'}
-Keep image 1 at exactly the same dimensions and coordinates: same body silhouette, limb positions, hand positions, fingers, head, hair, other clothing, shoes and background. Do not put hands into pockets or add any new hands. Draw the garment around the existing person. Keep seams where they meet the original body aligned. This is a local clothing replacement, not a new photograph or pose. No sharpening or restoration. ${known.color ? 'Garment color: '+known.color+'.' : ''} ${note || ''}`;
+      input.prompt=`Edit the original reference photograph. Replace ONLY the ${category === 'pants' || category === 'skirt' ? 'bottoms' : 'garment'} with the garment from the other image. Keep the original pose, arm and hand positions, other clothing, shoes, background and framing. Do not add hands at the waistband or pockets. One person, two arms, two hands. Keep the head unchanged. No sharpening. ${known.color ? 'Garment color: '+known.color+'.' : ''} ${note || ''}`;
     }
     let url: string;
     let outputResolution = nanoReference ? "1K" : "4K";
@@ -382,7 +383,7 @@ Keep image 1 at exactly the same dimensions and coordinates: same body silhouett
     return json({ ok: true, view, url, prompt: input.prompt,
       modelId: body.engine === "tryon" ? undefined : modelId,
       engine: body.engine === "tryon" ? "tryon" : nanoReference ? "nano" : modelId === "gpt-image-25" ? "gpt25" : "gpt2",
-      resolution: outputResolution, editMode: locked ? "garment-only" : "native", preservation, humanModelId, poseId, assigned, category, hem, framing,
+      resolution: outputResolution, editMode: faceLocked ? "face-locked" : locked ? "garment-only" : "native", preservation, humanModelId, poseId, assigned, category, hem, framing,
       reference: { ...reference, url: referenceUrl },
       garmentBackInferred: view === "back" && garmentImageUrls.length < 2,
       anchored: false, restore: { applied: false }, photoFinish: { method: locked ? "garment-only" : "native", applied: locked }, corrections: [] });

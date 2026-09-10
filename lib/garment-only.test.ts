@@ -1,6 +1,7 @@
+import fs from 'node:fs';
 import { describe, it, expect } from 'vitest';
 import sharp from 'sharp';
-import { referencePixels, editMask, compositeGarment, validateEdit, type GarmentEdit } from './garment-only';
+import { referencePixels, editMask, compositeGarment, validateEdit, providerMask, donutsFaceMask, type GarmentEdit } from './garment-only';
 async function fixture() {
  const bytes=await sharp({create:{width:64,height:96,channels:4,background:{r:37,g:67,b:91,alpha:1}}}).png().toBuffer();
  const ref=await referencePixels(bytes);
@@ -29,6 +30,15 @@ describe('garment-only hard pixel preservation',()=>{
   expect(mask[48*64+32]).toBeLessThan(255);
   expect(mask[47*64+40]).toBe(0);
   expect(mask[60*64+31]).toBe(0);
+ });
+ it('encodes fal masks as black/white pixels and locks the reviewed DONUTS head automatically',async()=>{
+  const ref=await referencePixels(fs.readFileSync('public/models/studio 103/full.png'));
+  const mask=donutsFaceMask(ref,'/models/studio 103/full.png');
+  expect(mask[500*1024+500]).toBe(0);expect(mask[535*1024+500]).toBeGreaterThan(0);expect(mask[560*1024+500]).toBe(255);
+  const png=await providerMask(mask,1024,1536),data=await sharp(png).greyscale().raw().toBuffer();
+  expect(data).toEqual(mask);
+  expect(()=>donutsFaceMask({...ref,sha256:'a'.repeat(64)},'/models/studio 103/full.png')).toThrow('reviewed');
+  expect(()=>donutsFaceMask(ref,'/models/studio 100/full.png')).toThrow('reviewed');
  });
  it('requires matching reference dimensions/hash and head review before work',async()=>{
   const {ref,edit}=await fixture();

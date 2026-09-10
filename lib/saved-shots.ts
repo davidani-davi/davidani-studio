@@ -25,7 +25,7 @@ export interface SavedShot {
   savedAt: number;
   durable: boolean;
   humanModelId?: string;   // plate the render used ("crop 93")
-  editMode?: 'native' | 'garment-only';
+  editMode?: 'native' | 'garment-only' | 'face-locked';
   engine?: string;         // "gpt-image-25", "tryon", …
   note?: string;           // free text ("shell run 2026-09-08", "back split mirrored")
   by?: string;             // "panel" | "shell" | …
@@ -45,7 +45,7 @@ export interface SaveInput {
   view: string;
   url: string;
   humanModelId?: string;
-  editMode?: 'native' | 'garment-only';
+  editMode?: 'native' | 'garment-only' | 'face-locked';
   engine?: string;
   note?: string;
   by?: string;

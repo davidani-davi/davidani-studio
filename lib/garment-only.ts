@@ -98,9 +98,16 @@ export async function compositeGarment(ref: ReferencePixels, generated: Buffer, 
     outputSha256:digest(png), maskSha256:digest(mask), generatedWidth:meta.width, generatedHeight:meta.height } };
 }
 
-/** OpenAI edit masks: transparent = editable, opaque = preserve. */
+/** fal edit mask: white = editable, black = protected. */
 export async function providerMask(alpha: Buffer, width: number, height: number) {
-  const rgba=Buffer.alloc(width*height*4,255);
-  for(let i=0;i<alpha.length;i++)rgba[i*4+3]=alpha[i]>0?0:255;
-  return sharp(rgba,{raw:{width,height,channels:4}}).png().toBuffer();
+  return sharp(alpha,{raw:{width,height,channels:1}}).png().toBuffer();
+}
+
+/** Reviewed DONUTS full reference: the entire head/hair stays above row 520. */
+export function donutsFaceMask(ref: ReferencePixels, referencePath: string) {
+  if(referencePath!=='/models/studio 103/full.png'||ref.width!==1024||ref.height!==1536||ref.sha256!=='3fc5f5b51716759caf409869405770a1ccbb9d8e0ca3a8024000d0804b3cd1b9')
+    throw Error('Keep original face needs the reviewed DONUTS full-shot reference.');
+  const mask=Buffer.alloc(ref.width*ref.height);
+  for(let y=520;y<ref.height;y++)mask.fill(Math.min(255,Math.round((y-520)/32*255)),y*ref.width,(y+1)*ref.width);
+  return mask;
 }
