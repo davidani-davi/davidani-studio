@@ -1,6 +1,6 @@
 # Handoff — reference library categories and layout
 Updated 2026-09-10T20:47-07:00 by Codex.
-Branch codex/reference-library; basecce7752. Implementation is this commit.
+Branch codex/reference-library; implementation729491a pushed to main.
 - Models & pose references now has Tops / Bottoms / All category tabs.
 - Sidebar300px, nonshrinking90px rows, contained thumbnails and wrapped names.
 - Fixed sidebar controls; only model list scrolls. Phone list has bounded height.
@@ -17,8 +17,10 @@ Branch codex/reference-library; basecce7752. Implementation is this commit.
 - Local integration: create model/pose, four uploads, independent replacement,
   invalid URL rejection, remove/reload, Trash/restore and catalog propagation.
 - No live reference edits or generations used for verification.
-- Next: deploy clean committed source to existing davidani-studio Vercel project;
-  verify live admin category tabs, row layout and existing cloud models.
+- Deployed clean committed source:20k9xq5le at davidani-studio.vercel.app.
+- Authenticated read-only live browser passed categories, nine bottoms,
+ 3/4 views, search, details and390/1024/1536/2560px row/overflow checks.
+- Next: David refreshes /admin/models; no extension update needed.
 - Worktree /tmp/studio-reference-library; screenshots /tmp/model-library-qa.
 - Local QA server3016 uses temporary local catalog entries (gitignored .data).
 - Preserve original repo's modified tsconfig.tsbuildinfo.
