@@ -1,4 +1,5 @@
 "use client";
+import { isPantsReference, isPantsStyle } from "@/lib/pants-references";
 
 import { useEffect, useRef, useState } from "react";
 import type { HistoryItem } from "./types";
@@ -346,7 +347,7 @@ export default function OutputPanel({
   const activePhotoshootView = ["front", "side", "back", "full"].includes(activeViewLabel)
     ? (activeViewLabel as PhotoshootView)
     : null;
-  const photoshootViews: PhotoshootView[] = ["front", "side", "back", "full"];
+  const photoshootViews: PhotoshootView[] = isPantsReference(current?.humanModelId) || isPantsStyle(current?.styleNumber || "") ? ["front", "side", "back"] : ["front", "side", "back", "full"];
   const photoshootViewLabel: Record<PhotoshootView, string> = {
     front: "Front",
     side: "Side",

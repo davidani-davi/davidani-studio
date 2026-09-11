@@ -1,3 +1,4 @@
+import { isPantsStyle } from "./pants-references";
 import type { PresetView } from "./models-registry";
 import type { GarmentCategory } from "./canvas-registry";
 import { inferCategory } from "./canvas-registry";
@@ -82,7 +83,12 @@ export function showsBottoms(category: ShotCategory, hem: Hem): boolean {
 
 /** The views a run shoots for a category, in shooting order, with the plate framing each is handed. */
 export function shotPlan(category: ShotCategory, hem: Hem = ""): ShotStep[] {
-  if (category === "pants" || category === "skirt") {
+  if (category === "pants") return [
+    { view: "front", framing: "low" },
+    { view: "side", framing: "low" },
+    { view: "back", framing: "low" },
+  ];
+  if (category === "skirt") {
     return [
       { view: "front", framing: "low" },
       { view: "side", framing: "low" },
@@ -134,13 +140,14 @@ export function categoryFromType(type: string | null | undefined): ShotCategory 
 
 /** The category a run is planned with: an explicit one wins, then the taxonomy name, then the title's words. */
 export function shotCategory(
-  known: { category?: unknown; type?: unknown; title?: unknown } | null | undefined
+  known: { category?: unknown; type?: unknown; title?: unknown; styleCode?: unknown } | null | undefined
 ): ShotCategory {
   const k = known || {};
   const explicit = String(k.category || "").toLowerCase() as ShotCategory;
   if (explicit && explicit !== "unknown" && SHOT_CATEGORIES.includes(explicit)) return explicit;
   const byType = categoryFromType(typeof k.type === "string" ? k.type : "");
   if (byType !== "unknown") return byType;
+  if (isPantsStyle(String(k.styleCode || ""))) return "pants";
   const title = typeof k.title === "string" ? k.title : "";
   const byTitle = categoryFromType(title);
   return byTitle !== "unknown" ? byTitle : inferCategory(title);

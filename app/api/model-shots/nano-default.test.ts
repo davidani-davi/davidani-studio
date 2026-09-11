@@ -14,7 +14,7 @@ describe('independent native reference shots',()=>{
     expect(runReferenceShot).not.toHaveBeenCalled();
   });
   for(const modelId of ['gpt-image-25','gpt-image','nano-banana-pro']) {
-    it.each(['front','side','back','full'])(`${modelId} %s uses matching original view and never generated anchor`,async view=>{
+    it.each(['front','side','back'])(`${modelId} %s uses matching original view and never generated anchor`,async view=>{
       const response=await POST(request({view,modelId,anchorImageUrl:'https://output/old-front.png',restore:true}));
       expect(response.status).toBe(200);const data=await response.json();
       expect(data).toMatchObject({url:'https://output/native.png',modelId,anchored:false,restore:{applied:false},reference:{view}});
@@ -30,6 +30,10 @@ describe('independent native reference shots',()=>{
       }
     });
   }
+  it.each(['gpt-image-25','gpt-image','nano-banana-pro'])('rejects a pants full shot with %s before spending',async modelId=>{
+    expect((await POST(request({view:'full',modelId}))).status).toBe(400);
+    expect(generate).not.toHaveBeenCalled();expect(runReferenceShot).not.toHaveBeenCalled();
+  });
   it.each([['gpt2','gpt-image'],['nano','nano-banana-pro']])('respects engine-only %s selections',async(engine,modelId)=>{
     const data=await (await POST(request({view:'front',engine}))).json();expect(data.modelId).toBe(modelId);
   });

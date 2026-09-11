@@ -1,4 +1,5 @@
 "use client";
+import { isPantsStyle, isPantsReference, pantsReferences } from "@/lib/pants-references";
 
 import { useRef, useState } from "react";
 import { ASPECT_RATIOS, FORMATS, MODELS, RESOLUTIONS, type ModelId } from "@/lib/models";
@@ -287,6 +288,8 @@ export default function ModelSidebar(p: Props) {
 
   const selectedModel: HumanModel | null =
     p.humanModels.find((m) => m.id === p.selectedHumanModelId) ?? null;
+  const pantsMode = isPantsStyle(p.styleNumber) || isPantsReference(p.selectedHumanModelId);
+  const offeredViews = PRESET_VIEWS.filter(v => !pantsMode || v.value !== "full");
   const poses: ModelPose[] = selectedModel?.poses ?? [];
   const selectedPose: ModelPose | null =
     poses.find((pose) => pose.id === p.selectedPoseId) ?? poses[0] ?? null;
@@ -480,7 +483,7 @@ export default function ModelSidebar(p: Props) {
       <section className="model-sidebar-card border-b border-neutral-100 p-5">
         <SectionHeader
           icon={IconModel}
-          title="Model"
+          title={pantsMode ? "Pants references" : "Model"}
           hint={
             p.modelsLoading
               ? "Loading…"
@@ -501,7 +504,17 @@ export default function ModelSidebar(p: Props) {
               <code className="rounded bg-neutral-100 px-1">public/models/</code>.
             </p>
           )}
+          {pantsMode && <div className="grid grid-cols-2 gap-2" aria-label="Pants references">
+            {pantsReferences(p.humanModels).map(m => <button type="button" key={m.id}
+              onClick={() => p.onHumanModelChange(m.id)} aria-pressed={m.id === p.selectedHumanModelId}
+              className={`overflow-hidden rounded border text-left ${m.id === p.selectedHumanModelId ? 'border-neutral-900 bg-neutral-900 text-white' : 'border-neutral-200 bg-white'}`}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={m.poses[0]?.views.front?.publicPath} alt="" className="aspect-[2/3] w-full object-contain" />
+              <span className="block p-2 text-xs">{m.name}</span>
+            </button>)}
+          </div>}
           {(() => {
+            if (pantsMode) return null;
             // House characters: one card per pose × outfit,
             // filtered by what she wears on the half the product does not
             // replace, with the expression as a toggle — David's picking
@@ -641,10 +654,11 @@ export default function ModelSidebar(p: Props) {
             // numeric token, lowercased and trimmed (e.g. "celine 1" → "celine",
             // "pants 2" → "pants", "sydney" → "sydney"). House-character
             // plates live in the Vision block above.
+            if (pantsMode) return null;
             const familyOrder: string[] = [];
             const buckets = new Map<string, typeof p.humanModels>();
             for (const m of p.humanModels) {
-              if (m.character) continue;
+              if (m.character || isPantsReference(m.id)) continue;
               const family = m.name.replace(/\s*\d+\s*$/, "").trim() || m.name;
               if (!buckets.has(family)) {
                 buckets.set(family, []);
@@ -807,8 +821,8 @@ export default function ModelSidebar(p: Props) {
                   Reference views
                 </label>
                 <div className="grid grid-cols-2 gap-2">
-                  {PRESET_VIEWS.map((view) => {
-                    const thumb = selectedPose?.views?.[view.value] || selectedPose?.publicPath;
+                  {offeredViews.map((view) => {
+                    const thumb = selectedPose?.views?.[view.value];
                     const available = Boolean(thumb);
                     return (
                       <button
@@ -846,7 +860,7 @@ export default function ModelSidebar(p: Props) {
                   })}
                 </div>
                 <p className="mt-2 text-[11px] leading-relaxed text-neutral-500">
-                  These four references guide the generated front, side, back, and full views.
+                  {pantsMode ? "Three waist-down references: front, side and back." : "These four references guide the generated front, side, back, and full views."}
                 </p>
               </>
             ) : (
@@ -905,7 +919,7 @@ export default function ModelSidebar(p: Props) {
                   View
                 </label>
                 <div className="grid grid-cols-4 gap-1.5">
-                  {PRESET_VIEWS.map((view) => {
+                  {offeredViews.map((view) => {
                     const available = Boolean(selectedPose?.views?.[view.value]);
                     const active = p.selectedView === view.value;
                     return (

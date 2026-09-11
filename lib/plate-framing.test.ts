@@ -29,8 +29,9 @@ describe("shotCategory", () => {
 });
 
 describe("shotPlan", () => {
-  it("bottoms: front and side from the waist down plus one full shot, no back", () => {
-    expect(shotViews("pants")).toEqual(["front", "side", "back", "full"]);
+  it("pants have exactly three waist-down views; skirts retain their full shot", () => {
+    expect(shotViews("pants")).toEqual(["front", "side", "back"]);
+    expect(shotPlan("pants").every(s => s.framing === "low")).toBe(true);
     expect(shotViews("skirt")).toEqual(["front", "side", "back", "full"]);
     expect(framingFor("pants", "front")).toBe("low");
     expect(framingFor("skirt", "side")).toBe("low");

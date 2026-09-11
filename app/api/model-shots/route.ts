@@ -1,3 +1,4 @@
+import { isPantsReference, pantsReferences } from "@/lib/pants-references";
 import { simpleReferenceShot, simpleFaceMask, SIMPLE_IMAGE_SIZE } from '@/lib/simple-reference-shot';
 import sharp from 'sharp';
 import { referencePixels, validateEdit, editMask, compositeGarment, providerMask, donutsFaceMask } from '@/lib/garment-only';
@@ -122,7 +123,8 @@ export async function GET(req: Request) {
       return {
         id: m.id,
         name: m.name,
-        categories: m.id === "studio 103" ? ["pants", "skirt"] : undefined,
+        categories: isPantsReference(m.id) ? ["pants"] : undefined,
+        referenceKind: isPantsReference(m.id) ? "pants" : undefined,
         userAdded: Boolean(m.userAdded),
         managed: Boolean(m.managed),
         wears: m.wears,
@@ -159,6 +161,9 @@ export async function POST(req: Request) {
   } catch {
     return json({ ok: false, error: "invalid JSON body" }, 400);
   }
+
+  if (body.view === "full" && (isPantsReference(body.humanModelId) || shotCategory({...body.known, category: body.category ?? body.known?.category}) === "pants"))
+    return json({ok:false,error:"Pants generate front, side and back only."},400);
 
   /**
    * `async: true` — answer with a task id now, render after the response and
@@ -257,6 +262,8 @@ async function renderShot(req: Request, body: any): Promise<Response> {
   // head-to-thigh, everything else full-length. The extension planned the run
   // with the same rule and says which category it used.
   const category = shotCategory({ ...known, category: body.category ?? (known as { category?: unknown }).category });
+  if (category === "pants" && view === "full")
+    return json({ ok: false, error: "Pants generate front, side and back only." }, 400);
   // A long layer (a coat, a longline cardigan) has its hem in every frame, so
   // it is shot on the full-length plate throughout (lib/plate-framing.ts hemFor).
   const hem = hemFor({ ...known, hem: body.hem ?? known.hem });
@@ -297,7 +304,7 @@ async function renderShot(req: Request, body: any): Promise<Response> {
     if (!styleCode) {
       return json({ ok: false, error: "auto model needs a styleCode to assign from" }, 400);
     }
-    const choice = assignPlate(styleCode, catalogue.filter(m => m.id !== "studio 103" || category === "pants" || category === "skirt"), {
+    const choice = assignPlate(styleCode, category === "pants" ? pantsReferences(catalogue) : catalogue.filter(m => !isPantsReference(m.id)), {
       preferPrefix: body.platePrefix, category,
       silhouette: silhouetteOf((known as { title?: unknown }).title ?? body.title),
     });
@@ -308,8 +315,10 @@ async function renderShot(req: Request, body: any): Promise<Response> {
   }
   if (!humanModelId || !poseId) return json({ ok: false, error: "humanModelId and poseId are required" }, 400);
 
-  if (humanModelId === "studio 103" && category !== "pants" && category !== "skirt")
-    return json({ ok: false, error: "DONUTS is a bottoms reference. Choose a top reference for this garment." }, 400);
+  if (category === "pants" && !isPantsReference(humanModelId))
+    return json({ok:false,error:"Choose a reference from the shared pants collection."},400);
+  if (isPantsReference(humanModelId) && category !== "pants")
+    return json({ ok: false, error: "This is a pants reference. Choose a model reference for this garment." }, 400);
   if (body.engine !== "tryon" && !nanoReference && !isGptModel(modelId))
     return json({ ok: false, error: `Unsupported image model: ${modelId}` }, 400);
 

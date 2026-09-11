@@ -4,11 +4,11 @@ const nextConfig = {
     serverActions: { bodySizeLimit: "20mb" },
   },
   outputFileTracingExcludes: {
-    "/api/*": ["./public/models/**/*"],
-    "/api/analyze-model": ["./public/models/**/*"],
-    "/api/generate-model": ["./public/models/**/*"],
-    "/model-studio": ["./public/models/**/*"],
-    "/model-studio-beta": ["./public/models/**/*"],
+    "/api/*": ["./public/models/**/*", "./public/pants-references/**/*"],
+    "/api/analyze-model": ["./public/models/**/*", "./public/pants-references/**/*"],
+    "/api/generate-model": ["./public/models/**/*", "./public/pants-references/**/*"],
+    "/model-studio": ["./public/models/**/*", "./public/pants-references/**/*"],
+    "/model-studio-beta": ["./public/models/**/*", "./public/pants-references/**/*"],
   },
   images: {
     remotePatterns: [

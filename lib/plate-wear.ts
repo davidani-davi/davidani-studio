@@ -134,7 +134,7 @@ export function isBottom(category: unknown): boolean {
 /** The house plates a bottom can be painted onto. Empty when none is tagged. */
 export function bottomPlates<T extends { id: string; lowOk?: boolean }>(plates: T[]): T[] {
   return (plates || []).filter(
-    (p) => /^studio\s*\d+$/i.test(String(p.id || "").trim()) && p.lowOk === true
+    (p) => /^(studio\s*\d+|pants-[a-z0-9]+)$/i.test(String(p.id || "").trim()) && p.lowOk === true
   );
 }
 

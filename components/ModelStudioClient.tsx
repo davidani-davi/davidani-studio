@@ -1,4 +1,5 @@
 "use client";
+import { isPantsReference, isPantsStyle, PANTS_VIEWS, pantsReferences } from "@/lib/pants-references";
 
 import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
@@ -694,7 +695,23 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
     () => history.find((h) => h.id === currentId) ?? null,
     [history, currentId]
   );
-  const selectedModelIsPants = selectedHumanModelId?.startsWith("pants") ?? false;
+  const selectedModelIsPants = isPantsStyle(styleNumber) || isPantsReference(selectedHumanModelId);
+  const generationViews = selectedModelIsPants ? PANTS_VIEWS : MULTI_MODEL_VIEWS;
+  useEffect(() => {
+    if (selectedModelIsPants && selectedView === "full") setSelectedView("front");
+    if (!isPantsStyle(styleNumber)) {
+      if (styleNumber.trim() && isPantsReference(selectedHumanModelId)) {
+        const first = humanModels.find(m => !isPantsReference(m.id));
+        if(first){setSelectedHumanModelId(first.id);setSelectedPoseId(first.poses[0]?.id || "");}
+      }
+      return;
+    }
+    if (selectedView === "full") setSelectedView("front");
+    if (!isPantsReference(selectedHumanModelId)) {
+      const first = pantsReferences(humanModels)[0];
+      if (first) { setSelectedHumanModelId(first.id); setSelectedPoseId(first.poses[0]?.id || ""); }
+    }
+  }, [styleNumber, selectedView, selectedHumanModelId, humanModels]);
 
   // URL → original garment upload filename, so OutputPanel names model-swap
   // downloads after the garment the user dropped in.
@@ -995,6 +1012,7 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
   function pendingMultiModelViews(run: HistoryItem | null): MultiModelView[] {
     if (!run?.multiModelViews) return [];
     return MULTI_MODEL_VIEWS.filter((view) => {
+      if (!(view in run.multiModelViews!)) return false;
       const slot = run.multiModelViews?.[view];
       return !slot?.url || slot.status === "failed";
     });
@@ -1387,7 +1405,7 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
     // Register the run in the output panel immediately — before the async job
     // starts — so the user sees "Run #xxxx" right away instead of "No runs yet"
     // throughout the entire analysis + generation phase.
-    const seedMultiModelViews = MULTI_MODEL_VIEWS.reduce<
+    const seedMultiModelViews = generationViews.reduce<
       NonNullable<HistoryItem["multiModelViews"]>
     >((acc, view) => {
       acc[view] = { status: "queued" };
@@ -1409,11 +1427,11 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
       poseId,
       view: "front",
       prompts: [],
-      viewLabels: [...MULTI_MODEL_VIEWS],
+      viewLabels: [...generationViews],
       multiModelViews: seedMultiModelViews,
       // Four frames, one per view, held from the start.
       pending: {
-        variants: MULTI_MODEL_VIEWS.length,
+        variants: generationViews.length,
         startedAt: Date.now(),
         expectedSeconds: expectedSecondsFor(modelId),
       },
@@ -1450,12 +1468,12 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
             fontFamily,
             fontSize,
           };
-          const slotUrls: (string | null)[] = [null, null, null, null];
+          const slotUrls: (string | null)[] = generationViews.map(() => null);
           const slotPrompts: string[] = [];
           const slotReferences: string[] = [];
           const slotStatuses: Array<
             NonNullable<NonNullable<HistoryItem["multiModelViews"]>["front"]>["status"]
-          > = ["queued", "queued", "queued", "queued"];
+          > = generationViews.map(() => "queued");
           const slotErrors: string[] = [];
           const baseReferences = [frontGarmentUrl, backGarmentUrl].filter(Boolean) as string[];
           const isCoordinatedSet = garmentMode === "set-single-image";
@@ -1529,7 +1547,7 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
             const prompts: string[] = [];
             const viewLabels: string[] = [];
             const generatedReferences: string[] = [];
-            const multiModelViews = MULTI_MODEL_VIEWS.reduce<NonNullable<HistoryItem["multiModelViews"]>>(
+            const multiModelViews = generationViews.reduce<NonNullable<HistoryItem["multiModelViews"]>>(
               (acc, targetView, viewIndex) => {
                 const url = slotUrls[viewIndex] || undefined;
                 const promptForView = slotPrompts[viewIndex] || undefined;
@@ -1578,7 +1596,7 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
             view: (typeof MULTI_MODEL_VIEWS)[number],
             patch: NonNullable<HistoryItem["multiModelViews"]>[typeof view]
           ) => {
-            const viewIndex = MULTI_MODEL_VIEWS.indexOf(view);
+            const viewIndex = generationViews.indexOf(view);
             if (viewIndex >= 0 && patch?.status) slotStatuses[viewIndex] = patch.status;
             if (viewIndex >= 0 && typeof patch?.error === "string") slotErrors[viewIndex] = patch.error;
             if (viewIndex >= 0 && patch?.status === "done") slotErrors[viewIndex] = "";
@@ -1690,10 +1708,10 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
           const multiRunStartedAt = performance.now();
           let nextViewIndex = 0;
           const worker = async () => {
-            while (nextViewIndex < MULTI_MODEL_VIEWS.length) {
+            while (nextViewIndex < generationViews.length) {
               const idx = nextViewIndex;
               nextViewIndex += 1;
-              const targetView = MULTI_MODEL_VIEWS[idx];
+              const targetView = generationViews[idx];
               const viewStartedAt = performance.now();
               let lastError = "";
               for (let attempt = 0; attempt < 3; attempt += 1) {
@@ -1748,7 +1766,7 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
           localStorage.setItem(currentIdKey, id);
           if (failures.length) {
             setError(
-              `Multi Model Studio saved ${imageUrls.length}/4 views. Retry only the failed views: ${failures
+              `Multi Model Studio saved ${imageUrls.length}/${generationViews.length} views. Retry only the failed views: ${failures
                 .map((failure) => failure.view)
                 .join(", ")}.`
             );
@@ -1977,7 +1995,7 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
               (view) => workingRun.multiModelViews?.[view]?.url
             ).length;
             setError(
-              `Multi Model Studio saved ${completedCount}/4 views. Retry only the failed views: ${failures
+              `Multi Model Studio saved ${completedCount}/${Object.keys(run.multiModelViews || {}).length} views. Retry only the failed views: ${failures
                 .map((failure) => failure.view)
                 .join(", ")}.`
             );
@@ -2902,7 +2920,7 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
         title={beta ? "Multi Model Studio" : "Single Model Studio"}
         subtitle={
           beta
-            ? "Generate front, side, back, and full model photos in one run."
+            ? (selectedModelIsPants ? "Generate front, side and back pants photos in one run." : "Generate front, side, back, and full model photos in one run.")
             : "Generate on-model photography, then repair fit, pose, and proportion."
         }
         metrics={[
@@ -2957,6 +2975,7 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
                 </div>
               )}
               <ModelComposer
+                pantsMode={selectedModelIsPants}
                 slots={composerSlots}
                 onAddFiles={(files, slot) => addFiles(files, slot)}
                 onClearSlot={(slot) => {
@@ -2982,7 +3001,7 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
                 }
                 modelLabel={`${MODELS[modelId].label} · ${resolution} · ${aspect}`}
                 onGenerate={runGeneration}
-                generateLabel={beta ? "Generate 4 views" : "Generate"}
+                generateLabel={beta ? `Generate ${generationViews.length} views` : "Generate"}
                 generateDisabled={!canAnalyze || loading || uploading}
                 busy={loading || uploading}
                 analyzing={analyzing}
@@ -3155,7 +3174,7 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
             inferredScope={inferredScope}
             hideTwoPieceToggle={false}
             hideVariantControl={beta}
-            generateLabel={beta ? "Generate 4 views" : undefined}
+            generateLabel={beta ? `Generate ${generationViews.length} views` : undefined}
           />
         </div>
         <OutputPanel

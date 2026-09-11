@@ -40,6 +40,7 @@ export default function ModelComposer({
   view,
   onViewChange,
   multiView,
+  pantsMode = false,
   isSet,
   onSetChange,
   setNote,
@@ -68,6 +69,7 @@ export default function ModelComposer({
   onViewChange: (view: PresetView) => void;
   /** Multi Model Studio renders all four views, so the picker is not shown. */
   multiView: boolean;
+  pantsMode?: boolean;
   isSet: boolean;
   onSetChange: (isSet: boolean) => void;
   /** How the set is being read — one photo of both pieces, or two photos. */
@@ -157,11 +159,11 @@ export default function ModelComposer({
 
       {multiView ? (
         <p className="mb-2 text-[11.5px] text-neutral-500">
-          Front, side, back and full — all four in one run.
+          {pantsMode ? "Front, side and back — three waist-down views." : "Front, side, back and full — all four in one run."}
         </p>
       ) : (
         <div className="mb-3 flex items-center gap-1" role="group" aria-label="View to render">
-          {VIEWS.map((option) => (
+          {VIEWS.filter(option => !pantsMode || option.value !== "full").map((option) => (
             <button
               key={option.value}
               type="button"

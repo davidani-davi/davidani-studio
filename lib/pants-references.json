@@ -1,0 +1,314 @@
+[
+  {
+    "style": "DP62024",
+    "label": "Black lace shorts",
+    "silhouette": "shorts",
+    "views": {
+      "front": {
+        "filename": "front.jpg",
+        "publicPath": "/pants-references/DP62024/front.jpg"
+      },
+      "side": {
+        "filename": "side.jpg",
+        "publicPath": "/pants-references/DP62024/side.jpg"
+      },
+      "back": {
+        "filename": "back.jpg",
+        "publicPath": "/pants-references/DP62024/back.jpg"
+      }
+    },
+    "sources": {
+      "front": {
+        "filename": "DP62024_2.jpg",
+        "url": "https://system.davidani.com/upload/style/DP62024_2.jpg",
+        "sha256": "94aee0a5a5bfb80a35880520ee10494afbd4d080794edd7aee49b28377118066",
+        "idFile": 557973
+      },
+      "side": {
+        "filename": "DP62024_4.jpg",
+        "url": "https://system.davidani.com/upload/style/DP62024_4.jpg",
+        "sha256": "7f6a979f778169f2a52bc11bc513226baecdfbff8544607da371b88541755128",
+        "idFile": 557972
+      },
+      "back": {
+        "filename": "DP62024_7.jpg",
+        "url": "https://system.davidani.com/upload/style/DP62024_7.jpg",
+        "sha256": "3f41600e306d1ac118e7908b486c09ff1fc09ef9e92074c67302d467cb088817",
+        "idFile": 557976
+      }
+    }
+  },
+  {
+    "style": "DP67305",
+    "label": "Burgundy dot barrel pants",
+    "silhouette": "barrel",
+    "views": {
+      "front": {
+        "filename": "front.jpg",
+        "publicPath": "/pants-references/DP67305/front.jpg"
+      },
+      "side": {
+        "filename": "side.jpg",
+        "publicPath": "/pants-references/DP67305/side.jpg"
+      },
+      "back": {
+        "filename": "back.jpg",
+        "publicPath": "/pants-references/DP67305/back.jpg"
+      }
+    },
+    "sources": {
+      "front": {
+        "filename": "DP67305_6.jpg",
+        "url": "https://system.davidani.com/upload/style/DP67305_6.jpg",
+        "sha256": "5dcdebebb824fbd5b5c90d2a4a6509a942b4429992c0c0b0c493806dff6fc94f",
+        "idFile": 591307
+      },
+      "side": {
+        "filename": "DP67305_5.jpg",
+        "url": "https://system.davidani.com/upload/style/DP67305_5.jpg",
+        "sha256": "e7c9cbaa59f164ca5038fbc4be6a3d79ff1cae35aaea4c7e7a47774e4263b461",
+        "idFile": 591304
+      },
+      "back": {
+        "filename": "DP67305_7.jpg",
+        "url": "https://system.davidani.com/upload/style/DP67305_7.jpg",
+        "sha256": "f65837011e1a6ea64fa04e73b4ad88b3d39627f8fc46df158141e6fbf073540f",
+        "idFile": 591306
+      }
+    }
+  },
+  {
+    "style": "DP60245",
+    "label": "Blue paisley pants",
+    "silhouette": "barrel",
+    "views": {
+      "front": {
+        "filename": "front.png",
+        "publicPath": "/pants-references/DP60245/front.png"
+      },
+      "side": {
+        "filename": "side.png",
+        "publicPath": "/pants-references/DP60245/side.png"
+      },
+      "back": {
+        "filename": "back.png",
+        "publicPath": "/pants-references/DP60245/back.png"
+      }
+    },
+    "sources": {
+      "front": {
+        "filename": "DP60245_2.png",
+        "url": "https://system.davidani.com/upload/style/DP60245_2.png",
+        "sha256": "5b625a66aa9715a9a51af39726eac94429b9d18dd25c969c137b2635dfab1d38",
+        "idFile": 577993
+      },
+      "side": {
+        "filename": "DP60245_7.png",
+        "url": "https://system.davidani.com/upload/style/DP60245_7.png",
+        "sha256": "59ca0a165287ce3878f395965c502212edd6153b39e30293c35cfa97c481b7da",
+        "idFile": 577994
+      },
+      "back": {
+        "filename": "DP60245_8.png",
+        "url": "https://system.davidani.com/upload/style/DP60245_8.png",
+        "sha256": "9c400f871b6694b1f349051fce579f2fa543a934f4bc4985e5ca8d390b6a0d66",
+        "idFile": 577999
+      }
+    }
+  },
+  {
+    "style": "DP62024A",
+    "label": "Pink dot shorts",
+    "silhouette": "shorts",
+    "views": {
+      "front": {
+        "filename": "front.jpg",
+        "publicPath": "/pants-references/DP62024A/front.jpg"
+      },
+      "side": {
+        "filename": "side.jpg",
+        "publicPath": "/pants-references/DP62024A/side.jpg"
+      },
+      "back": {
+        "filename": "back.jpg",
+        "publicPath": "/pants-references/DP62024A/back.jpg"
+      }
+    },
+    "sources": {
+      "front": {
+        "filename": "DT62025A, DP62024A_17.jpg",
+        "url": "https://system.davidani.com/upload/style/DT62025A,%20DP62024A_17.jpg",
+        "sha256": "e1bda7c46c3c3a45db66530986a9f7d4fc16113314e438e592d6989f45b23394",
+        "idFile": 575756
+      },
+      "side": {
+        "filename": "DT62025A, DP62024A_20.jpg",
+        "url": "https://system.davidani.com/upload/style/DT62025A,%20DP62024A_20.jpg",
+        "sha256": "12d70305e1fb75898c6c7cd5cd307cde6321ee298c31b2e2dad5061d86615aa3",
+        "idFile": 575753
+      },
+      "back": {
+        "filename": "DT62025A, DP62024A_22.jpg",
+        "url": "https://system.davidani.com/upload/style/DT62025A,%20DP62024A_22.jpg",
+        "sha256": "e211f9d4181d26e2e9822569a88a50204260d99638f05232609464460f468f08",
+        "idFile": 575751
+      }
+    }
+  },
+  {
+    "style": "DP43109",
+    "label": "Ivory cherry shorts",
+    "silhouette": "shorts",
+    "views": {
+      "front": {
+        "filename": "front.jpg",
+        "publicPath": "/pants-references/DP43109/front.jpg"
+      },
+      "side": {
+        "filename": "side.jpg",
+        "publicPath": "/pants-references/DP43109/side.jpg"
+      },
+      "back": {
+        "filename": "back.jpg",
+        "publicPath": "/pants-references/DP43109/back.jpg"
+      }
+    },
+    "sources": {
+      "front": {
+        "filename": "DP43109,DT32254 (19).jpg",
+        "url": "https://system.davidani.com/upload/style/DP43109,DT32254%20(19).jpg",
+        "sha256": "9bfcfc6b81a4b982875e3eb5c29d77cd93b618169c47c7e8e9424e9f94b836da",
+        "idFile": 501154
+      },
+      "side": {
+        "filename": "DP43109,DT32254 (13).jpg",
+        "url": "https://system.davidani.com/upload/style/DP43109,DT32254%20(13).jpg",
+        "sha256": "231284641c1b45971180c7b25e135bd7882d5eca10a53e92c82139938a8b6d7d",
+        "idFile": 501147
+      },
+      "back": {
+        "filename": "DP43109,DT32254 (7).jpg",
+        "url": "https://system.davidani.com/upload/style/DP43109,DT32254%20(7).jpg",
+        "sha256": "07c00b35fc5d7a2ff11a88768ac3697d594a90c8dcf2f440c4822163caa43933",
+        "idFile": 501149
+      }
+    }
+  },
+  {
+    "style": "DP69017",
+    "label": "Denim patch shorts",
+    "silhouette": "shorts",
+    "views": {
+      "front": {
+        "filename": "front.jpg",
+        "publicPath": "/pants-references/DP69017/front.jpg"
+      },
+      "side": {
+        "filename": "side.jpg",
+        "publicPath": "/pants-references/DP69017/side.jpg"
+      },
+      "back": {
+        "filename": "back.jpg",
+        "publicPath": "/pants-references/DP69017/back.jpg"
+      }
+    },
+    "sources": {
+      "front": {
+        "filename": "DP69017_5.jpg",
+        "url": "https://system.davidani.com/upload/style/DP69017_5.jpg",
+        "sha256": "2db73ae9dcc2d0c49a4cb97948d4a10f2e675fe3bfbbb56934d8377e0a7f133a",
+        "idFile": 591133
+      },
+      "side": {
+        "filename": "DP69017_7.jpg",
+        "url": "https://system.davidani.com/upload/style/DP69017_7.jpg",
+        "sha256": "64b7a287015695a95311bbf8d7d446647414fd36560544e35fce0f8a810e19ad",
+        "idFile": 591136
+      },
+      "back": {
+        "filename": "DP69017_9.jpg",
+        "url": "https://system.davidani.com/upload/style/DP69017_9.jpg",
+        "sha256": "63c0de75f3b2cec2c760a1077187eb0ed332b57a148cebd7bacb06182b90b0d1",
+        "idFile": 591137
+      }
+    }
+  },
+  {
+    "style": "DP67040",
+    "label": "Burgundy wide shorts",
+    "silhouette": "shorts",
+    "views": {
+      "front": {
+        "filename": "front.jpg",
+        "publicPath": "/pants-references/DP67040/front.jpg"
+      },
+      "side": {
+        "filename": "side.jpg",
+        "publicPath": "/pants-references/DP67040/side.jpg"
+      },
+      "back": {
+        "filename": "back.jpg",
+        "publicPath": "/pants-references/DP67040/back.jpg"
+      }
+    },
+    "sources": {
+      "front": {
+        "filename": "DP67040_9.jpg",
+        "url": "https://system.davidani.com/upload/style/DP67040_9.jpg",
+        "sha256": "a4def3981e7c2a0a4a296b05c6580cbed8da53b2d84c3a630426eac56b04ea65",
+        "idFile": 590430
+      },
+      "side": {
+        "filename": "DP67040_3.jpg",
+        "url": "https://system.davidani.com/upload/style/DP67040_3.jpg",
+        "sha256": "5d963131531f32573fa39bbf8caddb105f758dd5e3a8f4e41cff558ed6a40edf",
+        "idFile": 590424
+      },
+      "back": {
+        "filename": "DP67040_1(2).jpg",
+        "url": "https://system.davidani.com/upload/style/DP67040_1(2).jpg",
+        "sha256": "68633561ebb24e93bed72ee0df25be89757eacdbef3b576a93ccf246678ad46b",
+        "idFile": 590426
+      }
+    }
+  },
+  {
+    "style": "DP60197B",
+    "label": "Denim balloon pants",
+    "silhouette": "balloon",
+    "views": {
+      "front": {
+        "filename": "front.jpg",
+        "publicPath": "/pants-references/DP60197B/front.jpg"
+      },
+      "side": {
+        "filename": "side.jpg",
+        "publicPath": "/pants-references/DP60197B/side.jpg"
+      },
+      "back": {
+        "filename": "back.jpg",
+        "publicPath": "/pants-references/DP60197B/back.jpg"
+      }
+    },
+    "sources": {
+      "front": {
+        "filename": "DP60197B_1.jpg",
+        "url": "https://system.davidani.com/upload/style/DP60197B_1.jpg",
+        "sha256": "f791c5c2b7e739e54b7c8c04d4c76371e1a2785429017a19f0b86a8ef33514f5",
+        "idFile": 590570
+      },
+      "side": {
+        "filename": "DP60197B_4.jpg",
+        "url": "https://system.davidani.com/upload/style/DP60197B_4.jpg",
+        "sha256": "e67ac128ab862dd8552b66b610c5361289a6024ef66c0bfeca51bae24e7c17e1",
+        "idFile": 590573
+      },
+      "back": {
+        "filename": "DP60197B_5.jpg",
+        "url": "https://system.davidani.com/upload/style/DP60197B_5.jpg",
+        "sha256": "a962bcc1af745955c4dbdf853714288bfbc5a1fe8a656b5e025f1c73839130cc",
+        "idFile": 590572
+      }
+    }
+  }
+]
