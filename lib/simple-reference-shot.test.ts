@@ -5,10 +5,35 @@ import {referencePixels} from './garment-only';
 import presets from './simple-face-presets.json';
 const base={referenceUrl:'https://ref/front.png',garmentImageUrls:['https://erp/front.png','https://erp/back.png'],category:'top' as const,framing:'crop' as const};
 describe('simple garment swap',()=>{
- it.each(['front','side','full'] as const)('%s gets only its base and front garment',view=>{
-  const shot=simpleReferenceShot({...base,view,anchorImageUrl:'https://generated/front.png'});
+ it('front gets only its base and front garment, never an anchor',()=>{
+  const shot=simpleReferenceShot({...base,view:'front',anchorImageUrl:'https://generated/front.png'});
   expect(shot.image_urls).toEqual([base.referenceUrl,base.garmentImageUrls[0]]);
+  expect(shot.anchored).toBe(false);
+  expect(shot.prompt).toContain('sole garment-color reference');
   expect(shot.prompt).not.toMatch(/4K|90 degrees|mid-thigh|waist to/);
+ });
+ it.each(['side','back','full'] as const)('%s takes the approved front render as image 3 for colour and construction',view=>{
+  const shot=simpleReferenceShot({...base,view,anchorImageUrl:'https://generated/front.png'});
+  expect(shot.image_urls).toHaveLength(3);
+  expect(shot.image_urls[0]).toBe(base.referenceUrl);
+  expect(shot.image_urls[2]).toBe('https://generated/front.png');
+  expect(shot.anchored).toBe(true);
+  expect(shot.prompt).toContain('Image 3 is this same garment already rendered on the front view');
+  expect(shot.prompt).toContain('one single layer with one hem');
+  expect(shot.prompt).not.toContain('sole garment-color reference');
+ });
+ it.each(['side','full'] as const)('%s without an anchor gets only its base and front garment',view=>{
+  const shot=simpleReferenceShot({...base,view});
+  expect(shot.image_urls).toEqual([base.referenceUrl,base.garmentImageUrls[0]]);
+  expect(shot.anchored).toBe(false);
+ });
+ it('a top is worn alone: the plate tee is removed, bottoms and shoes kept',()=>{
+  const top=simpleReferenceShot({...base,view:'front'});
+  expect(top.prompt).toContain('remove any top or tee image 1 wears under it');
+  expect(top.prompt).toContain('bottoms and shoes');
+  const pants=simpleReferenceShot({...base,view:'front',category:'pants'});
+  expect(pants.prompt).toContain('and other clothing');
+  expect(pants.prompt).not.toContain('remove any top');
  });
  it('back gets only the back garment, without front print instructions',()=>{
   const shot=simpleReferenceShot({...base,view:'back'});

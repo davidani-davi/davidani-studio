@@ -8,8 +8,23 @@ export function simpleReferenceShot(o: ReferenceShot) {
   if (!o.referenceUrl || !garment) throw Error('Choose a model reference and garment photo.');
   const scope = o.category === 'pants' || o.category === 'skirt' ? 'bottoms' : o.category === 'dress' || o.category === 'set' ? 'outfit' : 'top';
   const inferred = o.view === 'back' && !o.garmentImageUrls[1];
-  const prompt = `Edit image 1 as the exact base photograph. Replace only the ${scope} with the garment in image 2. Match its fabric, cut, length, print and construction. Image 2 is the sole garment-color reference: match its hue, saturation and midtone brightness exactly. Allow natural fold shadows and highlights, but do not tint the garment to match image 1’s clothing or background. Keep image 1's exact pose, framing, background, lighting and other clothing. Preserve the face, expression, head position and hairstyle unchanged. No sharpening, retouching or enhancement. One clean photograph of one person.${inferred ? ' No back garment photo is supplied; use a plain continuation of the fabric without invented rear graphics.' : ''}${o.note ? ` Requested change: ${o.note}` : ''}`;
-  return {prompt, garmentImageUrls:[garment], image_urls:[o.referenceUrl,garment], garmentBackInferred:inferred};
+  // The set's approved FRONT render (2026-09-11, DET60277): side, back and
+  // full each re-read the garment colour from the warehouse photo and landed
+  // on three different browns, and the inferred back grew a second hem tier.
+  // With the front as image 3 every later view matches one colour and one
+  // construction. The front itself never gets one.
+  const anchor = o.view !== 'front' && o.anchorImageUrl ? o.anchorImageUrl : '';
+  const colour = anchor
+    ? 'Image 3 is this same garment already rendered on the front view of this set: it is the authoritative colour, fabric and construction reference. Match image 3’s garment hue, saturation and midtone brightness exactly, overriding the lighting of image 2. Keep the garment one single layer with one hem, exactly as in image 3; do not add an under-layer or a second hemline.'
+    : 'Image 2 is the sole garment-color reference: match its hue, saturation and midtone brightness exactly.';
+  // A top is worn alone: the plate's own tee must not peek out at the
+  // neckline, shoulders or hem (the oversized-poncho case).
+  const keep = scope === 'top'
+    ? "Keep image 1's exact pose, framing, background, lighting, bottoms and shoes. The new top is worn alone: remove any top or tee image 1 wears under it, so nothing shows at the neckline, shoulders or below the hem."
+    : "Keep image 1's exact pose, framing, background, lighting and other clothing.";
+  const prompt = `Edit image 1 as the exact base photograph. Replace only the ${scope} with the garment in image 2. Match its fabric, cut, length, print and construction. ${colour} Allow natural fold shadows and highlights, but do not tint the garment to match image 1’s clothing or background. ${keep} Preserve the face, expression, head position and hairstyle unchanged. No sharpening, retouching or enhancement. One clean photograph of one person.${inferred ? ' No back garment photo is supplied; use a plain continuation of the fabric without invented rear graphics.' : ''}${o.note ? ` Requested change: ${o.note}` : ''}`;
+  const image_urls = anchor ? [o.referenceUrl, garment, anchor] : [o.referenceUrl, garment];
+  return {prompt, garmentImageUrls:[garment], image_urls, garmentBackInferred:inferred, anchored: Boolean(anchor)};
 }
 
 /** Reviewed original pixels only; no face detector or second AI pass. */
