@@ -7,6 +7,7 @@ export type CatalogChange = {
   kind: 'model' | 'pose' | 'photo';
   patch?: { name?: string; character?: string; pose?: string; deleted?: boolean; label?: string; framing?: 'crop' | 'low' | 'full' };
   create?: boolean; view?: PresetView; photo?: ReferencePhoto | null;
+  referenceSet?: {poseId:string; label:string; photos:Partial<Record<PresetView,ReferencePhoto>>};
 };
 export function applyCatalogChanges(base: HumanModel[], changes: CatalogChange[], includeDeleted = false): ManagedModel[] {
   const models = structuredClone(base) as ManagedModel[];
@@ -14,6 +15,10 @@ export function applyCatalogChanges(base: HumanModel[], changes: CatalogChange[]
     let m = models.find(m => m.id === c.modelId);
     if (!m && c.kind === 'model' && c.create) {
       m = {id:c.modelId, name:c.patch?.name || 'New model', poses:[], userAdded:true, autoPool:false};
+      if(c.referenceSet){
+        const s=c.referenceSet,preview=s.photos.front||s.photos.full||s.photos.side||s.photos.back;
+        m.poses=[{id:s.poseId,label:s.label,framing:'crop',views:s.photos,filename:preview?.filename||'',publicPath:preview?.publicPath||'',subdir:''}];
+      }
       models.push(m);
     }
     if (!m) continue;

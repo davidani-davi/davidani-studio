@@ -1,0 +1,46 @@
+import {beforeEach,describe,expect,it,vi} from 'vitest';
+vi.mock('next/server',()=>({NextResponse:{json:(v:unknown,o:any={})=>new Response(JSON.stringify(v),{status:o.status||200})},after:vi.fn()}));
+vi.mock('@/lib/model-admin-auth',()=>({adminAllowed:vi.fn()}));
+vi.mock('@/lib/model-admin-photo',()=>({inspectAdminPhoto:vi.fn()}));
+vi.mock('@/lib/model-admin',()=>({appendCatalogChange:vi.fn(),readCatalogChanges:vi.fn()}));
+vi.mock('@/lib/shot-tasks',()=>({createShotTask:vi.fn(),readShotTask:vi.fn()}));
+vi.mock('@/lib/reference-identity-store',()=>({createIdentitySet:vi.fn(),listIdentitySets:vi.fn(),readIdentitySet:vi.fn()}));
+vi.mock('@/lib/reference-identity',()=>({renderIdentityView:vi.fn()}));
+import {after} from 'next/server';
+import {adminAllowed} from '@/lib/model-admin-auth';
+import {inspectAdminPhoto} from '@/lib/model-admin-photo';
+import {appendCatalogChange,readCatalogChanges} from '@/lib/model-admin';
+import {createShotTask,readShotTask} from '@/lib/shot-tasks';
+import {createIdentitySet,listIdentitySets,readIdentitySet} from '@/lib/reference-identity-store';
+import {renderIdentityView} from '@/lib/reference-identity';
+import {IDENTITY_MASTERS,IDENTITY_PROMPT,IDENTITY_VIEWS} from '@/lib/reference-identity-core';
+import {GET,POST} from './route';
+const id='11111111-1111-4111-a111-111111111111';
+const inputs=Object.fromEntries(IDENTITY_VIEWS.map(v=>[v,{url:`https://own/${v}.jpg`,filename:`${v}.jpg`}]));
+const body={action:'generate',id,name:'Four views',identityId:'celine-loose',inputs};
+const set:any={id,name:body.name,inputs,identity:{...IDENTITY_MASTERS[0],filename:'celine-loose.png'},prompt:IDENTITY_PROMPT,modelId:'gpt-image-25',createdAt:'2026-09-10'};
+const req=(b:any=body)=>new Request('https://studio/api/reference-identity-studio',{method:'POST',body:JSON.stringify(b)});
+beforeEach(()=>{vi.clearAllMocks();vi.mocked(adminAllowed).mockResolvedValue(true);vi.mocked(inspectAdminPhoto).mockImplementation(async url=>({publicPath:url,filename:'photo.png'}));vi.mocked(createIdentitySet).mockResolvedValue(true);vi.mocked(createShotTask).mockResolvedValue(true);vi.mocked(readShotTask).mockResolvedValue(null);vi.mocked(readCatalogChanges).mockResolvedValue([]);vi.mocked(listIdentitySets).mockResolvedValue([set]);vi.mocked(readIdentitySet).mockResolvedValue(set);});
+describe('Reference Identity Studio API',()=>{
+ it('authenticates reads and paid writes',async()=>{vi.mocked(adminAllowed).mockResolvedValue(false);expect((await GET(new Request('https://studio/api/reference-identity-studio'))).status).toBe(401);expect((await POST(req())).status).toBe(401);expect(createIdentitySet).not.toHaveBeenCalled();});
+ it('returns the preset masters and persisted history',async()=>{const r=await GET(new Request('https://studio/api/reference-identity-studio'));expect((await r.json()).sets[0].id).toBe(id);});
+ it('returns not found and storage failures',async()=>{vi.mocked(readIdentitySet).mockResolvedValue(null);expect((await GET(new Request(`https://studio/api/reference-identity-studio?id=${id}`))).status).toBe(404);vi.mocked(listIdentitySets).mockRejectedValue(Error('offline'));expect((await GET(new Request('https://studio/api/reference-identity-studio'))).status).toBe(503);});
+ it('unblocks views abandoned beyond the worker deadline without starting a new paid call',async()=>{vi.mocked(readShotTask).mockResolvedValue({status:'running',createdAt:Date.now()-1_000_000} as any);const r=await GET(new Request(`https://studio/api/reference-identity-studio?id=${id}`));expect((await r.json()).jobs.front.status).toBe('failed');expect(renderIdentityView).not.toHaveBeenCalled();});
+ it('validates every original before reserving any paid job and schedules four independent jobs',async()=>{
+  const r=await POST(req());expect(r.status).toBe(202);expect(inspectAdminPhoto).toHaveBeenCalledTimes(4);expect(createShotTask).toHaveBeenCalledTimes(4);
+  const work=vi.mocked(after).mock.calls[0][0] as ()=>Promise<void>;await work();expect(renderIdentityView).toHaveBeenCalledTimes(4);
+  for(const view of IDENTITY_VIEWS)expect(renderIdentityView).toHaveBeenCalledWith(expect.objectContaining({inputs,prompt:IDENTITY_PROMPT}),view,expect.objectContaining({view}));
+ });
+ it('allows a single requested angle',async()=>{expect((await POST(req({...body,inputs:{back:inputs.back}}))).status).toBe(202);expect(createShotTask).toHaveBeenCalledTimes(1);});
+ it('does not charge twice for a retried request',async()=>{vi.mocked(createIdentitySet).mockResolvedValue(false);vi.mocked(createShotTask).mockResolvedValue(false);expect((await POST(req())).status).toBe(202);await (vi.mocked(after).mock.calls[0][0] as ()=>Promise<void>)();expect(renderIdentityView).not.toHaveBeenCalled();});
+ it('rejects reuse of an ID with different inputs',async()=>{vi.mocked(createIdentitySet).mockResolvedValue(false);expect((await POST(req({...body,identityId:'vision'}))).status).toBe(409);expect(createShotTask).not.toHaveBeenCalled();});
+ it.each([{id:'../escape'},{identityId:'unknown'},{inputs:{}},{inputs:{wrong:{url:'x'}}},{inputs:{front:{url:4}}},{name:''},{action:'unknown'}])('rejects invalid input %j',async patch=>{expect((await POST(req({...body,...patch}))).status).toBe(400);expect(createShotTask).not.toHaveBeenCalled();});
+ it('rejects arbitrary external source URLs via the owned-photo validator',async()=>{vi.mocked(inspectAdminPhoto).mockRejectedValue(Error('Not owned'));expect((await POST(req())).status).toBe(400);expect(createShotTask).not.toHaveBeenCalled();});
+ it('saves selected finished photos in one library event with reviewed boundaries',async()=>{
+  vi.mocked(readShotTask).mockResolvedValue({status:'done',result:{imageUrl:'https://owned/generated.png'}} as any);
+  expect((await POST(req({action:'save',id,name:'Celine Test',views:['front','back'],reviewed:true,protection:{front:30}}))).status).toBe(200);
+  expect(appendCatalogChange).toHaveBeenCalledTimes(1);expect(appendCatalogChange).toHaveBeenCalledWith(expect.objectContaining({referenceSet:expect.objectContaining({photos:{front:expect.any(Object),back:expect.any(Object)}})}));expect(inspectAdminPhoto).toHaveBeenCalledWith('https://owned/generated.png',30);
+ });
+ it('does not import unfinished images or unreviewed face boundaries',async()=>{expect((await POST(req({action:'save',id,name:'Test',views:['front']}))).status).toBe(400);vi.mocked(readShotTask).mockResolvedValue({status:'done',result:{imageUrl:'x'}} as any);expect((await POST(req({action:'save',id,name:'Test',views:['front']}))).status).toBe(400);expect(appendCatalogChange).not.toHaveBeenCalled();});
+ it('makes a repeated save idempotent',async()=>{vi.mocked(readCatalogChanges).mockResolvedValue([{modelId:`identity-${id}`,create:true}] as any);const r=await POST(req({action:'save',id}));expect(r.status).toBe(200);expect(appendCatalogChange).not.toHaveBeenCalled();});
+});

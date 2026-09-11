@@ -63,7 +63,7 @@ export default function ModelAdmin(){
   if(c){if(create==='model'){setSelected(c.modelId);setPoseId('');setTrash(false);}else setPoseId(c.poseId);setCreate(null);setNewName('');setNewGroup('');}
  }
  return <main className="reference-admin">
-  <header className="ra-header"><div><a href="/model-studio">← Model Studio</a><h1>Models &amp; pose references</h1><p>Manage the photos used by Model Studio on desktop and phone.</p></div><button onClick={refresh} disabled={busy||loading}>Refresh</button></header>
+  <header className="ra-header"><div><a href="/model-studio">← Model Studio</a><h1>Models &amp; pose references</h1><p>Manage the photos used by Model Studio on desktop and phone.</p><a href="/reference-identity-studio">Create reference identities ↗</a></div><button onClick={refresh} disabled={busy||loading}>Refresh</button></header>
   {error&&<p role="alert" className="ra-error">{error} <a href="/login?next=/admin/models">Sign in</a></p>}
   {message&&<p role="status" className="ra-success">{message}</p>}
   <div className="ra-layout"><aside className="ra-library">

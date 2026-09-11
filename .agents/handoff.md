@@ -1,18 +1,20 @@
-# Handoff — reference library admin released
-Updated 2026-09-10 17:02 PDT by Codex. Branch codex/garment-only-pixel-lock.
-Implementation 9b22d50; Studio deployment3eklu8mdl aliased to production.
-- Live admin: https://davidani-studio.vercel.app/admin/models (Studio sign-in).
-- Model/pose CRUD, four upload/replace/remove slots, built-in crop/low/full variants,
-  Trash/restore, original image storage and reviewed per-photo face protection.
-- Shared immutable Blob events feed picker and generation; metadata and uploaded
-  images are validated. No image-generation prompt changes or new AI stages.
-- 894 tests + production build passed. Local real browser tested full CRUD,
-  4 uploads, isolated replacement, reload, trash/restore, phone layout/scrolling.
-- Live browser direct Blob upload, protection hash and picker propagation passed.
-  All temporary cloud QA records/photos removed; catalog rechecked healthy.
-- Docs: docs/model-reference-admin.md. Local E2E: scripts/test-model-admin.cjs.
-- Management implementation37da54e; Chrome2.110.0 / Daily2.36.0 / SW87 live.
-- Next: user tries their own models/pose images; no further setup needed.
-- Preserve unrelated tsconfig.tsbuildinfo; ignored local QA data must stay local.
-- Prior generated Celine/Vision masters were NOT installed; separate task.
-- Existing restore tags preserved. Model/pose deletion is reversible; outputs kept.
+# Handoff — Reference Identity Studio implementation
+Updated 2026-09-10 18:03 PDT by Codex. Branch codex/garment-only-pixel-lock.
+Previous HEAD 6a10dcc; new implementation in this commit.
+- Added /reference-identity-studio linked inside Model Studio and reference admin.
+- Celine loose/half-up + Vision original identity masters; four source upload slots.
+- Exact approved prompt and independent source+identity pair per angle, GPT2.5.
+- Original PNGs, durable runs, safe request retry, per-view provenance/downloads,
+  direct run links, reviewed face boundaries and atomic save into model picker.
+- 929 tests + production build pass; real local browser upload/resume/save/phone QA.
+- First production deploy5mchej51d live; final UI timeout/deep-link/save refinements
+  still need final production deploy after in-flight live generation completes.
+- Live test set: 3e39d9b6-88b5-436d-abc1-322105390544, DETP60100, Celine loose hair.
+- Front/back/full complete and inspected; side still running at 18:03 PDT.
+- Poller /tmp/poll-identity-live.cjs writes /tmp/reference-identity-live-latest.json
+  and output/reference-identity/DETP60100-Celine when all finish.
+- Next: inspect side; deploy final code; run /tmp/verify-identity-live-results.cjs
+  (review all face lines), verify library import; host verified output ZIP.
+- Then update this handoff with final deployment/download + commit/push.
+- Preserve unrelated tracked tsconfig.tsbuildinfo; do not commit local QA data.
+- Docs: docs/reference-identity-studio.md. Browser: scripts/test-reference-identity-studio.cjs.

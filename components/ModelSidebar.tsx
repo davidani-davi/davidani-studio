@@ -475,6 +475,7 @@ export default function ModelSidebar(p: Props) {
       </section>
 
       {/* ========== MODEL + POSE PICKER ========== */}
+      <a href="/reference-identity-studio" className="block px-5 py-3 text-sm underline">Create reference identities ↗</a>
       <a href="/admin/models" target="_blank" rel="noreferrer" className="block px-5 py-3 text-sm underline">Manage models &amp; references ↗</a>
       <section className="model-sidebar-card border-b border-neutral-100 p-5">
         <SectionHeader
