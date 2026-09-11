@@ -29,11 +29,14 @@ m=(await catalog()).models.find(m=>m.name===qaName);assert.notEqual(m.poses[0].v
 const bad=await context.request.post(origin+'/api/admin/models',{headers:{Origin:origin},data:{action:'setPhoto',modelId:m.id,poseId:m.poses[0].id,view:'front',expectedUrl:old.front.publicPath,url:'http://169.254.169.254/latest/meta-data'}});assert.equal(bad.status(),400);
 await page.locator('.ra-photo').filter({has:page.getByRole('heading',{name:'Side',exact:true})}).getByRole('button',{name:'Remove',exact:true}).click();await page.getByLabel('Upload side photo',{exact:true}).waitFor({state:'attached'});
 await page.reload();await page.getByRole('button',{name:new RegExp(qaName)}).click();assert(await page.getByLabel('Upload side photo',{exact:true}).count());
-await page.getByRole('button',{name:'Delete pose',exact:true}).click();await page.getByRole('button',{name:'Restore pose',exact:true}).click();await page.getByRole('button',{name:'Delete pose',exact:true}).waitFor();
+await page.getByText('Edit pose details',{exact:true}).click();
+await page.getByRole('button',{name:'Delete pose',exact:true}).click();await page.getByRole('button',{name:'Restore pose',exact:true}).click();await page.getByText('Edit pose details',{exact:true}).click();await page.getByRole('button',{name:'Delete pose',exact:true}).waitFor();
+await page.getByText('Edit model details',{exact:true}).click();
 await page.getByRole('button',{name:'Delete model',exact:true}).click();await page.getByRole('button',{name:'Restore model',exact:true}).waitFor();
 let pub=await(await context.request.get(origin+'/api/models')).json();assert(!pub.models.some(x=>x.id===m.id));
-await page.getByRole('button',{name:'Restore model',exact:true}).click();await page.getByRole('button',{name:'Delete model',exact:true}).waitFor();pub=await(await context.request.get(origin+'/api/models')).json();assert(pub.models.some(x=>x.id===m.id));
+await page.getByRole('button',{name:'Restore model',exact:true}).click();await page.getByText('Edit model details',{exact:true}).click();await page.getByRole('button',{name:'Delete model',exact:true}).waitFor();pub=await(await context.request.get(origin+'/api/models')).json();assert(pub.models.some(x=>x.id===m.id));
 await page.getByRole('button',{name:'Delete model',exact:true}).click();await page.getByRole('button',{name:'Restore model',exact:true}).waitFor();
+await page.getByRole('button',{name:'Back to models'}).click();
 await page.getByRole('button',{name:/Celine 1/}).first().click();
 await page.screenshot({path:'/tmp/model-admin-desktop.png',fullPage:true});
 await page.setViewportSize({width:390,height:844});await page.screenshot({path:'/tmp/model-admin-phone.png',fullPage:true});

@@ -23,3 +23,21 @@ New poses can be added independently to existing models. A pose enters the publi
 Production uses the existing Vercel Blob store. Individual immutable change records merge updates to different slots without overwriting the whole catalog. The admin API requires a Studio session, checks request origin for writes, and accepts only uploads belonging to this store. Files must decode as a still PNG/JPEG/WebP, at most 20 MB, 4096 pixels per edge and 20 megapixels. Sources are not resized or sharpened. Face boundaries are bound to the decoded source dimensions and pixel SHA-256.
 
 With no Blob token, development stores changes in `.data/model-admin` and photos in `public/user-assets/model-admin/photos`; neither belongs in a production deployment. The local-only `scripts/test-model-admin.cjs` exercises the real API and UI; its header describes the test server and input variables. `npm test` covers catalog merging, routing, authorization, stale updates, invalid uploads, and reviewed protection.
+
+## Library navigation
+
+Tops, Bottoms and All references filter the sidebar. The curated pants/shorts
+collection and custom waist-down pose sets appear in Bottoms. Cropped and full
+body model references appear in Tops. A custom model with both pose types can
+appear in both, with the matching pose selected. Classification uses reference
+framing, never the garment a full-body model happens to wear.
+
+Bottoms have Front, Side and Back slots. Tops retain all four views. Search is
+scoped to the selected category; Trash is separate. Select Edit model details
+or Edit pose details to rename, delete or restore an entry. Adding a waist-down
+pose automatically opens Bottoms. Model IDs, photos and generation stay intact.
+
+The sidebar uses fixed minimum row heights with its own scrolling list, keeping
+thumbnails, wrapped names, search and actions readable on desktop and phone.
+`npm test`, `npm run build`, `scripts/test-model-library.cjs` (Chromium/WebKit)
+and `scripts/test-model-admin.cjs` validate filtering and editing behavior.

@@ -2,16 +2,17 @@
 import {useEffect,useState} from 'react';
 import {upload} from '@vercel/blob/client';
 import {applyCatalogChanges,type ManagedModel} from '@/lib/model-admin-core';
+import {isDerivedReference,matchesLibrarySection,libraryPoses,libraryLabel,type LibrarySection} from '@/lib/model-library';
 import type {ModelPose,PresetView} from '@/lib/models-registry';
 const VIEWS: PresetView[]=['front','side','back','full'];
 const title=(s:string)=>s.charAt(0).toUpperCase()+s.slice(1);
-const derived=(s:string)=>/^(crop|low)\s*\d+$/i.test(s);
 const api='/api/admin/models';
 
 type PhotoEdit={model:ManagedModel;pose:ModelPose;view:PresetView;file?:File;preview:string;url?:string};
 export default function ModelAdmin(){
  const [models,setModels]=useState<ManagedModel[]>([]),[cloud,setCloud]=useState(false),[loading,setLoading]=useState(true);
  const [selected,setSelected]=useState(''),[poseId,setPoseId]=useState(''),[frame,setFrame]=useState('crop');
+ const [section,setSection]=useState<LibrarySection>('tops');
  const [search,setSearch]=useState(''),[trash,setTrash]=useState(false),[busy,setBusy]=useState(false),[message,setMessage]=useState(''),[error,setError]=useState('');
  const [edit,setEdit]=useState<PhotoEdit|null>(null),[protect,setProtect]=useState(true),[boundary,setBoundary]=useState(25),[reviewed,setReviewed]=useState(false),[progress,setProgress]=useState(0);
  const [create,setCreate]=useState<'model'|'pose'|null>(null),[newName,setNewName]=useState(''),[newGroup,setNewGroup]=useState(''),[newFrame,setNewFrame]=useState('crop');
@@ -23,7 +24,9 @@ export default function ModelAdmin(){
  }
  useEffect(()=>{refresh();},[]);
  const model=models.find(m=>m.id===selected);
- const pose=model?.poses.find(p=>p.id===poseId)||model?.poses[0];
+ const poses=libraryPoses(model,section);
+ const pose=poses.find(p=>p.id===poseId)||poses.find(p=>!p.deleted)||poses[0];
+ const bottomPose=pose?.framing==='low';
  useEffect(()=>{setName(model?.name||'');setGroup(model?.character||'');setDescription(model?.pose||'');},[model?.id,model?.name,model?.character,model?.pose]);
  useEffect(()=>setPoseName(pose?.label||''),[pose?.id,pose?.label]);
  useEffect(()=>()=>{if(edit?.file)URL.revokeObjectURL(edit.preview);},[edit]);
@@ -31,7 +34,14 @@ export default function ModelAdmin(){
  const hasFrames=Boolean(num && !pose?.framing && pose===model?.poses[0]);
  const framed=hasFrames && frame!=='full' ? models.find(m=>m.id===`${frame} ${num}` && !m.deleted) : model;
  const framedPose=framed===model ? pose : framed?.poses[0];
- const visible=models.filter(m=>!derived(m.id)&&Boolean(m.deleted)===trash&&`${m.name} ${m.character||''}`.toLowerCase().includes(search.toLowerCase()));
+ const library=models.filter(m=>!isDerivedReference(m.id)&&Boolean(m.deleted)===trash);
+ const visible=library.filter(m=>matchesLibrarySection(m,section)&&`${m.name} ${m.character||''}`.toLowerCase().includes(search.trim().toLowerCase()));
+ useEffect(()=>{
+  if(loading) return;
+  if(!visible.some(m=>m.id===selected)) {
+   setSelected(visible[0]?.id||'');setPoseId('');setFrame('crop');
+  }
+ },[models,section,search,trash,loading,selected]);
  async function mutate(body:Record<string,unknown>){
   const r=await fetch(api,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
   if(r.redirected)throw Error('Please sign in again.');const d=await r.json();if(!r.ok)throw Error(d.error||'Could not save.');
@@ -40,7 +50,7 @@ export default function ModelAdmin(){
   return d.change;
  }
  async function action(body:Record<string,unknown>){setBusy(true);setError('');try{return await mutate(body);}catch(e:any){setError(e.message);}finally{setBusy(false);}}
- function pick(m:ManagedModel){setSelected(m.id);setPoseId(m.poses[0]?.id||'');setFrame('crop');setMessage('');}
+ function pick(m:ManagedModel){setSelected(m.id);setPoseId('');setFrame('crop');setMessage('');}
  function choosePhoto(m:ManagedModel,p:ModelPose,view:PresetView,file:File){
   if(!['image/png','image/jpeg','image/webp'].includes(file.type)||file.size>20*1024*1024){setError('Choose a PNG, JPEG or WebP no larger than 20 MB.');return;}
   setEdit({model:m,pose:p,view,file,preview:URL.createObjectURL(file)});setProtect(view!=='back' && !/^low /.test(m.id) && p.framing!=='low');setBoundary(view==='full'?16:25);setReviewed(false);setProgress(0);setError('');
@@ -60,40 +70,45 @@ export default function ModelAdmin(){
  }
  async function createEntry(e:React.FormEvent){
   e.preventDefault();const c=await action(create==='model'?{action:'createModel',name:newName,character:newGroup}:{action:'createPose',modelId:model?.id,label:newName,framing:newFrame});
-  if(c){if(create==='model'){setSelected(c.modelId);setPoseId('');setTrash(false);}else setPoseId(c.poseId);setCreate(null);setNewName('');setNewGroup('');}
+  if(c){if(create==='model'){setSelected(c.modelId);setPoseId('');setTrash(false);setSection('tops');setSearch('');}else {setPoseId(c.poseId);setSection(newFrame==='low'?'bottoms':'tops');}setCreate(null);setNewName('');setNewGroup('');}
  }
  return <main className="reference-admin">
   <header className="ra-header"><div><a href="/model-studio">← Model Studio</a><h1>Models &amp; pose references</h1><p>Manage the photos used by Model Studio on desktop and phone.</p><a href="/reference-identity-studio">Create reference identities ↗</a></div><button onClick={refresh} disabled={busy||loading}>Refresh</button></header>
   {error&&<p role="alert" className="ra-error">{error} <a href="/login?next=/admin/models">Sign in</a></p>}
   {message&&<p role="status" className="ra-success">{message}</p>}
-  <div className="ra-layout"><aside className="ra-library">
-   <button className="ra-primary" onClick={()=>{setCreate('model');setNewName('');}}>Add model</button>
+  <nav className="ra-collections" aria-label="Reference categories">
+   {(['tops','bottoms','all'] as const).map(value=><button key={value} aria-pressed={section===value} disabled={busy} onClick={()=>{setSection(value);setPoseId('');setFrame('crop');setMessage('');}}>{value==='all'?'All references':title(value)}<span>{library.filter(m=>matchesLibrarySection(m,value)).length}</span></button>)}
+  </nav>
+  <div className="ra-layout"><aside className="ra-library" aria-label="Reference library">
+   <div className="ra-library-tools"><div className="ra-library-title"><h2>{trash?'Trash':section==='all'?'All references':title(section)+' references'}</h2><button className="ra-trash" aria-pressed={trash} disabled={busy} onClick={()=>{setTrash(!trash);setMessage('');}}>{trash?'Back to models':'Trash'}</button></div>
+   <button className="ra-primary" disabled={busy} onClick={()=>{setCreate('model');setNewName('');setNewGroup('');}}>Add model</button>
    <input aria-label="Search models" placeholder="Search models" value={search} onChange={e=>setSearch(e.target.value)}/>
-   <div className="ra-tabs"><button aria-pressed={!trash} onClick={()=>setTrash(false)}>Models</button><button aria-pressed={trash} onClick={()=>setTrash(true)}>Trash</button></div>
-   {loading?<p>Loading references…</p>:visible.length===0?<p>No models found.</p>:visible.map(m=><button className={`ra-model ${selected===m.id?'selected':''}`} key={m.id} onClick={()=>pick(m)}>{m.poses[0]?.publicPath&&<img src={m.poses[0].publicPath} alt=""/>}<span><b>{m.name}</b><small>{m.character||'Custom'} · {m.poses.filter(p=>!p.deleted).length} pose sets</small></span></button>)}
-  </aside><section className="ra-content">
-   {!model?<div className="ra-empty"><h2>Choose a model</h2><p>Select a model to see its reference photos, or add a new one.</p></div>:<>
-    <form className="ra-details" onSubmit={e=>{e.preventDefault();action({action:'updateModel',modelId:model.id,name,character:group,pose:description});}}>
+   </div><div className="ra-model-list">
+   {loading?<p>Loading references…</p>:visible.length===0?<p>No models found.</p>:visible.map(m=>{const thumbnail=libraryPoses(m,section).find(p=>!p.deleted&&p.publicPath)?.publicPath;return <button className={`ra-model ${selected===m.id?'selected':''}`} key={m.id} aria-pressed={selected===m.id} disabled={busy} onClick={()=>pick(m)}>{thumbnail?<img src={thumbnail} alt=""/>:<span className="ra-model-placeholder" aria-hidden="true">＋</span>}<span><b>{m.name}</b><small>{m.character ? title(m.character)+' · ' : ''}{m.poses.filter(p=>!p.deleted).length} {m.poses.filter(p=>!p.deleted).length===1?'pose set':'pose sets'}</small></span></button>;})}
+  </div></aside><section className="ra-content" aria-label="Reference editor">
+   {!model?<div className="ra-empty"><h2>Choose a model</h2><p>Choose a reference from the library, or clear your search to see more.</p></div>:<>
+    <div className="ra-editor-heading"><div><span className="ra-eyebrow">{libraryLabel(model)}{model.deleted?' · In Trash':''}</span><h2>{model.name}</h2><p>{bottomPose?'Waist-down references · Front, side and back':'Model references · Front, side, back and full body'}</p></div></div>
+    <details className="ra-settings" key={model.id+'-details'} open={model.deleted||undefined}><summary>Edit model details</summary><form className="ra-details" onSubmit={e=>{e.preventDefault();action({action:'updateModel',modelId:model.id,name,character:group,pose:description});}}>
      <label>Model name<input value={name} required maxLength={100} onChange={e=>setName(e.target.value)}/></label>
      <label>Model group<input value={group} maxLength={100} placeholder="Celine, Vision, or a new name" onChange={e=>setGroup(e.target.value)}/></label>
      <label>Pose description<input value={description} maxLength={100} placeholder="Arms relaxed" onChange={e=>setDescription(e.target.value)}/></label>
      <button disabled={busy}>Save details</button>
-     <button type="button" className="ra-danger" disabled={busy} onClick={()=>{if(model.deleted||window.confirm(`Move ${model.name} and its references to Trash? Existing generated images are kept.`))action({action:model.deleted?'restoreModel':'deleteModel',modelId:model.id});}}>{model.deleted?'Restore model':'Delete model'}</button>
-    </form>
+     <button type="button" className="ra-danger" disabled={busy} onClick={()=>{if(model.deleted||window.confirm(`Move ${model.name} and its references to Trash? Existing generated images are kept.`))action({action:model.deleted?'restoreModel':'deleteModel',modelId:model.id}).then(c=>{if(c){setTrash(!model.deleted);setSelected(model.id);}});}}>{model.deleted?'Restore model':'Delete model'}</button>
+    </form></details>
     {model.deleted?<p>This model is in Trash. Restore it to use or edit its references.</p>:<>
-     <div className="ra-posebar"><label>Pose set<select value={pose?.id||''} onChange={e=>setPoseId(e.target.value)}>{!model.poses.length&&<option value="">No pose sets yet</option>}{model.poses.map(p=><option key={p.id} value={p.id}>{p.label}{p.deleted?' · Deleted':''}</option>)}</select></label><button disabled={busy} onClick={()=>{setCreate('pose');setNewName('');}}>Add pose set</button></div>
+     <div className="ra-posebar"><label>Pose set<select value={pose?.id||''} onChange={e=>setPoseId(e.target.value)}>{!poses.length&&<option value="">No pose sets yet</option>}{poses.map(p=><option key={p.id} value={p.id}>{p.label}{p.deleted?' · Deleted':''}</option>)}</select></label><button disabled={busy} onClick={()=>{setCreate('pose');setNewName('');setNewFrame(section==='bottoms'||bottomPose?'low':'crop');}}>Add pose set</button></div>
      {pose&&<>
-      <form className="ra-posebar" onSubmit={e=>{e.preventDefault();action({action:'updatePose',modelId:model.id,poseId:pose.id,label:poseName});}}><label>Pose name<input value={poseName} required maxLength={100} onChange={e=>setPoseName(e.target.value)}/></label><button disabled={busy}>Rename pose</button><button type="button" className="ra-danger" disabled={busy} onClick={()=>{if(pose.deleted||window.confirm(`Move ${pose.label} to Trash?`))action({action:pose.deleted?'restorePose':'deletePose',modelId:model.id,poseId:pose.id});}}>{pose.deleted?'Restore pose':'Delete pose'}</button></form>
+      <details className="ra-settings ra-pose-settings" key={pose.id+'-settings'} open={pose.deleted||undefined}><summary>Edit pose details</summary><form className="ra-posebar" onSubmit={e=>{e.preventDefault();action({action:'updatePose',modelId:model.id,poseId:pose.id,label:poseName});}}><label>Pose name<input value={poseName} required maxLength={100} onChange={e=>setPoseName(e.target.value)}/></label><button disabled={busy}>Rename pose</button><button type="button" className="ra-danger" disabled={busy} onClick={()=>{if(pose.deleted||window.confirm(`Move ${pose.label} to Trash?`))action({action:pose.deleted?'restorePose':'deletePose',modelId:model.id,poseId:pose.id});}}>{pose.deleted?'Restore pose':'Delete pose'}</button></form></details>
       {!pose.deleted&&<>
-       {hasFrames&&<div className="ra-frame"><label>Reference framing<select value={frame} onChange={e=>setFrame(e.target.value)}><option value="crop">Tops · head to thigh</option><option value="low">Pants · waist down</option><option value="full">Full body</option></select></label><p>Each framing has its own photos. The Full slot always uses the full-body reference.</p></div>}
-       <div className="ra-photos">{VIEWS.map(view=>{
+       {hasFrames&&<div className="ra-frame"><label>Reference framing<select value={frame} onChange={e=>setFrame(e.target.value)}><option value="crop">Tops · head to thigh</option><option value="low">Bottoms · waist down</option><option value="full">Full body</option></select></label><p>Each framing has its own photos. The Full slot always uses the full-body reference.</p></div>}
+       <div className={`ra-photos${bottomPose?' ra-photos-bottoms':''}`}>{(bottomPose?VIEWS.filter(v=>v!=='full'):VIEWS).map(view=>{
         const target=view==='full'?model:framed;const targetPose=view==='full'?pose:framedPose;
         const photo=targetPose?.views[view];
         return <article className="ra-photo" key={view}><h3>{title(view)}</h3><div className="ra-photo-preview">{photo?<img src={photo.publicPath} alt={`${model.name} ${view} reference`}/>:<span>Missing {view} photo</span>}</div>
          <p className={photo?'':'ra-warning'}>{photo?'Reference available':'Add this view before generating it.'}</p>
          {target&&targetPose?<div className="ra-actions"><label className={`ra-file ${busy?'disabled':''}`}>{photo?'Replace photo':'Upload photo'}<input aria-label={`${photo?'Replace':'Upload'} ${view} photo`} type="file" accept="image/png,image/jpeg,image/webp" disabled={busy} onChange={e=>{const f=e.target.files?.[0];if(f)choosePhoto(target,targetPose,view,f);e.target.value='';}}/></label>
           {photo&&<><a href={photo.publicPath} target="_blank" rel="noreferrer">Original ↗</a><button disabled={busy} className="ra-danger" onClick={()=>{if(window.confirm(`Remove the ${view} reference? This view will be unavailable until you upload another photo.`))action({action:'removePhoto',modelId:target.id,poseId:targetPose.id,view,expectedUrl:photo.publicPath});}}>Remove</button>
-          {photo.publicPath.includes('model-admin/photos/')&&<button disabled={busy} onClick={()=>{setEdit({model:target,pose:targetPose,view,preview:photo.publicPath,url:photo.publicPath});setProtect(true);setBoundary(photo.protection?Math.round(photo.protection.protectedRows/photo.protection.height*100):25);setReviewed(false);}}>Face protection</button>}</>}
+          {photo.publicPath.includes('model-admin/photos/')&&!bottomPose&&view!=='back'&&<button disabled={busy} onClick={()=>{setEdit({model:target,pose:targetPose,view,preview:photo.publicPath,url:photo.publicPath});setProtect(true);setBoundary(photo.protection?Math.round(photo.protection.protectedRows/photo.protection.height*100):25);setReviewed(false);}}>Face protection</button>}</>}
          </div>:<p>No separate framing installed. Choose Full body to edit the source reference.</p>}
         </article>;
        })}</div>
@@ -103,7 +118,7 @@ export default function ModelAdmin(){
     </>}
    </>}
   </section></div>
-  {create&&<div className="ra-scrim"><form className="ra-dialog" role="dialog" aria-modal="true" aria-label={`Add ${create}`} onSubmit={createEntry}><h2>Add {create==='model'?'model':'pose set'}</h2><label>Name<input autoFocus required maxLength={100} value={newName} onChange={e=>setNewName(e.target.value)}/></label>{create==='model'?<label>Model group<input value={newGroup} maxLength={100} placeholder="Celine, Vision, or a new name" onChange={e=>setNewGroup(e.target.value)}/></label>:<label>Front, side and back framing<select value={newFrame} onChange={e=>setNewFrame(e.target.value)}><option value="crop">Tops · head to thigh</option><option value="low">Pants · waist down</option><option value="full">Full body</option></select></label>}<p>{create==='model'?'Next, add a pose set and upload its photos.':'You can upload front, side, back and full photos individually.'}</p><div className="ra-actions"><button type="button" disabled={busy} onClick={()=>setCreate(null)}>Cancel</button><button className="ra-primary" disabled={busy}>{busy?'Saving…':'Create'}</button></div></form></div>}
+  {create&&<div className="ra-scrim"><form className="ra-dialog" role="dialog" aria-modal="true" aria-label={`Add ${create}`} onSubmit={createEntry}><h2>Add {create==='model'?'model':'pose set'}</h2><label>Name<input autoFocus required maxLength={100} value={newName} onChange={e=>setNewName(e.target.value)}/></label>{create==='model'?<label>Model group<input value={newGroup} maxLength={100} placeholder="Celine, Vision, or a new name" onChange={e=>setNewGroup(e.target.value)}/></label>:<label>Front, side and back framing<select value={newFrame} onChange={e=>setNewFrame(e.target.value)}><option value="crop">Tops · head to thigh</option><option value="low">Bottoms · waist down</option><option value="full">Full body</option></select></label>}<p>{create==='model'?'Next, add a pose set and upload its photos.':'Waist-down poses appear in Bottoms. Other framings appear in Tops.'}</p><div className="ra-actions"><button type="button" disabled={busy} onClick={()=>setCreate(null)}>Cancel</button><button className="ra-primary" disabled={busy}>{busy?'Saving…':'Create'}</button></div></form></div>}
   {edit&&<div className="ra-scrim"><section className="ra-dialog ra-upload" role="dialog" aria-modal="true" aria-label="Review reference photo"><h2>{edit.model.name} · {title(edit.view)}</h2><div className="ra-review-image"><img src={edit.preview} alt="New reference preview"/>{protect&&<div className="ra-boundary" style={{top:`${boundary}%`}}><span>Protected above</span></div>}</div>
    <label className="ra-check"><input type="checkbox" checked={protect} onChange={e=>{setProtect(e.target.checked);setReviewed(false);}}/>Protect original face pixels</label>
    {protect?<><p>Place the line below the entire face and above the garment. Pixels above it stay original during Simple garment swap.</p><label>Protection boundary · {boundary}%<input aria-label="Protection boundary" type="range" min="1" max="80" step="1" value={boundary} onChange={e=>{setBoundary(Number(e.target.value));setReviewed(false);}}/></label><label className="ra-check"><input type="checkbox" checked={reviewed} onChange={e=>setReviewed(e.target.checked)}/>I checked that the entire face is above the line.</label></>:<p>Back and pants-only photos need no face boundary. A visible face needs reviewed protection to use Simple garment swap.</p>}

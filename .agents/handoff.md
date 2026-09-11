@@ -1,19 +1,24 @@
-# Handoff — shared pants references
-Updated 2026-09-10 by Codex. Branch codex/garment-only-pixel-lock; implementation7c77108 pushed to branch + main.
-- Pants now use one shared nine-option collection, no Celine/Vision groups.
-- Order: DP52083 Donuts, DP62024, DP67305, DP60245, DP62024A,
-  DP43109, DP69017, DP67040, DP60197B.
-- Front/side/back only: picker, batch generation, output slots, API guard.
-- 24 original ERP images stored in public/pants-references; SHA/source map in
-  lib/pants-references.json. DP67040 front uses ERP index14, back10, side20.
-- Existing Donuts front/side/back bytes and IDs preserved; retired full not offered.
-- Donuts side/back retain their earlier inferred-construction provenance.
-- Generation prompts unchanged; no face or identity edit added to pants.
-- 933 tests and production build passed. Live read-only Studio browser checked.
-- Canonical Daily/Chrome changes live in management release branch separately.
-- docs/pants-references.md explains sources and behavior.
-- scripts/test-pants-studio.cjs checks live picker without paid generation.
-- Live Studio deploy f3biorg0r verified: all24 hashes match ERP originals.
-- Live API rejects pants full before queue; live picker has9 options/3 views.
-- Next: user tries garment swaps with the new grid; no setup required.
-- Preserve unrelated tracked tsconfig.tsbuildinfo. No new AI generations purchased.
+# Handoff — reference library categories and layout
+Updated 2026-09-10T20:47-07:00 by Codex.
+Branch codex/reference-library; basecce7752. Implementation is this commit.
+- Models & pose references now has Tops / Bottoms / All category tabs.
+- Sidebar300px, nonshrinking90px rows, contained thumbnails and wrapped names.
+- Fixed sidebar controls; only model list scrolls. Phone list has bounded height.
+- Classification uses curated pants IDs / explicit low pose framing; wearing
+  pants in a full-body photo never classifies a top model as a bottom.
+- Mixed custom models appear in both with category-appropriate pose/thumbnail.
+- Bottoms show front/side/back only. Tops keep all four views.
+- Model/pose rename and delete controls are under Edit details disclosures.
+- Search clears invisible selection; Trash remains category-scoped.
+- Adding low pose switches to Bottoms. IDs/bytes/backend/generation unchanged.
+- All942 tests pass; standard npm run build passed (Next16.2.4).
+- Browser Chromium/WebKit: separate categories, nine bottoms,3/4 views,
+  search, selection, disclosures, row geometry,390/1024/1536/2560 widths.
+- Local integration: create model/pose, four uploads, independent replacement,
+  invalid URL rejection, remove/reload, Trash/restore and catalog propagation.
+- No live reference edits or generations used for verification.
+- Next: deploy clean committed source to existing davidani-studio Vercel project;
+  verify live admin category tabs, row layout and existing cloud models.
+- Worktree /tmp/studio-reference-library; screenshots /tmp/model-library-qa.
+- Local QA server3016 uses temporary local catalog entries (gitignored .data).
+- Preserve original repo's modified tsconfig.tsbuildinfo.
