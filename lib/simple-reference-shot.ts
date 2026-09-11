@@ -19,9 +19,13 @@ export function simpleReferenceShot(o: ReferenceShot) {
     : 'Image 2 is the sole garment-color reference: match its hue, saturation and midtone brightness exactly.';
   // A top is worn alone: the plate's own tee must not peek out at the
   // neckline, shoulders or hem (the oversized-poncho case).
-  const keep = scope === 'top'
+  // No necklace under a new neckline (2026-09-11, DWJ62316 on studio 97): the
+  // plate's chain and pendant were half-erased where the cardigan's crew band
+  // now sits, leaving a ghost chain on the skin. Bottoms leave the neck alone.
+  const neck = scope === 'bottoms' ? '' : " Remove any necklace, chain or pendant image 1 wears, so the neckline shows only her skin and the new garment; keep bracelets and rings.";
+  const keep = (scope === 'top'
     ? "Keep image 1's exact pose, framing, background, lighting, bottoms and shoes. The new top is worn alone: remove any top or tee image 1 wears under it, so nothing shows at the neckline, shoulders or below the hem."
-    : "Keep image 1's exact pose, framing, background, lighting and other clothing.";
+    : "Keep image 1's exact pose, framing, background, lighting and other clothing.") + neck;
   // The listing title names the cut (2026-09-11, DET60277 Oatmeal): an
   // oversized poncho swapped onto a plate wearing a boxy elbow-sleeve tee came
   // back as that tee, recoloured. The model edits image 1 in place, so the
