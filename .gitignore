@@ -17,3 +17,6 @@ node_modules/
 # Local mockup renders (real ERP product photos, regenerated on demand)
 /public/mockup/
 /public/mockup-*.html
+
+# Generated reference identity originals are delivered through verified Blob downloads.
+/output/reference-identity/

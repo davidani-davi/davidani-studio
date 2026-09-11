@@ -52,3 +52,19 @@ Blob persistence. Local development falls back to `.data` and `public/user-asset
 The live run link accepts `?set=<UUID>` for reopening from another device.
 If a worker exceeds its deadline without finishing, its view becomes retryable;
 no new paid generation is started automatically by polling.
+
+### Production verification — September 10, 2026
+
+Deployed implementation `5810c72` to `davidani-studio-hk70mbbda` (production alias).
+929 tests and the production build passed. Real browser test uploaded the four
+DETP60100 originals, submitted independent GPT2.5 edits, reloaded while running,
+opened all four results and their input pairs, downloaded a PNG and imported the
+reviewed set into the live model picker. Phone scrolling/overflow checked.
+All four outputs are 2000 × 2992 PNGs; stored bytes match provider originals.
+
+- Run: https://davidani-studio.vercel.app/reference-identity-studio?set=3e39d9b6-88b5-436d-abc1-322105390544
+- Library: `Celine · DETP60100 mint stripe` (`identity-3e39d9b6-88b5-436d-abc1-322105390544`).
+- The side provider job took about 12 minutes; no duplicate generation was submitted.
+- ZIP: https://cdr9xgexrrfthz5f.public.blob.vercel-storage.com/downloads/DETP60100-Celine-reference-set-LyrhNFhfxmAQY43X9Hg0DlESwcCrV6.zip
+- Hosted ZIP verified: 24,585,865 bytes, SHA256 `f631a6c6da4262b672ba6d54e5da410bb171db853469c898d3e0f79f1bea1439`.
+- Live UI screenshot: https://cdr9xgexrrfthz5f.public.blob.vercel-storage.com/downloads/reference-identity-studio-DETP60100-uZFTOKWdeYUXJZIeF3wpw8o6KaBQiu.png
