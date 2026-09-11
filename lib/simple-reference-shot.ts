@@ -22,7 +22,13 @@ export function simpleReferenceShot(o: ReferenceShot) {
   const keep = scope === 'top'
     ? "Keep image 1's exact pose, framing, background, lighting, bottoms and shoes. The new top is worn alone: remove any top or tee image 1 wears under it, so nothing shows at the neckline, shoulders or below the hem."
     : "Keep image 1's exact pose, framing, background, lighting and other clothing.";
-  const prompt = `Edit image 1 as the exact base photograph. Replace only the ${scope} with the garment in image 2. Match its fabric, cut, length, print and construction. ${colour} Allow natural fold shadows and highlights, but do not tint the garment to match image 1’s clothing or background. ${keep} Preserve the face, expression, head position and hairstyle unchanged. No sharpening, retouching or enhancement. One clean photograph of one person.${inferred ? ' No back garment photo is supplied; use a plain continuation of the fabric without invented rear graphics.' : ''}${o.note ? ` Requested change: ${o.note}` : ''}`;
+  // The listing title names the cut (2026-09-11, DET60277 Oatmeal): an
+  // oversized poncho swapped onto a plate wearing a boxy elbow-sleeve tee came
+  // back as that tee, recoloured. The model edits image 1 in place, so the
+  // garment's own silhouette has to be spelled out or the plate's wins.
+  const name = String(o.garmentName || '').replace(/["\n\r]+/g, ' ').trim().slice(0, 120);
+  const cut = name ? ` The garment is a "${name}": reproduce that cut, silhouette, sleeve length and hem exactly, not the shape of the ${scope} image 1 wears.` : '';
+  const prompt = `Edit image 1 as the exact base photograph. Replace only the ${scope} with the garment in image 2. Match its fabric, cut, length, print and construction.${cut} ${colour} Allow natural fold shadows and highlights, but do not tint the garment to match image 1’s clothing or background. ${keep} Preserve the face, expression, head position and hairstyle unchanged. No sharpening, retouching or enhancement. One clean photograph of one person.${inferred ? ' No back garment photo is supplied; use a plain continuation of the fabric without invented rear graphics.' : ''}${o.note ? ` Requested change: ${o.note}` : ''}`;
   const image_urls = anchor ? [o.referenceUrl, garment, anchor] : [o.referenceUrl, garment];
   return {prompt, garmentImageUrls:[garment], image_urls, garmentBackInferred:inferred, anchored: Boolean(anchor)};
 }

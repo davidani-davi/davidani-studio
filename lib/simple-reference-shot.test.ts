@@ -54,6 +54,13 @@ describe('simple garment swap',()=>{
    expect(shot.image_urls).toHaveLength(2);
   }
  });
+ it('names the garment cut from the listing title so the plate silhouette does not win',()=>{
+  const shot=simpleReferenceShot({...base,view:'front',garmentName:'Seamed Handkerchief Hem Oversized Sweater Poncho'});
+  expect(shot.prompt).toContain('The garment is a "Seamed Handkerchief Hem Oversized Sweater Poncho": reproduce that cut, silhouette, sleeve length and hem exactly, not the shape of the top image 1 wears.');
+  const quoted=simpleReferenceShot({...base,view:'side',garmentName:'  "Odd"\nTitle  '});
+  expect(quoted.prompt).toContain('The garment is a "Odd Title"');
+  expect(simpleReferenceShot({...base,view:'front'}).prompt).not.toContain('The garment is a');
+ });
  it('requires two input roles',()=>expect(()=>simpleReferenceShot({...base,view:'front',garmentImageUrls:[]})).toThrow());
  it('requires reviewed unchanged source pixels for face protection',async()=>{
   const ref=await referencePixels(fs.readFileSync('public/models/crop 100/front.png'));

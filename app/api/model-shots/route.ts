@@ -334,7 +334,7 @@ async function renderShot(req: Request, body: any): Promise<Response> {
       : await getPoseUrl(humanModelId, poseId, view, 0);
     const input = buildReferenceShot({ view, referenceUrl, garmentImageUrls, category, framing,
       color: typeof known.color === "string" ? known.color : undefined, note });
-    const simpleInput = simple ? simpleReferenceShot({ view, referenceUrl, garmentImageUrls, category, framing, color: typeof known.color === 'string' ? known.color : undefined, note, anchorImageUrl }) : undefined;
+    const simpleInput = simple ? simpleReferenceShot({ view, referenceUrl, garmentImageUrls, category, framing, color: typeof known.color === 'string' ? known.color : undefined, note, anchorImageUrl, garmentName: typeof known.title === 'string' ? known.title : undefined }) : undefined;
     if (simpleInput) { input.prompt = simpleInput.prompt; input.image_urls = simpleInput.image_urls; }
     let simplePrepared: { ref: Awaited<ReturnType<typeof referencePixels>>; mask: Buffer } | undefined;
     if (simple && ((framing !== 'low' && view !== 'back') || reference.protection)) {

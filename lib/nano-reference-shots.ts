@@ -9,6 +9,8 @@ export interface ReferenceShot {
   referenceUrl: string;
   garmentImageUrls: string[];
   anchorImageUrl?: string;
+  /** The listing title we approved (KnownGarment.title), e.g. "Oversized Sweater Poncho". */
+  garmentName?: string;
   category: ShotCategory;
   framing: PlateFraming;
   color?: string;
