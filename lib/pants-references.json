@@ -310,5 +310,317 @@
         "idFile": 590572
       }
     }
+  },
+  {
+    "style": "DP62138",
+    "label": "Taupe printed wide-leg pants",
+    "silhouette": "wide",
+    "views": {
+      "front": {
+        "filename": "front.jpg",
+        "publicPath": "/pants-references/DP62138/front.jpg"
+      },
+      "side": {
+        "filename": "side.jpg",
+        "publicPath": "/pants-references/DP62138/side.jpg"
+      },
+      "back": {
+        "filename": "back.jpg",
+        "publicPath": "/pants-references/DP62138/back.jpg"
+      }
+    },
+    "sources": {
+      "front": {
+        "filename": "DP62138_1.jpg",
+        "url": "https://system.davidani.com/upload/style/DP62138_1.jpg",
+        "sha256": "3575e3e220021ee3d27407357ee03dc2fd0425dab1c3e207946a921a2d882f67",
+        "idFile": 590989
+      },
+      "side": {
+        "filename": "DP62138_4.jpg",
+        "url": "https://system.davidani.com/upload/style/DP62138_4.jpg",
+        "sha256": "a56324f9e8defbdbedfeca1c1498548d240899ca4056f92affc8a9ef2304de3b",
+        "idFile": 590991
+      },
+      "back": {
+        "filename": "DP62138_8.jpg",
+        "url": "https://system.davidani.com/upload/style/DP62138_8.jpg",
+        "sha256": "492f4ac1004e10746bb1aa7b50bcfa97c00f4e28237bbd0cd86d6f64af6ba3e3",
+        "idFile": 590996
+      }
+    }
+  },
+  {
+    "style": "DP67113",
+    "label": "Red / denim blue side-stripe pants",
+    "silhouette": "wide",
+    "views": {
+      "front": {
+        "filename": "front.jpg",
+        "publicPath": "/pants-references/DP67113/front.jpg"
+      },
+      "side": {
+        "filename": "side.jpg",
+        "publicPath": "/pants-references/DP67113/side.jpg"
+      },
+      "back": {
+        "filename": "back.jpg",
+        "publicPath": "/pants-references/DP67113/back.jpg"
+      }
+    },
+    "sources": {
+      "front": {
+        "filename": "DP67113_1.jpg",
+        "url": "https://system.davidani.com/upload/style/DP67113_1.jpg",
+        "sha256": "4d577d5d0224be1669bf672dfda901c1fe8bcd74732fa636db64e8dc767748a8",
+        "idFile": 568486
+      },
+      "side": {
+        "filename": "DP67113_5.jpg",
+        "url": "https://system.davidani.com/upload/style/DP67113_5.jpg",
+        "sha256": "fef87cf3635b7e5aa7bd1a36b0bd3f9442c77db3d504d2cd5c2acd863ca110c7",
+        "idFile": 568482
+      },
+      "back": {
+        "filename": "DP67113_9.jpg",
+        "url": "https://system.davidani.com/upload/style/DP67113_9.jpg",
+        "sha256": "c571237ae1af49735a9509a50e25945b1511468e43579ea9e5a712a210e6589a",
+        "idFile": 568477
+      }
+    }
+  },
+  {
+    "style": "DP58506",
+    "label": "Taupe Black Dots",
+    "silhouette": "wide",
+    "views": {
+      "front": {
+        "filename": "front.jpg",
+        "publicPath": "/pants-references/DP58506/front.jpg"
+      },
+      "side": {
+        "filename": "side.jpg",
+        "publicPath": "/pants-references/DP58506/side.jpg"
+      },
+      "back": {
+        "filename": "back.jpg",
+        "publicPath": "/pants-references/DP58506/back.jpg"
+      }
+    },
+    "sources": {
+      "front": {
+        "filename": "DP58506_1(3).jpg",
+        "url": "https://system.davidani.com/upload/style/DP58506_1(3).jpg",
+        "sha256": "3bcaa1967e2caa9c1e6e8e75faf40b4360d75c86f760de782d4c5342338872e2",
+        "idFile": 557930
+      },
+      "side": {
+        "filename": "DP58506_6(3).jpg",
+        "url": "https://system.davidani.com/upload/style/DP58506_6(3).jpg",
+        "sha256": "b238887ee6736a8523e4fede337dbaabd8fe8ff7947d9511a1eded6c6b15b0ad",
+        "idFile": 557928
+      },
+      "back": {
+        "filename": "DP58506_7(2).jpg",
+        "url": "https://system.davidani.com/upload/style/DP58506_7(2).jpg",
+        "sha256": "ce5fa4202e4776828bb9724d7dc51230372d6079b6f9dc7ec6218060f3acffd2",
+        "idFile": 557929
+      }
+    }
+  },
+  {
+    "style": "DP52122",
+    "label": "Taupe / ivory cropped peace pants",
+    "silhouette": "barrel",
+    "views": {
+      "front": {
+        "filename": "front.jpg",
+        "publicPath": "/pants-references/DP52122/front.jpg"
+      },
+      "side": {
+        "filename": "side.jpg",
+        "publicPath": "/pants-references/DP52122/side.jpg"
+      },
+      "back": {
+        "filename": "back.jpg",
+        "publicPath": "/pants-references/DP52122/back.jpg"
+      }
+    },
+    "sources": {
+      "front": {
+        "filename": "DP52122_2.jpg",
+        "url": "https://system.davidani.com/upload/style/DP52122_2.jpg",
+        "sha256": "c51c02b33113b4847409fe0b1d43adc443be8493dbcfbe5525c7fea9173001ad",
+        "idFile": 528858
+      },
+      "side": {
+        "filename": "DP52122_7.jpg",
+        "url": "https://system.davidani.com/upload/style/DP52122_7.jpg",
+        "sha256": "fb97e8bc5811629209d484d1c3b28f70da3ed3b87efb67d6c67e11888a183a4d",
+        "idFile": 528857
+      },
+      "back": {
+        "filename": "DP52122_8.jpg",
+        "url": "https://system.davidani.com/upload/style/DP52122_8.jpg",
+        "sha256": "770fbe3c7d3afe8d596d97684a0e601f79ed0af1cbd471f220b9b56cc97867be",
+        "idFile": 528852
+      }
+    }
+  },
+  {
+    "style": "DP52005A",
+    "label": "Black wide-leg trousers",
+    "silhouette": "wide",
+    "views": {
+      "front": {
+        "filename": "front.jpg",
+        "publicPath": "/pants-references/DP52005A/front.jpg"
+      },
+      "side": {
+        "filename": "side.jpg",
+        "publicPath": "/pants-references/DP52005A/side.jpg"
+      },
+      "back": {
+        "filename": "back.jpg",
+        "publicPath": "/pants-references/DP52005A/back.jpg"
+      }
+    },
+    "sources": {
+      "front": {
+        "filename": "DP52005A_3.jpg",
+        "url": "https://system.davidani.com/upload/style/DP52005A_3.jpg",
+        "sha256": "cae0c7c5cb945f72a2ff34eccb8da1c8f0bca41013b32ce7a4947f464e98c131",
+        "idFile": 536241
+      },
+      "side": {
+        "filename": "DP52005A_7.jpg",
+        "url": "https://system.davidani.com/upload/style/DP52005A_7.jpg",
+        "sha256": "e7215f31812b743e80d9f18edfa606a6430ce4b105e4ff0b072f2d383e571de7",
+        "idFile": 536235
+      },
+      "back": {
+        "filename": "DP52005A_8.jpg",
+        "url": "https://system.davidani.com/upload/style/DP52005A_8.jpg",
+        "sha256": "f9d04e535cf9538c9e43eb20c7cd9c01487fa9bfcc213804e899a8d189ba5009",
+        "idFile": 536238
+      }
+    }
+  },
+  {
+    "style": "DP58132",
+    "label": "Grey leopard barrel pants",
+    "silhouette": "barrel",
+    "views": {
+      "front": {
+        "filename": "front.jpg",
+        "publicPath": "/pants-references/DP58132/front.jpg"
+      },
+      "side": {
+        "filename": "side.jpg",
+        "publicPath": "/pants-references/DP58132/side.jpg"
+      },
+      "back": {
+        "filename": "back.jpg",
+        "publicPath": "/pants-references/DP58132/back.jpg"
+      }
+    },
+    "sources": {
+      "front": {
+        "filename": "DP58132 GREY LEOPARD_1.jpg",
+        "url": "https://system.davidani.com/upload/style/DP58132%20GREY%20LEOPARD_1.jpg",
+        "sha256": "168aaf31640942d1bd637ca7b04155af07e1fb7ad026bf7bb99e563dd651148b",
+        "idFile": 559186
+      },
+      "side": {
+        "filename": "DP58132 GREY LEOPARD_3.jpg",
+        "url": "https://system.davidani.com/upload/style/DP58132%20GREY%20LEOPARD_3.jpg",
+        "sha256": "122e826e87f37574ce7db1b7c84333f887d458a6cc8598a75917cda763227bcf",
+        "idFile": 559184
+      },
+      "back": {
+        "filename": "DP58132 GREY LEOPARD_4.jpg",
+        "url": "https://system.davidani.com/upload/style/DP58132%20GREY%20LEOPARD_4.jpg",
+        "sha256": "f31751eb993657546b00f34ef5394cb9ffa2a1935a85f846719569fca56cf174",
+        "idFile": 559183
+      }
+    }
+  },
+  {
+    "style": "DP62024B",
+    "label": "Taupe zebra lace shorts",
+    "silhouette": "shorts",
+    "views": {
+      "front": {
+        "filename": "front.png",
+        "publicPath": "/pants-references/DP62024B/front.png"
+      },
+      "side": {
+        "filename": "side.png",
+        "publicPath": "/pants-references/DP62024B/side.png"
+      },
+      "back": {
+        "filename": "back.png",
+        "publicPath": "/pants-references/DP62024B/back.png"
+      }
+    },
+    "sources": {
+      "front": {
+        "filename": "DP62024B TAUPE ZEBRA_5.png",
+        "url": "https://system.davidani.com/upload/style/DP62024B%20TAUPE%20ZEBRA_5.png",
+        "sha256": "edc8370a2cf3ee5c3c0f4fe82fb70a852377f2865162b4f337961c48e1b148f5",
+        "idFile": 580651
+      },
+      "side": {
+        "filename": "DP62024B TAUPE ZEBRA_4.png",
+        "url": "https://system.davidani.com/upload/style/DP62024B%20TAUPE%20ZEBRA_4.png",
+        "sha256": "11610ffde0ce3648f5732604a2bd995926e856c116facfe3aea5510f90f5636a",
+        "idFile": 580644
+      },
+      "back": {
+        "filename": "DP62024B TAUPE ZEBRA_2.png",
+        "url": "https://system.davidani.com/upload/style/DP62024B%20TAUPE%20ZEBRA_2.png",
+        "sha256": "10e34dd3daea33885298cf42a17ce935b70eb368c5aefeae9357d56147c439b7",
+        "idFile": 580642
+      }
+    }
+  },
+  {
+    "style": "DP62087",
+    "label": "Camo · 3/4 length",
+    "silhouette": "wide",
+    "views": {
+      "front": {
+        "filename": "front.jpg",
+        "publicPath": "/pants-references/DP62087/front.jpg"
+      },
+      "side": {
+        "filename": "side.jpg",
+        "publicPath": "/pants-references/DP62087/side.jpg"
+      },
+      "back": {
+        "filename": "back.jpg",
+        "publicPath": "/pants-references/DP62087/back.jpg"
+      }
+    },
+    "sources": {
+      "front": {
+        "filename": "DP62087_4.jpg",
+        "url": "https://system.davidani.com/upload/style/DP62087_4.jpg",
+        "sha256": "f285383049acaf7203d58c050498319a35f9a002a84ec431332d815662810e4f",
+        "idFile": 590922
+      },
+      "side": {
+        "filename": "DP62087_7.jpg",
+        "url": "https://system.davidani.com/upload/style/DP62087_7.jpg",
+        "sha256": "9387b12946ca577855bacebc36f1b459456659cce3422e3e5c56934292ab11ed",
+        "idFile": 590923
+      },
+      "back": {
+        "filename": "DP62087_9.jpg",
+        "url": "https://system.davidani.com/upload/style/DP62087_9.jpg",
+        "sha256": "a76e3c5b6d4f9d0b3d52e665b70950c2b8e66df324de6c59bd0512d946f24712",
+        "idFile": 590924
+      }
+    }
   }
 ]

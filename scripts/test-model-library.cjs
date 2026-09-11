@@ -2,6 +2,7 @@
 // APP_PASSWORD=local-admin-test AUTH_SECRET=local-admin-test-secret npm start -- -p 3016
 const {chromium,webkit}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
 const assert=require('node:assert/strict'),fs=require('node:fs');
+const references=require('../lib/pants-references.json');
 (async()=>{
  const browser=await (process.env.BROWSER_ENGINE==='webkit'?webkit:chromium).launch({headless:true});
  const context=await browser.newContext({viewport:{width:1536,height:1000}});
@@ -23,7 +24,16 @@ const assert=require('node:assert/strict'),fs=require('node:fs');
  await page.screenshot({path:out+'/tops-desktop.png',fullPage:true});
  await page.getByRole('button',{name:/^Bottoms/}).click();
  await editor.getByRole('heading',{name:/DP52083/}).waitFor();
- assert.equal(await list.locator('.ra-model').count(),9);
+ assert.equal(await list.locator('.ra-model').count(),1+references.length);
+ for(const reference of references){
+  await list.getByRole('button',{name:new RegExp(reference.style+' ·')}).click();
+  await editor.getByRole('heading',{name:reference.style+' · '+reference.label,exact:true}).waitFor();
+  assert.equal(await editor.locator('.ra-photo').count(),3);
+  await editor.locator('.ra-photo img').first().waitFor();
+  await page.waitForFunction(()=>[...document.querySelectorAll('.ra-photo img')].length===3&&[...document.querySelectorAll('.ra-photo img')].every(i=>i.complete&&i.naturalWidth>0));
+  const sources=await editor.locator('.ra-photo img').evaluateAll(images=>images.map(i=>i.getAttribute('src')));
+  for(const view of ['front','side','back'])assert(sources.some(s=>decodeURIComponent(s).includes(reference.views[view].publicPath)),reference.style+' '+view+' image');
+ }
  assert.equal(await editor.locator('.ra-photo').count(),3);
  assert(!await editor.getByRole('heading',{name:'Full',exact:true}).count());
  assert(!await list.getByRole('button',{name:/Celine 1/}).count());
@@ -45,6 +55,6 @@ const assert=require('node:assert/strict'),fs=require('node:fs');
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'No horizontal overflow at '+width);
   if(width===390){await page.screenshot({path:out+'/bottoms-phone.png',fullPage:true});await editor.scrollIntoViewIfNeeded();assert(await editor.locator('.ra-photo').first().isVisible());}
  }
- assert.deepEqual(errors,[]);console.log('PASS: Tops/Bottoms separation, nine pants references, three/four views, search and selection, edit disclosure, readable rows at 390/1024/1536/2560, no overflow or console errors.');
+ assert.deepEqual(errors,[]);console.log('PASS: Tops/Bottoms separation, all shared pants references, three/four views, search and selection, edit disclosure, readable rows at 390/1024/1536/2560, no overflow or console errors.');
  await browser.close();
 })().catch(e=>{console.error(e);process.exit(1)});

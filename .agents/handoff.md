@@ -1,26 +1,22 @@
-# Handoff — reference library categories and layout
-Updated 2026-09-10T20:47-07:00 by Codex.
-Branch codex/reference-library; implementation729491a pushed to main.
-- Models & pose references now has Tops / Bottoms / All category tabs.
-- Sidebar300px, nonshrinking90px rows, contained thumbnails and wrapped names.
-- Fixed sidebar controls; only model list scrolls. Phone list has bounded height.
-- Classification uses curated pants IDs / explicit low pose framing; wearing
-  pants in a full-body photo never classifies a top model as a bottom.
-- Mixed custom models appear in both with category-appropriate pose/thumbnail.
-- Bottoms show front/side/back only. Tops keep all four views.
-- Model/pose rename and delete controls are under Edit details disclosures.
-- Search clears invisible selection; Trash remains category-scoped.
-- Adding low pose switches to Bottoms. IDs/bytes/backend/generation unchanged.
-- All942 tests pass; standard npm run build passed (Next16.2.4).
-- Browser Chromium/WebKit: separate categories, nine bottoms,3/4 views,
-  search, selection, disclosures, row geometry,390/1024/1536/2560 widths.
-- Local integration: create model/pose, four uploads, independent replacement,
-  invalid URL rejection, remove/reload, Trash/restore and catalog propagation.
-- No live reference edits or generations used for verification.
-- Deployed clean committed source:20k9xq5le at davidani-studio.vercel.app.
-- Authenticated read-only live browser passed categories, nine bottoms,
- 3/4 views, search, details and390/1024/1536/2560px row/overflow checks.
-- Next: David refreshes /admin/models; no extension update needed.
-- Worktree /tmp/studio-reference-library; screenshots /tmp/model-library-qa.
-- Local QA server3016 uses temporary local catalog entries (gitignored .data).
-- Preserve original repo's modified tsconfig.tsbuildinfo.
+# Handoff — expanded Bottoms reference collection
+Updated 2026-09-10T20:55:36-07:00 by Codex.
+Branch codex/more-bottom-references; base 1de7648.
+- Added DP62138, DP67113, DP58506, DP52122, DP52005A, DP58132,
+  DP62024B and DP62087: 24 matching front/side/back ERP originals.
+- DP58506 is Taupe Black Dots; DP62087 is labeled Camo · 3/4 length.
+- DP58132 uses Grey Leopard because that gallery has all three views.
+- DP52122 is Taupe / ivory cropped peace pants, another shorter option.
+- Shared catalog now contains 17 Bottoms references (Donuts + 16 ERP sets).
+- Source URLs, file IDs and SHA256 hashes recorded in pants-references.json.
+- Original photograph bytes preserved; no resizing or generated imagery.
+- Existing extension2.118.0 reads additions dynamically; no reinstall needed.
+- Prior library category/sidebar fixes remain in place (729491a).
+- All943 tests and production build pass. Browser admin verifies each set's
+  three actual photos plus Tops/Bottoms, search and responsive layout.
+- Studio picker verifies17 options and selects DP62087; no paid generation.
+- Next: deploy clean archive of this commit, verify live17-option catalog,
+  all24 new asset hashes, admin library and Studio picker; record result.
+- Worktree /tmp/studio-reference-library; QA /tmp/bottoms-expansion.
+- Local QA server3016 has temporary gitignored records; exclude .data and
+  public/user-assets by deploying git archive, not the dirty worktree.
+- Preserve original Studio repo's modified tsconfig.tsbuildinfo.
