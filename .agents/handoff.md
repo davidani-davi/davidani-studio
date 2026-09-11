@@ -24,3 +24,10 @@ Branch codex/more-bottom-references; implementation3092420 pushed to main.
 - Local QA server3016 stopped; temporary gitignored records remain. Exclude .data and
   public/user-assets by deploying git archive, not the dirty worktree.
 - Preserve original Studio repo's modified tsconfig.tsbuildinfo.
+
+## 2026-09-11 17:00 — Claude Code: Vision 1 plates de-necklaced (main 9fb0f3e)
+- DWJ62316 on studio 97 carried a ghost chain; prompt rule (64f5015) alone was not enough.
+- studio 97 + crop 97 front/side/back/full re-edited without jewellery (dcfd224);
+  `lib/simple-face-presets.json` sha256 refreshed (9fb0f3e) or simpleFaceMask refuses.
+- Tool: faire-management `thumbnail-optimizer/plate_necklace.mjs` (masked GPT Image 2 edit).
+- Next: any plate with jewellery gets the same pass before it goes live.
