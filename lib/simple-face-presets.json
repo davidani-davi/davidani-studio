@@ -2,14 +2,14 @@
   "/models/crop 97/front.png": {
     "width": 1024,
     "height": 1536,
-    "sha256": "ec4d56b4de844005e834de39baaffd20ab99c06284ae4e4153b54fc88ed30b81",
+    "sha256": "db1271bcd42481f1607de23b42767d4d20d0da26aba0dc77c0ab72c940927af2",
     "protectedRows": 384,
     "transitionRows": 8
   },
   "/models/crop 97/side.png": {
     "width": 1024,
     "height": 1536,
-    "sha256": "9afad809ed58d7d9734615981fdb7e1c0150456b18136a4f924402250021e307",
+    "sha256": "dbc947938dee758d356fbaddaade08fb584089249afb2ca69dcd1fae39986880",
     "protectedRows": 369,
     "transitionRows": 8
   },
@@ -86,21 +86,21 @@
   "/models/studio 97/front.png": {
     "width": 1024,
     "height": 1536,
-    "sha256": "ec4d56b4de844005e834de39baaffd20ab99c06284ae4e4153b54fc88ed30b81",
+    "sha256": "da72f08049237efe9b67f05a99e7bc3fbce7c8248c7ce75c4eaa37608c38ab2c",
     "protectedRows": 384,
     "transitionRows": 8
   },
   "/models/studio 97/side.png": {
     "width": 1024,
     "height": 1536,
-    "sha256": "9afad809ed58d7d9734615981fdb7e1c0150456b18136a4f924402250021e307",
+    "sha256": "e44e94794c04c11a4661f567a6a829700bb1172ba01ce0df228c0c52fdc65215",
     "protectedRows": 369,
     "transitionRows": 8
   },
   "/models/studio 97/full.png": {
     "width": 1024,
     "height": 1536,
-    "sha256": "334d5baddd3961a4a9a006a9964b062df43336510297371c6c3f16a6721c969d",
+    "sha256": "188c5e61781b377c9cb30f261f8e513a5a0e5644f42d2698415675081d39114e",
     "protectedRows": 300,
     "transitionRows": 8
   },
