@@ -4,14 +4,16 @@ const config: Config = {
   content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
   theme: {
     extend: {
+      borderRadius: { DEFAULT: "3px", sm: "3px", md: "3px", lg: "3px", xl: "3px", "2xl": "3px", "3xl": "3px" },
+      fontWeight: { semibold: "500", bold: "500", extrabold: "500", black: "500" },
       colors: {
         brand: {
-          50: "#f7eee8",
-          100: "#efe0d6",
-          200: "#dfbfae",
-          500: "#B5532A",
-          600: "#984321",
-          700: "#78341b",
+          50: "#F4F3EF",
+          100: "#eeede8",
+          200: "#e6e5e0",
+          500: "#1c1c1a",
+          600: "#333330",
+          700: "#1c1c1a",
         },
         /*
          * beUI's semantic names, pointed at this studio's palette.
@@ -40,9 +42,9 @@ const config: Config = {
         ring: "rgb(var(--ui-ring) / <alpha-value>)",
       },
       fontFamily: {
-        sans: ["var(--font-manrope)", "ui-sans-serif", "system-ui", "sans-serif"],
-        serif: ["var(--font-instrument-serif)", "Georgia", "serif"],
-        mono: ["var(--font-jetbrains-mono)", "ui-monospace", "SFMono-Regular", "monospace"],
+        sans: ["var(--font-inter)", "ui-sans-serif", "system-ui", "sans-serif"],
+        serif: ["var(--font-inter)", "Georgia", "serif"],
+        mono: ["var(--font-inter)", "ui-monospace", "SFMono-Regular", "monospace"],
       },
     },
   },

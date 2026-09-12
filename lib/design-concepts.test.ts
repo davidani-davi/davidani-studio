@@ -5,7 +5,7 @@ const input={id:'abcdef12-abcd-abcd-abcd-abcdef123456',title:'Arc quilted jacket
 function setup(){
  const data=new Map<string,any>();
  const store:ConceptStore={read:async(id,stage)=>structuredClone(data.get(id+stage)||null),create:async(id,stage,value)=>{const k=id+stage;if(data.has(k))return false;data.set(k,structuredClone(value));return true},saveImage:async(id,image)=>({...image,url:'https://saved.public.blob.vercel-storage.com/'+id+'.png'})};
- const provider:ConceptProvider={submit:vi.fn(async()=> 'provider-12345678'),poll:vi.fn(async()=>({status:'done',image:{url:'https://fal.media/test.png',width:2048,height:3072}}))};
+ const provider:ConceptProvider={submit:vi.fn(async()=> 'provider-12345678'),poll:vi.fn(async()=>({status:'done' as const,image:{url:'https://fal.media/test.png',width:2048,height:3072}}))};
  return {store,provider,data};
 }
 describe('original concept jobs',()=>{

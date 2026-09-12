@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const next = searchParams.get("next") || "/";
+  const next = searchParams.get("next") || "/home";
 
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -39,15 +39,14 @@ function LoginForm() {
       className="w-full max-w-sm rounded-2xl border border-neutral-200 bg-white p-8 shadow-sm"
     >
       <div className="mb-6 flex items-center gap-2">
-        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-900 text-white font-bold">
-          D
-        </div>
-        <h1 className="text-xl font-semibold tracking-tight">Davi &amp; Dani Photo Studio</h1>
+        <h1 className="text-xl font-semibold tracking-tight">Davi &amp; Dani Studio</h1>
       </div>
       <p className="mb-6 text-sm text-neutral-600">
         Enter the team password to continue.
       </p>
       <input
+        aria-label="Team password"
+        autoComplete="current-password"
         type="password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
@@ -69,7 +68,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-neutral-50 p-6">
+    <main className="paper-login flex min-h-screen items-center justify-center bg-neutral-50 p-6">
       <Suspense fallback={<div className="text-sm text-neutral-500">Loading…</div>}>
         <LoginForm />
       </Suspense>
