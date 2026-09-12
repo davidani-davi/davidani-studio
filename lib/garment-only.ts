@@ -75,8 +75,10 @@ export async function editMask(e: GarmentEdit, ref: ReferencePixels, needsHead: 
  * row band, measure the per-channel offset just below the boundary (neck, hair
  * and backdrop are the same picture in both) and fade it out over the next
  * rows, so the join is invisible while the garment keeps its own colour.
+ * The offset is per column (smoothed over 2*radius px) because the drift
+ * differs across the backdrop gradient.
  */
-export function seamMatch(ref: ReferencePixels, candidate: Buffer, mask: Buffer, band = 24, fade = 192) {
+export function seamMatch(ref: ReferencePixels, candidate: Buffer, mask: Buffer, band = 24, fade = 192, radius = 48) {
   const { width: w, height: h } = ref;
   let boundary = -1;
   for (let y = 0; y < h; y++) {
@@ -85,20 +87,33 @@ export function seamMatch(ref: ReferencePixels, candidate: Buffer, mask: Buffer,
     if (a && boundary < 0) boundary = y;
   }
   if (boundary <= 0 || boundary + band > h) return;
-  const diff = [0, 0, 0]; let n = 0;
+  // Per-column offset over the band, then a wide horizontal box blur: the
+  // drift differs left to right (backdrop gradient), but hair and skin must
+  // not print their own detail into the correction.
+  const col = new Float64Array(w * 3);
   for (let y = boundary; y < boundary + band; y++) for (let x = 0; x < w; x++) {
     const i = (y * w + x) * 4;
-    for (let c = 0; c < 3; c++) diff[c] += ref.data[i + c] - candidate[i + c];
-    n++;
+    for (let c = 0; c < 3; c++) col[x * 3 + c] += (ref.data[i + c] - candidate[i + c]) / band;
   }
-  for (let c = 0; c < 3; c++) diff[c] /= n;
-  if (diff.every(d => Math.abs(d) < 0.25)) return;
+  const diff = new Float64Array(w * 3);
+  for (let c = 0; c < 3; c++) {
+    let sum = 0, n = 0;
+    for (let x = 0; x < Math.min(w, radius); x++) { sum += col[x * 3 + c]; n++; }
+    for (let x = 0; x < w; x++) {
+      if (x + radius < w) { sum += col[(x + radius) * 3 + c]; n++; }
+      if (x - radius - 1 >= 0) { sum -= col[(x - radius - 1) * 3 + c]; n--; }
+      diff[x * 3 + c] = sum / n;
+    }
+  }
+  let maxAbs = 0;
+  for (let k = 0; k < diff.length; k++) maxAbs = Math.max(maxAbs, Math.abs(diff[k]));
+  if (maxAbs < 0.25) return;
   const end = Math.min(h, boundary + fade);
   for (let y = boundary; y < end; y++) {
     const wgt = 1 - (y - boundary) / fade;
     for (let x = 0; x < w; x++) {
       const i = (y * w + x) * 4;
-      for (let c = 0; c < 3; c++) candidate[i + c] = Math.max(0, Math.min(255, Math.round(candidate[i + c] + diff[c] * wgt)));
+      for (let c = 0; c < 3; c++) candidate[i + c] = Math.max(0, Math.min(255, Math.round(candidate[i + c] + diff[x * 3 + c] * wgt)));
     }
   }
 }

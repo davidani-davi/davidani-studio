@@ -46,8 +46,9 @@ export function simpleFaceMask(ref: ReferencePixels, publicPath: string, view: s
     throw Error('The model reference changed. Its face protection must be reviewed before generating.');
   const mask=Buffer.alloc(ref.width*ref.height);
   for(let y=preset.protectedRows;y<ref.height;y++) {
-    // At least 24 rows of blend (2026-09-11): 8 read as a hard line on the phone.
-    const t=Math.min(1,(y-preset.protectedRows+1)/Math.max(24,preset.transitionRows));
+    // At least 48 rows of blend (2026-09-11): 8 read as a hard line on the phone,
+    // and the plate's grain meets the model's smoother output over that band.
+    const t=Math.min(1,(y-preset.protectedRows+1)/Math.max(48,preset.transitionRows));
     mask.fill(Math.round(255*t*t*(3-2*t)),y*ref.width,(y+1)*ref.width);
   }
   return mask;
