@@ -61,6 +61,14 @@ describe('simple garment swap',()=>{
   expect(quoted.prompt).toContain('The garment is a "Odd Title"');
   expect(simpleReferenceShot({...base,view:'front'}).prompt).not.toContain('The garment is a');
  });
+ it('asserts hip-length for a shirt jacket/shacket with no length word in its title, so the edit has a stated hem to anchor to (DJ60404)',()=>{
+  const shot=simpleReferenceShot({...base,view:'front',garmentName:'Tapestry Floral Cotton Twill Shirt Jacket'});
+  expect(shot.prompt).toContain('This is a hip-length piece: the hem falls at the hip, at or just below the waistband. Do not extend the hem lower than that.');
+ });
+ it('does not assert a length when the title has none and is not a shacket/shirt jacket',()=>{
+  const shot=simpleReferenceShot({...base,view:'front',garmentName:'Seamed Handkerchief Hem Oversized Sweater Poncho'});
+  expect(shot.prompt).not.toContain('This is a');
+ });
  it('requires two input roles',()=>expect(()=>simpleReferenceShot({...base,view:'front',garmentImageUrls:[]})).toThrow());
  it('requires reviewed unchanged source pixels for face protection',async()=>{
   const ref=await referencePixels(fs.readFileSync('public/models/crop 100/front.png'));

@@ -1,5 +1,6 @@
 import type { ReferenceShot } from './nano-reference-shots';
 import type { ReferencePixels } from './garment-only';
+import { lengthFor } from './garment-contract';
 import presets from './simple-face-presets.json';
 
 export const SIMPLE_IMAGE_SIZE = { width: 1024, height: 1536 };
@@ -31,7 +32,17 @@ export function simpleReferenceShot(o: ReferenceShot) {
   // back as that tee, recoloured. The model edits image 1 in place, so the
   // garment's own silhouette has to be spelled out or the plate's wins.
   const name = String(o.garmentName || '').replace(/["\n\r]+/g, ' ').trim().slice(0, 120);
-  const cut = name ? ` The garment is a "${name}": reproduce that cut, silhouette, sleeve length and hem exactly, not the shape of the ${scope} image 1 wears.` : '';
+  // Length: DJ60404 (a "Tapestry Floral Cotton Twill Shirt Jacket" swapped via
+  // this exact path) came back with the hem stretched past hip to mid-thigh
+  // even though the prompt already said "reproduce ... hem exactly" — telling
+  // an edit model to copy an unstated hem from a photo it is also asked to
+  // reinterpret isn't an anchor. lengthFor (lib/garment-contract.ts) gives the
+  // same default a shirt jacket/shacket gets elsewhere (hip-length) when the
+  // title carries no length word of its own; spelling that out in words is a
+  // second, independent anchor the edit can't drift away from.
+  const length = name ? lengthFor({ title: o.garmentName }) : null;
+  const hem = length ? ` This is a ${length.adj} piece: ${length.hem}. Do not extend the hem lower than that.` : '';
+  const cut = name ? ` The garment is a "${name}": reproduce that cut, silhouette, sleeve length and hem exactly, not the shape of the ${scope} image 1 wears.${hem}` : '';
   const prompt = `Edit image 1 as the exact base photograph. Replace only the ${scope} with the garment in image 2. Match its fabric, cut, length, print and construction.${cut} ${colour} Allow natural fold shadows and highlights, but do not tint the garment to match image 1’s clothing or background. ${keep} Preserve the face, expression, head position and hairstyle unchanged. No sharpening, retouching or enhancement. One clean photograph of one person.${inferred ? ' No back garment photo is supplied; use a plain continuation of the fabric without invented rear graphics.' : ''}${o.note ? ` Requested change: ${o.note}` : ''}`;
   const image_urls = anchor ? [o.referenceUrl, garment, anchor] : [o.referenceUrl, garment];
   return {prompt, garmentImageUrls:[garment], image_urls, garmentBackInferred:inferred, anchored: Boolean(anchor)};
