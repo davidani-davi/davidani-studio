@@ -3,7 +3,7 @@ import type { ModelPose } from './models-registry';
 import { isPantsReference } from './pants-references';
 
 export type LibrarySection = 'tops' | 'bottoms' | 'all';
-export const isDerivedReference = (id: string) => /^(crop|low)\s*\d+$/i.test(id);
+export const isDerivedReference = (id: string) => /^(crop|knee|low)\s*\d+$/i.test(id);
 
 // Classify by the reference's framing, not the trousers a full-body model wears.
 // A custom model with both kinds of pose belongs in both sections.

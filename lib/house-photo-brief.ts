@@ -31,7 +31,8 @@ export function housePhotoBrief(o: {
     : o.view === 'back' ? 'Turn her fully away from the camera; no face or over-the-shoulder glance.'
     : o.view === 'full' ? 'Show the same woman and outfit head to toe, including her feet, with natural body proportions.' : '';
   const frame = o.view === 'front' ? '' : o.framing === 'low' ? 'Frame from natural waist to shoes; head and chest outside the frame.'
-    : o.framing === 'crop' ? 'Frame head to mid-thigh with the whole garment visible.' : 'Frame the entire figure from head to shoes.';
+    : o.framing === 'crop' ? 'Frame head to mid-thigh with the whole garment visible.'
+    : o.framing === 'knee' ? 'Frame head to knee with the whole garment and its hem visible.' : 'Frame the entire figure from head to shoes.';
   return [change, person,
     'Photo 2 supplies only the replacement garment.',
     o.hasBackPhoto ? 'Photo 3 is the back of that same garment.' : '',

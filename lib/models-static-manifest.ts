@@ -411,6 +411,80 @@ export const STATIC_HUMAN_MODELS = [
     "autoPool": true
   },
   {
+    "id": "crop 108",
+    "name": "Vision 4 · Sage tee",
+    "poses": [
+      {
+        "id": "crop 108",
+        "label": "Crop 108",
+        "publicPath": "/models/crop 108/front.png",
+        "filename": "front.png",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.png",
+            "publicPath": "/models/crop 108/back.png"
+          },
+          "front": {
+            "filename": "front.png",
+            "publicPath": "/models/crop 108/front.png"
+          },
+          "side": {
+            "filename": "side.png",
+            "publicPath": "/models/crop 108/side.png"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": false,
+    "pose": "Vision 4",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "det62260-vision-neutral",
+    "poseKey": "det62260-vision",
+    "outfitAbove": "original",
+    "outfitBelow": "original pants",
+    "autoPool": false
+  },
+  {
+    "id": "crop 109",
+    "name": "Celine 4 · Sage tee",
+    "poses": [
+      {
+        "id": "crop 109",
+        "label": "Crop 109",
+        "publicPath": "/models/crop 109/front.png",
+        "filename": "front.png",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.png",
+            "publicPath": "/models/crop 109/back.png"
+          },
+          "front": {
+            "filename": "front.png",
+            "publicPath": "/models/crop 109/front.png"
+          },
+          "side": {
+            "filename": "side.png",
+            "publicPath": "/models/crop 109/side.png"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": false,
+    "pose": "Celine 5",
+    "character": "celine",
+    "expression": "neutral",
+    "slug": "det62260-celine-neutral",
+    "poseKey": "det62260-celine",
+    "outfitAbove": "original",
+    "outfitBelow": "original pants",
+    "autoPool": false
+  },
+  {
     "id": "crop 97",
     "name": "Vision 1",
     "poses": [
@@ -690,5 +764,169 @@ export const STATIC_HUMAN_MODELS = [
     "outfitAbove": "brown western-print top",
     "outfitBelow": "white wide-leg trousers",
     "autoPool": true
+  },
+  {
+    "id": "studio 108",
+    "name": "Vision 4 · Sage tee",
+    "poses": [
+      {
+        "id": "studio 108",
+        "label": "Studio 108",
+        "publicPath": "/models/studio 108/front.png",
+        "filename": "front.png",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.png",
+            "publicPath": "/models/studio 108/back.png"
+          },
+          "front": {
+            "filename": "front.png",
+            "publicPath": "/models/studio 108/front.png"
+          },
+          "full": {
+            "filename": "full.png",
+            "publicPath": "/models/studio 108/full.png"
+          },
+          "side": {
+            "filename": "side.png",
+            "publicPath": "/models/studio 108/side.png"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": false,
+    "pose": "Vision 4",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "det62260-vision-neutral",
+    "poseKey": "det62260-vision",
+    "outfitAbove": "original",
+    "outfitBelow": "original pants",
+    "autoPool": false
+  },
+  {
+    "id": "studio 109",
+    "name": "Celine 4 · Sage tee",
+    "poses": [
+      {
+        "id": "studio 109",
+        "label": "Studio 109",
+        "publicPath": "/models/studio 109/front.png",
+        "filename": "front.png",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.png",
+            "publicPath": "/models/studio 109/back.png"
+          },
+          "front": {
+            "filename": "front.png",
+            "publicPath": "/models/studio 109/front.png"
+          },
+          "full": {
+            "filename": "full.png",
+            "publicPath": "/models/studio 109/full.png"
+          },
+          "side": {
+            "filename": "side.png",
+            "publicPath": "/models/studio 109/side.png"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": false,
+    "pose": "Celine 5",
+    "character": "celine",
+    "expression": "neutral",
+    "slug": "det62260-celine-neutral",
+    "poseKey": "det62260-celine",
+    "outfitAbove": "original",
+    "outfitBelow": "original pants",
+    "autoPool": false
+  },
+  {
+    "id": "studio 110",
+    "name": "Vision 5 · Neutral black",
+    "poses": [
+      {
+        "id": "studio 110",
+        "label": "Studio 110",
+        "publicPath": "/models/studio 110/front.png",
+        "filename": "front.png",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.png",
+            "publicPath": "/models/studio 110/back.png"
+          },
+          "front": {
+            "filename": "front.png",
+            "publicPath": "/models/studio 110/front.png"
+          },
+          "full": {
+            "filename": "full.png",
+            "publicPath": "/models/studio 110/full.png"
+          },
+          "side": {
+            "filename": "side.png",
+            "publicPath": "/models/studio 110/side.png"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": false,
+    "pose": "Vision 5",
+    "character": "vision",
+    "expression": "neutral",
+    "slug": "detp60364-vision-neutral",
+    "poseKey": "detp60364-vision",
+    "outfitAbove": "plain black ribbed tank (neutralised)",
+    "outfitBelow": "plain black straight trousers (neutralised)",
+    "autoPool": false
+  },
+  {
+    "id": "studio 111",
+    "name": "Celine 5 · Neutral black",
+    "poses": [
+      {
+        "id": "studio 111",
+        "label": "Studio 111",
+        "publicPath": "/models/studio 111/front.png",
+        "filename": "front.png",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.png",
+            "publicPath": "/models/studio 111/back.png"
+          },
+          "front": {
+            "filename": "front.png",
+            "publicPath": "/models/studio 111/front.png"
+          },
+          "full": {
+            "filename": "full.png",
+            "publicPath": "/models/studio 111/full.png"
+          },
+          "side": {
+            "filename": "side.png",
+            "publicPath": "/models/studio 111/side.png"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": false,
+    "pose": "Celine 6",
+    "character": "celine",
+    "expression": "neutral",
+    "slug": "detp60364-celine-neutral",
+    "poseKey": "detp60364-celine",
+    "outfitAbove": "plain black ribbed tank (neutralised)",
+    "outfitBelow": "plain black straight trousers (neutralised)",
+    "autoPool": false
   }
 ] as unknown as HumanModel[];

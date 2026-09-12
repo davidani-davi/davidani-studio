@@ -46,6 +46,8 @@ const FRAMING_RULE: Record<PlateFraming, string> = {
   full: "FRAMING RULE: a full-length figure from head to shoes, framed exactly like the reference plate. ",
   crop:
     "FRAMING RULE: match the reference plate's crop exactly: a head-to-mid-thigh product shot, the top of the head near the top edge of the frame, the frame ending at mid-thigh, the garment filling the frame. Do not zoom out to a full-length figure, do not add knees, legs, or shoes below the frame edge, do not add headroom. ",
+  knee:
+    "FRAMING RULE: match the reference plate's crop exactly: a head-to-knee product shot, the top of the head near the top edge of the frame, the frame ending at the knee, the garment and its hem filling the frame. Do not zoom out to a full-length figure, do not add shins or shoes below the frame edge, do not add headroom. ",
   low:
     "FRAMING RULE: match the reference plate's crop exactly: framed from the natural waist down to the shoes, with the head, shoulders, and chest outside the frame. Do not add a head or an upper body, do not zoom out to a full-length figure; the garment fills the frame with the shoes at the bottom edge. ",
 };

@@ -5,7 +5,7 @@ export type ManagedModel = HumanModel & { deleted?: boolean };
 export type CatalogChange = {
   id: string; at: string; modelId: string; poseId?: string;
   kind: 'model' | 'pose' | 'photo';
-  patch?: { name?: string; character?: string; pose?: string; deleted?: boolean; label?: string; framing?: 'crop' | 'low' | 'full' };
+  patch?: { name?: string; character?: string; pose?: string; deleted?: boolean; label?: string; framing?: 'crop' | 'knee' | 'low' | 'full' };
   create?: boolean; view?: PresetView; photo?: ReferencePhoto | null;
   referenceSet?: {poseId:string; label:string; photos:Partial<Record<PresetView,ReferencePhoto>>};
 };
@@ -48,7 +48,7 @@ export function applyCatalogChanges(base: HumanModel[], changes: CatalogChange[]
   // Removing a parent also retires its derived references. Restoring the
   // parent restores its children without touching their individual overrides.
   const deletedParents = new Set(models.filter(m => m.deleted).map(m => m.id));
-  return models.filter(m => includeDeleted || (!m.deleted && !deletedParents.has(m.id.replace(/^(crop|low)\s+/i,'studio '))))
+  return models.filter(m => includeDeleted || (!m.deleted && !deletedParents.has(m.id.replace(/^(crop|knee|low)\s+/i,'studio '))))
     .map(m => ({...m, poses: m.poses.filter(p => includeDeleted || (!p.deleted && Boolean(p.publicPath)))}))
     .filter(m => includeDeleted || m.poses.length > 0);
 }

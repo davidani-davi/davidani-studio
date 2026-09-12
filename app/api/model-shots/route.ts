@@ -145,7 +145,7 @@ export async function GET(req: Request) {
           label: p.label,
           preview: p.publicPath,
           references,
-          previews: { full: references.full.front?.publicPath || p.publicPath, crop: references.crop.front?.publicPath, low: references.low.front?.publicPath },
+          previews: { full: references.full.front?.publicPath || p.publicPath, crop: references.crop.front?.publicPath, knee: references.knee?.front?.publicPath, low: references.low.front?.publicPath },
         }); }),
       };
     }),

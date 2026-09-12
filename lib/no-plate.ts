@@ -86,6 +86,8 @@ const FRAMING: Record<PlateFraming, string> = {
         "her shoes; her head is about a tenth of the frame height.",
   crop: "Framed from just above the top of her head to mid-thigh, the garment filling the frame; her head is " +
         "about a fifth of the frame height.",
+  knee: "Framed from just above the top of her head to the knee, the garment and its hem filling the frame; " +
+        "her head is about a sixth of the frame height.",
   low:  "Framed from the waist down to the shoes: her head, shoulders and upper body are above the top edge and " +
         "out of frame; the bottoms fill the frame, shoes fully in view at the bottom.",
 };

@@ -125,12 +125,12 @@
     },
     {
       "name": "studio 101",
-      "display_name": "Vision 3 \u00b7 Pink Peach",
-      "source_style": "DET67046 / DP32528 \u00b7 PINK PEACH",
+      "display_name": "Vision 3 · Pink Peach",
+      "source_style": "DET67046 / DP32528 · PINK PEACH",
       "face": "vision",
       "expression": "neutral",
       "slug": "det67046-pink-peach-vision-neutral",
-      "pose": "Vision 3 \u00b7 Pink Peach",
+      "pose": "Vision 3 · Pink Peach",
       "auto": true,
       "views": [
         "front",
@@ -149,12 +149,12 @@
     },
     {
       "name": "studio 102",
-      "display_name": "Celine 3 \u00b7 Pink Peach",
-      "source_style": "DET67046 / DP32528 \u00b7 PINK PEACH",
+      "display_name": "Celine 3 · Pink Peach",
+      "source_style": "DET67046 / DP32528 · PINK PEACH",
       "face": "celine",
       "expression": "neutral",
       "slug": "det67046-pink-peach-celine-neutral",
-      "pose": "Celine 3 \u00b7 Pink Peach",
+      "pose": "Celine 3 · Pink Peach",
       "auto": true,
       "views": [
         "front",
@@ -173,12 +173,12 @@
     },
     {
       "name": "studio 103",
-      "display_name": "Celine \u00b7 DONUTS pants",
-      "source_style": "DP52083 \u00b7 DONUTS",
+      "display_name": "Celine · DONUTS pants",
+      "source_style": "DP52083 · DONUTS",
       "face": "celine",
       "expression": "neutral",
       "slug": "dp52083-donuts-celine-neutral",
-      "pose": "Celine \u00b7 DONUTS pants",
+      "pose": "Celine · DONUTS pants",
       "auto": true,
       "views": [
         "front",
@@ -194,6 +194,118 @@
       "outfit_below": "DONUTS barrel pants and burgundy sneakers",
       "front_is": "Original ERP DP52083_1(7).jpg, waist to shoes; unchanged source bytes.",
       "others_are": "Side and back: independent native pose generations from original ERP front. Unseen construction inferred, not verified product photography. Full: existing Celine DONUTS reference. No restoration, resizing, sharpening or generated-output chaining."
+    },
+    {
+      "name": "studio 108",
+      "display_name": "Vision 4 · Sage tee",
+      "source_style": "DET62260",
+      "face": "vision",
+      "expression": "neutral",
+      "slug": "det62260-vision-neutral",
+      "pose": "Vision 4",
+      "auto": false,
+      "views": [
+        "front",
+        "side",
+        "back",
+        "full"
+      ],
+      "wears": "pants",
+      "low_ok": false,
+      "legs_separated": true,
+      "outfit_above": "original",
+      "outfit_below": "original pants",
+      "front_is": "DET62260%20SAGE_1.jpg original photograph with one identity edit to the head/hair",
+      "others_are": "independent original photographs of the same shoot, one identity edit each; crop/knee families are pixel cuts of the originals edited at native size",
+      "families": {
+        "crop": [
+          "front",
+          "side",
+          "back"
+        ]
+      },
+      "built_by": "reference_set.py"
+    },
+    {
+      "name": "studio 109",
+      "display_name": "Celine 4 · Sage tee",
+      "source_style": "DET62260",
+      "face": "celine",
+      "expression": "neutral",
+      "slug": "det62260-celine-neutral",
+      "pose": "Celine 5",
+      "auto": false,
+      "views": [
+        "front",
+        "side",
+        "back",
+        "full"
+      ],
+      "wears": "pants",
+      "low_ok": false,
+      "legs_separated": true,
+      "outfit_above": "original",
+      "outfit_below": "original pants",
+      "front_is": "DET62260%20SAGE_1.jpg original photograph with one identity edit to the head/hair",
+      "others_are": "independent original photographs of the same shoot, one identity edit each; crop/knee families are pixel cuts of the originals edited at native size",
+      "families": {
+        "crop": [
+          "front",
+          "side",
+          "back"
+        ]
+      },
+      "built_by": "reference_set.py"
+    },
+    {
+      "name": "studio 110",
+      "display_name": "Vision 5 · Neutral black",
+      "source_style": "DETP60364",
+      "face": "vision",
+      "expression": "neutral",
+      "slug": "detp60364-vision-neutral",
+      "pose": "Vision 5",
+      "auto": false,
+      "views": [
+        "front",
+        "side",
+        "back",
+        "full"
+      ],
+      "wears": "pants",
+      "low_ok": false,
+      "legs_separated": true,
+      "outfit_above": "plain black ribbed tank (neutralised)",
+      "outfit_below": "plain black straight trousers (neutralised)",
+      "front_is": "DETP60364%20SEA%20BLUE_1.jpg original photograph with one identity edit to the head/hair",
+      "others_are": "independent original photographs of the same shoot, one identity edit each; crop/knee families are pixel cuts of the originals edited at native size",
+      "families": {},
+      "built_by": "reference_set.py"
+    },
+    {
+      "name": "studio 111",
+      "display_name": "Celine 5 · Neutral black",
+      "source_style": "DETP60364",
+      "face": "celine",
+      "expression": "neutral",
+      "slug": "detp60364-celine-neutral",
+      "pose": "Celine 6",
+      "auto": false,
+      "views": [
+        "front",
+        "side",
+        "back",
+        "full"
+      ],
+      "wears": "pants",
+      "low_ok": false,
+      "legs_separated": true,
+      "outfit_above": "plain black ribbed tank (neutralised)",
+      "outfit_below": "plain black straight trousers (neutralised)",
+      "front_is": "DETP60364%20SEA%20BLUE_1.jpg original photograph with one identity edit to the head/hair",
+      "others_are": "independent original photographs of the same shoot, one identity edit each; crop/knee families are pixel cuts of the originals edited at native size",
+      "families": {},
+      "built_by": "reference_set.py"
     }
   ],
   "families": {

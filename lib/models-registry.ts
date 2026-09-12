@@ -46,7 +46,7 @@ export interface ModelPose {
    */
   views: Partial<Record<PresetView, ReferencePhoto>>;
   deleted?: boolean;
-  framing?: "crop" | "low" | "full";
+  framing?: "crop" | "knee" | "low" | "full";
   /**
    * Optional alternate pose photos for the same view, sorted by their
    * numeric suffix ("front2" → index 0, "front3" → index 1, etc.). The

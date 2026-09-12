@@ -91,8 +91,20 @@ describe("hemFor — where the garment ends, from our own copy", () => {
     expect(hemFor({ title: "Belted Trench" })).toBe("long");
     expect(hemFor({ title: "Classic Peacoat" })).toBe("long");
     expect(hemFor({ type: "Cardigan - Women's", title: "Ribbed Duster Cardigan" })).toBe("long");
-    expect(hemFor({ title: "Knee-Length Quilted Jacket" })).toBe("long");
-    expect(hemFor({ title: "Plaid Midi Shirt Dress" })).toBe("long");
+    expect(hemFor({ title: "Ankle-Length Wool Coat" })).toBe("long");
+  });
+  it("a knee-length or midi hem is mid: head-to-knee plates for front, side and back, the full shot as before", () => {
+    expect(hemFor({ title: "Knee-Length Quilted Jacket" })).toBe("mid");
+    expect(hemFor({ title: "Plaid Midi Shirt Dress" })).toBe("mid");
+    expect(hemFor({ type: "Coat - Women's", title: "Knee Length Wool Coat" })).toBe("mid");
+    expect(hemFor({ hem: "mid" })).toBe("mid");
+    expect(shotPlan("outerwear", "mid").map((s) => s.framing)).toEqual(["knee", "knee", "knee", "full"]);
+    expect(framingFor("top", "back", "mid")).toBe("knee");
+    expect(showsBottoms("outerwear", "mid")).toBe(true);
+    expect(isDerivedPlate("knee 104")).toBe(true);
+    const cat = [{ id: "studio 104", poses: [{ id: "studio-104" }] }, { id: "knee 104", poses: [{ id: "knee-104" }] }];
+    expect(plateForFraming("studio 104", "studio-104", "knee", cat)).toEqual({ humanModelId: "knee 104", poseId: "knee-104", derived: true });
+    expect(plateForFraming("studio 97", "studio-97", "knee", cat)).toEqual({ humanModelId: "studio 97", poseId: "studio-97", derived: false });
   });
   it("cropped wins over everything; a jacket, a long sleeve top and a waistcoat are not long", () => {
     expect(hemFor({ type: "Coat - Women's", title: "Cropped Plaid Coat" })).toBe("short");

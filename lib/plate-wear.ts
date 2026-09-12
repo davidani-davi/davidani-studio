@@ -172,7 +172,7 @@ export function mergePlateWear<T extends { id: string } & PlateWear>(
     }
   }
   return (models || []).map((model) => {
-    const m = /^(studio|crop|low)\s*(\d+)$/i.exec(String(model.id || "").trim());
+    const m = /^(studio|crop|knee|low)\s*(\d+)$/i.exec(String(model.id || "").trim());
     const tag = m ? byNum.get(Number(m[2])) : undefined;
     return tag ? { ...model, ...tag } : model;
   });

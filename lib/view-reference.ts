@@ -4,7 +4,7 @@ import type { PlateFraming } from './plate-framing';
 /** Resolve only the requested view. A missing crop may use the SAME view of
  * its parent, with explicit framing instructions; never substitute a front. */
 export function viewReference(models: HumanModel[], modelId: string, poseId: string, view: PresetView, framing: PlateFraming) {
-  const parentId = modelId.replace(/^(low|crop)\s+/i, 'studio ');
+  const parentId = modelId.replace(/^(low|crop|knee)\s+/i, 'studio ');
   const parent = models.find(m => m.id === parentId);
   const selected = models.find(m => m.id === modelId);
   if (!selected) throw new Error(`Unknown reference: ${modelId}`);
@@ -24,7 +24,7 @@ export function viewReference(models: HumanModel[], modelId: string, poseId: str
 }
 
 export function referenceCoverage(models: HumanModel[], modelId: string, poseId: string) {
-  return Object.fromEntries((['low','crop','full'] as const).map(framing => [framing,
+  return Object.fromEntries((['low','crop','knee','full'] as const).map(framing => [framing,
     Object.fromEntries((['front','side','back','full'] as const).map(view => {
       try { return [view, viewReference(models,modelId,poseId,view,view === 'full' ? 'full' : framing)]; }
       catch { return [view, null]; }

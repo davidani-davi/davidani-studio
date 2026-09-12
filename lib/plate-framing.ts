@@ -31,10 +31,12 @@ import { MULTI_MODEL_VIEWS } from "./multi-model-prompt";
  * (model_shots_core.js categoryFor / hemFor) so the views it queues and the
  * plates served here agree.
  */
-export type PlateFraming = "full" | "crop" | "low";
+export type PlateFraming = "full" | "crop" | "knee" | "low";
 /** Where the garment ends, read from our own copy: "long" reaches below the
- *  crop plate's mid-thigh edge, "short" is explicitly cropped, "" is unknown. */
-export type Hem = "long" | "short" | "";
+ *  knee, "mid" ends at the knee (knee-length, midi) and shoots on the
+ *  head-to-knee "knee NN" plate when one is installed, "short" is explicitly
+ *  cropped, "" is unknown (head-to-thigh). */
+export type Hem = "long" | "mid" | "short" | "";
 export type ShotCategory = GarmentCategory;
 export const SHOT_CATEGORIES: ShotCategory[] = ["top", "outerwear", "dress", "set", "pants", "skirt", "unknown"];
 
@@ -50,16 +52,20 @@ export interface ShotStep {
  * deliberately does not match. Mirrored in model_shots_core.js LONG_HEM.
  */
 const LONG_HEM_RE =
-  /\b(pea|over|top|rain|trench|duster|long)?coat\b|\btrench\b|\bduster\b|long-?line|\bmaxi\b|\bmidi\b|mid-?calf|calf-?length|knee-?length|below[- ]the[- ]knee|below-?knee|ankle-?length|floor-?length|full-?length/i;
+  /\b(pea|over|top|rain|trench|duster|long)?coat\b|\btrench\b|\bduster\b|long-?line|\bmaxi\b|mid-?calf|calf-?length|ankle-?length|floor-?length|full-?length/i;
+/** A hem that ends at the knee: the knee plate frames it with room to spare
+ *  and no wasted shoes. Mirrored in model_shots_core.js MID_HEM. */
+const MID_HEM_RE = /knee-?length|\bmidi\b|below[- ]the[- ]knee|below-?knee|at[- ]the[- ]knee|\bknee\b/i;
 const SHORT_HEM_RE = /\bcropped\b|\bcrop\b/i;
 
 /** The hem a run is planned with: an explicit one wins, then the taxonomy name and the title. */
 export function hemFor(known: { hem?: unknown; type?: unknown; title?: unknown } | null | undefined): Hem {
   const k = known || {};
   const explicit = String(k.hem || "").toLowerCase();
-  if (explicit === "long" || explicit === "short") return explicit;
+  if (explicit === "long" || explicit === "mid" || explicit === "short") return explicit;
   const text = `${typeof k.type === "string" ? k.type : ""} ${typeof k.title === "string" ? k.title : ""}`;
   if (SHORT_HEM_RE.test(text)) return "short";
+  if (MID_HEM_RE.test(text)) return "mid";
   return LONG_HEM_RE.test(text) ? "long" : "";
 }
 
@@ -78,7 +84,7 @@ export function swapScopeForCategory(category: ShotCategory): "upper-body" | "lo
 
 /** True when a layer's hem is in every frame, so the plate's own legs would show under it. */
 export function showsBottoms(category: ShotCategory, hem: Hem): boolean {
-  return (category === "top" || category === "outerwear") && hem === "long";
+  return (category === "top" || category === "outerwear") && (hem === "long" || hem === "mid");
 }
 
 /** The views a run shoots for a category, in shooting order, with the plate framing each is handed. */
@@ -93,6 +99,14 @@ export function shotPlan(category: ShotCategory, hem: Hem = ""): ShotStep[] {
       { view: "front", framing: "low" },
       { view: "side", framing: "low" },
       { view: "back", framing: "low" },
+      { view: "full", framing: "full" },
+    ];
+  }
+  if ((category === "top" || category === "outerwear") && hem === "mid") {
+    return [
+      { view: "front", framing: "knee" },
+      { view: "side", framing: "knee" },
+      { view: "back", framing: "knee" },
       { view: "full", framing: "full" },
     ];
   }
@@ -155,7 +169,7 @@ export function shotCategory(
 
 /** The derived families never show in a picker: they are the house plate re-framed. */
 export function isDerivedPlate(id: string): boolean {
-  return /^(crop|low)\s*\d+$/i.test(String(id || "").trim());
+  return /^(crop|knee|low)\s*\d+$/i.test(String(id || "").trim());
 }
 
 /**
