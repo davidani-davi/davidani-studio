@@ -1,6 +1,6 @@
 # Handoff
 - 2026-09-11 17:51 PDT · Codex.
-- Branch: codex/paper-studio-creative-lab; base cc142fb; see git log -1 for this change.
+- Branch: codex/paper-studio-creative-lab; UI commit dd5088d; see git log -1 for latest checks.
 - Worktree: /Users/davidani-mini/Code/davidani-studio-paper.
 - Full Studio Paper 0.9 redesign: Inter, warm page/white sheets, 3px corners,
   hairlines, visible workspace/tool navigation, no decorative gradients/shadows.
@@ -20,5 +20,8 @@
 - Physical iPhone/WebKit remains unverified; Chromium checks only.
 - Preview screenshots and QA logs: /tmp/studio-paper-qa.
 - Details and limitations: docs/PAPER_STUDIO.md.
-- Next: review the hosted preview; incorporate design feedback and land the branch.
+- PR: https://github.com/davidani-davi/davidani-studio/pull/8 (draft).
+- CI exposed a slow deep comparison on a 1.5M-byte mask; Buffer.equals keeps
+  the exact pixel assertion and removes the test-runner overhead.
+- Next: review the PR preview; incorporate design feedback and land the branch.
 - Original Studio worktree and its modified tsconfig.tsbuildinfo left intact.
