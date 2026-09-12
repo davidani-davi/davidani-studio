@@ -15,8 +15,14 @@ Written 2026-09-12 by Claude Code. Branch `codex/garment-only-pixel-lock`, NOT p
   and appends an explicit hem-length sentence when the title has no length word of its
   own. Verified via `lib/simple-reference-shot.test.ts` (82 tests pass) that DJ60404's
   exact title now produces the hip-length clause in the built prompt.
-- **Not verified against a live render** — would cost a real FAL charge. Ask David
-  before triggering an actual DJ60404 regeneration to confirm the hem visually.
+- **Verified against a live render** (David approved spending one FAL run): generated
+  DJ60404 front view through local Model Studio with ChatGPT Image Generator V2.5
+  (FAL-only, avoids the missing `KIE_AI_API_KEY`). All 3 variants landed the hem at
+  hip/waistband — no more mid-thigh drift. Screenshot: `/tmp/studio-result.png`.
+- Noticed but not chased: the generate call logged `category=pants` for DJ60404 (a
+  shirt jacket). Didn't visibly break this render, but the category classification
+  feeding the route looks off for this style — worth checking if other garment types
+  show odd behavior later.
 
 ## Local dev environment set up this session
 - `.env.local` created (gitignored) with `APP_PASSWORD`, `AUTH_SECRET`, `FAL_KEY`
@@ -37,9 +43,8 @@ Written 2026-09-12 by Claude Code. Branch `codex/garment-only-pixel-lock`, NOT p
   knowing before poking around for verification purposes.
 
 ## Next
-- David decides whether to spend a FAL render to visually confirm the hem fix on
-  DJ60404, or verify next time he's in the extension normally.
 - Push b193780 (and 1c30510, which is harmless but currently unused) whenever David
   wants it live — not pushed yet.
+- Optional: look into the `category=pants` mislabel noted above for shirt jackets.
 - Unrelated: this branch still carries the earlier "reference sets 108-111" and
   "knee framing" work from the prior handoff — see git log for that thread.
