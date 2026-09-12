@@ -1,37 +1,21 @@
-# Handoff — expanded Bottoms reference collection
-Updated 2026-09-10T20:58:53-07:00 by Codex.
-Branch codex/more-bottom-references; implementation3092420 pushed to main.
-- Added DP62138, DP67113, DP58506, DP52122, DP52005A, DP58132,
-  DP62024B and DP62087: 24 matching front/side/back ERP originals.
-- DP58506 is Taupe Black Dots; DP62087 is labeled Camo · 3/4 length.
-- DP58132 uses Grey Leopard because that gallery has all three views.
-- DP52122 is Taupe / ivory cropped peace pants, another shorter option.
-- Shared catalog now contains 17 Bottoms references (Donuts + 16 ERP sets).
-- Source URLs, file IDs and SHA256 hashes recorded in pants-references.json.
-- Original photograph bytes preserved; no resizing or generated imagery.
-- Existing extension2.118.0 reads additions dynamically; no reinstall needed.
-- Prior library category/sidebar fixes remain in place (729491a).
-- All943 tests and production build pass. Browser admin verifies each set's
-  three actual photos plus Tops/Bottoms, search and responsive layout.
-- Studio picker verifies17 options and selects DP62087; no paid generation.
-- Deployed clean commit3092420: ba8qh1ppb, davidani-studio.vercel.app.
-- Live verification passed:17-option catalog, all24 new SHA256s, each set's
-  three image URLs, responsive admin library and Studio DP62087 selection.
-- Current extension browser test passed17 cards/all3 previews, desktop/phone.
-- No paid generations or live model edits used for verification.
-- Next: David refreshes the library / model catalog to use the new options.
-- Worktree /tmp/studio-reference-library; QA /tmp/bottoms-expansion.
-- Local QA server3016 stopped; temporary gitignored records remain. Exclude .data and
-  public/user-assets by deploying git archive, not the dirty worktree.
-- Preserve original Studio repo's modified tsconfig.tsbuildinfo.
+# Handoff — davidani-studio
+Written 2026-09-11 evening by Claude Code. Branch `codex/garment-only-pixel-lock`, pushed to main as ecd1d80.
 
-## 2026-09-11 17:00 — Claude Code: Vision 1 plates de-necklaced (main 9fb0f3e)
-- DWJ62316 on studio 97 carried a ghost chain; prompt rule (64f5015) alone was not enough.
-- studio 97 + crop 97 front/side/back/full re-edited without jewellery (dcfd224);
-  `lib/simple-face-presets.json` sha256 refreshed (9fb0f3e) or simpleFaceMask refuses.
-- Tool: faire-management `thumbnail-optimizer/plate_necklace.mjs` (masked GPT Image 2 edit).
-- Then David saw a straight line across the collarbone: the face-protection join
-  (plate rows above 384, GPT below, 8-row blend, output a touch darker). Fixed in
-  compositeGarment: seamMatch per-column tone offset faded over 192 rows + 48-row
-  blend (74621f7, aeed967). Verified with a 5x tonal stretch of the render.
-- Next: any plate with jewellery gets the same pass before it goes live.
+## Done this session
+- Face-protection seam fix (seamMatch + blend scaled to plate height) — cc142fb + ecd1d80.
+- Coat lengths: `PlateFraming` gains `knee` (head-to-knee plates `knee NN`), `Hem` gains `mid`
+  (knee-length/midi → knee×3 + full; long coats/maxi → full everywhere). lib/plate-framing.ts + tests.
+- New reference sets installed hand-picked (auto:false), both faces:
+  studio/crop 108–109 = DET62260 "Sage tee"; studio 110–111 = DETP60364 "Neutral black"
+  (black ribbed tank + black trousers, all four views, for top/bottom swap sets). Presets + manifest rebuilt.
+- Catalog snapshot tests updated (lib/models-registry.test.ts, app/api/model-shots/route.test.ts). 983 pass.
+
+## How sets are made now (faire-management repo)
+`thumbnail-optimizer/reference_set.py` — plan → cut → identity → [neutral] → sheet → install.
+See that repo's `.agents/handoff.md` and memory `reference-set-tool.md` for the exact commands.
+
+## Next
+- David reviews studio 108–111 in the admin (Models & pose references); flip `auto` on the ones he keeps.
+- No `knee NN` plate is installed yet: DETP60364 has knee cuts under refsets but they were not
+  identity-rendered (`node reference_set.mjs identity --code DETP60364 --faces vision,celine --families knee`).
+- Confirm the Vercel deploy for ecd1d80 is READY.
