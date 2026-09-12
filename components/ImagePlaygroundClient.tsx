@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { comparisonJobs, modelsFromResults, CREATIVE_REFERENCE_KEY } from "@/lib/creative-lab";
 import StudioHeader from "@/components/StudioHeader";
 import ImageLightbox, { ZoomButton } from "@/components/ImageLightbox";
 import type { UploadedImage } from "@/components/types";
@@ -72,6 +74,8 @@ interface PlaygroundResult {
   status: ResultStatus;
   urls: string[];
   settings?: GenerationSettings;
+  referenceUrls?: string[];
+  conceptIndex?: number;
   error?: string;
   fallbackFrom?: string;
   startedAt?: number;
@@ -197,7 +201,7 @@ export default function ImagePlaygroundClient() {
   }
 
   const workspaceBar = (
-    <div className="flex items-center gap-2 overflow-x-auto border-b border-neutral-200 bg-white px-5 py-2">
+    <div className="lab-workspaces">
       <span className="mr-1 shrink-0 text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
         Workspaces
       </span>
@@ -224,7 +228,7 @@ export default function ImagePlaygroundClient() {
                     : "bg-neutral-300"
               }`}
             />
-            Playground {index + 1}
+            Workspace {index + 1}
             {status?.running ? (
               <span className={active ? "text-neutral-300" : "text-neutral-400"}>
                 {status.done}/{status.total}
@@ -233,11 +237,11 @@ export default function ImagePlaygroundClient() {
             {workspaceIds.length > 1 ? (
               <span
                 role="button"
-                aria-label={`Close Playground ${index + 1}`}
+                aria-label={`Close Workspace ${index + 1}`}
                 title={
                   status?.running
                     ? "Wait for this workspace to finish before closing it"
-                    : `Close Playground ${index + 1}`
+                    : `Close Workspace ${index + 1}`
                 }
                 onClick={(event) => {
                   event.stopPropagation();
@@ -261,7 +265,7 @@ export default function ImagePlaygroundClient() {
         disabled={workspaceIds.length >= MAX_WORKSPACES}
         className="shrink-0 rounded-lg border border-dashed border-neutral-300 px-3 py-1.5 text-xs font-semibold text-neutral-600 hover:border-neutral-500 disabled:cursor-not-allowed disabled:opacity-40"
       >
-        + New Playground
+        + New workspace
       </button>
       <span className="ml-auto shrink-0 text-[10px] text-neutral-400">
         {Object.values(workspaceStatuses).filter((status) => status.running).length} running
@@ -297,7 +301,10 @@ function ImagePlaygroundWorkspace({
   onStatusChange: (workspaceId: number, status: WorkspaceStatus) => void;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [modelId, setModelId] = useState<ModelId>("gpt-image");
+  const router = useRouter();
+  const [modelIds, setModelIds] = useState<ModelId[]>(["gpt-image"]);
+  const modelId = modelIds[0] ?? "gpt-image";
+  const batchLock = useRef(false);
   const [aspect, setAspect] = useState<string>("auto");
   const [resolution, setResolution] = useState<string>("2K");
   const [parallel, setParallel] = useState<number>(1);
@@ -432,6 +439,7 @@ function ImagePlaygroundWorkspace({
     [refs, selectedRefUrls]
   );
   const promptCount = prompts.length;
+  const jobCount = promptCount * modelIds.length;
   const doneCount = results.filter((r) => r.status === "done").length;
   const failedCount = results.filter((r) => r.status === "failed").length;
   const activeJob = running ? 1 : 0;
@@ -440,20 +448,20 @@ function ImagePlaygroundWorkspace({
     onStatusChange(workspaceId, {
       running,
       done: doneCount + failedCount,
-      total: promptCount,
+      total: results.length || jobCount,
     });
   }, [
     doneCount,
     failedCount,
     onStatusChange,
-    promptCount,
+    jobCount,
+    results.length,
     running,
     workspaceId,
   ]);
 
-  const costPerImage = estimateCostPerImage(modelId, resolution);
-  const totalImages = promptCount * numPerPrompt;
-  const estimatedCost = totalImages * costPerImage;
+  const totalImages = jobCount * numPerPrompt;
+  const estimatedCost = promptCount * numPerPrompt * modelIds.reduce((sum, id) => sum + estimateCostPerImage(id, resolution), 0);
 
   // Batch timer: earliest startedAt → either now (while running) or latest finishedAt.
   const startedTimestamps = results
@@ -471,7 +479,7 @@ function ImagePlaygroundWorkspace({
   const batchElapsedMs = batchStart != null && batchEnd != null ? batchEnd - batchStart : 0;
 
   const actualSpend = results.reduce(
-    (sum, r) => (r.status === "done" ? sum + r.urls.length * costPerImage : sum),
+    (sum, r) => (r.status === "done" ? sum + r.urls.length * estimateCostPerImage(r.settings?.modelId ?? modelId, r.settings?.resolution ?? resolution) : sum),
     0
   );
 
@@ -519,155 +527,104 @@ function ImagePlaygroundWorkspace({
     setSelectedRefUrls((cur) => cur.filter((u) => u !== url));
   }
 
-  async function runBatch() {
-    if (!prompts.length) {
-      setError("Add at least one prompt (one per line)");
+  async function runBatch(retryId?: string) {
+    if (batchLock.current) return;
+    const retry = retryId ? results.find((result) => result.id === retryId) : null;
+    if (!retry && (!prompts.length || !modelIds.length || !orderedSelectedRefUrls.length)) {
+      setError("Add a prompt, select a model, and choose at least one reference.");
       return;
     }
-    if (!orderedSelectedRefUrls.length) {
-      setError("Select at least one reference image");
-      return;
-    }
+    batchLock.current = true;
     setError(null);
     setRunning(true);
     setPaused(false);
     pausedRef.current = false;
-
-    const settingsSnapshot: GenerationSettings = {
-      modelId,
-      modelLabel: MODELS[modelId]?.label ?? modelId,
-      aspect,
-      resolution,
-      numImages: numPerPrompt,
-      referenceCount: orderedSelectedRefUrls.length,
-      format: "png",
-    };
-    const initial: PlaygroundResult[] = prompts.map((p, i) => ({
-      id: `${Date.now()}-${i}`,
-      prompt: p,
-      status: "queued" as const,
-      urls: [],
-      settings: settingsSnapshot,
-    }));
+    const timestamp = Date.now();
+    const initial: PlaygroundResult[] = retry
+      ? results.map((result) => result.id === retryId
+        ? { ...result, status: "queued", error: undefined, startedAt: undefined, finishedAt: undefined,
+            referenceUrls: result.referenceUrls ?? orderedSelectedRefUrls }
+        : result)
+      : comparisonJobs(prompts, modelIds).map((job, index) => ({
+          id: `${timestamp}-${index}`, prompt: job.prompt, conceptIndex: job.conceptIndex,
+          status: "queued", urls: [], referenceUrls: [...orderedSelectedRefUrls],
+          settings: { modelId: job.modelId, modelLabel: `${MODELS[job.modelId].label} ${MODELS[job.modelId].badge}`,
+            aspect, resolution, numImages: numPerPrompt, referenceCount: orderedSelectedRefUrls.length, format: "png" },
+        }));
+    const completed = [...initial];
     setResults(initial);
-
-    const queue = initial.map((r, i) => ({ ...r, index: i }));
-    const inFlight = new Set<number>();
-
-    async function runOne(idx: number, item: PlaygroundResult) {
-      setResults((cur) => {
-        const next = cur.slice();
-        next[idx] = { ...next[idx], status: "running", startedAt: Date.now() };
-        return next;
-      });
+    const queue = initial.map((item, index) => ({ item, index })).filter(({ item }) => item.status === "queued");
+    function update(index: number, patch: Partial<PlaygroundResult>) {
+      completed[index] = { ...completed[index], ...patch };
+      setResults([...completed]);
+    }
+    async function runOne(index: number, item: PlaygroundResult) {
+      const settings = item.settings!;
+      update(index, { status: "running", startedAt: Date.now() });
       try {
         const data = await fetchJson("Generate", "/api/generate", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            modelId,
-            prompt: item.prompt,
-            imageUrls: orderedSelectedRefUrls,
-            aspectRatio: aspect,
-            resolution,
-            format: "png",
-            numImages: numPerPrompt,
-            // Playground is sandboxed: no auto-injected style reference,
-            // no garment-edit prompt prefixes from other modules.
-            raw: true,
-            useDefaultReference: false,
-            referenceImageUrl: null,
-          }),
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ modelId: settings.modelId, prompt: item.prompt,
+            imageUrls: item.referenceUrls, aspectRatio: settings.aspect,
+            resolution: settings.resolution, format: "png", numImages: settings.numImages,
+            raw: true, useDefaultReference: false, referenceImageUrl: null }),
         });
-        const urls: string[] = data.images?.map((img: any) => img.url).filter(Boolean) ?? [];
-        setResults((cur) => {
-          const next = cur.slice();
-          const actualModelId = (data.modelId || modelId) as ModelId;
-          next[idx] = {
-            ...next[idx],
-            status: "done",
-            urls,
-            fallbackFrom: data.fallbackFrom,
-            settings: next[idx].settings
-              ? {
-                  ...next[idx].settings!,
-                  modelId: actualModelId,
-                  modelLabel: MODELS[actualModelId]?.label ?? actualModelId,
-                }
-              : next[idx].settings,
-            finishedAt: Date.now(),
-          };
-          return next;
-        });
-      } catch (e: any) {
-        setResults((cur) => {
-          const next = cur.slice();
-          next[idx] = {
-            ...next[idx],
-            status: "failed",
-            error: e?.message || "Generation failed",
-            finishedAt: Date.now(),
-          };
-          return next;
-        });
+        const urls: string[] = data.images?.map((img: { url: string }) => img.url).filter(Boolean) ?? [];
+        if (!urls.length) throw new Error("No images were returned. Retry this result when ready.");
+        const actualModelId = (data.modelId || settings.modelId) as ModelId;
+        update(index, { status: "done", urls, fallbackFrom: data.fallbackFrom,
+          settings: { ...settings, modelId: actualModelId, modelLabel: MODELS[actualModelId] ? `${MODELS[actualModelId].label} ${MODELS[actualModelId].badge}` : actualModelId },
+          finishedAt: Date.now() });
+      } catch (error) {
+        update(index, { status: "failed", error: error instanceof Error ? error.message : "Generation failed", finishedAt: Date.now() });
       }
     }
-
     let cursor = 0;
-    async function pump() {
+    async function worker() {
       while (cursor < queue.length) {
-        if (pausedRef.current) {
-          await new Promise((r) => setTimeout(r, 150));
-          continue;
-        }
-        if (inFlight.size >= parallel) {
-          await new Promise((r) => setTimeout(r, 60));
-          continue;
-        }
-        const idx = cursor++;
-        inFlight.add(idx);
-        runOne(idx, queue[idx]).finally(() => inFlight.delete(idx));
+        if (pausedRef.current) { await new Promise((resolve) => setTimeout(resolve, 150)); continue; }
+        const { item, index } = queue[cursor++];
+        await runOne(index, item);
       }
-      while (inFlight.size) await new Promise((r) => setTimeout(r, 80));
     }
-
-    await pump();
-    setRunning(false);
-    setPaused(false);
-    pausedRef.current = false;
-
-    // Snapshot to history.
-    setResults((finalResults) => {
-      const run: PlaygroundRun = {
-        id: `${Date.now()}`,
-        timestamp: Date.now(),
-        modelId,
-        aspect,
-        resolution,
-        parallel,
-        refs: orderedSelectedRefUrls,
-        results: finalResults,
-      };
-      setHistory((cur) => {
-        const next = [run, ...cur].slice(0, 20);
-        try {
-          localStorage.setItem(historyKey, JSON.stringify(next));
-        } catch {
-          /* ignore quota */
-        }
+    try {
+      await Promise.all(Array.from({ length: Math.min(parallel, queue.length) }, worker));
+      const run: PlaygroundRun = { id: String(Date.now()), timestamp: Date.now(), modelId: completed[0]?.settings?.modelId ?? modelId,
+        aspect: completed[0]?.settings?.aspect ?? aspect, resolution: completed[0]?.settings?.resolution ?? resolution, parallel, refs: [...new Set(completed.flatMap((item) => item.referenceUrls ?? []))], results: completed };
+      setHistory((current) => {
+        const next = [run, ...current].slice(0, 20);
+        try { localStorage.setItem(historyKey, JSON.stringify(next)); } catch { /* quota */ }
         return next;
       });
-      return finalResults;
-    });
+    } finally {
+      batchLock.current = false;
+      setRunning(false);
+      setPaused(false);
+      pausedRef.current = false;
+    }
+  }
+
+  function reuseResult(result: PlaygroundResult) {
+    const added = result.urls.map((url, index) => ({ url, name: `Creative Lab result ${index + 1}` }));
+    setRefs((current) => appendUniqueReferences(current, added));
+    setSelectedRefUrls(result.urls);
+    setPromptsText(result.prompt);
+  }
+
+  function sendToStudio(result: PlaygroundResult) {
+    try {
+      sessionStorage.setItem(CREATIVE_REFERENCE_KEY, JSON.stringify({ url: result.urls[0], prompt: result.prompt }));
+      router.push("/?from=creative-lab");
+    } catch { setError("Could not prepare the reference. Download the image and upload it in Studio."); }
   }
 
   function downloadAll() {
     const doneUrls = results.flatMap((r) => (r.status === "done" ? r.urls : []));
     doneUrls.forEach((url, i) => {
       const a = document.createElement("a");
-      a.href = url;
-      a.download = `playground-${Date.now()}-${i + 1}.png`;
-      a.target = "_blank";
+      const name = `creative-lab-${Date.now()}-${i + 1}.png`;
+      a.href = `/api/download?url=${encodeURIComponent(url)}&name=${encodeURIComponent(name)}`;
+      a.download = name;
       a.rel = "noopener";
       document.body.appendChild(a);
       a.click();
@@ -685,55 +642,148 @@ function ImagePlaygroundWorkspace({
   }
 
   function loadRun(run: PlaygroundRun) {
-    setModelId(run.modelId);
+    setModelIds(modelsFromResults(run.results, run.modelId));
+    setRefs((current) => appendUniqueReferences(current, run.refs.map((url, i) => ({ url, name: `Batch reference ${i + 1}` }))));
+    setNumPerPrompt(run.results[0]?.settings?.numImages ?? 1);
     setAspect(run.aspect);
     setResolution(run.resolution);
     setParallel(run.parallel);
     setSelectedRefUrls(run.refs);
-    setPromptsText(run.results.map((r) => r.prompt).join("\n"));
-    setResults(run.results);
+    setPromptsText([...new Set(run.results.map((r) => r.prompt))].join("\n"));
+    setResults(run.results.map((result) => ({ ...result, referenceUrls: result.referenceUrls ?? run.refs })));
   }
 
   return (
-    <main className="flex min-h-screen flex-col bg-neutral-50 lg:h-screen">
+    <main className="creative-lab flex min-h-screen flex-col bg-neutral-50">
       <StudioHeader
         active="playground"
-        title="Image Playground"
-        subtitle="Paste prompts (one per line) → batch generate. Fast, no friction."
+        title="Creative Lab"
+        subtitle="Explore a direction. Compare models. Keep what works."
         metrics={[
           { label: "Prompts", value: promptCount },
           { label: "Done", value: doneCount },
           { label: "Failed", value: failedCount },
           { label: "Active", value: activeJob },
           {
-            label: results.length ? "Spent" : "Est. cost",
+            label: results.length ? "Est. output cost" : "Est. cost",
             value: results.length ? fmtUsd(actualSpend) : fmtUsd(estimatedCost),
           },
         ]}
       />
       {workspaceBar}
 
-      <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+      <div className="lab-layout">
+        {/* Prompts center */}
+        <section className="lab-composer">
+          <div className="lab-composer-head">
+            <div>
+              <h2>Creative brief</h2>
+              <p className="text-[11px] text-neutral-500">
+                One concept per line. Each model creates {numPerPrompt} image
+                {numPerPrompt > 1 ? "s" : ""}.
+              </p>
+            </div>
+            <span className="rounded-full bg-neutral-100 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-neutral-500">
+              {promptCount} prompt{promptCount === 1 ? "" : "s"}
+            </span>
+          </div>
+
+          <div className="relative flex min-h-0 flex-1 flex-col">
+            <textarea
+              value={promptsText}
+              onChange={(e) => setPromptsText(e.target.value)}
+              aria-label="Creative brief"
+              placeholder={`Show this garment in soft window light.\nKeep the garment, try a warm outdoor setting.`}
+              disabled={running}
+              className="prompt-mono min-h-0 flex-1 resize-none px-6 py-5 text-[13px] leading-relaxed outline-none placeholder:text-neutral-400 disabled:bg-neutral-50"
+            />
+          </div>
+
+          <div className="lab-submit">
+            <div className="flex flex-col gap-0.5 text-xs text-neutral-500">
+              <span>
+                {orderedSelectedRefUrls.length
+                  ? `${orderedSelectedRefUrls.length} ref${orderedSelectedRefUrls.length === 1 ? "" : "s"} → ${promptCount} concepts × ${modelIds.length} models × ${numPerPrompt} = ${totalImages} images`
+                  : "Select reference images in the left rail"}
+              </span>
+              <span className="inline-flex items-center gap-1.5 text-[11px]">
+                <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                <span className="font-mono text-neutral-600">
+                  {modelIds.length} model{modelIds.length === 1 ? "" : "s"}
+                </span>
+                <span className="text-neutral-400">·</span>
+                <span className="font-mono text-neutral-700">
+                  est. {fmtUsd(estimatedCost)} this run
+                </span>
+                {results.length ? (
+                  <>
+                    <span className="text-neutral-400">·</span>
+                    <span className="font-mono text-emerald-700">
+                      est. completed {fmtUsd(actualSpend)}
+                    </span>
+                  </>
+                ) : null}
+              </span>
+            </div>
+            {running ? (
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPaused((p) => !p)}
+                  className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold transition active:scale-[0.98] ${
+                    paused
+                      ? "border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                      : "border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100"
+                  }`}
+                  title={
+                    paused
+                      ? "Resume dispatching queued prompts"
+                      : "Stop dispatching new prompts. In-flight images keep running."
+                  }
+                >
+                  {paused ? "Resume" : "Pause"}
+                </button>
+                <span className="inline-flex items-center gap-2 rounded-xl bg-neutral-100 px-4 py-2.5 text-sm font-semibold text-neutral-600">
+                  <Spinner />
+                  {paused ? "Paused" : "Generating"} {doneCount + failedCount}/{results.length}
+                  {batchStart != null ? (
+                    <span className="font-mono text-xs font-medium text-neutral-500">· {fmtDuration(batchElapsedMs)}</span>
+                  ) : null}
+                </span>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => runBatch()}
+                disabled={!promptCount || !modelIds.length || !orderedSelectedRefUrls.length}
+                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-b from-neutral-800 to-neutral-950 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:from-neutral-700 hover:to-neutral-900 hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-neutral-300 disabled:bg-none disabled:text-neutral-500"
+              >
+                {modelIds.length > 1 ? "Compare models" : "Generate images"}
+              </button>
+            )}
+            <p className="lab-budget-note">Estimates are approximate; provider billing is authoritative. Retrying starts a new paid request. Keep this workspace open while images are generating.</p>
+          </div>
+        </section>
+
         {/* Settings rail */}
-        <aside className="flex w-full shrink-0 flex-col gap-5 overflow-y-auto border-b border-neutral-200 bg-white p-5 lg:w-80 lg:border-b-0 lg:border-r">
+        <aside className="lab-settings">
           <section>
             <h2 className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-neutral-700">
               Settings
             </h2>
             <div className="space-y-3">
-              <Field label="Model">
-                <select
-                  value={modelId}
-                  onChange={(e) => setModelId(e.target.value as ModelId)}
-                  className="w-full rounded-lg border border-neutral-200 bg-white px-2.5 py-2 text-xs outline-none focus:border-brand-500"
-                >
-                  {Object.values(MODELS).map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.label} ({m.badge})
-                    </option>
+              <fieldset disabled={running}>
+                <legend className="mb-2 text-xs text-neutral-500">Image models</legend>
+                <div className="lab-models">
+                  {Object.values(MODELS).map((model) => (
+                    <label key={model.id}>
+                      <input type="checkbox" checked={modelIds.includes(model.id)} onChange={() => setModelIds((ids) => ids.includes(model.id) ? ids.filter((id) => id !== model.id) : [...ids, model.id])} />
+                      <span>{model.label}<small className="block">{model.badge}</small></span>
+                    </label>
                   ))}
-                </select>
-              </Field>
+                </div>
+                <p className="lab-budget-note mt-3">Every selected model receives the same prompts and references.</p>
+              </fieldset>
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Aspect">
                   <select value={aspect} onChange={(e) => setAspect(e.target.value)} className="w-full rounded-lg border border-neutral-200 bg-white px-2.5 py-2 text-xs outline-none focus:border-brand-500">
@@ -744,7 +794,7 @@ function ImagePlaygroundWorkspace({
                     ))}
                   </select>
                 </Field>
-                <Field label="Quality">
+                <Field label="Resolution">
                   <select
                     value={resolution}
                     onChange={(e) => setResolution(e.target.value)}
@@ -938,101 +988,11 @@ function ImagePlaygroundWorkspace({
           </section>
         </aside>
 
-        {/* Prompts center */}
-        <section className="flex min-w-0 flex-1 flex-col border-b border-neutral-200 bg-white lg:border-b-0 lg:border-r">
-          <div className="flex items-center justify-between border-b border-neutral-200 px-6 py-4">
-            <div>
-              <h1 className="text-sm font-semibold text-neutral-900">Prompts</h1>
-              <p className="text-[11px] text-neutral-500">
-                One prompt per line. Each line generates {numPerPrompt} image
-                {numPerPrompt > 1 ? "s" : ""}.
-              </p>
-            </div>
-            <span className="rounded-full bg-neutral-100 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-neutral-500">
-              {promptCount} prompt{promptCount === 1 ? "" : "s"}
-            </span>
-          </div>
-
-          <div className="relative flex min-h-0 flex-1 flex-col">
-            <textarea
-              value={promptsText}
-              onChange={(e) => setPromptsText(e.target.value)}
-              placeholder={`a moody portrait under neon lights\na sunlit linen shirt close-up\na minimalist product hero on cream background`}
-              disabled={running}
-              className="prompt-mono min-h-0 flex-1 resize-none px-6 py-5 text-[13px] leading-relaxed outline-none placeholder:text-neutral-400 disabled:bg-neutral-50"
-            />
-          </div>
-
-          <div className="flex items-center justify-between gap-3 border-t border-neutral-200 bg-neutral-50 px-6 py-4">
-            <div className="flex flex-col gap-0.5 text-xs text-neutral-500">
-              <span>
-                {orderedSelectedRefUrls.length
-                  ? `${orderedSelectedRefUrls.length} ref${orderedSelectedRefUrls.length === 1 ? "" : "s"} → ${promptCount} prompt${promptCount === 1 ? "" : "s"} × ${numPerPrompt} = ${totalImages} images`
-                  : "Select reference images in the left rail"}
-              </span>
-              <span className="inline-flex items-center gap-1.5 text-[11px]">
-                <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                <span className="font-mono text-neutral-600">
-                  {fmtUsd(costPerImage)}/image
-                </span>
-                <span className="text-neutral-400">·</span>
-                <span className="font-mono text-neutral-700">
-                  est. {fmtUsd(estimatedCost)} this run
-                </span>
-                {results.length ? (
-                  <>
-                    <span className="text-neutral-400">·</span>
-                    <span className="font-mono text-emerald-700">
-                      spent {fmtUsd(actualSpend)}
-                    </span>
-                  </>
-                ) : null}
-              </span>
-            </div>
-            {running ? (
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setPaused((p) => !p)}
-                  className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold transition active:scale-[0.98] ${
-                    paused
-                      ? "border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                      : "border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100"
-                  }`}
-                  title={
-                    paused
-                      ? "Resume dispatching queued prompts"
-                      : "Stop dispatching new prompts. In-flight images keep running."
-                  }
-                >
-                  {paused ? "▶ Resume" : "⏸ Pause"}
-                </button>
-                <span className="inline-flex items-center gap-2 rounded-xl bg-neutral-100 px-4 py-2.5 text-sm font-semibold text-neutral-600">
-                  <Spinner />
-                  {paused ? "Paused" : "Generating"} {doneCount + failedCount}/{promptCount}
-                  {batchStart != null ? (
-                    <span className="font-mono text-xs font-medium text-neutral-500">· {fmtDuration(batchElapsedMs)}</span>
-                  ) : null}
-                </span>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={runBatch}
-                disabled={!promptCount || !orderedSelectedRefUrls.length}
-                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-b from-neutral-800 to-neutral-950 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:from-neutral-700 hover:to-neutral-900 hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-neutral-300 disabled:bg-none disabled:text-neutral-500"
-              >
-                ⚡ Generate {promptCount || ""}
-              </button>
-            )}
-          </div>
-        </section>
-
         {/* Results panel */}
-        <aside className="flex w-full shrink-0 flex-col overflow-y-auto bg-neutral-50 lg:w-[28rem]">
-          <div className="flex items-center justify-between border-b border-neutral-200 bg-white px-5 py-4">
+        <aside className="lab-results">
+          <div className="lab-gallery-head">
             <div>
-              <h2 className="text-sm font-semibold text-neutral-900">Results</h2>
+              <h2 className="text-sm font-semibold text-neutral-900">Your explorations</h2>
               <p className="text-[11px] text-neutral-500">
                 {results.length
                   ? `${doneCount} done · ${failedCount} failed · ${results.length - doneCount - failedCount} pending`
@@ -1047,18 +1007,16 @@ function ImagePlaygroundWorkspace({
             <button
               type="button"
               onClick={downloadAll}
-              disabled={!doneCount}
+              disabled={!doneCount || running}
               className="rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs font-semibold text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
             >
               Download all
             </button>
           </div>
 
-          <div className="flex-1 space-y-3 p-4">
+          <div className="lab-gallery">
             {results.length === 0 ? (
-              <div className="flex h-full min-h-40 items-center justify-center text-xs text-neutral-400">
-                No results yet
-              </div>
+              <div className="lab-empty"><h3>Start with a reference and a direction.</h3><p>Your images will appear here, grouped by concept and labeled by model.</p></div>
             ) : (
               (() => {
                 // Walk results once and assign each "done" image a global index
@@ -1073,7 +1031,8 @@ function ImagePlaygroundWorkspace({
                         ? (r.finishedAt ?? nowTick) - r.startedAt
                         : null;
                   return (
-                  <div key={r.id} className="rounded-lg border border-neutral-200 bg-white p-3">
+                  <div key={r.id} className="lab-result">
+                    <h3>{r.conceptIndex != null ? `Concept ${r.conceptIndex + 1} · ` : ""}{r.settings?.modelLabel ?? "Image"}</h3>
                     <div className="mb-2 flex items-start justify-between gap-2">
                       <p className="line-clamp-2 flex-1 text-[11px] leading-snug text-neutral-700">
                         {r.prompt}
@@ -1113,7 +1072,7 @@ function ImagePlaygroundWorkspace({
                       </p>
                     ) : null}
                     {r.status === "done" && r.urls.length ? (
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid grid-cols-1 gap-2">
                         {r.urls.map((url, i) => {
                           const idx = globalIdx++;
                           const selected = idx === selectedIdx;
@@ -1135,7 +1094,7 @@ function ImagePlaygroundWorkspace({
                                   : "border-neutral-200"
                               }`}
                             >
-                              <img src={url} alt="" className="block h-auto w-full" />
+                              <img src={url} alt={r.prompt} className="block h-auto w-full" />
                             </button>
                           );
                         })}
@@ -1153,6 +1112,14 @@ function ImagePlaygroundWorkspace({
                         )}
                       </div>
                     )}
+                    <div className="lab-result-actions">
+                      {r.status === "done" ? <>
+                        <button type="button" disabled={running} onClick={() => reuseResult(r)}>Use as reference</button>
+                        <button type="button" disabled={running} onClick={() => sendToStudio(r)}>Use in Studio</button>
+                        <a href={`/api/download?url=${encodeURIComponent(r.urls[0])}&name=creative-lab.png`} download>Download</a>
+                      </> : null}
+                      {r.status === "failed" ? <button type="button" disabled={running || !r.settings} onClick={() => runBatch(r.id)}>Retry image</button> : null}
+                    </div>
                   </div>
                   );
                 });
@@ -1181,11 +1148,12 @@ function ImagePlaygroundWorkspace({
                     <li key={run.id}>
                       <button
                         type="button"
+                        disabled={running}
                         onClick={() => loadRun(run)}
                         className="w-full rounded-md border border-neutral-100 bg-neutral-50 px-2.5 py-1.5 text-left text-[11px] text-neutral-600 hover:border-neutral-300 hover:bg-white"
                       >
                         <span className="font-semibold text-neutral-800">
-                          {MODELS[run.modelId]?.label ?? run.modelId}
+                          {modelsFromResults(run.results, run.modelId).map((id) => MODELS[id].label).join(" + ")}
                         </span>{" "}
                         · {run.aspect} · {run.resolution} · {run.results.length} prompts · {done} done
                         <span className="ml-1 text-neutral-400">

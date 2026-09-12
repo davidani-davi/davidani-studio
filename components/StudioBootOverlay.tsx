@@ -17,7 +17,7 @@ export default function StudioBootOverlay() {
   const [gone, setGone] = useState(booted);
 
   useEffect(() => {
-    if (booted) return;
+    if (booted) { setGone(true); return; }
     booted = true;
     setReady(true);
     const t = setTimeout(() => setGone(true), 420);

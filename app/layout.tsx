@@ -1,37 +1,20 @@
 import type { Metadata } from "next";
-import { Instrument_Serif, JetBrains_Mono, Manrope } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
+import "./paper.css";
 
 export const metadata: Metadata = {
-  title: "Davi & Dani Photo Studio",
-  description: "AI product photography studio — Zara-inspired images from iPhone uploads",
+  title: "Davi & Dani Studio",
+  description: "Your workspace for product photography, creative experiments, and seasonal design.",
 };
 
-const manrope = Manrope({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-manrope",
-});
-
-const instrumentSerif = Instrument_Serif({
-  subsets: ["latin"],
-  display: "swap",
-  weight: "400",
-  style: ["normal", "italic"],
-  variable: "--font-instrument-serif",
-});
-
-const jetBrainsMono = JetBrains_Mono({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-jetbrains-mono",
-});
+const inter = Inter({ subsets: ["latin"], display: "swap", weight: ["400", "500"], variable: "--font-inter" });
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body
-        className={`${manrope.variable} ${instrumentSerif.variable} ${jetBrainsMono.variable} min-h-screen bg-neutral-50 text-neutral-900 antialiased`}
+        className={`${inter.variable} paper-app min-h-screen bg-neutral-50 text-neutral-900 antialiased`}
       >
         {children}
       </body>

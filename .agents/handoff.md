@@ -1,37 +1,27 @@
-# Handoff — expanded Bottoms reference collection
-Updated 2026-09-10T20:58:53-07:00 by Codex.
-Branch codex/more-bottom-references; implementation3092420 pushed to main.
-- Added DP62138, DP67113, DP58506, DP52122, DP52005A, DP58132,
-  DP62024B and DP62087: 24 matching front/side/back ERP originals.
-- DP58506 is Taupe Black Dots; DP62087 is labeled Camo · 3/4 length.
-- DP58132 uses Grey Leopard because that gallery has all three views.
-- DP52122 is Taupe / ivory cropped peace pants, another shorter option.
-- Shared catalog now contains 17 Bottoms references (Donuts + 16 ERP sets).
-- Source URLs, file IDs and SHA256 hashes recorded in pants-references.json.
-- Original photograph bytes preserved; no resizing or generated imagery.
-- Existing extension2.118.0 reads additions dynamically; no reinstall needed.
-- Prior library category/sidebar fixes remain in place (729491a).
-- All943 tests and production build pass. Browser admin verifies each set's
-  three actual photos plus Tops/Bottoms, search and responsive layout.
-- Studio picker verifies17 options and selects DP62087; no paid generation.
-- Deployed clean commit3092420: ba8qh1ppb, davidani-studio.vercel.app.
-- Live verification passed:17-option catalog, all24 new SHA256s, each set's
-  three image URLs, responsive admin library and Studio DP62087 selection.
-- Current extension browser test passed17 cards/all3 previews, desktop/phone.
-- No paid generations or live model edits used for verification.
-- Next: David refreshes the library / model catalog to use the new options.
-- Worktree /tmp/studio-reference-library; QA /tmp/bottoms-expansion.
-- Local QA server3016 stopped; temporary gitignored records remain. Exclude .data and
-  public/user-assets by deploying git archive, not the dirty worktree.
-- Preserve original Studio repo's modified tsconfig.tsbuildinfo.
-
-## 2026-09-11 17:00 — Claude Code: Vision 1 plates de-necklaced (main 9fb0f3e)
-- DWJ62316 on studio 97 carried a ghost chain; prompt rule (64f5015) alone was not enough.
-- studio 97 + crop 97 front/side/back/full re-edited without jewellery (dcfd224);
-  `lib/simple-face-presets.json` sha256 refreshed (9fb0f3e) or simpleFaceMask refuses.
-- Tool: faire-management `thumbnail-optimizer/plate_necklace.mjs` (masked GPT Image 2 edit).
-- Then David saw a straight line across the collarbone: the face-protection join
-  (plate rows above 384, GPT below, 8-row blend, output a touch darker). Fixed in
-  compositeGarment: seamMatch per-column tone offset faded over 192 rows + 48-row
-  blend (74621f7, aeed967). Verified with a 5x tonal stretch of the render.
-- Next: any plate with jewellery gets the same pass before it goes live.
+# Handoff
+- 2026-09-11 17:51 PDT · Codex.
+- Branch: codex/paper-studio-creative-lab; UI commit dd5088d; see git log -1 for latest checks.
+- Worktree: /Users/davidani-mini/Code/davidani-studio-paper.
+- Full Studio Paper 0.9 redesign: Inter, warm page/white sheets, 3px corners,
+  hairlines, visible workspace/tool navigation, no decorative gradients/shadows.
+- /home adds a directory for Studio, Creative Lab, Season Plan, and Playground.
+- Season Plan/Playground remain separate apps and retain their sign-ins/services.
+- /creative-lab upgrades existing Image Playground; old route/history keys work.
+- Same concepts across selected models, labeled results, exact-input retries,
+  restored history/references, reference reuse, downloads, handoff to Studio.
+- Handoff prepares a style reference, not the garment intake; never auto-generates.
+- Uses existing providers; no local Codex server/planner integration.
+- Browser-driven generation still needs its workspace open; cost is estimated.
+- All 954 tests pass; production build passes. Fixed pre-existing test typing
+  and updated a stale mask assertion to reflect the already-shipped 48-row blend.
+- No changes to photographic processing or reviewed model reference assets.
+- 15 routes verified at 1440/768/430/440; no overflow or uncaught JS errors.
+- Five mocked provider requests verified comparison, retry and history/handoff.
+- Physical iPhone/WebKit remains unverified; Chromium checks only.
+- Preview screenshots and QA logs: /tmp/studio-paper-qa.
+- Details and limitations: docs/PAPER_STUDIO.md.
+- PR: https://github.com/davidani-davi/davidani-studio/pull/8 (draft).
+- CI exposed a slow deep comparison on a 1.5M-byte mask; Buffer.equals keeps
+  the exact pixel assertion and removes the test-runner overhead.
+- Next: review the PR preview; incorporate design feedback and land the branch.
+- Original Studio worktree and its modified tsconfig.tsbuildinfo left intact.

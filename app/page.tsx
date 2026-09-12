@@ -1,5 +1,6 @@
 "use client";
 
+import { CREATIVE_REFERENCE_KEY, parseCreativeReference } from "@/lib/creative-lab";
 import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import { type BatchProgress, type ProductShotMode } from "@/components/PromptPanel";
@@ -331,6 +332,19 @@ export default function StudioPage() {
   const [routingPending, setRoutingPending] = useState(false);
   const [referenceImageUrl, setReferenceImageUrl] = useState<string | null>(null);
   const [referenceUploading, setReferenceUploading] = useState(false);
+
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("from") !== "creative-lab") return;
+    try {
+      const reference = parseCreativeReference(sessionStorage.getItem(CREATIVE_REFERENCE_KEY));
+      if (!reference) return;
+      setReferenceImageUrl(reference.url);
+      setNotice("Creative Lab image added as your style reference. Upload the garment photo, then review your settings before generating.");
+      sessionStorage.removeItem(CREATIVE_REFERENCE_KEY);
+      window.history.replaceState(null, "", window.location.pathname);
+    } catch { /* Storage may be disabled; the normal upload flow remains available. */ }
+  }, []);
+
   // NOTE: team-saved canvas presets went with the preset grid. /api/user-references
   // and everything already stored behind it are left untouched — nothing is
   // deleted, and restoring the feature is a UI change, not a data recovery.

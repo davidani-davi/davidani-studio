@@ -44,9 +44,13 @@ describe('admin reference catalog',()=>{
   expect(applyCatalogChanges(base,[del,event({kind:'pose',patch:{deleted:false}})])[0].poses[0].views.front?.publicPath).toBe('/front.jpg');
  });
  it('uses photo-specific reviewed protection and rejects changed pixels',()=>{
-  const protection={width:2,height:4,sha256:'same',protectedRows:2,transitionRows:1};
-  const ref={width:2,height:4,sha256:'same',data:Buffer.alloc(32)};
-  expect([...simpleFaceMask(ref,'https://store/new.png','front','crop',protection)!]).toEqual([0,0,0,0,255,255,255,255]);
+  const protection={width:2,height:80,sha256:'same',protectedRows:2,transitionRows:1};
+  const ref={width:2,height:80,sha256:'same',data:Buffer.alloc(640)};
+  const mask=simpleFaceMask(ref,'https://store/new.png','front','crop',protection)!;
+  expect([...mask.subarray(0,4)]).toEqual([0,0,0,0]);
+  expect(mask[20]).toBeGreaterThan(0);
+  expect(mask[20]).toBeLessThan(255);
+  expect(mask[mask.length-1]).toBe(255);
   expect(simpleFaceMask(ref,'https://store/back.png','back','crop',protection)).toEqual(simpleFaceMask(ref,'https://store/new.png','front','crop',protection));
   expect(()=>simpleFaceMask({...ref,sha256:'changed'},'/new','front','crop',protection)).toThrow('changed');
  });

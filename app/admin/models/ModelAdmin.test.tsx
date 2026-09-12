@@ -12,11 +12,11 @@ describe('reference library navigation',()=>{
   const library=screen.getByRole('complementary',{name:'Reference library'});
   await within(library).findByRole('button',{name:/Celine 1/});
   expect(within(library).queryByRole('button',{name:/Donuts/})).toBeNull();
-  expect(screen.getByRole('heading',{name:'Full',exact:true})).toBeInTheDocument();
+  expect(screen.getByRole('heading',{name:'Full'})).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button',{name:/^Bottoms/}));
   await within(library).findByRole('button',{name:/Donuts/});
   expect(within(library).queryByRole('button',{name:/Celine 1/})).toBeNull();
-  expect(screen.queryByRole('heading',{name:'Full',exact:true})).toBeNull();
+  expect(screen.queryByRole('heading',{name:'Full'})).toBeNull();
   expect(screen.getByRole('heading',{name:'DP52083 · Donuts'})).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button',{name:/All references/}));
   expect(within(library).getAllByRole('button',{pressed:false}).length).toBeGreaterThan(1);
@@ -28,7 +28,7 @@ describe('reference library navigation',()=>{
   await screen.findByRole('heading',{name:'Choose a model'});
   fireEvent.change(screen.getByRole('textbox',{name:'Search models'}),{target:{value:''}});
   fireEvent.click(screen.getByRole('button',{name:/^Bottoms/}));
-  fireEvent.click(screen.getByRole('button',{name:'Trash',exact:true}));
+  fireEvent.click(screen.getByRole('button',{name:'Trash'}));
   await screen.findByRole('heading',{name:'Retired pants'});
   expect(screen.getByRole('button',{name:'Restore model'})).toBeVisible();
   fireEvent.click(screen.getByRole('button',{name:'Back to models'}));
