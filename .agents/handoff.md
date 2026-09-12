@@ -30,4 +30,8 @@ Branch codex/more-bottom-references; implementation3092420 pushed to main.
 - studio 97 + crop 97 front/side/back/full re-edited without jewellery (dcfd224);
   `lib/simple-face-presets.json` sha256 refreshed (9fb0f3e) or simpleFaceMask refuses.
 - Tool: faire-management `thumbnail-optimizer/plate_necklace.mjs` (masked GPT Image 2 edit).
+- Then David saw a straight line across the collarbone: the face-protection join
+  (plate rows above 384, GPT below, 8-row blend, output a touch darker). Fixed in
+  compositeGarment: seamMatch per-column tone offset faded over 192 rows + 48-row
+  blend (74621f7, aeed967). Verified with a 5x tonal stretch of the render.
 - Next: any plate with jewellery gets the same pass before it goes live.
