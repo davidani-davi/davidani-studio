@@ -68,6 +68,41 @@ export async function editMask(e: GarmentEdit, ref: ReferencePixels, needsHead: 
 }
 
 /** Hard composition, not AI restoration. Model output can NEVER replace a zero-mask pixel. */
+/**
+ * Seam tone match (2026-09-11, DWJ62316 on studio 97): the model's output runs a
+ * touch darker than the plate, so the few-row blend under the protected head
+ * showed as a hard horizontal line across the whole frame. When the mask is a
+ * row band, measure the per-channel offset just below the boundary (neck, hair
+ * and backdrop are the same picture in both) and fade it out over the next
+ * rows, so the join is invisible while the garment keeps its own colour.
+ */
+export function seamMatch(ref: ReferencePixels, candidate: Buffer, mask: Buffer, band = 24, fade = 192) {
+  const { width: w, height: h } = ref;
+  let boundary = -1;
+  for (let y = 0; y < h; y++) {
+    const a = mask[y * w];
+    for (let x = 1; x < w; x++) if (mask[y * w + x] !== a) return; // not a row band
+    if (a && boundary < 0) boundary = y;
+  }
+  if (boundary <= 0 || boundary + band > h) return;
+  const diff = [0, 0, 0]; let n = 0;
+  for (let y = boundary; y < boundary + band; y++) for (let x = 0; x < w; x++) {
+    const i = (y * w + x) * 4;
+    for (let c = 0; c < 3; c++) diff[c] += ref.data[i + c] - candidate[i + c];
+    n++;
+  }
+  for (let c = 0; c < 3; c++) diff[c] /= n;
+  if (diff.every(d => Math.abs(d) < 0.25)) return;
+  const end = Math.min(h, boundary + fade);
+  for (let y = boundary; y < end; y++) {
+    const wgt = 1 - (y - boundary) / fade;
+    for (let x = 0; x < w; x++) {
+      const i = (y * w + x) * 4;
+      for (let c = 0; c < 3; c++) candidate[i + c] = Math.max(0, Math.min(255, Math.round(candidate[i + c] + diff[c] * wgt)));
+    }
+  }
+}
+
 export async function compositeGarment(ref: ReferencePixels, generated: Buffer, mask: Buffer) {
   if (mask.length !== ref.width * ref.height) throw Error('Mask dimensions do not match the reference.');
   const meta = await sharp(generated).metadata();
@@ -75,6 +110,7 @@ export async function compositeGarment(ref: ReferencePixels, generated: Buffer, 
     throw Error('Generated framing differs from the reference. No protected-pixel result was produced.');
   const candidate = await sharp(generated).rotate().resize(ref.width,ref.height,{fit:'fill'})
     .toColourspace('srgb').ensureAlpha().raw().toBuffer();
+  seamMatch(ref, candidate, mask);
   const pixels = Buffer.from(ref.data);
   let protectedPixels = 0;
   for (let i=0;i<mask.length;i++) {

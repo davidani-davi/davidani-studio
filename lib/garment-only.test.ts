@@ -61,3 +61,26 @@ describe('garment-only hard pixel preservation',()=>{
   await expect(compositeGarment(ref,square,Buffer.alloc(1))).rejects.toThrow('dimensions');
  });
 });
+
+describe('seamMatch', () => {
+  const w = 8, h = 40;
+  const flat = (v: number) => { const b = Buffer.alloc(w * h * 4, v); for (let i = 3; i < b.length; i += 4) b[i] = 255; return b; };
+  const ref = { data: flat(200), width: w, height: h, sha256: 'x' };
+  const band = () => { const m = Buffer.alloc(w * h); for (let y = 10; y < h; y++) m.fill(255, y * w, (y + 1) * w); return m; };
+  it('lifts a darker output to the plate at the boundary and fades the correction out', async () => {
+    const { seamMatch } = await import('./garment-only');
+    const cand = flat(190);
+    seamMatch(ref, cand, band(), 4, 20);
+    expect(cand[(10 * w) * 4]).toBe(200);           // boundary row matches the plate
+    expect(cand[(20 * w) * 4]).toBe(195);           // half-way through the fade
+    expect(cand[(35 * w) * 4]).toBe(190);           // beyond the fade: untouched
+    expect(cand[(5 * w) * 4]).toBe(190);            // protected rows are not the compositor's business
+  });
+  it('leaves a non-band mask alone', async () => {
+    const { seamMatch } = await import('./garment-only');
+    const m = band(); m[12 * w + 3] = 0;
+    const cand = flat(190);
+    seamMatch(ref, cand, m, 4, 20);
+    expect(cand[(10 * w) * 4]).toBe(190);
+  });
+});
