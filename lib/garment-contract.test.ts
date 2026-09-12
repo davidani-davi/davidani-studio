@@ -161,6 +161,14 @@ describe("buildGarmentContract — the DJ67094 failure (length and fit)", () => 
     expect(lengthFor({ title: "Two-Tone Striped Button-Front Cardigan" })).toBeNull();
     expect(lengthFor({ title: "Long Sleeve Tee", description: "layers over a midi skirt" })).toBeNull();
   });
+  it("a shirt jacket / shacket with no length word defaults to hip-length, not an open drift (DJ60404)", () => {
+    expect(lengthFor({ type: "Shirt Jacket - Women's", title: "Tapestry Floral Cotton Twill Shirt Jacket" })).toEqual({
+      adj: "hip-length", hem: "the hem falls at the hip, at or just below the waistband",
+    });
+    expect(lengthFor({ title: "Plaid Shacket" })?.adj).toBe("hip-length");
+    // A shacket whose title already names a length keeps that length instead.
+    expect(lengthFor({ title: "Cropped Plaid Shacket" })?.adj).toBe("cropped");
+  });
   it("close fits are read from the title only; roomy fits from the description too", () => {
     expect(fitFor({ title: "Boxy Tee", description: "pairs with slim jeans" })?.word).toBe("boxy");
     expect(fitFor({ title: "Ribbed Tee", description: "pairs with slim jeans" })).toBeNull();

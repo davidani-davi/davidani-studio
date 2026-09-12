@@ -256,6 +256,15 @@ export function lengthFor(known: KnownGarment | null | undefined): { adj: string
   const text = `${k.type || ""} ${k.title || ""}`;
   for (const [re, len] of LENGTHS) if (re.test(text)) return len;
   if (String(k.hem || "").toLowerCase() === "long") return { adj: "knee-length", hem: "the hem falls at or just below the knee" };
+  // A shirt jacket / shacket names its own length category, the same way a
+  // plain coat defaults to knee above: hip-length. DJ60404 ("Tapestry Floral
+  // Cotton Twill Shirt Jacket") carried no length word, lengthFor returned
+  // null, and nothing anchored the hem — the render drifted it down past hip
+  // to mid-thigh. A title with its own length word (cropped/longline/etc.)
+  // already matched the LENGTHS table above and never reaches here.
+  if (/\bshirt jacket\b|\bshacket\b/i.test(text)) {
+    return { adj: "hip-length", hem: "the hem falls at the hip, at or just below the waistband" };
+  }
   return null;
 }
 
