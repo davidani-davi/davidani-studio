@@ -169,6 +169,17 @@ describe("buildGarmentContract — the DJ67094 failure (length and fit)", () => 
     // A shacket whose title already names a length keeps that length instead.
     expect(lengthFor({ title: "Cropped Plaid Shacket" })?.adj).toBe("cropped");
   });
+  it("a coat with no length word of its own defaults to knee-length without needing a caller-supplied hem flag", () => {
+    // This is the gap simple-reference-shot.ts hits: it calls lengthFor with
+    // only a title, never known.hem, so the "hem: long" fallback above never
+    // fires for it. A bare "coat" family word must resolve on its own.
+    expect(lengthFor({ title: "Wool Blend Peacoat" })?.adj).toBe("knee-length");
+    expect(lengthFor({ title: "Classic Overcoat" })?.adj).toBe("knee-length");
+    expect(lengthFor({ title: "Trench Coat" })?.adj).toBe("knee-length");
+    // A coat whose title already names a length keeps that length instead.
+    expect(lengthFor({ title: "Longline Wool Coat" })?.adj).toBe("longline");
+    expect(lengthFor({ title: "Cropped Denim Coat" })?.adj).toBe("cropped");
+  });
   it("close fits are read from the title only; roomy fits from the description too", () => {
     expect(fitFor({ title: "Boxy Tee", description: "pairs with slim jeans" })?.word).toBe("boxy");
     expect(fitFor({ title: "Ribbed Tee", description: "pairs with slim jeans" })).toBeNull();

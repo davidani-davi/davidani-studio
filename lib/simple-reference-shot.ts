@@ -36,13 +36,25 @@ export function simpleReferenceShot(o: ReferenceShot) {
   // this exact path) came back with the hem stretched past hip to mid-thigh
   // even though the prompt already said "reproduce ... hem exactly" — telling
   // an edit model to copy an unstated hem from a photo it is also asked to
-  // reinterpret isn't an anchor. lengthFor (lib/garment-contract.ts) gives the
-  // same default a shirt jacket/shacket gets elsewhere (hip-length) when the
-  // title carries no length word of its own; spelling that out in words is a
-  // second, independent anchor the edit can't drift away from.
+  // reinterpret isn't an anchor on its own. The source of truth is always
+  // image 2, the actual garment product photograph — never image 1, which is
+  // only a pose/body/background reference and whose own original garment's
+  // proportions must not leak into the new one. lengthFor's adjective
+  // (lib/garment-contract.ts — hip-length for an unlabeled shirt
+  // jacket/shacket, knee-length for an unlabeled coat) is a named checkpoint
+  // that reinforces what image 2 already shows for the common cases; it is
+  // stated as "typically", not as a fact overriding the photo, so a style
+  // whose real photo disagrees (a longer coat, an exception cut) still reads
+  // correctly, and an operator note asking for a different length is never
+  // fighting a hard "do not extend" rule.
   const length = name ? lengthFor({ title: o.garmentName }) : null;
-  const hem = length ? ` This is a ${length.adj} piece: ${length.hem}. Do not extend the hem lower than that.` : '';
-  const cut = name ? ` The garment is a "${name}": reproduce that cut, silhouette, sleeve length and hem exactly, not the shape of the ${scope} image 1 wears.${hem}` : '';
+  // A note is the operator overriding a specific run; don't have the default
+  // length checkpoint argue with an explicit correction they just typed.
+  const noteOverridesLength = /\b(hem|length|longer|shorter|crop|cropped|knee|thigh|calf|ankle|floor|waist)\b/i.test(o.note || '');
+  const hem = length && !noteOverridesLength
+    ? ` As a checkpoint, a "${name}" like this is typically ${length.adj} (${length.hem}) — but image 2's own proportions decide the actual hem, not this checkpoint and not image 1.`
+    : '';
+  const cut = name ? ` The garment is a "${name}": reproduce that cut, silhouette, sleeve length and hem exactly as shown in image 2, the actual garment photograph — image 2 alone decides where the hem falls, never the shape, length or proportions of the ${scope} image 1 wears.${hem}` : '';
   const prompt = `Edit image 1 as the exact base photograph. Replace only the ${scope} with the garment in image 2. Match its fabric, cut, length, print and construction.${cut} ${colour} Allow natural fold shadows and highlights, but do not tint the garment to match image 1’s clothing or background. ${keep} Preserve the face, expression, head position and hairstyle unchanged. No sharpening, retouching or enhancement. One clean photograph of one person.${inferred ? ' No back garment photo is supplied; use a plain continuation of the fabric without invented rear graphics.' : ''}${o.note ? ` Requested change: ${o.note}` : ''}`;
   const image_urls = anchor ? [o.referenceUrl, garment, anchor] : [o.referenceUrl, garment];
   return {prompt, garmentImageUrls:[garment], image_urls, garmentBackInferred:inferred, anchored: Boolean(anchor)};

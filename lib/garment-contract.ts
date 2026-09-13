@@ -265,6 +265,17 @@ export function lengthFor(known: KnownGarment | null | undefined): { adj: string
   if (/\bshirt jacket\b|\bshacket\b/i.test(text)) {
     return { adj: "hip-length", hem: "the hem falls at the hip, at or just below the waistband" };
   }
+  // A coat with no length word of its own is a second version of the same
+  // gap: `known.hem === "long"` only reaches lengthFor when a caller already
+  // ran hemFor() and threaded the result back in (the model-shots route does
+  // this, but simple-reference-shot.ts calls lengthFor with only a title, so
+  // a plain "Wool Blend Coat" or "Classic Peacoat" matched nothing here and
+  // got no length assertion at all). Read the same bare-coat family hemFor()
+  // matches (lib/plate-framing.ts LONG_HEM_RE) directly off the text so the
+  // default applies regardless of which caller reaches lengthFor.
+  if (/\b(?:pea|over|top|rain|trench|duster|car)?coat\b/i.test(text)) {
+    return { adj: "knee-length", hem: "the hem falls at or just below the knee" };
+  }
   return null;
 }
 

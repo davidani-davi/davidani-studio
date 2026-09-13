@@ -56,18 +56,31 @@ describe('simple garment swap',()=>{
  });
  it('names the garment cut from the listing title so the plate silhouette does not win',()=>{
   const shot=simpleReferenceShot({...base,view:'front',garmentName:'Seamed Handkerchief Hem Oversized Sweater Poncho'});
-  expect(shot.prompt).toContain('The garment is a "Seamed Handkerchief Hem Oversized Sweater Poncho": reproduce that cut, silhouette, sleeve length and hem exactly, not the shape of the top image 1 wears.');
+  expect(shot.prompt).toContain('The garment is a "Seamed Handkerchief Hem Oversized Sweater Poncho": reproduce that cut, silhouette, sleeve length and hem exactly as shown in image 2, the actual garment photograph — image 2 alone decides where the hem falls, never the shape, length or proportions of the top image 1 wears.');
   const quoted=simpleReferenceShot({...base,view:'side',garmentName:'  "Odd"\nTitle  '});
   expect(quoted.prompt).toContain('The garment is a "Odd Title"');
   expect(simpleReferenceShot({...base,view:'front'}).prompt).not.toContain('The garment is a');
  });
- it('asserts hip-length for a shirt jacket/shacket with no length word in its title, so the edit has a stated hem to anchor to (DJ60404)',()=>{
+ it('names image 2, not image 1, as the sole source of hem length',()=>{
   const shot=simpleReferenceShot({...base,view:'front',garmentName:'Tapestry Floral Cotton Twill Shirt Jacket'});
-  expect(shot.prompt).toContain('This is a hip-length piece: the hem falls at the hip, at or just below the waistband. Do not extend the hem lower than that.');
+  expect(shot.prompt).toContain('reproduce that cut, silhouette, sleeve length and hem exactly as shown in image 2, the actual garment photograph — image 2 alone decides where the hem falls');
  });
- it('does not assert a length when the title has none and is not a shacket/shirt jacket',()=>{
+ it('offers hip-length as a checkpoint for a shirt jacket/shacket with no length word in its title (DJ60404), never as a hard override of the photo',()=>{
+  const shot=simpleReferenceShot({...base,view:'front',garmentName:'Tapestry Floral Cotton Twill Shirt Jacket'});
+  expect(shot.prompt).toContain('As a checkpoint, a "Tapestry Floral Cotton Twill Shirt Jacket" like this is typically hip-length (the hem falls at the hip, at or just below the waistband) — but image 2\'s own proportions decide the actual hem');
+ });
+ it('offers knee-length as a checkpoint for a coat with no length word in its title',()=>{
+  const shot=simpleReferenceShot({...base,view:'front',garmentName:'Wool Blend Peacoat'});
+  expect(shot.prompt).toContain('typically knee-length (the hem falls at or just below the knee)');
+ });
+ it('does not assert a length checkpoint when the title has none and is not a coat/shacket/shirt jacket',()=>{
   const shot=simpleReferenceShot({...base,view:'front',garmentName:'Seamed Handkerchief Hem Oversized Sweater Poncho'});
-  expect(shot.prompt).not.toContain('This is a');
+  expect(shot.prompt).not.toContain('As a checkpoint');
+ });
+ it('an operator note about length is never fought by the default checkpoint',()=>{
+  const shot=simpleReferenceShot({...base,view:'front',garmentName:'Tapestry Floral Cotton Twill Shirt Jacket',note:'Make the hem longer, closer to mid-thigh.'});
+  expect(shot.prompt).not.toContain('As a checkpoint');
+  expect(shot.prompt).toContain('Requested change: Make the hem longer, closer to mid-thigh.');
  });
  it('requires two input roles',()=>expect(()=>simpleReferenceShot({...base,view:'front',garmentImageUrls:[]})).toThrow());
  it('requires reviewed unchanged source pixels for face protection',async()=>{
