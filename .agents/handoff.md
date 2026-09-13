@@ -15,14 +15,25 @@ Written 2026-09-12 by Claude Code. Branch `codex/garment-only-pixel-lock`, NOT p
   and appends an explicit hem-length sentence when the title has no length word of its
   own. Verified via `lib/simple-reference-shot.test.ts` (82 tests pass) that DJ60404's
   exact title now produces the hip-length clause in the built prompt.
-- **Verified against a live render** (David approved spending one FAL run): generated
-  DJ60404 front view through local Model Studio with ChatGPT Image Generator V2.5
-  (FAL-only, avoids the missing `KIE_AI_API_KEY`). All 3 variants landed the hem at
-  hip/waistband — no more mid-thigh drift. Screenshot: `/tmp/studio-result.png`.
-- Noticed but not chased: the generate call logged `category=pants` for DJ60404 (a
-  shirt jacket). Didn't visibly break this render, but the category classification
-  feeding the route looks off for this style — worth checking if other garment types
-  show odd behavior later.
+- **First live-render attempt was invalid**: I drove the standalone "Single Model
+  Studio" web UI (`/model-studio`), which posts to `/api/analyze-model` +
+  `/api/generate-model` — a vision-based prompt pipeline that never touches
+  `simple-reference-shot.ts`/`lengthFor`. It happened to render a correct hem, but
+  that told us nothing about the actual fix.
+- **Real verification** (`9c2a7ee` era): called `/api/model-shots` directly
+  (`editMode: "simple"`, `humanModelId`/`poseId`: `"studio 100"`, DJ60404's ERP
+  FRONT photo, GPT Image 2.5) — this is the extension's actual route and the one
+  that calls `simple-reference-shot.ts`. Response `prompt` field contained the
+  fix's exact clause: "This is a hip-length piece: the hem falls at the hip, at or
+  just below the waistband." Rendered image confirms the hem lands correctly.
+  Image saved at `/tmp/dj60404-fixed.png` (not committed, local only).
+- Fixed the `category=pants` mislabel noticed during the first (invalid) test:
+  `inferGarmentCategory` (`lib/fal.ts`) was scanning the whole assembled prompt,
+  including the upper-body template's own "preserve any visible skirt, pants,
+  shorts, or other lower-body garment" boilerplate — so it matched "pants" on
+  every jacket/top swap. Now strips that clause before scanning (`9c2a7ee`). Was
+  cosmetic (only picks a default style-reference image when none is supplied,
+  never on the simple-swap path), all 986 tests still pass.
 
 ## Local dev environment set up this session
 - `.env.local` created (gitignored) with `APP_PASSWORD`, `AUTH_SECRET`, `FAL_KEY`
@@ -43,8 +54,10 @@ Written 2026-09-12 by Claude Code. Branch `codex/garment-only-pixel-lock`, NOT p
   knowing before poking around for verification purposes.
 
 ## Next
-- Push b193780 (and 1c30510, which is harmless but currently unused) whenever David
-  wants it live — not pushed yet.
-- Optional: look into the `category=pants` mislabel noted above for shirt jackets.
+- Push the branch whenever David wants it live — not pushed yet (1c30510, b193780,
+  9c2a7ee, plus handoff commits).
+- Calling `/api/model-shots` directly with curl (bypassing any UI) is the fast way
+  to exercise the extension's actual "Simple garment swap" path from this dev
+  environment going forward — see git log for the exact body shape used.
 - Unrelated: this branch still carries the earlier "reference sets 108-111" and
   "knee framing" work from the prior handoff — see git log for that thread.
