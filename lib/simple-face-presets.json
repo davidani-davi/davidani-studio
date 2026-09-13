@@ -226,7 +226,7 @@
   "/models/studio 108/side.png": {
     "width": 2000,
     "height": 3000,
-    "sha256": "f972d38ec28e3cb2a7f0d2af92985dd4e35ebb834f96ae0351251bb5de61080b",
+    "sha256": "0d28d273a46f96ea2bc39b021869c7a11dfbe0892cec7d0c419112961dec9a91",
     "protectedRows": 480,
     "transitionRows": 8
   },
@@ -261,7 +261,7 @@
   "/models/studio 109/side.png": {
     "width": 2000,
     "height": 3000,
-    "sha256": "e91bbc7a3e42fe384eba741232c9153732222784fa08ca28e05cb421621159aa",
+    "sha256": "d7093fc0dcb8257671da0d8faf1ec106ed238340130ef0d0deaae5df6844229a",
     "protectedRows": 480,
     "transitionRows": 8
   },
