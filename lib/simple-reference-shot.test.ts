@@ -35,6 +35,13 @@ describe('simple garment swap',()=>{
   expect(pants.prompt).toContain('and other clothing');
   expect(pants.prompt).not.toContain('remove any top');
  });
+ it('the removed plate layer must be gone, not ghosted underneath the new garment (DJ60404 shoulder + cuff artifacts)',()=>{
+  const top=simpleReferenceShot({...base,view:'front'});
+  expect(top.prompt).toContain('neckline, shoulders, cuffs or below the hem');
+  expect(top.prompt).toContain('The removed layer must be completely gone, not blended or faded beneath the new garment — no ghosting, no translucent patches, no doubled collar, cuff or fabric anywhere on the body, including at the wrists and sleeve ends.');
+  const pants=simpleReferenceShot({...base,view:'front',category:'pants'});
+  expect(pants.prompt).not.toContain('no ghosting');
+ });
  it('back gets only the back garment, without front print instructions',()=>{
   const shot=simpleReferenceShot({...base,view:'back'});
   expect(shot.image_urls).toEqual([base.referenceUrl,base.garmentImageUrls[1]]);
