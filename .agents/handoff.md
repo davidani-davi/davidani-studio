@@ -66,9 +66,8 @@ Written 2026-09-12 by Claude Code. Branch `codex/garment-only-pixel-lock`, NOT p
 ## Next
 - Push the branch whenever David wants it live — not pushed yet (1c30510, b193780,
   9c2a7ee, 02afb26, plus handoff commits).
-- The reframed prompt (02afb26) hasn't been re-verified with a live render — the
-  photo-anchoring wording is untested end-to-end, only unit-tested. Worth one
-  more paid render if David wants visual confirmation before pushing.
+- Reframed prompt (02afb26) re-verified with a second live render, same
+  `/api/model-shots editMode:simple` call: hem still lands correctly at hip.
 - Calling `/api/model-shots` directly with curl (bypassing any UI) is the fast way
   to exercise the extension's actual "Simple garment swap" path from this dev
   environment going forward — see git log for the exact body shape used.
