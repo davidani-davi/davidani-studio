@@ -27,6 +27,16 @@ Written 2026-09-12 by Claude Code. Branch `codex/garment-only-pixel-lock`, NOT p
   fix's exact clause: "This is a hip-length piece: the hem falls at the hip, at or
   just below the waistband." Rendered image confirms the hem lands correctly.
   Image saved at `/tmp/dj60404-fixed.png` (not committed, local only).
+- **David's follow-up correction (still same session)**: the hip-length sentence
+  was a flat guess detached from any image, and coats had a real gap — lengthFor's
+  coat default only fires when a caller already threads `known.hem="long"` back
+  in, which simple-reference-shot.ts never does (it only passes `title`). Fixed
+  (`02afb26`): `lengthFor()` now recognizes bare coat words (pea/over/trench/
+  duster/etc.) from title text alone; the prompt's length clause is reframed to
+  say image 2 (the actual garment photo) alone decides the hem, never image 1
+  (the pose reference) — lengthFor's adjective is offered as a "typically X"
+  checkpoint, not a hard override, and steps aside when an operator note already
+  asks for a specific length. 990/990 tests pass.
 - Fixed the `category=pants` mislabel noticed during the first (invalid) test:
   `inferGarmentCategory` (`lib/fal.ts`) was scanning the whole assembled prompt,
   including the upper-body template's own "preserve any visible skirt, pants,
@@ -55,7 +65,10 @@ Written 2026-09-12 by Claude Code. Branch `codex/garment-only-pixel-lock`, NOT p
 
 ## Next
 - Push the branch whenever David wants it live — not pushed yet (1c30510, b193780,
-  9c2a7ee, plus handoff commits).
+  9c2a7ee, 02afb26, plus handoff commits).
+- The reframed prompt (02afb26) hasn't been re-verified with a live render — the
+  photo-anchoring wording is untested end-to-end, only unit-tested. Worth one
+  more paid render if David wants visual confirmation before pushing.
 - Calling `/api/model-shots` directly with curl (bypassing any UI) is the fast way
   to exercise the extension's actual "Simple garment swap" path from this dev
   environment going forward — see git log for the exact body shape used.
