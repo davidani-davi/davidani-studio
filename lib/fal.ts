@@ -336,6 +336,18 @@ export async function getStyleReferenceUrl(
  * style-reference image. Falls back to "other" when no pants keyword matches.
  */
 function inferGarmentCategory(prompt: string): StyleReferenceKind {
+  // The upper-body swap templates carry their own boilerplate telling the
+  // model to leave the model's existing bottoms untouched — "preserve any
+  // visible skirt, pants, shorts, or other lower-body garment from Image A
+  // exactly as-is" — which contains "pants" regardless of what garment is
+  // actually being swapped in. DJ60404 (a shirt jacket) logged
+  // category=pants for exactly this reason: the scan below matched that
+  // preservation clause, not the new garment. Strip it before scanning so
+  // only the garment being swapped in can decide the category.
+  const scanText = prompt.replace(
+    /preserve any visible skirt, pants, shorts, or other lower-body garment[^.]*\./gi,
+    ""
+  );
   // Unambiguous bottoms-only terms. We deliberately exclude words like
   // "short" (matches "short sleeve"), "cargo" (matches "cargo pocket"),
   // "denim" (matches "denim jacket"), and "pant" singular — too false-positive
@@ -354,7 +366,7 @@ function inferGarmentCategory(prompt: string): StyleReferenceKind {
     "corduroys",
   ];
   for (const w of pantsWords) {
-    if (new RegExp(`\\b${w}\\b`, "i").test(prompt)) return "pants";
+    if (new RegExp(`\\b${w}\\b`, "i").test(scanText)) return "pants";
   }
   return "other";
 }
