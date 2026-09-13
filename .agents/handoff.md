@@ -65,9 +65,23 @@ Written 2026-09-12 by Claude Code. Branch `codex/garment-only-pixel-lock`, NOT p
 
 ## Next
 - Push the branch whenever David wants it live — not pushed yet (1c30510, b193780,
-  9c2a7ee, 02afb26, plus handoff commits).
+  9c2a7ee, 02afb26, 6385943, plus handoff commits).
+- The shoulder-ghost artifact is still open. Suggest one more render on a
+  different `humanModelId`/`poseId` (not "studio 100") before spending more
+  cycles on prompt wording, to find out if it's the photo or the prompt.
 - Reframed prompt (02afb26) re-verified with a second live render, same
   `/api/model-shots editMode:simple` call: hem still lands correctly at hip.
+- **New artifact found by David zooming into that render**: a translucent
+  ghost of the plate's own top survives at the shoulder/collar, under the
+  new jacket. Strengthened the removal clause twice (`6385943` — first pass
+  added explicit no-ghosting language, second pass named cuffs after a
+  third render also showed the plate's own sleeve print ghosted at the
+  wrist). **Not fully closed**: the shoulder ghost was in the same spot on
+  both the 2nd and 3rd renders, same pose reference (`studio 100`/"Celine
+  2") — may be specific to that photo (hair falls over the collar there,
+  possibly ambiguous fabric-vs-hair to the edit model) rather than
+  something prompt wording alone fixes. Next render should try a different
+  pose reference to isolate whether it's the photo or the prompt.
 - Calling `/api/model-shots` directly with curl (bypassing any UI) is the fast way
   to exercise the extension's actual "Simple garment swap" path from this dev
   environment going forward — see git log for the exact body shape used.
