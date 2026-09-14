@@ -118,14 +118,15 @@ export function seamMatch(ref: ReferencePixels, candidate: Buffer, mask: Buffer,
   }
 }
 
-export async function compositeGarment(ref: ReferencePixels, generated: Buffer, mask: Buffer) {
+export async function compositeGarment(ref: ReferencePixels, generated: Buffer, mask: Buffer, options: { matchSeam?: boolean } = {}) {
   if (mask.length !== ref.width * ref.height) throw Error('Mask dimensions do not match the reference.');
   const meta = await sharp(generated).metadata();
   if (!meta.width || !meta.height || Math.abs(meta.width/meta.height - ref.width/ref.height) > 0.005)
     throw Error('Generated framing differs from the reference. No protected-pixel result was produced.');
   const candidate = await sharp(generated).rotate().resize(ref.width,ref.height,{fit:'fill'})
     .toColourspace('srgb').ensureAlpha().raw().toBuffer();
-  seamMatch(ref, candidate, mask);
+  // Face-only restoration must not derive garment colours from the old shirt.
+  if (options.matchSeam !== false) seamMatch(ref, candidate, mask);
   const pixels = Buffer.from(ref.data);
   let protectedPixels = 0;
   for (let i=0;i<mask.length;i++) {
