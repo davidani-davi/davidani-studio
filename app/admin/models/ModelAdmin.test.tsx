@@ -51,3 +51,38 @@ describe('reference library navigation',()=>{
   await waitFor(()=>expect(screen.queryByRole('alert')).toBeNull());
  });
 });
+
+it('reopens and saves a custom hair blend without resetting it, and requires review after a change',async()=>{
+ const url='/user-assets/model-admin/photos/reviewed.png';
+ let protection={width:2000,height:2992,sha256:'same',protectedRows:748,transitionRows:48};
+ let saved:any;
+ const library=()=>[{id:'reviewed',name:'Reviewed model',poses:[{...pose('crop'),publicPath:url,views:{front:{publicPath:url,filename:'reviewed.png',protection}}}]}];
+ vi.mocked(fetch).mockImplementation(async(_url,init)=>{
+  if(init?.method==='POST'){
+   saved=JSON.parse(String(init.body));
+   protection={...protection,protectedRows:Math.round(2992*saved.protectedPercent/100),transitionRows:Math.round(2992*saved.blendPercent/100)};
+   return new Response(JSON.stringify({change:{id:'saved',at:'2026-09-14',kind:'photo',modelId:'reviewed',poseId:'crop',view:'front',photo:{publicPath:url,filename:'reviewed.png',protection}}}));
+  }
+  return new Response(JSON.stringify({models:library(),cloudUploads:false}));
+ });
+ render(<ModelAdmin/>);await screen.findByRole('heading',{name:'Reviewed model'});
+ fireEvent.click(screen.getByRole('button',{name:'Face protection'}));
+ const review=()=>screen.getByRole('checkbox',{name:/I checked/});
+ expect(screen.getByRole('button',{name:'Save photo'})).toBeDisabled();
+ fireEvent.click(review());fireEvent.click(screen.getByRole('button',{name:'Save photo'}));
+ await waitFor(()=>expect(screen.queryByRole('dialog')).toBeNull());
+ expect(saved.blendPercent).toBeCloseTo(48/2992*100,10);
+ expect(protection.transitionRows).toBe(48);
+ fireEvent.click(screen.getByRole('button',{name:'Face protection'}));
+ fireEvent.click(review());
+ fireEvent.change(screen.getByRole('slider',{name:'Front hair blend'}),{target:{value:'2'}});
+ expect(screen.getByRole('button',{name:'Save photo'})).toBeDisabled();
+ expect(screen.getByLabelText('Hair blend area')).toHaveStyle({top:'23%',height:'2%'});
+ fireEvent.click(review());fireEvent.click(screen.getByRole('button',{name:'Save photo'}));
+ await waitFor(()=>expect(screen.queryByRole('dialog')).toBeNull());
+ expect(protection.transitionRows).toBe(60);
+ fireEvent.click(screen.getByRole('button',{name:'Refresh'}));
+ await screen.findByRole('button',{name:'Face protection'});
+ fireEvent.click(screen.getByRole('button',{name:'Face protection'}));
+ expect(Number((screen.getByRole('slider',{name:'Front hair blend'}) as HTMLInputElement).value)).toBeCloseTo(60/2992*100,4);
+});

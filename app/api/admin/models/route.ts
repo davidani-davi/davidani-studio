@@ -49,7 +49,7 @@ export async function POST(req: Request) {
             if(pose.deleted) throw Error('Restore this pose before editing its photos.');
             if(!VIEWS.includes(b.view)) throw Error('Choose front, side, back or full.');
             if(b.expectedUrl !== (pose.views[b.view as typeof VIEWS[number]]?.publicPath || '')) return json({error:'This photo changed in another session. Refresh before replacing it.'},409);
-            const photo=b.action==='setPhoto' ? await inspectAdminPhoto(String(b.url || ''), b.protectedPercent) : null;
+            const photo=b.action==='setPhoto' ? await inspectAdminPhoto(String(b.url || ''), b.protectedPercent, b.blendPercent, pose.views[b.view as typeof VIEWS[number]]?.protection) : null;
             change={kind:'photo',modelId:model.id,poseId:pose.id,view:b.view,photo};
           } else throw Error('Unknown action.');
         }

@@ -3,12 +3,14 @@ import path from 'node:path';
 import { head, list } from '@vercel/blob';
 import sharp from 'sharp';
 import { referencePixels } from './garment-only';
-import { ASSET_PREFIX, MAX_PHOTO_BYTES, type ReferencePhoto } from './model-admin';
+import { ASSET_PREFIX, MAX_PHOTO_BYTES, type ReferencePhoto, type FaceProtection } from './model-admin';
 
 export function validUploadPath(value: string): boolean {
   return /^model-admin\/photos\/[a-f0-9-]{36}\.(png|jpg|jpeg|webp)$/.test(value);
 }
-export async function inspectAdminPhoto(url: string, protectedPercent?: number): Promise<ReferencePhoto> {
+export async function inspectAdminPhoto(url: string, protectedPercent?: number, blendPercent?: number, previous?: FaceProtection): Promise<ReferencePhoto> {
+  if (protectedPercent !== undefined && (!Number.isFinite(protectedPercent) || protectedPercent < 1 || protectedPercent > 80)) throw Error('Choose a protection boundary between 1% and 80%.');
+  if (blendPercent !== undefined && (protectedPercent === undefined || !Number.isFinite(blendPercent) || blendPercent < .1 || blendPercent > 5 || blendPercent >= protectedPercent)) throw Error('Choose a hair blend between 0.1% and 5%, smaller than the protection boundary.');
   let bytes: Buffer;
   if (process.env.BLOB_READ_WRITE_TOKEN) {
     const parsed = new URL(url);
@@ -32,8 +34,14 @@ export async function inspectAdminPhoto(url: string, protectedPercent?: number):
   const pixels = await referencePixels(bytes);
   const photo: ReferencePhoto = {filename: new URL(url, 'https://local').pathname.split('/').pop()!, publicPath:url};
   if (protectedPercent !== undefined) {
-    if (!Number.isFinite(protectedPercent) || protectedPercent < 1 || protectedPercent > 80) throw Error('Choose a protection boundary between 1% and 80%.');
-    photo.protection = {width:pixels.width,height:pixels.height,sha256:pixels.sha256,protectedRows:Math.round(pixels.height*protectedPercent/100),transitionRows:Math.max(1,Math.round(pixels.height*.005))};
+    const protectedRows=Math.round(pixels.height*protectedPercent/100);
+    // Older callers do not send blendPercent. Keep a reviewed width only for
+    // the same decoded photo; a replacement gets its own settings.
+    const same=previous?.sha256===pixels.sha256 && previous.width===pixels.width && previous.height===pixels.height;
+    const transitionRows=blendPercent!==undefined ? Math.max(1,Math.round(pixels.height*blendPercent/100))
+      : same ? previous.transitionRows : Math.max(1,Math.round(pixels.height*.005));
+    if (!Number.isInteger(transitionRows) || transitionRows<1 || transitionRows>=protectedRows) throw Error('The hair blend must leave a protected area above it. Move the boundary or reduce the blend.');
+    photo.protection = {width:pixels.width,height:pixels.height,sha256:pixels.sha256,protectedRows,transitionRows};
   }
   return photo;
 }

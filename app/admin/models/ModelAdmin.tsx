@@ -4,6 +4,7 @@ import {upload} from '@vercel/blob/client';
 import {applyCatalogChanges,type ManagedModel} from '@/lib/model-admin-core';
 import {isDerivedReference,matchesLibrarySection,libraryPoses,libraryLabel,type LibrarySection} from '@/lib/model-library';
 import type {ModelPose,PresetView} from '@/lib/models-registry';
+import FaceProtectionReview from '@/components/FaceProtectionReview';
 const VIEWS: PresetView[]=['front','side','back','full'];
 const title=(s:string)=>s.charAt(0).toUpperCase()+s.slice(1);
 const api='/api/admin/models';
@@ -14,7 +15,7 @@ export default function ModelAdmin(){
  const [selected,setSelected]=useState(''),[poseId,setPoseId]=useState(''),[frame,setFrame]=useState('crop');
  const [section,setSection]=useState<LibrarySection>('tops');
  const [search,setSearch]=useState(''),[trash,setTrash]=useState(false),[busy,setBusy]=useState(false),[message,setMessage]=useState(''),[error,setError]=useState('');
- const [edit,setEdit]=useState<PhotoEdit|null>(null),[protect,setProtect]=useState(true),[boundary,setBoundary]=useState(25),[reviewed,setReviewed]=useState(false),[progress,setProgress]=useState(0);
+ const [edit,setEdit]=useState<PhotoEdit|null>(null),[protect,setProtect]=useState(true),[boundary,setBoundary]=useState(25),[blend,setBlend]=useState(.5),[reviewed,setReviewed]=useState(false),[progress,setProgress]=useState(0);
  const [create,setCreate]=useState<'model'|'pose'|null>(null),[newName,setNewName]=useState(''),[newGroup,setNewGroup]=useState(''),[newFrame,setNewFrame]=useState('crop');
  const [name,setName]=useState(''),[group,setGroup]=useState(''),[description,setDescription]=useState(''),[poseName,setPoseName]=useState('');
  async function refresh(){
@@ -53,7 +54,7 @@ export default function ModelAdmin(){
  function pick(m:ManagedModel){setSelected(m.id);setPoseId('');setFrame('crop');setMessage('');}
  function choosePhoto(m:ManagedModel,p:ModelPose,view:PresetView,file:File){
   if(!['image/png','image/jpeg','image/webp'].includes(file.type)||file.size>20*1024*1024){setError('Choose a PNG, JPEG or WebP no larger than 20 MB.');return;}
-  setEdit({model:m,pose:p,view,file,preview:URL.createObjectURL(file)});setProtect(view!=='back' && !/^low /.test(m.id) && p.framing!=='low');setBoundary(view==='full'?16:25);setReviewed(false);setProgress(0);setError('');
+  setEdit({model:m,pose:p,view,file,preview:URL.createObjectURL(file)});setProtect(view!=='back' && !/^low /.test(m.id) && p.framing!=='low');setBoundary(view==='full'?16:25);setBlend(.5);setReviewed(false);setProgress(0);setError('');
  }
  async function savePhoto(){
   if(!edit)return;setBusy(true);setError('');
@@ -64,7 +65,7 @@ export default function ModelAdmin(){
     else{const form=new FormData();form.append('file',edit.file);const r=await fetch(`${api}/upload`,{method:'POST',body:form});const d=await r.json();if(!r.ok)throw Error(d.error);url=d.url;}
     setEdit({...edit,url});
    }
-   await mutate({action:'setPhoto',modelId:edit.model.id,poseId:edit.pose.id,view:edit.view,url,expectedUrl:edit.pose.views[edit.view]?.publicPath||'',...(protect?{protectedPercent:boundary}:{})});
+   await mutate({action:'setPhoto',modelId:edit.model.id,poseId:edit.pose.id,view:edit.view,url,expectedUrl:edit.pose.views[edit.view]?.publicPath||'',...(protect?{protectedPercent:boundary,blendPercent:blend}:{})});
    setEdit(null);
   }catch(e:any){setError(e.message);}finally{setBusy(false);}
  }
@@ -108,7 +109,7 @@ export default function ModelAdmin(){
          <p className={photo?'':'ra-warning'}>{photo?'Reference available':'Add this view before generating it.'}</p>
          {target&&targetPose?<div className="ra-actions"><label className={`ra-file ${busy?'disabled':''}`}>{photo?'Replace photo':'Upload photo'}<input aria-label={`${photo?'Replace':'Upload'} ${view} photo`} type="file" accept="image/png,image/jpeg,image/webp" disabled={busy} onChange={e=>{const f=e.target.files?.[0];if(f)choosePhoto(target,targetPose,view,f);e.target.value='';}}/></label>
           {photo&&<><a href={photo.publicPath} target="_blank" rel="noreferrer">Original ↗</a><button disabled={busy} className="ra-danger" onClick={()=>{if(window.confirm(`Remove the ${view} reference? This view will be unavailable until you upload another photo.`))action({action:'removePhoto',modelId:target.id,poseId:targetPose.id,view,expectedUrl:photo.publicPath});}}>Remove</button>
-          {photo.publicPath.includes('model-admin/photos/')&&!bottomPose&&view!=='back'&&<button disabled={busy} onClick={()=>{setEdit({model:target,pose:targetPose,view,preview:photo.publicPath,url:photo.publicPath});setProtect(true);setBoundary(photo.protection?Math.round(photo.protection.protectedRows/photo.protection.height*100):25);setReviewed(false);}}>Face protection</button>}</>}
+          {photo.publicPath.includes('model-admin/photos/')&&!bottomPose&&view!=='back'&&<button disabled={busy} onClick={()=>{setEdit({model:target,pose:targetPose,view,preview:photo.publicPath,url:photo.publicPath});setProtect(true);setBoundary(photo.protection?photo.protection.protectedRows/photo.protection.height*100:25);setBlend(photo.protection?photo.protection.transitionRows/photo.protection.height*100:.5);setReviewed(false);}}>Face protection</button>}</>}
          </div>:<p>No separate framing installed. Choose Full body to edit the source reference.</p>}
         </article>;
        })}</div>
@@ -119,9 +120,9 @@ export default function ModelAdmin(){
    </>}
   </section></div>
   {create&&<div className="ra-scrim"><form className="ra-dialog" role="dialog" aria-modal="true" aria-label={`Add ${create}`} onSubmit={createEntry}><h2>Add {create==='model'?'model':'pose set'}</h2><label>Name<input autoFocus required maxLength={100} value={newName} onChange={e=>setNewName(e.target.value)}/></label>{create==='model'?<label>Model group<input value={newGroup} maxLength={100} placeholder="Celine, Vision, or a new name" onChange={e=>setNewGroup(e.target.value)}/></label>:<label>Front, side and back framing<select value={newFrame} onChange={e=>setNewFrame(e.target.value)}><option value="crop">Tops · head to thigh</option><option value="low">Bottoms · waist down</option><option value="full">Full body</option></select></label>}<p>{create==='model'?'Next, add a pose set and upload its photos.':'Waist-down poses appear in Bottoms. Other framings appear in Tops.'}</p><div className="ra-actions"><button type="button" disabled={busy} onClick={()=>setCreate(null)}>Cancel</button><button className="ra-primary" disabled={busy}>{busy?'Saving…':'Create'}</button></div></form></div>}
-  {edit&&<div className="ra-scrim"><section className="ra-dialog ra-upload" role="dialog" aria-modal="true" aria-label="Review reference photo"><h2>{edit.model.name} · {title(edit.view)}</h2><div className="ra-review-image"><img src={edit.preview} alt="New reference preview"/>{protect&&<div className="ra-boundary" style={{top:`${boundary}%`}}><span>Protected above</span></div>}</div>
+  {edit&&<div className="ra-scrim"><section className="ra-dialog ra-upload" role="dialog" aria-modal="true" aria-label="Review reference photo"><h2>{edit.model.name} · {title(edit.view)}</h2>{protect?<FaceProtectionReview imageUrl={edit.preview} label={title(edit.view)} boundary={boundary} blend={blend} onChange={(boundary,blend)=>{setBoundary(boundary);setBlend(blend);setReviewed(false);}}/>:<div className="ra-review-image"><img src={edit.preview} alt="New reference preview"/></div>}
    <label className="ra-check"><input type="checkbox" checked={protect} onChange={e=>{setProtect(e.target.checked);setReviewed(false);}}/>Protect original face pixels</label>
-   {protect?<><p>Place the line below the entire face and above the garment. Pixels above it stay original during Simple garment swap.</p><label>Protection boundary · {boundary}%<input aria-label="Protection boundary" type="range" min="1" max="80" step="1" value={boundary} onChange={e=>{setBoundary(Number(e.target.value));setReviewed(false);}}/></label><label className="ra-check"><input type="checkbox" checked={reviewed} onChange={e=>setReviewed(e.target.checked)}/>I checked that the entire face is above the line.</label></>:<p>Back and pants-only photos need no face boundary. A visible face needs reviewed protection to use Simple garment swap.</p>}
+   {protect?<label className="ra-check"><input type="checkbox" checked={reviewed} onChange={e=>setReviewed(e.target.checked)}/>I checked that the face is above the green line and clothing is below the amber line.</label>:<p>Back and pants-only photos need no face boundary. A visible face needs reviewed protection to use Simple garment swap.</p>}
    {error&&<p role="alert" className="ra-error">{error}</p>}
    <div className="ra-actions"><button disabled={busy} onClick={()=>setEdit(null)}>Cancel</button><button className="ra-primary" disabled={busy||(protect&&!reviewed)} onClick={savePhoto}>{busy?`Saving${progress>0?' '+Math.round(progress)+'%':'…'}`:'Save photo'}</button></div>
   </section></div>}
