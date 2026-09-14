@@ -1,7 +1,8 @@
 import {describe,it,expect} from 'vitest';
 import fs from 'node:fs';
 import {simpleReferenceShot,simpleFaceMask} from './simple-reference-shot';
-import {referencePixels} from './garment-only';
+import {referencePixels,compositeGarment} from './garment-only';
+import sharp from 'sharp';
 import presets from './simple-face-presets.json';
 const base={referenceUrl:'https://ref/front.png',garmentImageUrls:['https://erp/front.png','https://erp/back.png'],category:'top' as const,framing:'crop' as const};
 describe('simple garment swap',()=>{
@@ -101,7 +102,38 @@ describe('simple garment swap',()=>{
   const ref=await referencePixels(fs.readFileSync('public'+path));
   const mask=simpleFaceMask(ref,path,'front','crop')!;
   expect(ref.sha256).toBe(preset.sha256);
-  expect(mask.subarray(0,preset.protectedRows*ref.width).every(n=>n===0)).toBe(true);
+  expect(mask.subarray(0,(preset.protectedRows-preset.transitionRows)*ref.width).every(n=>n===0)).toBe(true);
+  expect(mask.subarray(preset.protectedRows*ref.width).every(n=>n===255)).toBe(true);
   expect(mask[mask.length-1]).toBe(255);
+ });
+});
+
+// A clean provider output must not acquire the old shirt during face restoration.
+describe('shoulder ghost regression',()=>{
+ it('keeps the generated shoulder pixels while restoring the original face',async()=>{
+  const width=64,height=128,boundary=32;
+  const source=Buffer.alloc(width*height*4,255);
+  for(let y=boundary;y<height;y++)for(let x=0;x<width;x++){
+   const i=(y*width+x)*4;
+   source[i]=x%4<2?240:20;source[i+1]=180;source[i+2]=210;
+  }
+  const ref=await referencePixels(await sharp(source,{raw:{width,height,channels:4}}).png().toBuffer());
+  const generated=await sharp({create:{width,height,channels:4,background:'#303030'}}).png().toBuffer();
+  const preset={width,height,sha256:ref.sha256,protectedRows:boundary,transitionRows:4};
+  const mask=simpleFaceMask(ref,'/reviewed/front.png','front','crop',preset)!;
+  const {png,report}=await compositeGarment(ref,generated,mask,{matchSeam:false});
+  const out=await sharp(png).ensureAlpha().raw().toBuffer();
+  const clean=await sharp(generated).ensureAlpha().raw().toBuffer();
+  expect(out.subarray(boundary*width*4)).toEqual(clean.subarray(boundary*width*4));
+  expect(out.subarray(0,(boundary-4)*width*4)).toEqual(source.subarray(0,(boundary-4)*width*4));
+  expect(report.changedProtectedPixels).toBe(0);
+  expect(mask[30*width]).toBeGreaterThan(0);
+  expect(mask[30*width]).toBeLessThan(255);
+ });
+ it('releases Celine 2 shoulder before the original patterned blouse starts',async()=>{
+  const ref=await referencePixels(fs.readFileSync('public/models/studio 100/front.png'));
+  const mask=simpleFaceMask(ref,'/models/studio 100/front.png','front','crop')!;
+  expect(mask[400*ref.width+700]).toBe(255);
+  expect(mask[330*ref.width+480]).toBe(0);
  });
 });

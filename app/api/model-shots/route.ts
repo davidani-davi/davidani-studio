@@ -396,7 +396,7 @@ async function renderShot(req: Request, body: any): Promise<Response> {
     if(protectedInput) {
       const response=await fetch(url);
       if(!response.ok)throw Error('Generated garment could not be loaded.');
-      const composed=await compositeGarment(protectedInput.ref,Buffer.from(await response.arrayBuffer()),protectedInput.mask);
+      const composed=await compositeGarment(protectedInput.ref,Buffer.from(await response.arrayBuffer()),protectedInput.mask,{matchSeam:!simplePrepared});
       url=await uploadToFal(new Blob([Uint8Array.from(composed.png)],{type:'image/png'}),'garment-only.png');
       // Verify the hosted delivery too. Never expose the unverified generated frame.
       const hosted=await fetch(url,{cache:'no-store'});
