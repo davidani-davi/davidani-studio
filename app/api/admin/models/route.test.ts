@@ -1,11 +1,12 @@
 // @vitest-environment node
 import {beforeEach,describe,expect,it,vi} from 'vitest';
+import {inspectAdminPhoto} from '@/lib/model-admin-photo';
 import {GET,POST} from './route';
 import {createSessionToken} from '@/lib/auth';
 const state=vi.hoisted(()=>({changes:[] as any[],base:[{id:'celine',name:'Celine',poses:[{id:'p',label:'P',publicPath:'/front',filename:'front',subdir:'',views:{front:{publicPath:'/front',filename:'front'}}}]}]}));
 vi.mock('@/lib/models-registry',()=>({listBaseHumanModels:async()=>state.base}));
 vi.mock('@/lib/model-admin',async()=>({...await vi.importActual<any>('@/lib/model-admin-core'),VIEWS:['front','side','back','full'],readCatalogChanges:async()=>state.changes,appendCatalogChange:async(c:any)=>{const e={...c,id:String(state.changes.length),at:new Date().toISOString()};state.changes.push(e);return e;}}));
-vi.mock('@/lib/model-admin-photo',()=>({inspectAdminPhoto:async(url:string)=>{if(url!=='https://safe/photo.png')throw Error('Invalid uploaded photo');return{filename:'photo.png',publicPath:url};}}));
+vi.mock('@/lib/model-admin-photo',()=>({inspectAdminPhoto:vi.fn(async(url:string)=>{if(url!=='https://safe/photo.png')throw Error('Invalid uploaded photo');return{filename:'photo.png',publicPath:url};})}));
 beforeEach(()=>{state.changes=[];vi.stubEnv('AUTH_SECRET','test-secret');});
 async function req(body?:any,auth=true,origin='https://studio.test'){
  return new Request('https://studio.test/api/admin/models',{method:body?'POST':'GET',headers:{...(auth?{cookie:`davidani_session=${await createSessionToken('test-secret')}`} : {}),origin,'Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{})});
@@ -34,4 +35,14 @@ describe('reference admin API',()=>{
   expect((await POST(await req({action:'deleteModel',modelId:'celine'}))).status).toBe(200);
   expect((await POST(await req({action:'restoreModel',modelId:'celine'}))).status).toBe(200);
  });
+});
+
+it('passes explicit blends and the current photo protection through the validated save path',async()=>{
+ const previous={width:2000,height:2992,sha256:'reviewed',protectedRows:748,transitionRows:48};
+ const front=state.base[0].poses[0].views.front as any;front.protection=previous;
+ try{
+  const r=await POST(await req({action:'setPhoto',modelId:'celine',poseId:'p',view:'front',url:'https://safe/photo.png',expectedUrl:'/front',protectedPercent:25,blendPercent:1.6}));
+  expect(r.status).toBe(200);
+  expect(inspectAdminPhoto).toHaveBeenLastCalledWith('https://safe/photo.png',25,1.6,previous);
+ }finally{delete front.protection;}
 });

@@ -39,8 +39,15 @@ describe('Reference Identity Studio API',()=>{
  it('saves selected finished photos in one library event with reviewed boundaries',async()=>{
   vi.mocked(readShotTask).mockResolvedValue({status:'done',result:{imageUrl:'https://owned/generated.png'}} as any);
   expect((await POST(req({action:'save',id,name:'Celine Test',views:['front','back'],reviewed:true,protection:{front:30}}))).status).toBe(200);
-  expect(appendCatalogChange).toHaveBeenCalledTimes(1);expect(appendCatalogChange).toHaveBeenCalledWith(expect.objectContaining({referenceSet:expect.objectContaining({photos:{front:expect.any(Object),back:expect.any(Object)}})}));expect(inspectAdminPhoto).toHaveBeenCalledWith('https://owned/generated.png',30);
+  expect(appendCatalogChange).toHaveBeenCalledTimes(1);expect(appendCatalogChange).toHaveBeenCalledWith(expect.objectContaining({referenceSet:expect.objectContaining({photos:{front:expect.any(Object),back:expect.any(Object)}})}));expect(inspectAdminPhoto).toHaveBeenCalledWith('https://owned/generated.png',30,undefined);
  });
  it('does not import unfinished images or unreviewed face boundaries',async()=>{expect((await POST(req({action:'save',id,name:'Test',views:['front']}))).status).toBe(400);vi.mocked(readShotTask).mockResolvedValue({status:'done',result:{imageUrl:'x'}} as any);expect((await POST(req({action:'save',id,name:'Test',views:['front']}))).status).toBe(400);expect(appendCatalogChange).not.toHaveBeenCalled();});
  it('makes a repeated save idempotent',async()=>{vi.mocked(readCatalogChanges).mockResolvedValue([{modelId:`identity-${id}`,create:true}] as any);const r=await POST(req({action:'save',id}));expect(r.status).toBe(200);expect(appendCatalogChange).not.toHaveBeenCalled();});
+});
+
+it('saves the reviewed hair blend independently for each identity view',async()=>{
+ vi.mocked(readShotTask).mockResolvedValue({status:'done',result:{imageUrl:'https://owned/generated.png'}} as any);
+ expect((await POST(req({action:'save',id,name:'Reviewed',views:['front','side'],reviewed:true,protection:{front:25,side:24},blends:{front:1.6,side:.8}}))).status).toBe(200);
+ expect(inspectAdminPhoto).toHaveBeenCalledWith('https://owned/generated.png',25,1.6);
+ expect(inspectAdminPhoto).toHaveBeenCalledWith('https://owned/generated.png',24,.8);
 });

@@ -15,3 +15,36 @@ describe('reference upload validation',()=>{
  it('rejects non-image bytes before recording a reference',async()=>{vi.stubGlobal('fetch',vi.fn().mockResolvedValue(new Response('<html>bad</html>')));await expect(inspectAdminPhoto(url)).rejects.toThrow();});
  it('rejects files beyond the pixel limit',async()=>{const bytes=await sharp({create:{width:4097,height:1,channels:3,background:'white'}}).png().toBuffer();vi.stubGlobal('fetch',vi.fn().mockResolvedValue(new Response(bytes)));await expect(inspectAdminPhoto(url)).rejects.toThrow();});
 });
+
+describe('saved face and hair protection',()=>{
+ async function image(background='#bca'){
+  const bytes=await sharp({create:{width:20,height:2992,channels:3,background}}).png().toBuffer();
+  vi.stubGlobal('fetch',vi.fn(async()=>new Response(bytes)));
+ }
+ it('keeps the reviewed 48-row blend through a save/reopen and older callers',async()=>{
+  await image();
+  const saved=await inspectAdminPhoto(url,25,48/2992*100);
+  expect(saved.protection).toMatchObject({protectedRows:748,transitionRows:48});
+  const reopened=await inspectAdminPhoto(url,25,undefined,saved.protection);
+  expect(reopened.protection).toEqual(saved.protection);
+  const changed=await inspectAdminPhoto(url,25,.5,saved.protection);
+  expect(changed.protection?.transitionRows).toBe(15);
+  expect((await inspectAdminPhoto(url,undefined,undefined,saved.protection)).protection).toBeUndefined();
+ });
+ it('does not transfer a reviewed blend to a replacement photo',async()=>{
+  await image();const previous=(await inspectAdminPhoto(url,25,1.6)).protection;
+  await image('#abc');const replacement=await inspectAdminPhoto(url,25,undefined,previous);
+  expect(replacement.protection?.transitionRows).toBe(15);
+  expect(replacement.protection?.sha256).not.toBe(previous?.sha256);
+ });
+ it.each([0,-1,6,NaN,Infinity,'1.6',null])('rejects invalid hair blend %s',async blend=>{
+  await expect(inspectAdminPhoto(url,25,blend as number)).rejects.toThrow('hair blend');
+ });
+ it('rejects missing boundaries and bands that consume the protected region',async()=>{
+  await expect(inspectAdminPhoto(url,undefined,1)).rejects.toThrow('hair blend');
+  await expect(inspectAdminPhoto(url,1,1)).rejects.toThrow('hair blend');
+  await expect(inspectAdminPhoto(url,NaN)).rejects.toThrow('boundary');
+  await image();const previous=(await inspectAdminPhoto(url,25,1.6)).protection;
+  await expect(inspectAdminPhoto(url,1,undefined,previous)).rejects.toThrow('protected area');
+ });
+});
