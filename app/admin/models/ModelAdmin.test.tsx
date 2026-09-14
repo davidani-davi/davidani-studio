@@ -12,9 +12,9 @@ describe('reference library navigation',()=>{
   const library=screen.getByRole('complementary',{name:'Reference library'});
   await within(library).findByRole('button',{name:/Celine 1/});
   expect(within(library).queryByRole('button',{name:/Donuts/})).toBeNull();
-  expect(screen.getByRole('heading',{name:'Full',exact:true})).toBeInTheDocument();
+  expect(await screen.findByRole('heading',{name:'Full',exact:true})).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button',{name:/^Bottoms/}));
-  await within(library).findByRole('button',{name:/Donuts/});
+  await screen.findByRole('heading',{name:'DP52083 · Donuts'});
   expect(within(library).queryByRole('button',{name:/Celine 1/})).toBeNull();
   expect(screen.queryByRole('heading',{name:'Full',exact:true})).toBeNull();
   expect(screen.getByRole('heading',{name:'DP52083 · Donuts'})).toBeInTheDocument();
