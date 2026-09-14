@@ -36,7 +36,7 @@ describe('garment-only hard pixel preservation',()=>{
   const mask=donutsFaceMask(ref,'/models/studio 103/full.png');
   expect(mask[500*1024+500]).toBe(0);expect(mask[535*1024+500]).toBeGreaterThan(0);expect(mask[560*1024+500]).toBe(255);
   const png=await providerMask(mask,1024,1536),data=await sharp(png).greyscale().raw().toBuffer();
-  expect(data).toEqual(mask);
+  expect(data.equals(mask)).toBe(true);
   expect(()=>donutsFaceMask({...ref,sha256:'a'.repeat(64)},'/models/studio 103/full.png')).toThrow('reviewed');
   expect(()=>donutsFaceMask(ref,'/models/studio 100/full.png')).toThrow('reviewed');
  });
