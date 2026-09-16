@@ -586,7 +586,7 @@
   },
   {
     "style": "DP62087",
-    "label": "Camo · 3/4 length",
+    "label": "Camo \u00b7 3/4 length",
     "silhouette": "wide",
     "views": {
       "front": {
@@ -620,6 +620,69 @@
         "url": "https://system.davidani.com/upload/style/DP62087_9.jpg",
         "sha256": "a76e3c5b6d4f9d0b3d52e665b70950c2b8e66df324de6c59bd0512d946f24712",
         "idFile": 590924
+      }
+    }
+  },
+  {
+    "style": "DP60023A",
+    "label": "Light denim lace-side barrel jeans",
+    "silhouette": "barrel",
+    "views": {
+      "front": {
+        "filename": "front.jpg",
+        "publicPath": "/pants-references/DP60023A/front.jpg"
+      },
+      "side": {
+        "filename": "side.jpg",
+        "publicPath": "/pants-references/DP60023A/side.jpg"
+      },
+      "back": {
+        "filename": "back.jpg",
+        "publicPath": "/pants-references/DP60023A/back.jpg"
+      }
+    },
+    "sources": {
+      "front": {
+        "filename": "DP60023A_2.jpg",
+        "url": "https://system.davidani.com/upload/style/DP60023A_2.jpg",
+        "sha256": "e4d22b930256ae002e7140dfbf0d04e6375307a520341ae1eef98a9e071c8f0f"
+      },
+      "side": {
+        "filename": "DP60023A_5.jpg",
+        "url": "https://system.davidani.com/upload/style/DP60023A_5.jpg",
+        "sha256": "3ded08a64a337bbc34ce53e1ebd41ac5935d1cb5f9243a97670c5c68c1a19301"
+      },
+      "back": {
+        "filename": "DP60023A_8.jpg",
+        "url": "https://system.davidani.com/upload/style/DP60023A_8.jpg",
+        "sha256": "f9ff4d48573be2e17425384998df38bcca82fe81397f3c6915bc3f460db846a0"
+      }
+    }
+  },
+  {
+    "style": "DP60160",
+    "label": "Striped wide-leg jeans",
+    "silhouette": "wide",
+    "views": {
+      "front": {
+        "filename": "front.jpg",
+        "publicPath": "/pants-references/DP60160/front.jpg"
+      },
+      "back": {
+        "filename": "back.jpg",
+        "publicPath": "/pants-references/DP60160/back.jpg"
+      }
+    },
+    "sources": {
+      "front": {
+        "filename": "unnamed(31).jpg",
+        "url": "https://system.davidani.com/upload/style/unnamed%2831%29.jpg",
+        "sha256": "63891e1146e3ef17e565f337d4cc21904027c6c90ecc454955c3717fa8096c21"
+      },
+      "back": {
+        "filename": "unnamed(34).jpg",
+        "url": "https://system.davidani.com/upload/style/unnamed%2834%29.jpg",
+        "sha256": "1281b433e9a05f484be216d23dd454d09f960d825eba818cd73ac2d111992926"
       }
     }
   }
