@@ -1,0 +1,149 @@
+{
+  "rule": "The identity detail that follows describes the same person as the face crop, at photographic detail the crop is too small to carry. It settles her skin texture, freckles, brow density, iris colouring and the stray hairs around her part — the things a small crop leaves the render free to invent. It is a likeness reference only: it sets nothing about her pose, her framing, her expression, the garment, the lighting or the background, all of which come from the other images.",
+  "faces": {
+    "celine": {
+      "spec": {
+        "face": "celine",
+        "label": "Celine",
+        "sampledFrom": "/models/hide/faces/celine-face.png",
+        "subject": {
+          "apparentAge": 23,
+          "ethnicity": "racially ambiguous, Mediterranean or Latin American presenting"
+        },
+        "structure": {
+          "shape": "oval with a squared lower third, length to width about 1.38 to 1",
+          "forehead": "medium height with slight central fullness, the hairline low and even",
+          "cheekbones": "high, wide and clearly defined, catching the key light",
+          "jaw": "strong and straight with a soft angle, wider at the gonion than the forehead",
+          "chin": "rounded and moderately full",
+          "asymmetry": "her right brow sits about two millimetres higher than her left, the nose tip leans a degree to her right, and her left mouth corner sits marginally lower"
+        },
+        "eyes": {
+          "shape": "long almond, set a little under one eye-width apart, height to width about 0.38",
+          "lid": "a heavy upper lid with a partly hooded crease, covering the top fifth of the iris",
+          "tilt": "the outer corner sitting about a degree below the inner corner",
+          "iris": {
+            "limbal": "#432819",
+            "outer": "#86624C",
+            "inner": "#A27D6D"
+          },
+          "lashes": "long with a moderate curl, dark, the lower lashes clearly visible",
+          "underEye": "a warm shadow around #A97A65 with slight natural fullness"
+        },
+        "brows": {
+          "shape": "thick and straight, the line running nearly flat from the squared inner edge to the outer",
+          "position": "low, about 6 mm above the lash line",
+          "thickness": "full, about 14 mm deep at the inner third",
+          "color": "#3C291D",
+          "texture": "hairs growing upward and outward with visible gaps at the inner edge, the outer edge left to its natural grown-in shape"
+        },
+        "nose": {
+          "bridge": "straight and narrow with a slight dorsal rise",
+          "tip": "refined and very slightly downturned",
+          "nostrils": "narrow and evenly set, the skin bare and smooth"
+        },
+        "mouth": {
+          "shape": "full with a soft cupid's bow, the lower lip noticeably the fuller",
+          "ratio": "upper to lower about 1 to 1.7",
+          "upperColor": "#A66156",
+          "lowerColor": "#C8766A",
+          "finish": "natural matte with a faint central sheen on the lower lip"
+        },
+        "skin": {
+          "forehead": "#E8BCA5",
+          "cheek": "#C68369",
+          "undertone": "olive with a golden cast",
+          "texture": "pores clearly visible across the nose, the nasolabial area and the inner cheeks, with fine peach fuzz along the jaw",
+          "freckles": "about forty small freckles densely scattered over the nose bridge and both cheeks, carrying on onto the upper lip area",
+          "marks": "one small mole on her right jawline and one about two centimetres below her left eye",
+          "shine": "a sheen along both cheekbones, the nose bridge and the chin, the outer cheeks matte"
+        },
+        "hair": {
+          "root": "#3C291D",
+          "mid": "#4F3B30",
+          "lit": "#9C6D53",
+          "length": "past the chest, ending below the bust line",
+          "texture": "straight and flat at the roots with a loose bend through the mid-lengths and slightly wavy split ends",
+          "volume": "flat at the crown, widening below the ears",
+          "part": "centre and even, the scalp line visible along it",
+          "imperfections": "flyaways along the part and both temples, the length falling in five to eight loose clumped sections, with a soft frizz halo at the crown"
+        },
+        "ears": "her left ear is covered by hair; her right is partly visible with a single thin gold hoop about 18 mm across in the lobe",
+        "neck": "medium length and slender, the sternocleidomastoid faintly visible on her right"
+      },
+      "prompt": "IDENTITY DETAIL for Celine, the model in the face crop. These are her measured features; hold every one of them at this view's angle. She reads about 23, racially ambiguous, Mediterranean or Latin American presenting. Face oval with a squared lower third, length to width about 1.38 to 1, forehead medium height with slight central fullness, the hairline low and even, cheekbones high, wide and clearly defined, catching the key light, jaw strong and straight with a soft angle, wider at the gonion than the forehead, chin rounded and moderately full. Her face is asymmetric in a specific way: her right brow sits about two millimetres higher than her left, the nose tip leans a degree to her right, and her left mouth corner sits marginally lower. Eyes long almond, set a little under one eye-width apart, height to width about 0.38, a heavy upper lid with a partly hooded crease, covering the top fifth of the iris, the outer corner sitting about a degree below the inner corner. Each iris has three zones: a dark limbal ring #432819, an outer iris #86624C, and a warmer ring #A27D6D around the pupil. Lashes long with a moderate curl, dark, the lower lashes clearly visible. Under the eye, a warm shadow around #A97A65 with slight natural fullness. Brows thick and straight, the line running nearly flat from the squared inner edge to the outer, sitting low, about 6 mm above the lash line, full, about 14 mm deep at the inner third, coloured #3C291D, with hairs growing upward and outward with visible gaps at the inner edge, the outer edge left to its natural grown-in shape. Nose bridge straight and narrow with a slight dorsal rise, tip refined and very slightly downturned, nostrils narrow and evenly set, the skin bare and smooth. Mouth full with a soft cupid's bow, the lower lip noticeably the fuller, upper to lower about 1 to 1.7, the upper lip #A66156 and the lower #C8766A, finished natural matte with a faint central sheen on the lower lip. Skin #E8BCA5 at the forehead and #C68369 at the cheek, olive with a golden cast in undertone, with pores clearly visible across the nose, the nasolabial area and the inner cheeks, with fine peach fuzz along the jaw. She has about forty small freckles densely scattered over the nose bridge and both cheeks, carrying on onto the upper lip area. one small mole on her right jawline and one about two centimetres below her left eye. There is a sheen along both cheekbones, the nose bridge and the chin, the outer cheeks matte. Hair #3C291D at the roots, #4F3B30 through the mid-lengths, lifting to #9C6D53 where the light grazes it, past the chest, ending below the bust line, straight and flat at the roots with a loose bend through the mid-lengths and slightly wavy split ends, flat at the crown, widening below the ears, parted centre and even, the scalp line visible along it, with flyaways along the part and both temples, the length falling in five to eight loose clumped sections, with a soft frizz halo at the crown. Ears: her left ear is covered by hair; her right is partly visible with a single thin gold hoop about 18 mm across in the lobe. Neck medium length and slender, the sternocleidomastoid faintly visible on her right."
+    },
+    "vision": {
+      "spec": {
+        "face": "vision",
+        "label": "Vision",
+        "sampledFrom": "/models/hide/faces/vision-face.png",
+        "subject": {
+          "apparentAge": 25,
+          "ethnicity": "White, Northern European"
+        },
+        "structure": {
+          "shape": "long oval, length to width about 1.45 to 1",
+          "forehead": "medium height and flat, hairline a little higher at the temples",
+          "cheekbones": "high and moderately wide, soft rather than sculpted",
+          "jaw": "narrow with a gently rounded angle",
+          "chin": "small and tapered, slightly pointed",
+          "asymmetry": "her right eye sits about a millimetre lower than her left, her left nostril is marginally the wider, and her left mouth corner lifts a little more"
+        },
+        "eyes": {
+          "shape": "almond, set about one eye-width apart, height to width about 0.42",
+          "lid": "a clear upper crease, the lid covering the top sixth of the iris",
+          "tilt": "level, outer corner even with the inner corner",
+          "iris": {
+            "limbal": "#402A1C",
+            "outer": "#775C49",
+            "inner": "#8D6F5B"
+          },
+          "lashes": "natural length with a moderate curl, darker than the brow, bare of mascara",
+          "underEye": "a faint cool shadow around #C99C8C, the skin there smooth and flat"
+        },
+        "brows": {
+          "shape": "straight with a soft low arch through the outer third",
+          "position": "close to the eye, about 8 mm above the lash line",
+          "thickness": "full, about 11 mm deep at the inner third",
+          "color": "#6B4A31",
+          "texture": "hairs brushed upward at the inner third, the outer edge soft and naturally grown out"
+        },
+        "nose": {
+          "bridge": "straight, narrow and high",
+          "tip": "slightly rounded with little downward rotation",
+          "nostrils": "narrow and evenly set, the skin bare and smooth"
+        },
+        "mouth": {
+          "shape": "a defined cupid's bow, moderately full",
+          "ratio": "upper to lower about 1 to 1.4",
+          "upperColor": "#AD544D",
+          "lowerColor": "#CA6C69",
+          "finish": "satin, the vermilion border slightly deeper than the lip body"
+        },
+        "skin": {
+          "forehead": "#E9BA9F",
+          "cheek": "#DB967E",
+          "undertone": "warm peach",
+          "texture": "pores clearly visible across the nose, the nostril creases and the inner cheeks, with fine peach fuzz along the jaw and upper lip",
+          "freckles": "about twenty small freckles scattered over the nose bridge and upper cheeks, denser on her right cheek",
+          "marks": "one small mole about a centimetre below her left lower lash line",
+          "shine": "a faint sheen on the nose bridge, centre forehead and chin, the rest matte"
+        },
+        "hair": {
+          "root": "#714E33",
+          "mid": "#AA8767",
+          "lit": "#C9A87E",
+          "length": "past the collarbone, ending mid-chest",
+          "texture": "straight, flat at the roots, with a slight bend through the mid-lengths and dry thinning ends",
+          "volume": "low at the crown, lying close to the head",
+          "part": "centre, offset about 1.5 cm to her right",
+          "imperfections": "flyaways standing up along the part and above both temples, the length falling in four to six loose clumped sections"
+        },
+        "ears": "her left ear is covered by hair; her right is partly visible with a single small gold stud in the lobe",
+        "neck": "medium length and slender, with a faint horizontal crease at the base"
+      },
+      "prompt": "IDENTITY DETAIL for Vision, the model in the face crop. These are her measured features; hold every one of them at this view's angle. She reads about 25, White, Northern European. Face long oval, length to width about 1.45 to 1, forehead medium height and flat, hairline a little higher at the temples, cheekbones high and moderately wide, soft rather than sculpted, jaw narrow with a gently rounded angle, chin small and tapered, slightly pointed. Her face is asymmetric in a specific way: her right eye sits about a millimetre lower than her left, her left nostril is marginally the wider, and her left mouth corner lifts a little more. Eyes almond, set about one eye-width apart, height to width about 0.42, a clear upper crease, the lid covering the top sixth of the iris, level, outer corner even with the inner corner. Each iris has three zones: a dark limbal ring #402A1C, an outer iris #775C49, and a warmer ring #8D6F5B around the pupil. Lashes natural length with a moderate curl, darker than the brow, bare of mascara. Under the eye, a faint cool shadow around #C99C8C, the skin there smooth and flat. Brows straight with a soft low arch through the outer third, sitting close to the eye, about 8 mm above the lash line, full, about 11 mm deep at the inner third, coloured #6B4A31, with hairs brushed upward at the inner third, the outer edge soft and naturally grown out. Nose bridge straight, narrow and high, tip slightly rounded with little downward rotation, nostrils narrow and evenly set, the skin bare and smooth. Mouth a defined cupid's bow, moderately full, upper to lower about 1 to 1.4, the upper lip #AD544D and the lower #CA6C69, finished satin, the vermilion border slightly deeper than the lip body. Skin #E9BA9F at the forehead and #DB967E at the cheek, warm peach in undertone, with pores clearly visible across the nose, the nostril creases and the inner cheeks, with fine peach fuzz along the jaw and upper lip. She has about twenty small freckles scattered over the nose bridge and upper cheeks, denser on her right cheek. one small mole about a centimetre below her left lower lash line. There is a faint sheen on the nose bridge, centre forehead and chin, the rest matte. Hair #714E33 at the roots, #AA8767 through the mid-lengths, lifting to #C9A87E where the light grazes it, past the collarbone, ending mid-chest, straight, flat at the roots, with a slight bend through the mid-lengths and dry thinning ends, low at the crown, lying close to the head, parted centre, offset about 1.5 cm to her right, with flyaways standing up along the part and above both temples, the length falling in four to six loose clumped sections. Ears: her left ear is covered by hair; her right is partly visible with a single small gold stud in the lobe. Neck medium length and slender, with a faint horizontal crease at the base."
+    }
+  }
+}
