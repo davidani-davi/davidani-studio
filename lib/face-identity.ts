@@ -55,7 +55,19 @@ export interface FaceIdentity {
   sampledFrom: string;
   /** Broad read of the person, one short phrase each. */
   subject: { apparentAge: number; ethnicity: string };
-  /** Bone structure, in the order a reader would describe a face. */
+  /**
+   * Bone structure, in the order a reader would describe a face.
+   *
+   * RECORDED, NOT SENT. `identityPromptOf` deliberately leaves the silhouette
+   * fields (shape, forehead, cheekbones, jaw, chin) out of the prompt: a
+   * profile's outline has to arrive as PIXELS at the angle being rendered, not
+   * as prose. Celine's jaw here is measured correctly — "strong and straight,
+   * wider at the gonion than the forehead" — and a derived side view still came
+   * back narrow-jawed, so accurate words did not hold the silhouette either.
+   * Words describing bone only give the generator something to reinterpret.
+   * `asymmetry` IS sent: it is a fine identity tell the crop is too small to
+   * carry, and it settles nothing about her outline.
+   */
   structure: {
     shape: string;
     forehead: string;
@@ -106,6 +118,10 @@ export const FACE_IDENTITIES: Record<HouseFace, FaceIdentity> = {
     sampledFrom: "/models/hide/faces/vision-face.png",
     subject: { apparentAge: 25, ethnicity: "White, Northern European" },
     structure: {
+      // These four disagree with vision-face.png, which shows a wide jaw and a
+      // broad chin. They were the text a derive obeyed to render a slimmer
+      // stranger in profile, which is what took the silhouette out of the
+      // prompt. Left here as the record of the mis-measurement; not emitted.
       shape: "long oval, length to width about 1.45 to 1",
       forehead: "medium height and flat, hairline a little higher at the temples",
       cheekbones: "high and moderately wide, soft rather than sculpted",
@@ -292,18 +308,18 @@ export function assertNoNegations(spec: FaceIdentity): void {
 
 /**
  * The spec as one prompt paragraph. Ordered the way a person describes a
- * face — structure, eyes, brows, nose, mouth, skin, hair, ears, neck — so
- * related traits stay adjacent and the generator reads them as one person
- * rather than a list of unrelated facts.
+ * face — eyes, brows, nose, mouth, skin, hair, ears, neck — so related traits
+ * stay adjacent and the generator reads them as one person rather than a list
+ * of unrelated facts. The silhouette fields of `structure` are omitted on
+ * purpose; see the note on that field.
  */
 export function identityPromptOf(face: HouseFace): string {
   const s = FACE_IDENTITIES[face];
   if (!s) return "";
   const { structure: st, eyes: e, brows: b, nose: n, mouth: m, skin: k, hair: h } = s;
   return [
-    `IDENTITY DETAIL for ${s.label}, the model in the face crop. These are her measured features; hold every one of them at this view's angle.`,
+    `IDENTITY DETAIL for ${s.label}, the model in the face crop. These are her measured colouring and surface detail; hold every one of them at this view's angle.`,
     `She reads about ${s.subject.apparentAge}, ${s.subject.ethnicity}.`,
-    `Face ${st.shape}, forehead ${st.forehead}, cheekbones ${st.cheekbones}, jaw ${st.jaw}, chin ${st.chin}.`,
     `Her face is asymmetric in a specific way: ${st.asymmetry}.`,
     `Eyes ${e.shape}, ${e.lid}, ${e.tilt}. Each iris has three zones: a dark limbal ring ${e.iris.limbal}, an outer iris ${e.iris.outer}, and a warmer ring ${e.iris.inner} around the pupil. Lashes ${e.lashes}. Under the eye, ${e.underEye}.`,
     `Brows ${b.shape}, sitting ${b.position}, ${b.thickness}, coloured ${b.color}, with ${b.texture}.`,

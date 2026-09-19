@@ -37,6 +37,10 @@ export function identityJson(): string {
 // Only when run as the script. The freshness test imports this module to
 // compare against the committed file; if the write ran on import it would
 // rewrite the file first and the comparison could never fail.
+//
+// Needs vite-node's `--script` flag (see package.json). Without it argv[1] is
+// vite-node's own binary, this test is never true, and the command exits 0
+// having written nothing — which is how it behaved from the day it shipped.
 if (process.argv[1] && /emit-face-identity\.mts$/.test(process.argv[1])) {
   writeFileSync(IDENTITY_JSON_PATH, identityJson());
   console.log(`wrote ${IDENTITY_JSON_PATH}`);

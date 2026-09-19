@@ -9,7 +9,7 @@
     "lint": "next lint",
     "test": "vitest run",
     "models:manifest": "vite-node scripts/build-models-manifest.mts",
-    "faces:identity": "vite-node scripts/emit-face-identity.mts"
+    "faces:identity": "vite-node --script scripts/emit-face-identity.mts"
   },
   "dependencies": {
     "@fal-ai/client": "^1.2.0",

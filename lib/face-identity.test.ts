@@ -73,6 +73,26 @@ describe("identityPromptOf", () => {
     for (const h of [s.eyes.iris.outer, s.skin.cheek, s.hair.mid]) expect(p).toContain(h);
   });
 
+  it("stays silent on the silhouette, which pixels have to carry", () => {
+    // A profile's outline must come from a reference AT that angle. Prose
+    // describing bone gets reinterpreted: vision's recorded jaw ("narrow",
+    // "small and tapered") contradicts her own photograph and a derive obeyed
+    // the words, and celine's jaw is recorded correctly and her derived side
+    // still slimmed. So the recorded silhouette VALUES are never emitted.
+    //
+    // Checked as values, not as words: "jaw", "chin" and "cheekbone" may still
+    // appear, because the skin block places peach fuzz, moles and sheen by
+    // landmark — that settles texture, not outline.
+    for (const f of FACES) {
+      const p = identityPromptOf(f);
+      const st = FACE_IDENTITIES[f].structure;
+      for (const k of ["shape", "forehead", "cheekbones", "jaw", "chin"] as const) {
+        expect(p, `${f} prompt still carries structure.${k}`).not.toContain(st[k]);
+      }
+      expect(p, `${f} dropped the asymmetry tell`).toContain(st.asymmetry);
+    }
+  });
+
   it("stays silent on what the plate owns", () => {
     // Rule 1: pose, framing, garment, lighting and background come from the
     // plate (lib/plate-framing.ts). A spec that names them fights the plate.
