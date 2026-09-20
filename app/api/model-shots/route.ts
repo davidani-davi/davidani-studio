@@ -1,3 +1,4 @@
+import { directOutfitInput, renderDirectOutfit, DIRECT_IDENTITIES } from '@/lib/direct-outfit';
 import { isPantsReference, pantsReferences } from "@/lib/pants-references";
 import { simpleReferenceShot, simpleFaceMask, SIMPLE_IMAGE_SIZE } from '@/lib/simple-reference-shot';
 import sharp from 'sharp';
@@ -115,6 +116,7 @@ export async function GET(req: Request) {
   return json({
     ok: true,
     views: MULTI_MODEL_VIEWS,
+    directIdentities: DIRECT_IDENTITIES,
     plateTags: plateTagStats(),
     // the crop/low families are the house plates re-framed, never picked by
     // hand — but their fronts ride along as previews, so a picker can show the
@@ -162,7 +164,7 @@ export async function POST(req: Request) {
     return json({ ok: false, error: "invalid JSON body" }, 400);
   }
 
-  if (body.view === "full" && (isPantsReference(body.humanModelId) || shotCategory({...body.known, category: body.category ?? body.known?.category}) === "pants"))
+  if (body.editMode !== "direct" && body.view === "full" && (isPantsReference(body.humanModelId) || shotCategory({...body.known, category: body.category ?? body.known?.category}) === "pants"))
     return json({ok:false,error:"Pants generate front, side and back only."},400);
 
   /**
@@ -206,6 +208,13 @@ export async function POST(req: Request) {
 
 /** One view, start to finish: the synchronous POST body. */
 async function renderShot(req: Request, body: any): Promise<Response> {
+  if (body.editMode === 'direct') {
+    let input;
+    try { input = directOutfitInput(body); }
+    catch (error: any) { return json({ok:false,error:error.message},400); }
+    try { return json(await renderDirectOutfit(input,sanitizeOperatorNote(body.note))); }
+    catch (error: any) { return json({ok:false,view:body.view,error:error.message},502); }
+  }
   if (body.editMode && !['simple','native','garment-only','face-locked'].includes(body.editMode)) return json({ok:false,error:'Choose a valid editing mode.'},400);
   const simple = body.editMode === 'simple';
   if (simple && (body.engine === 'tryon' || body.reference || String(body.humanModelId || '').startsWith('face:'))) return json({ok:false,error:'Simple garment swap needs a matching model reference and GPT or Nano.'},400);
