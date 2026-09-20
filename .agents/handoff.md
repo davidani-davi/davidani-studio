@@ -1,5 +1,5 @@
 # Handoff — 2026-09-19 22:15 PDT, Codex
-Branch codex/direct-outfit-default; base 557b969.
+Branch codex/direct-outfit-default; production code 290f03a (PR #12 merged).
 ## Completed
 - David approved direct ERP identity editing as Faire's default, Simple as fallback.
 - /api/model-shots editMode=direct takes exact per-view outfitSources + Vision/Celine.
@@ -13,10 +13,13 @@ Branch codex/direct-outfit-default; base 557b969.
   All four returned 1024x1536 PNG; visually checked skin, hem, stripes, background.
 - Evidence in Faire repo output/direct-outfit-integration (local, not deployed).
 ## Release / next
-- Deploy backend before Faire 2.57.0 frontend; verify live catalog directIdentities.
+- Production deployed and verified; live catalog exposes both direct identities.
+- Production async front render succeeded; 1024x1536 PNG SHA256 verified.
+- Deployment: davidani-studio-co6lae7n2-davidani-davis-projects.vercel.app.
+- Faire 2.57.0 rollout underway in the Faire repo; backend prerequisite complete.
 - Faire UI selects Direct by default on new runs; preserves saved legacy choices.
 - Browser tests cover identity/source persistence, fallback and missing-view guard.
 - Original Studio checkout is dirty; work is isolated in this worktree.
-- Tracked node_modules symlink cannot build with Turbopack outside project root:
-  local npm ci folder used for checks; do not commit dependency artifacts/deletion.
+- Local check server stopped; original tracked dependency symlink restored.
+  Turbopack checks used a local npm ci folder (external symlink otherwise fails).
 - AI edits still need visual garment/identity review; no exact-pixel garment claim.
