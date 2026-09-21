@@ -29,14 +29,16 @@ describe('protected model-shot route',()=>{
   expect(data.url).toBe('https://host/garment-only.png');expect(data.preservation).toMatchObject({verified:true,changedProtectedPixels:0,width:1024,height:1536});
   expect(data.preservation.protectedSourceSha256).toBe(data.preservation.protectedOutputSha256);
  });
- it.each(['front','side','back','full'])('simple %s sends exactly two images and no provider mask',async view=>{
+ it.each(['front','side','back','full'])('simple %s forwards matching product and available front anchor without a provider mask',async view=>{
   const file=view==='full'?'studio 100/full.png':`crop 100/${view}.png`;
   original=fs.readFileSync('public/models/'+file);
   const r=await POST(request({view,editMode:'simple',humanModelId:'studio 100',poseId:'studio 100',known:{category:'top'},garmentImageUrls:['https://erp/front.png','https://erp/back.png'],anchorImageUrl:'https://old/front.png'}));
   const data=await r.json();expect(data.ok).toBe(true);
   const payload=await mocks.generate.mock.calls[0][0].json();
   expect(decodeURIComponent(payload.canvasImageUrl)).toContain('/'+file);
-  expect(payload.garmentImageUrls).toEqual([view==='back'?'https://erp/back.png':'https://erp/front.png']);
+  expect(payload.garmentImageUrls).toEqual([view==='back'?'https://erp/back.png':'https://erp/front.png',...(view==='front'?[]:['https://old/front.png'])]);
+  expect(payload.prompt).toContain('with cuffs at the wrists');
+  expect(data.anchored).toBe(view!=='front');
   expect(payload.maskUrl).toBeUndefined();expect(payload.imageSize).toEqual({width:1024,height:1536});
   expect(payload.resolution).toBe('1K');expect(payload.rawPrompt).toBe(true);
   expect(data.editMode).toBe('simple');
