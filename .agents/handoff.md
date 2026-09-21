@@ -1,13 +1,15 @@
 # Handoff — 2026-09-21, Codex
-Branch codex/contrast-stitching-fidelity; based on main8a1be70.
-- User reported DET62252 Blue losing pink neckline stitching on Celine3 Simple swap.
-- Traced Simple prompt: generic construction wording; anchor could override product details.
-- Updated contrast thread/seam/trim fidelity, product image remains construction authority.
-- Celine3 source-bound mask ends above neckline; regression preserves synthetic pink rows
-  and every garment pixel from y378 downward while retaining exact protected face pixels.
-- Original run raw provider image was not persisted; cannot compare that specific raw/final pair.
-- npm test:1147 passed/84files; production webpack build passed.
-- This strengthens prompting; visual success on a new real render remains unverified.
-- Next: merge/deploy PR, then user Redo Blue front; check pink stitching before remaining views.
-- No reference assets/face contours/compositor altered. Never restore row fallback/native-face PR15.
-- Prior universal contour audit remains live (PR16/main8a1be70); evidence in Faire repo.
+Branch codex/simple-sleeve-fidelity; based main15350d9.
+- Fixed Simple sleeve drift on Celine3 / DET62252 Blue.
+- Explicit sleeve/cuff/skin-coverage instructions apply even without a listing title.
+- Long sleeves reach wrists; short/sleeveless preserved when source shows those.
+- Found/fixed GPT transport mismatch: prompt described image3 front anchor but payload omitted it.
+- simpleReferenceShot now forwards same ordered references to GPT and Nano.
+- Actual input live test: front/side/back generated with GPT2.5 + same contour composition.
+- All3 visually reviewed: wrist cuffs, pink neckline stitching,0 changed protected pixels.
+- Raw + final + request/report evidence: Faire repo output/simple-sleeve-fix.
+- Reproduce: scripts/verify-simple-sleeves.mts PRODUCT OUTPUT (FAL_KEY via env/.env.local).
+- npm test1152/84files passed; production webpack build passed.
+- NEXT: merge/deploy PR and verify production; then user Redo front first if its sleeves are pushed up,
+  followed by side/back. No extension update needed.
+- Face masks/compositing unchanged; never restore horizontal row fallback/native-face PR15.

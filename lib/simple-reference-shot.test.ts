@@ -149,3 +149,14 @@ it('Celine 3 contour leaves neckline contrast stitching completely unchanged',as
  expect(pixels.subarray(boundary*ref.width*4).equals(candidate.subarray(boundary*ref.width*4))).toBe(true);
  expect(composed.report.changedProtectedPixels).toBe(0);
 });
+
+it.each(['front','side','back','full'] as const)('enforces product sleeve coverage without relying on a title for %s',view=>{
+ const shot=simpleReferenceShot({...base,view,anchorImageUrl:'https://generated/front.png'});
+ expect(shot.prompt).toContain('If it shows long sleeves, render full-length sleeves down to the wrists in every view');
+ expect(shot.prompt).toContain('If the source is short-sleeved or sleeveless, preserve that instead');
+ expect(shot.garmentImageUrls).toEqual(shot.image_urls.slice(1));
+});
+it('does not impose sleeve changes on a bottoms-only swap',()=>{
+ const shot=simpleReferenceShot({...base,view:'side',category:'pants'});
+ expect(shot.prompt).not.toContain('SLEEVE CONSTRUCTION:');
+});
