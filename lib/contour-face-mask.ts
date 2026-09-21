@@ -5,7 +5,7 @@ export type ReviewedFaceContour = {
   points:[number,number][];
   featherPixels:number;
 };
-/** Review candidate only. Zero protects the entire contour; feather is OUTSIDE.
+/** Reviewed per-reference mask. Zero protects the entire contour; feather is OUTSIDE.
  * No horizontal cut, no exposure matching and no changes outside the support.
  * The contour + feather must be reviewed against clothing for each source image.
  */

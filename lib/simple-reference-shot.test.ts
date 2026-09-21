@@ -3,7 +3,8 @@ import fs from 'node:fs';
 import {simpleReferenceShot,simpleFaceMask} from './simple-reference-shot';
 import {referencePixels,compositeGarment} from './garment-only';
 import sharp from 'sharp';
-import presets from './simple-face-presets.json';
+import presets from './simple-contour-presets.json';
+import {contourFaceMask} from './contour-face-mask';
 const base={referenceUrl:'https://ref/front.png',garmentImageUrls:['https://erp/front.png','https://erp/back.png'],category:'top' as const,framing:'crop' as const};
 describe('simple garment swap',()=>{
  it('front gets only its base and front garment, never an anchor',()=>{
@@ -91,64 +92,36 @@ describe('simple garment swap',()=>{
   expect(shot.prompt).toContain('Requested change: Make the hem longer, closer to mid-thigh.');
  });
  it('requires two input roles',()=>expect(()=>simpleReferenceShot({...base,view:'front',garmentImageUrls:[]})).toThrow());
- it('requires reviewed unchanged source pixels for face protection',async()=>{
+ it('requires an exact contour review, including back and headless references',async()=>{
   const ref=await referencePixels(fs.readFileSync('public/models/crop 100/front.png'));
-  expect(()=>simpleFaceMask({...ref,sha256:'0'.repeat(64)},'/models/crop 100/front.png','front','crop')).toThrow('reference changed');
-  expect(()=>simpleFaceMask(ref,'/models/custom/front.png','front','crop')).toThrow('no reviewed');
-  expect(simpleFaceMask(ref,'/models/low 100/front.png','front','low')).toBeUndefined();
-  expect(simpleFaceMask(ref,'/models/crop 100/back.png','back','crop')).toBeUndefined();
+  expect(()=>simpleFaceMask({...ref,sha256:'changed'},'/models/crop 100/front.png','front','crop')).toThrow('reference changed');
+  for(const view of ['front','back']) expect(()=>simpleFaceMask(ref,'/models/custom/front.png',view,'low')).toThrow('contour review');
+  // An old row review must never enable a new asset.
+  expect(()=>simpleFaceMask(ref,'/unknown','front','crop',{...ref,protectedRows:200,transitionRows:5})).toThrow('contour review');
  });
- it.each(Object.entries(presets))('validates actual reviewed asset %s',async(path,preset)=>{
-  const ref=await referencePixels(fs.readFileSync('public'+path));
-  const mask=simpleFaceMask(ref,path,'front','crop')!;
+ it.each(Object.entries(presets))('validates reviewed catalog record %s',async(path,preset)=>{
+  const ref=path.startsWith('/') ? await referencePixels(fs.readFileSync('public'+path)) : {...preset,data:Buffer.alloc(0)};
   expect(ref.sha256).toBe(preset.sha256);
-  expect(mask.subarray(0,(preset.protectedRows-preset.transitionRows)*ref.width).some(n=>n===0)).toBe(true);
-  expect(mask.subarray(preset.protectedRows*ref.width).every(n=>n===255)).toBe(true);
-  expect(mask[mask.length-1]).toBe(255);
+  const mask=simpleFaceMask(ref,path+'?cache=1','back','low');
+  if(preset.kind==='no-head') {expect(mask).toBeUndefined();return;}
+  expect(mask!.some(v=>v===0)).toBe(true);
+  expect(mask!.subarray(preset.garmentBoundaryY*ref.width).every(v=>v===255)).toBe(true);
+  for(let y=0;y<ref.height;y++){expect(mask![y*ref.width]).toBe(255);expect(mask![y*ref.width+ref.width-1]).toBe(255);}
  });
-});
-
-// A clean provider output must not acquire the old shirt during face restoration.
-describe('shoulder ghost regression',()=>{
- it('keeps the generated shoulder pixels while restoring the original face',async()=>{
-  const width=64,height=128,boundary=32;
+ it('preserves the face exactly and releases clothing and backdrop under a tone mismatch',async()=>{
+  const width=64,height=128;
   const source=Buffer.alloc(width*height*4,255);
-  for(let y=boundary;y<height;y++)for(let x=0;x<width;x++){
-   const i=(y*width+x)*4;
-   source[i]=x%4<2?240:20;source[i+1]=180;source[i+2]=210;
-  }
-  // An actual foreground head, separated from the neutral backdrop.
-  for(let y=3;y<boundary-4;y++)for(let x=24;x<40;x++)source.set([120,70,50,255],(y*width+x)*4);
-  source.set([255,255,255,255],(10*width+30)*4); // enclosed light facial highlight is not backdrop
+  for(let y=40;y<height;y++)for(let x=0;x<width;x++)source.set([220,30,80,255],(y*width+x)*4);
   const ref=await referencePixels(await sharp(source,{raw:{width,height,channels:4}}).png().toBuffer());
+  const mask=contourFaceMask(ref,{width,height,sha256:ref.sha256,points:[[24,8],[40,8],[40,25],[32,30],[24,25]],featherPixels:8});
   const generated=await sharp({create:{width,height,channels:4,background:'#303030'}}).png().toBuffer();
-  const preset={width,height,sha256:ref.sha256,protectedRows:boundary,transitionRows:4};
-  const mask=simpleFaceMask(ref,'/reviewed/front.png','front','crop',preset)!;
   const {png,report}=await compositeGarment(ref,generated,mask,{matchSeam:false});
-  const out=await sharp(png).ensureAlpha().raw().toBuffer();
-  const clean=await sharp(generated).ensureAlpha().raw().toBuffer();
-  expect(out.subarray(boundary*width*4)).toEqual(clean.subarray(boundary*width*4));
-  for(let y=3;y<boundary-4;y++)expect(out.subarray((y*width+24)*4,(y*width+40)*4)).toEqual(source.subarray((y*width+24)*4,(y*width+40)*4));
-  // Background comes from one continuous provider image, above AND below the cut.
-  for(let y=0;y<height;y++)expect(out.subarray(y*width*4,y*width*4+4)).toEqual(clean.subarray(y*width*4,y*width*4+4));
-  expect(report.changedProtectedPixels).toBe(0);
-  expect(mask[30*width+32]).toBeGreaterThan(0);
-  expect(mask[30*width+32]).toBeLessThan(255);
- });
- it('does not classify dark or saturated edges as neutral studio backdrop',async()=>{
-  for(const background of ['#202020','#ef3030']) {
-   const width=32,height=64;
-   const ref=await referencePixels(await sharp({create:{width,height,channels:4,background}}).png().toBuffer());
-   const preset={width,height,sha256:ref.sha256,protectedRows:20,transitionRows:4};
-   const mask=simpleFaceMask(ref,'/reviewed/front.png','front','crop',preset)!;
-   expect(mask.subarray(0,16*width).every(v=>v===0)).toBe(true);
-   expect(mask.subarray(20*width).every(v=>v===255)).toBe(true);
+  const out=await sharp(png).ensureAlpha().raw().toBuffer();const clean=await sharp(generated).ensureAlpha().raw().toBuffer();
+  for(let i=0;i<mask.length;i++){
+    if(mask[i]===0)expect(out.subarray(i*4,i*4+4)).toEqual(source.subarray(i*4,i*4+4));
+    if(mask[i]===255)expect(out.subarray(i*4,i*4+4)).toEqual(clean.subarray(i*4,i*4+4));
   }
- });
- it('releases Celine 2 shoulder before the original patterned blouse starts',async()=>{
-  const ref=await referencePixels(fs.readFileSync('public/models/studio 100/front.png'));
-  const mask=simpleFaceMask(ref,'/models/studio 100/front.png','front','crop')!;
-  expect(mask[400*ref.width+700]).toBe(255);
-  expect(mask[330*ref.width+480]).toBe(0);
+  expect(out.subarray(40*width*4)).toEqual(clean.subarray(40*width*4));
+  expect(report.changedProtectedPixels).toBe(0);
  });
 });

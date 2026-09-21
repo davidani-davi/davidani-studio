@@ -2,7 +2,6 @@
 import {useEffect,useRef,useState} from 'react';
 import {upload} from '@vercel/blob/client';
 import {IDENTITY_MASTERS,IDENTITY_PROMPT,IDENTITY_VIEWS,type IdentityInput,type IdentitySet,type IdentitySetDetail,type IdentityView} from '@/lib/reference-identity-core';
-import FaceProtectionReview from '@/components/FaceProtectionReview';
 const API='/api/reference-identity-studio';
 const STORAGE='reference-identity-draft-v1';
 const title=(s:string)=>s.charAt(0).toUpperCase()+s.slice(1);
@@ -19,8 +18,6 @@ export default function IdentityStudio(){
  const [cloud,setCloud]=useState(false),[ready,setReady]=useState(false),[busy,setBusy]=useState(false),[uploading,setUploading]=useState('');
  const [error,setError]=useState(''),[message,setMessage]=useState(''),[pending,setPending]=useState<any>(null);
  const [saveOpen,setSaveOpen]=useState(false),[saveName,setSaveName]=useState(''),[reviewed,setReviewed]=useState(false);
- const [protection,setProtection]=useState<Record<IdentityView,number>>({front:26,side:26,back:25,full:18});
- const [blends,setBlends]=useState<Record<IdentityView,number>>({front:.5,side:.5,back:.5,full:.5});
  const [saved,setSaved]=useState(false);
  const activeRef=useRef<string|null>(null);
  const master=IDENTITY_MASTERS.find(m=>m.id===identityId)!;
@@ -76,7 +73,7 @@ export default function IdentityStudio(){
  }
  async function save(){
   if(!active)return;setBusy(true);setError('');
-  try{await request(API,{action:'save',id:active.id,name:saveName,views:completed,reviewed,protection:Object.fromEntries(completed.filter(v=>v!=='back').map(v=>[v,protection[v]])),blends:Object.fromEntries(completed.filter(v=>v!=='back').map(v=>[v,blends[v]]))});setSaveOpen(false);setSaved(true);setMessage('Saved to Models & pose references. Available in the Model Studio picker.');}
+  try{await request(API,{action:'save',id:active.id,name:saveName,views:completed,reviewed});setSaveOpen(false);setSaved(true);setMessage('Saved to Models & pose references. A face/hair contour review is required before Simple garment swap.');}
   catch(e:any){setError(e.message);}finally{setBusy(false);}
  }
  return <main className="identity-studio">
@@ -100,6 +97,6 @@ export default function IdentityStudio(){
   <div className="ri-actionbar"><button className="ri-primary" disabled={!ready||locked||!available.length||!name.trim()} onClick={()=>generate()}>{running?'Generating…':active?`Generate ${available.length} selected again`:`Generate ${available.length||''} selected view${available.length===1?'':'s'}`}</button><button disabled={locked||!completed.length||saved} onClick={()=>{setSaveName(`${active?.identity.name} · ${active?.name}`.slice(0,100));setReviewed(false);setSaveOpen(true);}}>{saved?'Saved to reference library':`Save ${completed.length||''} selected to models`}</button><span>{running?'You can leave this page. Reopen this saved run to see the results.':`${available.length} source photo${available.length===1?'':'s'} selected`}</span></div>
   {pending&&!busy&&<div className="ri-recovery"><p>The submission was not confirmed. Retry safely with the same request ID.</p><button onClick={()=>generate(pending)}>Retry submission</button><button onClick={()=>{setPending(null);setError('');}}>Dismiss</button></div>}
   <details className="ri-method"><summary>The prompt used for every view</summary><p>{IDENTITY_PROMPT}</p><p>Identity master: <a href={master.url} target="_blank" rel="noreferrer">{master.label} ↗</a>. Each output is generated independently from two images.</p></details>
-  {saveOpen&&<div className="ri-modal" role="dialog" aria-modal="true" aria-label="Save reference set"><div><h2>Save reference set</h2><label>Name<input value={saveName} maxLength={100} onChange={e=>setSaveName(e.target.value)}/></label><p>Review the protected face and hair blend for each view. These settings are saved for future garment swaps.</p><div className="ri-review">{completed.map(view=><article key={view}><h3>{title(view)}</h3>{view==='back'?<><img src={active?.jobs[view]?.result?.imageUrl} alt="Back reference" style={{width:'100%'}}/><p>No face protection needed for the back view.</p></>:<FaceProtectionReview imageUrl={active?.jobs[view]?.result?.imageUrl||''} label={title(view)} boundary={protection[view]} blend={blends[view]} onChange={(boundary,blend)=>{setProtection(p=>({...p,[view]:boundary}));setBlends(p=>({...p,[view]:blend}));setReviewed(false);}}/>}</article>)}</div><label className="ri-check"><input type="checkbox" checked={reviewed} onChange={e=>setReviewed(e.target.checked)}/>I checked that each face is above the green line and clothing is below the amber line.</label><div className="ri-links"><button className="ri-primary" disabled={busy||!reviewed||!saveName.trim()} onClick={save}>Save to model library</button><button disabled={busy} onClick={()=>setSaveOpen(false)}>Cancel</button></div></div></div>}
+  {saveOpen&&<div className="ri-modal" role="dialog" aria-modal="true" aria-label="Save reference set"><div><h2>Save reference set</h2><label>Name<input value={saveName} maxLength={100} onChange={e=>setSaveName(e.target.value)}/></label><p>Review the identity and pose in each photo. New references require a separate face/hair contour review before Simple garment swap.</p><div className="ri-review">{completed.map(view=><article key={view}><h3>{title(view)}</h3><img src={active?.jobs[view]?.result?.imageUrl} alt={`${title(view)} reference`} style={{width:'100%'}}/></article>)}</div><label className="ri-check"><input type="checkbox" checked={reviewed} onChange={e=>setReviewed(e.target.checked)}/>I reviewed the identity and pose in each selected photo.</label><div className="ri-links"><button className="ri-primary" disabled={busy||!reviewed||!saveName.trim()} onClick={save}>Save to model library</button><button disabled={busy} onClick={()=>setSaveOpen(false)}>Cancel</button></div></div></div>}
  </main>;
 }

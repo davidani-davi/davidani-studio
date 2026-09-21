@@ -36,18 +36,18 @@ describe('Reference Identity Studio API',()=>{
  it('rejects reuse of an ID with different inputs',async()=>{vi.mocked(createIdentitySet).mockResolvedValue(false);expect((await POST(req({...body,identityId:'vision'}))).status).toBe(409);expect(createShotTask).not.toHaveBeenCalled();});
  it.each([{id:'../escape'},{identityId:'unknown'},{inputs:{}},{inputs:{wrong:{url:'x'}}},{inputs:{front:{url:4}}},{name:''},{action:'unknown'}])('rejects invalid input %j',async patch=>{expect((await POST(req({...body,...patch}))).status).toBe(400);expect(createShotTask).not.toHaveBeenCalled();});
  it('rejects arbitrary external source URLs via the owned-photo validator',async()=>{vi.mocked(inspectAdminPhoto).mockRejectedValue(Error('Not owned'));expect((await POST(req())).status).toBe(400);expect(createShotTask).not.toHaveBeenCalled();});
- it('saves selected finished photos in one library event with reviewed boundaries',async()=>{
+ it('saves selected finished photos in one library event after visual review',async()=>{
   vi.mocked(readShotTask).mockResolvedValue({status:'done',result:{imageUrl:'https://owned/generated.png'}} as any);
   expect((await POST(req({action:'save',id,name:'Celine Test',views:['front','back'],reviewed:true,protection:{front:30}}))).status).toBe(200);
-  expect(appendCatalogChange).toHaveBeenCalledTimes(1);expect(appendCatalogChange).toHaveBeenCalledWith(expect.objectContaining({referenceSet:expect.objectContaining({photos:{front:expect.any(Object),back:expect.any(Object)}})}));expect(inspectAdminPhoto).toHaveBeenCalledWith('https://owned/generated.png',30,undefined);
+  expect(appendCatalogChange).toHaveBeenCalledTimes(1);expect(appendCatalogChange).toHaveBeenCalledWith(expect.objectContaining({referenceSet:expect.objectContaining({photos:{front:expect.any(Object),back:expect.any(Object)}})}));expect(inspectAdminPhoto).toHaveBeenCalledWith('https://owned/generated.png');
  });
- it('does not import unfinished images or unreviewed face boundaries',async()=>{expect((await POST(req({action:'save',id,name:'Test',views:['front']}))).status).toBe(400);vi.mocked(readShotTask).mockResolvedValue({status:'done',result:{imageUrl:'x'}} as any);expect((await POST(req({action:'save',id,name:'Test',views:['front']}))).status).toBe(400);expect(appendCatalogChange).not.toHaveBeenCalled();});
+ it('does not import unfinished images or unreviewed photos',async()=>{expect((await POST(req({action:'save',id,name:'Test',views:['front']}))).status).toBe(400);vi.mocked(readShotTask).mockResolvedValue({status:'done',result:{imageUrl:'x'}} as any);expect((await POST(req({action:'save',id,name:'Test',views:['front']}))).status).toBe(400);expect(appendCatalogChange).not.toHaveBeenCalled();});
  it('makes a repeated save idempotent',async()=>{vi.mocked(readCatalogChanges).mockResolvedValue([{modelId:`identity-${id}`,create:true}] as any);const r=await POST(req({action:'save',id}));expect(r.status).toBe(200);expect(appendCatalogChange).not.toHaveBeenCalled();});
 });
 
-it('saves the reviewed hair blend independently for each identity view',async()=>{
+it('ignores legacy row boundaries when importing new reference photos',async()=>{
  vi.mocked(readShotTask).mockResolvedValue({status:'done',result:{imageUrl:'https://owned/generated.png'}} as any);
  expect((await POST(req({action:'save',id,name:'Reviewed',views:['front','side'],reviewed:true,protection:{front:25,side:24},blends:{front:1.6,side:.8}}))).status).toBe(200);
- expect(inspectAdminPhoto).toHaveBeenCalledWith('https://owned/generated.png',25,1.6);
- expect(inspectAdminPhoto).toHaveBeenCalledWith('https://owned/generated.png',24,.8);
+ expect(inspectAdminPhoto).toHaveBeenCalledTimes(2);
+ expect(inspectAdminPhoto).toHaveBeenCalledWith('https://owned/generated.png');
 });

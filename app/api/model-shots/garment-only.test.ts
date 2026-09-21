@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import {beforeEach,afterEach,describe,it,expect,vi} from 'vitest';
 import sharp from 'sharp';
-import presets from '@/lib/simple-face-presets.json';
+import presets from '@/lib/simple-contour-presets.json';
 import {referencePixels,type GarmentEdit} from '@/lib/garment-only';
 const mocks=vi.hoisted(()=>({upload:vi.fn(),generate:vi.fn()}));
 vi.mock('@/lib/fal',async original=>({...await original<typeof import('@/lib/fal')>(),uploadToFal:mocks.upload}));
@@ -40,16 +40,30 @@ describe('protected model-shot route',()=>{
   expect(payload.maskUrl).toBeUndefined();expect(payload.imageSize).toEqual({width:1024,height:1536});
   expect(payload.resolution).toBe('1K');expect(payload.rawPrompt).toBe(true);
   expect(data.editMode).toBe('simple');
-  if(view!=='back') {
+  {
    expect(data.preservation).toMatchObject({verified:true,changedProtectedPixels:0});
    const preset=presets[('/models/'+file) as keyof typeof presets];
    const output=await sharp(hosted.get(data.url)!).ensureAlpha().raw().toBuffer();
    const clean=await sharp(generated).ensureAlpha().raw().toBuffer();
    // Exercise the actual route: neither blending nor colour correction may
    // put the reference blouse back into the released shoulder/body area.
-   expect(output.subarray(preset.protectedRows*preset.width*4).equals(clean.subarray(preset.protectedRows*preset.width*4))).toBe(true);
+   expect(output.subarray(preset.garmentBoundaryY*preset.width*4).equals(clean.subarray(preset.garmentBoundaryY*preset.width*4))).toBe(true);
   }
-  else expect(data.preservation).toBeUndefined();
+  expect(data.faceProtection).toBe('reviewed-contour-v1');
+ });
+ it('Simple headless references use reviewed pass-through without a preservation claim',async()=>{
+  original=fs.readFileSync('public/models/studio 103/front.jpg');
+  const r=await POST(request({view:'front',editMode:'simple',humanModelId:'studio 103',poseId:'studio 103',known:{category:'pants'}}));
+  const data=await r.json();expect(data.ok).toBe(true);
+  expect(data.faceProtection).toBe('reviewed-no-head-v1');expect(data.preservation).toBeUndefined();
+  expect(mocks.generate).toHaveBeenCalledTimes(1);
+ });
+ it('Simple rejects changed source pixels before spending, including back views',async()=>{
+  for(const view of ['front','back']){
+   const r=await POST(request({view,editMode:'simple',humanModelId:'studio 100',poseId:'studio 100',known:{category:'top'}}));
+   expect((await r.json()).error).toContain('reference changed');
+  }
+  expect(mocks.generate).not.toHaveBeenCalled();
  });
  it('pants reject the retired full-shot face lock before spending',async()=>{
   const response=await POST(request({humanModelId:'studio 103',poseId:'studio 103',known:{category:'pants'},editMode:'face-locked',garmentEdit:undefined}));

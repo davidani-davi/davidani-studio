@@ -1,18 +1,17 @@
-# Handoff — 2026-09-21, Codex
-Branch codex/simple-contour-review; base/main5cdaff1; prototype in this commit.
-- David rejected native Simple face drift. PR15 CLOSED, do not merge its branch.
-- Authorized reviewed contour mask test; exact face preserved, feather OUTSIDE contour.
-- Added standalone contour-face-mask.ts plus tests; NOT integrated into route.
-- Hash/dimension-bound polygon, finite-coordinate checks, distance-based outward blend.
-- No row cut, exposure matching, generated face or clothing restored from source.
-- Back test protects only interior hair; no protected neck strip.
-- All1,038 tests/84files and production webpack build pass.
-- Four-view experiment uses existing raw native outputs, no new provider spend.
-- Faire output/simple-contour-review has masks, reviewed points, original-pixel reports,
-  output PNGs, runner. No changed protected pixels; all outside-mask pixels unchanged.
-- Visually no neck seam seen; awaiting David's judgment. No production changes.
-- Next if accepted: integrate reviewed hash-bound contours into Simple route, test saved
-  custom refs and all views; verify production before claiming release.
-- Coordinates specific to Vision Playful boots; do not generalize to other sets.
-- Existing production still uses row protection and can seam.
-- More pose sets must use actual Davi&Dani photographed bases (prepared in Faire).
+# Handoff — 2026-09-21 08:57 PDT, Codex
+Branch codex/simple-contour-review; previous ec9dddf; universal contour integration in this commit.
+- David approved contour result and explicitly authorized reviewing/deploying whole library.
+- Simple now uses lib/simple-contour-presets.json:151 exact source reviews.
+-84 face/hair contours +67 reviewed headless assets. All151 checked against live catalog.
+- Each contour bound to decoded SHA256 + dimensions. Unknown/replaced refs fail before spend.
+- Back views now reviewed too; no horizontal row fallback or garment exposure matching.
+- Old FaceProtection row sliders removed from admin/identity import flow.
+- New uploads save normally but require separate contour review before Simple generation.
+- Tests:1,142/84files pass; npm run build -- --webpack passes.
+- Full visual/brightness stress audit in Faire output/contour-library-audit.
+- Every protected pixel unchanged; feather ends before reviewed source garment boundary.
+- Next: PR/merge/deploy, verify live Celine + Vision four-view runs and headless pass-through.
+- Production verification still pending at commit time; do not claim live until checked.
+- Existing renders keep old seams; user must Redo. No extension reinstall needed.
+- PR15 native face drift approach CLOSED/rejected; never deploy that branch/UI copy.
+- More pose sets must come from actual Davi&Dani photoshoots, not invented poses.
