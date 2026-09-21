@@ -160,3 +160,17 @@ it('does not impose sleeve changes on a bottoms-only swap',()=>{
  const shot=simpleReferenceShot({...base,view:'side',category:'pants'});
  expect(shot.prompt).not.toContain('SLEEVE CONSTRUCTION:');
 });
+
+it.each(['front','side','back','full'] as const)('replaces both set pieces and follows product trouser length for %s',view=>{
+ const shot=simpleReferenceShot({...base,view,category:'set',anchorImageUrl:'https://generated/front.png',garmentName:'Braided Trim Ruffle Chambray Wide Leg Set'});
+ expect(shot.prompt).toContain('Replace BOTH pieces');
+ expect(shot.prompt).toContain('long pant legs continue out of the bottom of the frame');
+ expect(shot.prompt).toContain("Never turn long pants into shorts");
+ expect(shot.prompt).toContain('Preserve genuine shorts or cropped trousers');
+ expect(shot.prompt).not.toContain('lighting, bottoms and shoes');
+});
+it('trouser rules cover pants but do not replace the top or affect a top-only swap',()=>{
+ const pants=simpleReferenceShot({...base,view:'front',category:'pants'});
+ expect(pants.prompt).toContain('TROUSER CONSTRUCTION:');expect(pants.prompt).not.toContain('Replace BOTH pieces');
+ expect(simpleReferenceShot({...base,view:'front'}).prompt).not.toContain('TROUSER CONSTRUCTION:');
+});
