@@ -1,7 +1,6 @@
 import fs from 'node:fs';
 import {beforeEach,afterEach,describe,it,expect,vi} from 'vitest';
 import sharp from 'sharp';
-import presets from '@/lib/simple-face-presets.json';
 import {referencePixels,type GarmentEdit} from '@/lib/garment-only';
 const mocks=vi.hoisted(()=>({upload:vi.fn(),generate:vi.fn()}));
 vi.mock('@/lib/fal',async original=>({...await original<typeof import('@/lib/fal')>(),uploadToFal:mocks.upload}));
@@ -40,16 +39,13 @@ describe('protected model-shot route',()=>{
   expect(payload.maskUrl).toBeUndefined();expect(payload.imageSize).toEqual({width:1024,height:1536});
   expect(payload.resolution).toBe('1K');expect(payload.rawPrompt).toBe(true);
   expect(data.editMode).toBe('simple');
-  if(view!=='back') {
-   expect(data.preservation).toMatchObject({verified:true,changedProtectedPixels:0});
-   const preset=presets[('/models/'+file) as keyof typeof presets];
-   const output=await sharp(hosted.get(data.url)!).ensureAlpha().raw().toBuffer();
-   const clean=await sharp(generated).ensureAlpha().raw().toBuffer();
-   // Exercise the actual route: neither blending nor colour correction may
-   // put the reference blouse back into the released shoulder/body area.
-   expect(output.subarray(preset.protectedRows*preset.width*4).equals(clean.subarray(preset.protectedRows*preset.width*4))).toBe(true);
-  }
-  else expect(data.preservation).toBeUndefined();
+  // Preserve the provider's continuous neck/hair, including back and full.
+  // Returning a new upload here would reintroduce the head-paste seam.
+  expect(data.url).toBe('https://generated/result.png');
+  expect(data.preservation).toBeUndefined();
+  expect(data.photoFinish).toEqual({method:'native',applied:false});
+  expect(mocks.upload).not.toHaveBeenCalled();
+
  });
  it('pants reject the retired full-shot face lock before spending',async()=>{
   const response=await POST(request({humanModelId:'studio 103',poseId:'studio 103',known:{category:'pants'},editMode:'face-locked',garmentEdit:undefined}));

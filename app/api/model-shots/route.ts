@@ -1,6 +1,6 @@
 import { directOutfitInput, renderDirectOutfit, DIRECT_IDENTITIES } from '@/lib/direct-outfit';
 import { isPantsReference, pantsReferences } from "@/lib/pants-references";
-import { simpleReferenceShot, simpleFaceMask, SIMPLE_IMAGE_SIZE } from '@/lib/simple-reference-shot';
+import { simpleReferenceShot, SIMPLE_IMAGE_SIZE } from '@/lib/simple-reference-shot';
 import sharp from 'sharp';
 import { referencePixels, validateEdit, editMask, compositeGarment, providerMask, donutsFaceMask } from '@/lib/garment-only';
 import { uploadToFal } from '@/lib/fal';
@@ -354,15 +354,10 @@ async function renderShot(req: Request, body: any): Promise<Response> {
       color: typeof known.color === "string" ? known.color : undefined, note });
     const simpleInput = simple ? simpleReferenceShot({ view, referenceUrl, garmentImageUrls, category, framing, color: typeof known.color === 'string' ? known.color : undefined, note, anchorImageUrl, garmentName: typeof known.title === 'string' ? known.title : undefined }) : undefined;
     if (simpleInput) { input.prompt = simpleInput.prompt; input.image_urls = simpleInput.image_urls; }
-    let simplePrepared: { ref: Awaited<ReturnType<typeof referencePixels>>; mask: Buffer } | undefined;
-    if (simple && ((framing !== 'low' && view !== 'back') || reference.protection)) {
-      if (reference.reframed) throw Error('Simple garment swap needs an exact view reference. Choose a complete reference set.');
-      const response = await fetch(referenceUrl, {cache:'no-store'});
-      if (!response.ok) throw Error('Reference could not be loaded.');
-      const ref = await referencePixels(Buffer.from(await response.arrayBuffer()));
-      const mask = simpleFaceMask(ref, reference.publicPath, view, framing, reference.protection);
-      if (mask) simplePrepared = {ref,mask};
-    }
+    // Simple edits use the approved pose photograph directly. Do not paste a
+    // reference head over the provider result: a row-based restoration creates
+    // a skin/hair exposure join on front, side, back and full views.
+    if (simple && reference.reframed) throw Error('Simple garment swap needs an exact view reference. Choose a complete reference set.');
     let preservation: Awaited<ReturnType<typeof compositeGarment>>['report'] | undefined;
     let prepared: { ref: Awaited<ReturnType<typeof referencePixels>>; mask: Buffer; canvasUrl:string; maskUrl:string } | undefined;
     if (locked) {
@@ -410,11 +405,11 @@ async function renderShot(req: Request, body: any): Promise<Response> {
       url = result.images?.[0]?.url;
     }
     if (!url) throw new Error("Image model returned no image");
-    const protectedInput = simplePrepared || prepared;
+    const protectedInput = prepared;
     if(protectedInput) {
       const response=await fetch(url);
       if(!response.ok)throw Error('Generated garment could not be loaded.');
-      const composed=await compositeGarment(protectedInput.ref,Buffer.from(await response.arrayBuffer()),protectedInput.mask,{matchSeam:!simplePrepared});
+      const composed=await compositeGarment(protectedInput.ref,Buffer.from(await response.arrayBuffer()),protectedInput.mask);
       url=await uploadToFal(new Blob([Uint8Array.from(composed.png)],{type:'image/png'}),'garment-only.png');
       // Verify the hosted delivery too. Never expose the unverified generated frame.
       const hosted=await fetch(url,{cache:'no-store'});
