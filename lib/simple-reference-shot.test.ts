@@ -22,6 +22,7 @@ describe('simple garment swap',()=>{
   expect(shot.anchored).toBe(true);
   expect(shot.prompt).toContain('Image 3 is this same garment already rendered on the front view');
   expect(shot.prompt).toContain('one single layer with one hem');
+  expect(shot.prompt).toContain('image 2 remains the authority for construction and small details');
   expect(shot.prompt).not.toContain('sole garment-color reference');
  });
  it.each(['side','full'] as const)('%s without an anchor gets only its base and front garment',view=>{
@@ -124,4 +125,27 @@ describe('simple garment swap',()=>{
   expect(out.subarray(40*width*4)).toEqual(clean.subarray(40*width*4));
   expect(report.changedProtectedPixels).toBe(0);
  });
+});
+
+// Contrast thread is a product feature, even when styling/jewelry is removed.
+it.each(['front','side','back','full'] as const)('retains source construction authority for %s',view=>{
+ const shot=simpleReferenceShot({...base,view,anchorImageUrl:'https://generated/front.png'});
+ expect(shot.prompt).toContain('never replace contrasting thread with fabric-colored stitching');
+ expect(shot.prompt).toContain('Removing styling layers or jewelry must not remove garment stitching');
+ expect(shot.prompt).toContain('restore the detail from image 2 instead of copying that omission');
+});
+it('Celine 3 contour leaves neckline contrast stitching completely unchanged',async()=>{
+ const source=fs.readFileSync('public/models/studio 102/front.png');
+ const ref=await referencePixels(source),mask=simpleFaceMask(ref,'/models/studio 102/front.png','front','crop')!;
+ // The affected visible neckline spans below y=420 in the 1024x1536 output.
+ // Test the more conservative entire garment area from the reviewed boundary.
+ const boundary=presets['/models/studio 102/front.png'].garmentBoundaryY;
+ expect(mask.subarray(boundary*ref.width).every(a=>a===255)).toBe(true);
+ const candidate=Buffer.from(ref.data);
+ for(let y=420;y<426;y++)for(let x=480;x<660;x++)candidate.set([232,90,155,255],(y*ref.width+x)*4);
+ const raw=await sharp(candidate,{raw:{width:ref.width,height:ref.height,channels:4}}).png().toBuffer();
+ const composed=await compositeGarment(ref,raw,mask,{matchSeam:false});
+ const pixels=await sharp(composed.png).ensureAlpha().raw().toBuffer();
+ expect(pixels.subarray(boundary*ref.width*4).equals(candidate.subarray(boundary*ref.width*4))).toBe(true);
+ expect(composed.report.changedProtectedPixels).toBe(0);
 });
