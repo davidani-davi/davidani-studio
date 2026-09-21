@@ -102,7 +102,7 @@ describe('simple garment swap',()=>{
   const ref=await referencePixels(fs.readFileSync('public'+path));
   const mask=simpleFaceMask(ref,path,'front','crop')!;
   expect(ref.sha256).toBe(preset.sha256);
-  expect(mask.subarray(0,(preset.protectedRows-preset.transitionRows)*ref.width).every(n=>n===0)).toBe(true);
+  expect(mask.subarray(0,(preset.protectedRows-preset.transitionRows)*ref.width).some(n=>n===0)).toBe(true);
   expect(mask.subarray(preset.protectedRows*ref.width).every(n=>n===255)).toBe(true);
   expect(mask[mask.length-1]).toBe(255);
  });
@@ -117,6 +117,9 @@ describe('shoulder ghost regression',()=>{
    const i=(y*width+x)*4;
    source[i]=x%4<2?240:20;source[i+1]=180;source[i+2]=210;
   }
+  // An actual foreground head, separated from the neutral backdrop.
+  for(let y=3;y<boundary-4;y++)for(let x=24;x<40;x++)source.set([120,70,50,255],(y*width+x)*4);
+  source.set([255,255,255,255],(10*width+30)*4); // enclosed light facial highlight is not backdrop
   const ref=await referencePixels(await sharp(source,{raw:{width,height,channels:4}}).png().toBuffer());
   const generated=await sharp({create:{width,height,channels:4,background:'#303030'}}).png().toBuffer();
   const preset={width,height,sha256:ref.sha256,protectedRows:boundary,transitionRows:4};
@@ -125,10 +128,22 @@ describe('shoulder ghost regression',()=>{
   const out=await sharp(png).ensureAlpha().raw().toBuffer();
   const clean=await sharp(generated).ensureAlpha().raw().toBuffer();
   expect(out.subarray(boundary*width*4)).toEqual(clean.subarray(boundary*width*4));
-  expect(out.subarray(0,(boundary-4)*width*4)).toEqual(source.subarray(0,(boundary-4)*width*4));
+  for(let y=3;y<boundary-4;y++)expect(out.subarray((y*width+24)*4,(y*width+40)*4)).toEqual(source.subarray((y*width+24)*4,(y*width+40)*4));
+  // Background comes from one continuous provider image, above AND below the cut.
+  for(let y=0;y<height;y++)expect(out.subarray(y*width*4,y*width*4+4)).toEqual(clean.subarray(y*width*4,y*width*4+4));
   expect(report.changedProtectedPixels).toBe(0);
-  expect(mask[30*width]).toBeGreaterThan(0);
-  expect(mask[30*width]).toBeLessThan(255);
+  expect(mask[30*width+32]).toBeGreaterThan(0);
+  expect(mask[30*width+32]).toBeLessThan(255);
+ });
+ it('does not classify dark or saturated edges as neutral studio backdrop',async()=>{
+  for(const background of ['#202020','#ef3030']) {
+   const width=32,height=64;
+   const ref=await referencePixels(await sharp({create:{width,height,channels:4,background}}).png().toBuffer());
+   const preset={width,height,sha256:ref.sha256,protectedRows:20,transitionRows:4};
+   const mask=simpleFaceMask(ref,'/reviewed/front.png','front','crop',preset)!;
+   expect(mask.subarray(0,16*width).every(v=>v===0)).toBe(true);
+   expect(mask.subarray(20*width).every(v=>v===255)).toBe(true);
+  }
  });
  it('releases Celine 2 shoulder before the original patterned blouse starts',async()=>{
   const ref=await referencePixels(fs.readFileSync('public/models/studio 100/front.png'));

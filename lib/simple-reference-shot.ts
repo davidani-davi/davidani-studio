@@ -89,5 +89,44 @@ export function simpleFaceMask(ref: ReferencePixels, publicPath: string, view: s
     const t=Math.min(1,(y-start)/blend);
     mask.fill(Math.round(255*t*t*(3-2*t)),y*ref.width,(y+1)*ref.width);
   }
+  releaseBackdrop(ref, mask, preset.protectedRows);
   return mask;
+}
+
+/** Feather only within border-connected neutral backdrop, never into the face
+ * or below the reviewed clothing boundary. Avoid restoring a full-width strip. */
+function releaseBackdrop(ref: ReferencePixels, mask: Buffer, rows: number) {
+  const w=ref.width,h=Math.min(rows,ref.height),n=w*h;
+  const eligible=new Uint8Array(n),background=new Uint8Array(n),queue=new Int32Array(n);
+  const band=Math.max(1,Math.round(w*.02));
+  for(let y=0;y<h;y++) {
+    const left=[0,0,0],right=[0,0,0];
+    for(let x=0;x<band;x++)for(let c=0;c<3;c++) {
+      left[c]+=ref.data[(y*w+x)*4+c]/band;
+      right[c]+=ref.data[(y*w+w-1-x)*4+c]/band;
+    }
+    const neutral=(v:number[])=>Math.min(...v)>150 && Math.max(...v)-Math.min(...v)<65;
+    if(!neutral(left)||!neutral(right))continue;
+    for(let x=0;x<w;x++) {
+      const t=x/Math.max(1,w-1),i=y*w+x;
+      if([0,1,2].every(c=>Math.abs(ref.data[i*4+c]-(left[c]*(1-t)+right[c]*t))<24))eligible[i]=1;
+    }
+  }
+  let head=0,tail=0;
+  const add=(i:number)=>{if(eligible[i]&&!background[i]){background[i]=1;queue[tail++]=i;}};
+  for(let y=0;y<h;y++){add(y*w);add(y*w+w-1);}
+  while(head<tail){const i=queue[head++],x=i%w;if(x)add(i-1);if(x<w-1)add(i+1);if(i>=w)add(i-w);if(i+w<n)add(i+w);}
+  const distance=new Float32Array(n);
+  for(let i=0;i<n;i++)distance[i]=background[i]?w+h:0;
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++) {
+    const i=y*w+x;if(x)distance[i]=Math.min(distance[i],distance[i-1]+1);if(y)distance[i]=Math.min(distance[i],distance[i-w]+1);
+  }
+  for(let y=h-1;y>=0;y--)for(let x=w-1;x>=0;x--) {
+    const i=y*w+x;if(x<w-1)distance[i]=Math.min(distance[i],distance[i+1]+1);if(y<h-1)distance[i]=Math.min(distance[i],distance[i+w]+1);
+  }
+  const feather=Math.max(4,Math.round(w*.04)),guard=Math.max(2,Math.round(w*.008));
+  for(let i=0;i<n;i++)if(background[i]) {
+    const t=Math.max(0,Math.min(1,(distance[i]-guard)/feather));
+    mask[i]=Math.max(mask[i],Math.round(255*t*t*(3-2*t)));
+  }
 }
