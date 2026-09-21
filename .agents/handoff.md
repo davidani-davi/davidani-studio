@@ -1,15 +1,13 @@
-# Handoff — 2026-09-21, Codex
-Branch codex/simple-sleeve-fidelity; based main15350d9.
-- Fixed Simple sleeve drift on Celine3 / DET62252 Blue.
-- Explicit sleeve/cuff/skin-coverage instructions apply even without a listing title.
-- Long sleeves reach wrists; short/sleeveless preserved when source shows those.
-- Found/fixed GPT transport mismatch: prompt described image3 front anchor but payload omitted it.
-- simpleReferenceShot now forwards same ordered references to GPT and Nano.
-- Actual input live test: front/side/back generated with GPT2.5 + same contour composition.
-- All3 visually reviewed: wrist cuffs, pink neckline stitching,0 changed protected pixels.
-- Raw + final + request/report evidence: Faire repo output/simple-sleeve-fix.
-- Reproduce: scripts/verify-simple-sleeves.mts PRODUCT OUTPUT (FAL_KEY via env/.env.local).
-- npm test1152/84files passed; production webpack build passed.
-- NEXT: merge/deploy PR and verify production; then user Redo front first if its sleeves are pushed up,
-  followed by side/back. No extension update needed.
-- Face masks/compositing unchanged; never restore horizontal row fallback/native-face PR15.
+# Handoff — 2026-09-21 13:20 PDT, Codex
+Branch codex/set-pants-length; base dc89035; implementation in this commit.
+- Simple set swap explicitly replaces BOTH top and bottoms; source product controls trouser length.
+- Shorts references cannot dictate hems/exposed legs; cropped long pants continue outside frame.
+- Applies across front/side/back/full; genuine shorts/cropped pants remain source-driven.
+- Live DTP68208 Blue ERP flatlay + Celine1 studio98: all4 visually reviewed, long pants retained.
+- Full includes real pant hems/braided trim; protected pixel changes0 in all4.
+- Evidence Faire repo output/set-length-fix; reproduce scripts/verify-simple-set-length.mts.
+- npm test:1157 passed/84files; production webpack build passed.
+- NEXT: merge PR, verify production Ready; then redo front before remaining views.
+- No mask/compositor changes; keep reviewed source-bound contour workflow.
+- Celine3 full rebuild candidate was REJECTED; do NOT publish it. Find a different actual shoot
+  with naturally upright head for that separate pending task. Earlier front/side/back accepted.
