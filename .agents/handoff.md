@@ -1,15 +1,14 @@
 # Handoff — 2026-09-21, Codex
-Branch codex/simple-sleeve-fidelity; based main15350d9.
-- Fixed Simple sleeve drift on Celine3 / DET62252 Blue.
-- Explicit sleeve/cuff/skin-coverage instructions apply even without a listing title.
-- Long sleeves reach wrists; short/sleeveless preserved when source shows those.
-- Found/fixed GPT transport mismatch: prompt described image3 front anchor but payload omitted it.
-- simpleReferenceShot now forwards same ordered references to GPT and Nano.
-- Actual input live test: front/side/back generated with GPT2.5 + same contour composition.
-- All3 visually reviewed: wrist cuffs, pink neckline stitching,0 changed protected pixels.
-- Raw + final + request/report evidence: Faire repo output/simple-sleeve-fix.
-- Reproduce: scripts/verify-simple-sleeves.mts PRODUCT OUTPUT (FAL_KEY via env/.env.local).
-- npm test1152/84files passed; production webpack build passed.
-- NEXT: merge/deploy PR and verify production; then user Redo front first if its sleeves are pushed up,
-  followed by side/back. No extension update needed.
-- Face masks/compositing unchanged; never restore horizontal row fallback/native-face PR15.
+Branch codex/celine3-full-rebuild; based main dc89035.
+- Rebuilt Celine3 full reference after user rejected original head proportions.
+- Built-in imagegen edited actual ERP full-body photo using approved Celine3 front identity.
+- Saved candidate in Faire output/celine3-full-rebuild/reference.png.
+- Live GPT2.5 Simple test with actual DET62252 Blue, new candidate + reviewed candidate contour.
+- Full test visually reviewed: more upright head, wrist sleeves, pink stitching,0 changed protected pixels.
+- Raw/final/prompt/contour/report in Faire output/celine3-full-rebuild.
+- Candidate NOT installed in live library yet; user is final visual judge for new face/reference.
+- After acceptance: replace only public/models/studio102/full.png (actual path contains space),
+  update exact hash/contour in simple-contour-presets.json; inspect aliases and rerun tests/build.
+- Do not change accepted front/side/back. Preserve source-bound validation and contour workflow.
+- Production remains sleeve fix PR18/main dc89035, no pending code bugfix deployment.
+- scripts/verify-celine-rebuild.mts reproduces candidate test with product/out args and env FAL_KEY.
