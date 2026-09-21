@@ -14,7 +14,12 @@ Branch codex/simple-seam-release-handoff; production/main code 7d9a0c9 (PR #14).
 - Production deployed; fresh DET62252 Simple render verified corrected mask SHA,
   unchanged protected pixels and hosted PNG SHA; visually no full-width background seam.
 - Production evidence: Faire output/simple-neck-seam-fix/production.png + production.json.
-- Existing saved results need Redo; backend-only fix, no extension reinstall.
+- Followup: user Redo exposed remaining foreground neck/hair seam, 5-row transition.
+- Vision Playful boots FRONT live catalog changed end353/blend5 to end384/blend36.
+- Reviewed safe neck/hair area; face retained; generated clothing below384 unchanged.
+- Fresh production corrected mask/face/PNG SHA verified. No backend code change.
+- Evidence in Faire output/simple-neck-seam-followup; local install metadata synced.
+- Do not revert this reference to23%/0.3%; now25%/2.34375%.
 - Separate pending work: more Simple pose sets MUST use actual Davi&Dani photoshoot bases.
 - Faire output/reference-sets/photoshoot-bases-20260920 has 12 unchanged originals.
 - User has not answered whether to apply approved Vision/Celine identities or original models.
