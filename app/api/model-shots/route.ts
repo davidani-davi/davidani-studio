@@ -210,7 +210,16 @@ export async function POST(req: Request) {
 async function renderShot(req: Request, body: any): Promise<Response> {
   if (body.editMode === 'direct') {
     let input;
-    try { input = directOutfitInput(body); }
+    try {
+      input = directOutfitInput(body);
+      if (input.poseMode === 'reference') {
+        const models = await listAllHumanModels();
+        const framing = framingFor(shotCategory(body.known), body.view, hemFor(body.known));
+        const reference = viewReference(models, input.humanModelId, input.poseId, body.view, framing);
+        input.framing = framing;
+        input.poseReference = new URL(reference.publicPath, req.url).toString();
+      }
+    }
     catch (error: any) { return json({ok:false,error:error.message},400); }
     try { return json(await renderDirectOutfit(input,sanitizeOperatorNote(body.note))); }
     catch (error: any) { return json({ok:false,view:body.view,error:error.message},502); }

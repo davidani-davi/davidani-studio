@@ -10,6 +10,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
  * check is the only thing between a stray request and a paid render.
  */
 
+vi.mock('@/lib/direct-outfit', async () => ({...await vi.importActual<any>('@/lib/direct-outfit'),
+  renderDirectOutfit:vi.fn(async input=>({ok:true,poseMode:input.poseMode,poseReference:input.poseReference,framing:input.framing}))}));
 const ORIGINAL = { ...process.env };
 // This suite asserts the bundled catalog, independent of local admin edits.
 vi.mock('@/lib/model-admin', async () => ({...await vi.importActual<any>('@/lib/model-admin'),readCatalogChanges:async()=>[]}));
@@ -214,4 +216,19 @@ describe("/api/model-shots async tasks", () => {
     expect(missing.status).toBe(404);
     vi.doUnmock("next/server");
   });
+});
+
+
+describe('direct reference routing',()=>{
+ it('resolves the selected exact view even when its crop must extend for a set',async()=>{
+  process.env.MODEL_SHOTS_TOKEN='test';const {POST}=await load();
+  const body={editMode:'direct',poseMode:'reference',view:'side',identityId:'vision',humanModelId:'studio 98',poseId:'studio 98',outfitSources:{front:'https://system.davidani.com/front.jpg'},known:{category:'set'}};
+  const response=await POST(req({'X-DDTO-TOKEN':'test'},body));const result=await response.json();
+  expect(response.status).toBe(200);expect(result.poseMode).toBe('reference');expect(result.framing).toBe('full');expect(result.poseReference).toMatch(/side/);
+ });
+ it('rejects a missing selected pose without spending a render',async()=>{
+  process.env.MODEL_SHOTS_TOKEN='test';const {POST}=await load();
+  const response=await POST(req({'X-DDTO-TOKEN':'test'},{editMode:'direct',poseMode:'reference',view:'front',identityId:'vision',humanModelId:'missing',poseId:'missing',outfitSources:{front:'https://system.davidani.com/front.jpg'}}));
+  expect(response.status).toBe(400);expect((await response.json()).error).toMatch(/Unknown reference/);
+ });
 });
