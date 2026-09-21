@@ -22,3 +22,26 @@ describe('direct outfit contract',()=>{
   expect(p.imageUrls).toHaveLength(3);expect(p.prompt).not.toContain('Image 4');
  });
 });
+
+describe('customizable direct pose references',()=>{
+ const body={view:'side',identityId:'vision',poseMode:'reference',humanModelId:'custom-vision',poseId:'pose-1',engine:'gpt25',outfitSources:{front:sources.front,back:sources.back},known:{title:'Floral pants set'}};
+ it('generates missing angles from garment evidence, identity and the requested pose without transforms',()=>{
+  const input=directOutfitInput({...body,anchorImageUrl:'https://fal.media/approved.png'});
+  input.poseReference='https://store.public.blob.vercel-storage.com/side.png';input.framing='full';
+  const p=directOutfitParams(input,['face','profile'],'relaxed hands');
+  expect(p.imageUrls).toEqual([sources.front,'face','profile',input.poseReference,sources.back,'https://fal.media/approved.png']);
+  expect(p.prompt).toContain('head to toe');expect(p.prompt).toContain('infer only necessary');expect(p.prompt).toContain('approved front');expect(p.prompt).toContain('Floral pants set');
+  expect(p.maskUrl).toBeUndefined();expect(p.outputSize).toBeNull();expect(p.verbatimPrompt).toBe(true);
+ });
+ it('validates pose selection, garment front, anchor and server-resolved reference',()=>{
+  expect(()=>directOutfitInput({...body,poseMode:'bad'})).toThrow(/pose source/);
+  expect(()=>directOutfitInput({...body,poseId:''})).toThrow(/pose reference/);
+  expect(()=>directOutfitInput({...body,outfitSources:{back:sources.back}})).toThrow(/front garment/);
+  expect(()=>directOutfitInput({...body,anchorImageUrl:'file:///tmp/x'})).toThrow(/approved front/);
+  expect(()=>directOutfitParams(directOutfitInput(body),['face','profile'])).toThrow(/pose reference/);
+ });
+ it('uses exact supplied back without inferring it and retains a face-free rear view',()=>{
+  const input=directOutfitInput({...body,view:'back'});input.poseReference='https://example.com/back.png';input.framing='crop';
+  const p=directOutfitParams(input,['face','profile']);expect(p.imageUrls[0]).toBe(sources.back);expect(p.prompt).not.toContain('infer only necessary');expect(p.prompt).toContain('true rear view');expect(p.prompt).toContain('head to mid-thigh');
+ });
+});
