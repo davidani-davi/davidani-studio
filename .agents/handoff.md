@@ -1,5 +1,5 @@
 # Handoff — 2026-09-21, Codex
-Branch codex/simple-background-seam; base 5e01b25; changes in this commit.
+Branch codex/simple-seam-release-handoff; production/main code 7d9a0c9 (PR #14).
 - User supplied DET62252 Black Simple result with horizontal neck-level background seam.
 - Confirmed source is clean; result exactly copies full-width rows through 348, edge at 350.
 - Simple mask now releases border-connected neutral studio backdrop above reviewed cut.
@@ -11,7 +11,10 @@ Branch codex/simple-background-seam; base 5e01b25; changes in this commit.
 - Live DET62252/Vision same-provider A/B saved in Faire output/simple-neck-seam-fix.
 - Central face unchanged byte-for-byte; everything below row 353 unchanged.
 - New outer background exactly matches continuous provider output across prior boundary.
-- Next: merge/deploy backend and verify production Simple render before reporting fixed.
+- Production deployed; fresh DET62252 Simple render verified corrected mask SHA,
+  unchanged protected pixels and hosted PNG SHA; visually no full-width background seam.
+- Production evidence: Faire output/simple-neck-seam-fix/production.png + production.json.
+- Existing saved results need Redo; backend-only fix, no extension reinstall.
 - Separate pending work: more Simple pose sets MUST use actual Davi&Dani photoshoot bases.
 - Faire output/reference-sets/photoshoot-bases-20260920 has 12 unchanged originals.
 - User has not answered whether to apply approved Vision/Celine identities or original models.
