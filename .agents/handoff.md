@@ -1,5 +1,6 @@
 # Handoff — 2026-09-21, Codex
-Branch codex/simple-sleeve-fidelity; based main15350d9.
+Branch codex/simple-sleeve-fidelity; fixc959243; PR18 mergedmain dc89035.
+- Production dpl_4nsHsGdhErhxjaGVWkTFoM7xfnRK verified Ready.
 - Fixed Simple sleeve drift on Celine3 / DET62252 Blue.
 - Explicit sleeve/cuff/skin-coverage instructions apply even without a listing title.
 - Long sleeves reach wrists; short/sleeveless preserved when source shows those.
@@ -10,6 +11,6 @@ Branch codex/simple-sleeve-fidelity; based main15350d9.
 - Raw + final + request/report evidence: Faire repo output/simple-sleeve-fix.
 - Reproduce: scripts/verify-simple-sleeves.mts PRODUCT OUTPUT (FAL_KEY via env/.env.local).
 - npm test1152/84files passed; production webpack build passed.
-- NEXT: merge/deploy PR and verify production; then user Redo front first if its sleeves are pushed up,
+- NEXT: user Redo front first if its sleeves are pushed up,
   followed by side/back. No extension update needed.
 - Face masks/compositing unchanged; never restore horizontal row fallback/native-face PR15.
