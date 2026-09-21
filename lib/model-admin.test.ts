@@ -43,11 +43,9 @@ describe('admin reference catalog',()=>{
   expect(applyCatalogChanges(base,[del]).find(m=>m.id==='studio 1')).toBeUndefined();
   expect(applyCatalogChanges(base,[del,event({kind:'pose',patch:{deleted:false}})])[0].poses[0].views.front?.publicPath).toBe('/front.jpg');
  });
- it('uses photo-specific reviewed protection and rejects changed pixels',()=>{
+ it('legacy row protection cannot bypass a new contour review',()=>{
   const protection={width:2,height:4,sha256:'same',protectedRows:2,transitionRows:1};
   const ref={width:2,height:4,sha256:'same',data:Buffer.alloc(32)};
-  expect([...simpleFaceMask(ref,'https://store/new.png','front','crop',protection)!]).toEqual([0,0,0,0,255,255,255,255]);
-  expect(simpleFaceMask(ref,'https://store/back.png','back','crop',protection)).toEqual(simpleFaceMask(ref,'https://store/new.png','front','crop',protection));
-  expect(()=>simpleFaceMask({...ref,sha256:'changed'},'/new','front','crop',protection)).toThrow('changed');
+  for(const view of ['front','back'])expect(()=>simpleFaceMask(ref,'https://store/new.png',view,'crop',protection)).toThrow('contour review');
  });
 });

@@ -1,26 +1,17 @@
-# Handoff — 2026-09-21, Codex
-Branch codex/simple-seam-release-handoff; production/main code 7d9a0c9 (PR #14).
-- User supplied DET62252 Black Simple result with horizontal neck-level background seam.
-- Confirmed source is clean; result exactly copies full-width rows through 348, edge at 350.
-- Simple mask now releases border-connected neutral studio backdrop above reviewed cut.
-- Feather stays outside foreground; original face remains protected, no old shoulder restored.
-- Dark/saturated edge backgrounds retain conservative legacy protection (not segmented).
-- Regression checks: continuous provider backdrop, exact face including enclosed highlights,
-  unchanged generated clothing, reviewed asset hashes, dark/coloured backdrop fallback.
-- 1,036 tests / 83 files passed; production webpack build passed.
-- Live DET62252/Vision same-provider A/B saved in Faire output/simple-neck-seam-fix.
-- Central face unchanged byte-for-byte; everything below row 353 unchanged.
-- New outer background exactly matches continuous provider output across prior boundary.
-- Production deployed; fresh DET62252 Simple render verified corrected mask SHA,
-  unchanged protected pixels and hosted PNG SHA; visually no full-width background seam.
-- Production evidence: Faire output/simple-neck-seam-fix/production.png + production.json.
-- Followup: user Redo exposed remaining foreground neck/hair seam, 5-row transition.
-- Vision Playful boots FRONT live catalog changed end353/blend5 to end384/blend36.
-- Reviewed safe neck/hair area; face retained; generated clothing below384 unchanged.
-- Fresh production corrected mask/face/PNG SHA verified. No backend code change.
-- Evidence in Faire output/simple-neck-seam-followup; local install metadata synced.
-- Do not revert this reference to23%/0.3%; now25%/2.34375%.
-- Separate pending work: more Simple pose sets MUST use actual Davi&Dani photoshoot bases.
-- Faire output/reference-sets/photoshoot-bases-20260920 has 12 unchanged originals.
-- User has not answered whether to apply approved Vision/Celine identities or original models.
-- No new pose sets published; synthetic plain-outfit attempt rejected by user.
+# Handoff — 2026-09-21 08:57 PDT, Codex
+Branch codex/simple-contour-review; previous ec9dddf; universal contour integration in this commit.
+- David approved contour result and explicitly authorized reviewing/deploying whole library.
+- Simple now uses lib/simple-contour-presets.json:151 exact source reviews.
+-84 face/hair contours +67 reviewed headless assets. All151 checked against live catalog.
+- Each contour bound to decoded SHA256 + dimensions. Unknown/replaced refs fail before spend.
+- Back views now reviewed too; no horizontal row fallback or garment exposure matching.
+- Old FaceProtection row sliders removed from admin/identity import flow.
+- New uploads save normally but require separate contour review before Simple generation.
+- Tests:1,142/84files pass; npm run build -- --webpack passes.
+- Full visual/brightness stress audit in Faire output/contour-library-audit.
+- Every protected pixel unchanged; feather ends before reviewed source garment boundary.
+- Next: PR/merge/deploy, verify live Celine + Vision four-view runs and headless pass-through.
+- Production verification still pending at commit time; do not claim live until checked.
+- Existing renders keep old seams; user must Redo. No extension reinstall needed.
+- PR15 native face drift approach CLOSED/rejected; never deploy that branch/UI copy.
+- More pose sets must come from actual Davi&Dani photoshoots, not invented poses.

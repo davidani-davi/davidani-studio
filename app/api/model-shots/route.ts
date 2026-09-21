@@ -355,7 +355,7 @@ async function renderShot(req: Request, body: any): Promise<Response> {
     const simpleInput = simple ? simpleReferenceShot({ view, referenceUrl, garmentImageUrls, category, framing, color: typeof known.color === 'string' ? known.color : undefined, note, anchorImageUrl, garmentName: typeof known.title === 'string' ? known.title : undefined }) : undefined;
     if (simpleInput) { input.prompt = simpleInput.prompt; input.image_urls = simpleInput.image_urls; }
     let simplePrepared: { ref: Awaited<ReturnType<typeof referencePixels>>; mask: Buffer } | undefined;
-    if (simple && ((framing !== 'low' && view !== 'back') || reference.protection)) {
+    if (simple) {
       if (reference.reframed) throw Error('Simple garment swap needs an exact view reference. Choose a complete reference set.');
       const response = await fetch(referenceUrl, {cache:'no-store'});
       if (!response.ok) throw Error('Reference could not be loaded.');
@@ -425,6 +425,7 @@ async function renderShot(req: Request, body: any): Promise<Response> {
     return json({ ok: true, view, url, prompt: input.prompt,
       modelId: body.engine === "tryon" ? undefined : modelId,
       engine: body.engine === "tryon" ? "tryon" : nanoReference ? "nano" : modelId === "gpt-image-25" ? "gpt25" : "gpt2",
+      faceProtection: simple ? (simplePrepared ? 'reviewed-contour-v1' : 'reviewed-no-head-v1') : undefined,
       resolution: outputResolution, editMode: simple ? "simple" : faceLocked ? "face-locked" : locked ? "garment-only" : "native", preservation, humanModelId, poseId, assigned, category, hem, framing,
       reference: { ...reference, url: referenceUrl },
       garmentBackInferred: view === "back" && garmentImageUrls.length < 2,

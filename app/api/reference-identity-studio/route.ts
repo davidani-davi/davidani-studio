@@ -45,9 +45,9 @@ export async function POST(req:Request){
       for(const view of b.views as IdentityView[]){
         const task=await readShotTask(identityTaskId(set.id,view));
         if(!set.inputs[view]||task?.status!=='done'||!task.result?.imageUrl||task.result?.persistenceWarning)throw Error(`The ${view} image is not ready to save.`);
-        const protection=b.protection?.[view];
-        if(view!=='back'&&(b.reviewed!==true||typeof protection!=='number'))throw Error('Review the face protection line on each selected image before saving.');
-        photos[view]=await inspectAdminPhoto(String(task.result.imageUrl),protection,b.blends?.[view]);
+        if(b.reviewed!==true)throw Error('Review each selected reference photo before saving.');
+        // Saving identity/pose approval cannot authorize a horizontal Simple mask.
+        photos[view]=await inspectAdminPhoto(String(task.result.imageUrl));
       }
       await appendCatalogChange({kind:'model',modelId,create:true,patch:{name:b.name.trim(),character:set.identity.name,pose:set.name},referenceSet:{poseId:`pose-${set.id}`,label:set.name,photos}});
       return json({ok:true,modelId});
