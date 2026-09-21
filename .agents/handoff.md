@@ -1,5 +1,6 @@
 # Handoff — 2026-09-21, Codex
-Branch codex/contrast-stitching-fidelity; based on main8a1be70.
+Branch codex/contrast-stitching-fidelity; implementation43536a9.
+- PR17 merged main15350d9; production dpl_2XV7QN4QLs7Xb6Djp1pi199wSzTs Ready.
 - User reported DET62252 Blue losing pink neckline stitching on Celine3 Simple swap.
 - Traced Simple prompt: generic construction wording; anchor could override product details.
 - Updated contrast thread/seam/trim fidelity, product image remains construction authority.
@@ -8,6 +9,6 @@ Branch codex/contrast-stitching-fidelity; based on main8a1be70.
 - Original run raw provider image was not persisted; cannot compare that specific raw/final pair.
 - npm test:1147 passed/84files; production webpack build passed.
 - This strengthens prompting; visual success on a new real render remains unverified.
-- Next: merge/deploy PR, then user Redo Blue front; check pink stitching before remaining views.
+- Next: user Redo Blue front; check pink stitching before remaining views. No extension update.
 - No reference assets/face contours/compositor altered. Never restore row fallback/native-face PR15.
 - Prior universal contour audit remains live (PR16/main8a1be70); evidence in Faire repo.
