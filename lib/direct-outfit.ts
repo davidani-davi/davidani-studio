@@ -1,4 +1,5 @@
 import fs from 'node:fs/promises';
+import { renderProtectedRealShoot } from './real-shoot-protection';
 import path from 'node:path';
 import sharp from 'sharp';
 import { createHash } from 'node:crypto';
@@ -66,22 +67,27 @@ export async function renderDirectOutfit(input: ReturnType<typeof directOutfitIn
     return uploadToFal(new Blob([Uint8Array.from(bytes)],{type:'image/png'}),path.basename(file));
   }));
   const params=directOutfitParams(input,refs,note);
-  const result=await generate(params);
-  const providerUrl=result.images[0]?.url;
+  const protectedResult=input.realShoot ? await renderProtectedRealShoot(params) : undefined;
+  const result=protectedResult ? undefined : await generate(params);
+  const providerUrl=protectedResult?.providerUrl || result?.images[0]?.url;
   if(!providerUrl)throw Error('The generator returned no image.');
-  const response=await fetch(providerUrl);
-  if(!response.ok)throw Error('Could not read generated image.');
-  const bytes=Buffer.from(await response.arrayBuffer());
+  let bytes=protectedResult?.bytes;
+  if(!bytes){
+    const response=await fetch(providerUrl);
+    if(!response.ok)throw Error('Could not read generated image.');
+    bytes=Buffer.from(await response.arrayBuffer());
+  }
   const metadata=await sharp(bytes,{limitInputPixels:20_000_000}).metadata();
   if(metadata.format!=='png')throw Error('Direct outfit edit requires native PNG output.');
   const url=await uploadToFal(new Blob([Uint8Array.from(bytes)],{type:'image/png'}),'direct-outfit.png');
   const hosted=await fetch(url);
   if(!hosted.ok || !Buffer.from(await hosted.arrayBuffer()).equals(bytes))throw Error('Original output verification failed.');
-  return {ok:true,view:input.view,url,providerUrl,requestId:result.requestId,editMode:input.realShoot?'real-shoot':'direct',
+  return {ok:true,view:input.view,url,providerUrl,requestId:protectedResult?.requestId || result?.requestId,editMode:input.realShoot?'real-shoot':'direct',
     modelId:input.modelId,engine:input.modelId==='gpt-image'?'gpt2':input.modelId==='gpt-image-25'?'gpt25':'nano',
     humanModelId:input.poseMode === 'reference' ? input.humanModelId : `face:${input.identityId}`,identityId:input.identityId,poseMode:input.poseMode,poseId:input.poseId,
     resolution:`${metadata.width}×${metadata.height}`,nativeDimensions:{width:metadata.width,height:metadata.height},
     prompt:params.prompt,inputImageUrls:params.imageUrls,sourceImageUrl:input.sources[input.view],
     outputSha256:createHash('sha256').update(bytes).digest('hex'),anchored:input.poseMode === 'reference' && Boolean(input.anchorImageUrl),garmentBackInferred:input.poseMode === 'reference' && input.view === 'back' && !input.sources.back,garmentViewInferred:input.poseMode === 'reference' && !input.sources[input.view],
-    restore:{applied:false},photoFinish:{method:'native',applied:false},corrections:[]};
+    garmentProtection:protectedResult?.protection,stagePrompts:protectedResult?.stagePrompts,
+    restore:{applied:false},photoFinish:{method:input.realShoot?'garment-protected':'native',applied:input.realShoot},corrections:[]};
 }
