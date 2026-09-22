@@ -13,12 +13,15 @@ export type DirectIdentity = keyof typeof DIRECT_IDENTITIES;
 export function directOutfitInput(body: any) {
   if (!['front','side','back','full'].includes(body.view)) throw Error('Choose a valid outfit view.');
   if (!Object.hasOwn(DIRECT_IDENTITIES, body.identityId)) throw Error('Choose Vision or Celine for Direct outfit edit.');
-  const poseMode = body.poseMode ?? 'source';
+  const realShoot = body.editMode === 'real-shoot';
+  const poseMode = realShoot ? 'source' : body.poseMode ?? 'source';
   if (!['source','reference'].includes(poseMode)) throw Error('Choose a valid pose source.');
   if (poseMode === 'reference' && (typeof body.humanModelId !== 'string' || !body.humanModelId || body.humanModelId === 'auto' || typeof body.poseId !== 'string' || !body.poseId)) throw Error('Choose a pose reference set.');
   const sources = body.outfitSources;
   if (!sources || typeof sources !== 'object' || Array.isArray(sources)) throw Error('Choose matching ERP outfit photos.');
   const valid = (u: unknown): u is string => typeof u === 'string' && /^https:\/\//.test(u) && u.length < 4096;
+  const shootReferences = realShoot ? body.shootReferences : undefined;
+  if (realShoot && (!shootReferences || !valid(shootReferences.color) || (shootReferences.detail && !valid(shootReferences.detail)))) throw Error('Choose a new-color photo and a valid optional fabric close-up.');
   for (const [view,url] of Object.entries(sources)) {
     if (!['front','side','back','full'].includes(view) || !valid(url)) throw Error('Invalid ERP outfit photo.');
   }
@@ -29,10 +32,16 @@ export function directOutfitInput(body: any) {
   if (!['gpt-image','gpt-image-25','nano-banana-pro'].includes(modelId) || body.engine === 'tryon') throw Error('Choose GPT or Nano for Direct outfit edit.');
   const expected = ({gpt2:'gpt-image',gpt25:'gpt-image-25',nano:'nano-banana-pro'} as Record<string,string>)[body.engine];
   if (body.engine && (!expected || expected !== modelId)) throw Error('Engine and model selections conflict.');
-  return { poseMode: poseMode as 'source'|'reference', humanModelId: body.humanModelId as string, poseId: body.poseId as string, poseReference: undefined as string | undefined, framing: 'full' as string, garmentName: String(body.known?.title || '').slice(0,300), anchorImageUrl: body.view !== 'front' ? body.anchorImageUrl as string | undefined : undefined, view: body.view as PresetView, identityId: body.identityId as DirectIdentity, sources: sources as Partial<Record<PresetView,string>>, modelId };
+  return { realShoot, shootReferences: shootReferences as {color:string;detail?:string} | undefined, poseMode: poseMode as 'source'|'reference', humanModelId: body.humanModelId as string, poseId: body.poseId as string, poseReference: undefined as string | undefined, framing: 'full' as string, garmentName: String(body.known?.title || '').slice(0,300), anchorImageUrl: body.view !== 'front' ? body.anchorImageUrl as string | undefined : undefined, view: body.view as PresetView, identityId: body.identityId as DirectIdentity, sources: sources as Partial<Record<PresetView,string>>, modelId };
 }
 export function directOutfitParams(input: ReturnType<typeof directOutfitInput>, identities: string[], note = ''): GenerateParams {
   const {view,sources,modelId}=input;
+  if (input.realShoot) {
+    const refs = input.shootReferences!;
+    const imageUrls = [sources[view]!, refs.color, ...identities, ...(refs.detail ? [refs.detail] : [])];
+    const prompt = `Edit IMAGE 1, the actual photographed ${view} view of ${input.garmentName || 'this garment'}. IMAGE 1 is the sole authority for garment construction, photographed fit, silhouette, sleeve and hem lengths, stripe/pattern scale, drape, pose, body proportions, framing, other clothing and background. Preserve these faithfully; do not reconstruct the garment around an identity portrait. IMAGE 2 is the NEW COLORWAY reference ONLY: transfer its garment colors to the corresponding fabric/pattern regions of image 1. Ignore image 2's fit, pose, body and styling. Do not transfer the old colorway from image 1. IMAGES 3 and 4 are ${DIRECT_IDENTITIES[input.identityId].label}'s face and hair identity only; ignore their clothing and pose. Match that person's facial proportions and natural hair while retaining image 1's head orientation and realistic head-to-body scale. ${view === 'back' ? 'Keep a rear-facing head face-free; do not add a face to the back.' : 'Keep identity recognizable without distorting the neck or head.'} ${refs.detail ? 'IMAGE 5 is a close-up of this same garment: use it for fabric texture, fine construction, buttons and edge finishing ONLY, never its colors or framing.' : ''} Retain photographed fabric thickness, fuzz, texture and natural folds. Preserve closures and button count, avoid duplicate buttons. Preserve exact garment length and volume, including long sleeves and long pants. Preserve other clothing and accessories from image 1. Seamless natural skin and hair boundaries; no pasted head, horizontal neck seam, collage or added text. One finished photographic image. ${note ? 'Operator correction: '+note : ''}`;
+    return {modelId,prompt,imageUrls,useDefaultReference:false,verbatimPrompt:true,outputSize:null,imageSize:{width:1024,height:1536},resolution:'1K',format:'png',numImages:1};
+  }
   if (input.poseMode === 'reference') {
     if (!input.poseReference) throw Error('Missing matching pose reference.');
     const garment = sources[view] || (view === 'back' ? sources.back : undefined) || sources.front!;
@@ -68,7 +77,7 @@ export async function renderDirectOutfit(input: ReturnType<typeof directOutfitIn
   const url=await uploadToFal(new Blob([Uint8Array.from(bytes)],{type:'image/png'}),'direct-outfit.png');
   const hosted=await fetch(url);
   if(!hosted.ok || !Buffer.from(await hosted.arrayBuffer()).equals(bytes))throw Error('Original output verification failed.');
-  return {ok:true,view:input.view,url,providerUrl,requestId:result.requestId,editMode:'direct',
+  return {ok:true,view:input.view,url,providerUrl,requestId:result.requestId,editMode:input.realShoot?'real-shoot':'direct',
     modelId:input.modelId,engine:input.modelId==='gpt-image'?'gpt2':input.modelId==='gpt-image-25'?'gpt25':'nano',
     humanModelId:input.poseMode === 'reference' ? input.humanModelId : `face:${input.identityId}`,identityId:input.identityId,poseMode:input.poseMode,poseId:input.poseId,
     resolution:`${metadata.width}×${metadata.height}`,nativeDimensions:{width:metadata.width,height:metadata.height},

@@ -45,3 +45,24 @@ describe('customizable direct pose references',()=>{
   const p=directOutfitParams(input,['face','profile']);expect(p.imageUrls[0]).toBe(sources.back);expect(p.prompt).not.toContain('infer only necessary');expect(p.prompt).toContain('true rear view');expect(p.prompt).toContain('head to mid-thigh');
  });
 });
+
+describe('real shoot new colorway',()=>{
+ const body={editMode:'real-shoot',view:'front',identityId:'celine',engine:'gpt25',outfitSources:{front:'https://image.test/real.jpg'},shootReferences:{color:'https://image.test/color.jpg',detail:'https://image.test/detail.jpg'}};
+ it('assigns real photo, color, identity and texture independent authority',()=>{
+  const input=directOutfitInput({...body,poseMode:'reference'});
+  expect(input.poseMode).toBe('source');
+  const p=directOutfitParams(input,['face','profile']);
+  expect(p.imageUrls).toEqual([body.outfitSources.front,body.shootReferences.color,'face','profile',body.shootReferences.detail]);
+  expect(p.prompt).toContain('NEW COLORWAY reference ONLY');expect(p.prompt).toContain('sole authority');expect(p.prompt).toContain('IMAGE 5');
+ });
+ it('requires color and matching photographed angle',()=>{
+  expect(()=>directOutfitInput({...body,shootReferences:{}})).toThrow(/new-color/);
+  expect(()=>directOutfitInput({...body,shootReferences:{color:'file:///x'}})).toThrow(/new-color/);
+  expect(()=>directOutfitInput({...body,shootReferences:{...body.shootReferences,detail:'file:///x'}})).toThrow(/new-color/);
+  expect(()=>directOutfitInput({...body,view:'side'})).toThrow(/side outfit/);
+ });
+ it('supports back without inventing a face or requiring detail',()=>{
+  const p=directOutfitParams(directOutfitInput({...body,view:'back',outfitSources:{back:'https://image.test/back.jpg'},shootReferences:{color:body.shootReferences.color}}),['face','profile']);
+  expect(p.imageUrls).toHaveLength(4);expect(p.prompt).toContain('rear-facing head face-free');expect(p.prompt).not.toContain('IMAGE 5');
+ });
+});
