@@ -174,3 +174,16 @@ it('trouser rules cover pants but do not replace the top or affect a top-only sw
  expect(pants.prompt).toContain('TROUSER CONSTRUCTION:');expect(pants.prompt).not.toContain('Replace BOTH pieces');
  expect(simpleReferenceShot({...base,view:'front'}).prompt).not.toContain('TROUSER CONSTRUCTION:');
 });
+
+// DWT62145 on fitted Celine 2: the reference waist must not narrow a boxy knit.
+it.each(['front','side','back','full'] as const)('keeps product ease independent of pose clothing for %s',view=>{
+ const shot=simpleReferenceShot({...base,view,garmentName:'Pointelle Cable Knit Cropped Cardigan Sweater'});
+ expect(shot.prompt).toContain("old top is not an edit boundary");
+ expect(shot.prompt).toContain('Cropped describes length, not a tight fit');
+ expect(shot.prompt).toContain('Preserve fitted products as fitted');
+ expect(shot.prompt).toContain('size and spacing of cable and pointelle motifs and visible button count');
+ expect(shot.image_urls[0]).toBe(base.referenceUrl);
+});
+it('does not apply top ease rules to bottoms-only edits',()=>{
+ for(const category of ['pants','skirt'] as const)expect(simpleReferenceShot({...base,view:'front',category}).prompt).not.toContain('GARMENT EASE:');
+});
