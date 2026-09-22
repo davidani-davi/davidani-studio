@@ -164,7 +164,7 @@ export async function POST(req: Request) {
     return json({ ok: false, error: "invalid JSON body" }, 400);
   }
 
-  if (body.editMode !== "direct" && body.view === "full" && (isPantsReference(body.humanModelId) || shotCategory({...body.known, category: body.category ?? body.known?.category}) === "pants"))
+  if (!["direct","real-shoot"].includes(body.editMode) && body.view === "full" && (isPantsReference(body.humanModelId) || shotCategory({...body.known, category: body.category ?? body.known?.category}) === "pants"))
     return json({ok:false,error:"Pants generate front, side and back only."},400);
 
   /**
@@ -208,7 +208,7 @@ export async function POST(req: Request) {
 
 /** One view, start to finish: the synchronous POST body. */
 async function renderShot(req: Request, body: any): Promise<Response> {
-  if (body.editMode === 'direct') {
+  if (['direct','real-shoot'].includes(body.editMode)) {
     let input;
     try {
       input = directOutfitInput(body);
