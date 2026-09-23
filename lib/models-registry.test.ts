@@ -26,7 +26,7 @@ describe("staticModelsTagged — the manifest the deployed function serves", () 
   it("offers three looks each for Vision and Celine, plus a dedicated DONUTS pants reference", () => {
     const models = staticModelsTagged();
     const visible = models.filter(m => !isDerivedPlate(m.id));
-    expect(visible.map(m => m.name)).toEqual(["Vision 1", "Vision 2", "Vision 3 · Pink Peach", "Celine 1", "Celine 2", "Celine 3 · Pink Peach", "Celine · DONUTS pants", "Vision 4 · Sage tee", "Celine 4 · Sage tee", "Vision 5 · Neutral black", "Celine 5 · Neutral black"]);
+    expect(visible.map(m => m.name)).toEqual(["Vision 1", "Vision 2", "Vision 3 · Pink Peach", "Celine 1", "Celine 2", "Celine 3 · Pink Peach", "Celine · DONUTS pants", "Vision 4 · Sage tee", "Celine 4 · Sage tee", "Vision 5 · Neutral black", "Celine 5 · Neutral black", "Celine 6 · Cream profile", "Celine 7 · Red turn"]);
     for (const model of visible.filter(m => m.id !== "studio 103")) {
       expect(model.poses).toHaveLength(1);
       for (const view of ["front", "side", "back", "full"] as const) {

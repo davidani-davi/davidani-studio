@@ -485,6 +485,88 @@ export const STATIC_HUMAN_MODELS = [
     "autoPool": false
   },
   {
+    "id": "crop 112",
+    "name": "Celine 6 · Cream profile",
+    "poses": [
+      {
+        "id": "crop 112",
+        "label": "Crop 112",
+        "publicPath": "/models/crop 112/front.png",
+        "filename": "front.png",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.png",
+            "publicPath": "/models/crop 112/back.png"
+          },
+          "front": {
+            "filename": "front.png",
+            "publicPath": "/models/crop 112/front.png"
+          },
+          "full": {
+            "filename": "full.png",
+            "publicPath": "/models/crop 112/full.png"
+          },
+          "side": {
+            "filename": "side.png",
+            "publicPath": "/models/crop 112/side.png"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": false,
+    "pose": "Celine 6",
+    "character": "celine",
+    "expression": "soft smile",
+    "slug": "dtp50065a-celine-approved",
+    "poseKey": "dtp50065a-celine",
+    "outfitAbove": "cream short-sleeve tee",
+    "outfitBelow": "cream relaxed pants",
+    "autoPool": false
+  },
+  {
+    "id": "crop 113",
+    "name": "Celine 7 · Red turn",
+    "poses": [
+      {
+        "id": "crop 113",
+        "label": "Crop 113",
+        "publicPath": "/models/crop 113/front.png",
+        "filename": "front.png",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.png",
+            "publicPath": "/models/crop 113/back.png"
+          },
+          "front": {
+            "filename": "front.png",
+            "publicPath": "/models/crop 113/front.png"
+          },
+          "full": {
+            "filename": "full.png",
+            "publicPath": "/models/crop 113/full.png"
+          },
+          "side": {
+            "filename": "side.png",
+            "publicPath": "/models/crop 113/side.png"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": false,
+    "pose": "Celine 7",
+    "character": "celine",
+    "expression": "neutral",
+    "slug": "detp40335-celine-approved",
+    "poseKey": "detp40335-celine",
+    "outfitAbove": "red short-sleeve tee",
+    "outfitBelow": "red relaxed pants",
+    "autoPool": false
+  },
+  {
     "id": "crop 97",
     "name": "Vision 1",
     "poses": [
@@ -927,6 +1009,88 @@ export const STATIC_HUMAN_MODELS = [
     "poseKey": "detp60364-celine",
     "outfitAbove": "plain black ribbed tank (neutralised)",
     "outfitBelow": "plain black straight trousers (neutralised)",
+    "autoPool": false
+  },
+  {
+    "id": "studio 112",
+    "name": "Celine 6 · Cream profile",
+    "poses": [
+      {
+        "id": "studio 112",
+        "label": "Studio 112",
+        "publicPath": "/models/studio 112/front.png",
+        "filename": "front.png",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.png",
+            "publicPath": "/models/studio 112/back.png"
+          },
+          "front": {
+            "filename": "front.png",
+            "publicPath": "/models/studio 112/front.png"
+          },
+          "full": {
+            "filename": "full.png",
+            "publicPath": "/models/studio 112/full.png"
+          },
+          "side": {
+            "filename": "side.png",
+            "publicPath": "/models/studio 112/side.png"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": false,
+    "pose": "Celine 6",
+    "character": "celine",
+    "expression": "soft smile",
+    "slug": "dtp50065a-celine-approved",
+    "poseKey": "dtp50065a-celine",
+    "outfitAbove": "cream short-sleeve tee",
+    "outfitBelow": "cream relaxed pants",
+    "autoPool": false
+  },
+  {
+    "id": "studio 113",
+    "name": "Celine 7 · Red turn",
+    "poses": [
+      {
+        "id": "studio 113",
+        "label": "Studio 113",
+        "publicPath": "/models/studio 113/front.png",
+        "filename": "front.png",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.png",
+            "publicPath": "/models/studio 113/back.png"
+          },
+          "front": {
+            "filename": "front.png",
+            "publicPath": "/models/studio 113/front.png"
+          },
+          "full": {
+            "filename": "full.png",
+            "publicPath": "/models/studio 113/full.png"
+          },
+          "side": {
+            "filename": "side.png",
+            "publicPath": "/models/studio 113/side.png"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": false,
+    "pose": "Celine 7",
+    "character": "celine",
+    "expression": "neutral",
+    "slug": "detp40335-celine-approved",
+    "poseKey": "detp40335-celine",
+    "outfitAbove": "red short-sleeve tee",
+    "outfitBelow": "red relaxed pants",
     "autoPool": false
   }
 ] as unknown as HumanModel[];
