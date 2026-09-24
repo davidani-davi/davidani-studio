@@ -561,7 +561,7 @@ export async function listBaseHumanModels(): Promise<HumanModel[]> {
     const views: ModelPose["views"] = {};
     for (const view of ["front", "side", "back", "full"] as const) {
       const url = um.views[view];
-      if (url) views[view] = { filename: view, publicPath: url };
+      if (url) views[view] = { filename: view, publicPath: url, ...(um.contours?.[view] ? { autoContour: um.contours[view] } : {}) };
     }
     return {
       id: um.id,

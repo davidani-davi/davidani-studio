@@ -1,6 +1,6 @@
 import { directOutfitInput, renderDirectOutfit, DIRECT_IDENTITIES } from '@/lib/direct-outfit';
 import { isPantsReference, pantsReferences } from "@/lib/pants-references";
-import { simpleReferenceShot, simpleFaceMask, SIMPLE_IMAGE_SIZE } from '@/lib/simple-reference-shot';
+import { simpleReferenceShot, simpleFaceMask, isReviewedContour, SIMPLE_IMAGE_SIZE } from '@/lib/simple-reference-shot';
 import sharp from 'sharp';
 import { referencePixels, validateEdit, editMask, compositeGarment, providerMask, donutsFaceMask } from '@/lib/garment-only';
 import { uploadToFal } from '@/lib/fal';
@@ -360,7 +360,7 @@ async function renderShot(req: Request, body: any): Promise<Response> {
       const response = await fetch(referenceUrl, {cache:'no-store'});
       if (!response.ok) throw Error('Reference could not be loaded.');
       const ref = await referencePixels(Buffer.from(await response.arrayBuffer()));
-      const mask = simpleFaceMask(ref, reference.publicPath, view, framing, reference.protection);
+      const mask = simpleFaceMask(ref, reference.publicPath, view, framing, reference.protection, reference.autoContour);
       if (mask) simplePrepared = {ref,mask};
     }
     let preservation: Awaited<ReturnType<typeof compositeGarment>>['report'] | undefined;
@@ -425,7 +425,7 @@ async function renderShot(req: Request, body: any): Promise<Response> {
     return json({ ok: true, view, url, prompt: input.prompt,
       modelId: body.engine === "tryon" ? undefined : modelId,
       engine: body.engine === "tryon" ? "tryon" : nanoReference ? "nano" : modelId === "gpt-image-25" ? "gpt25" : "gpt2",
-      faceProtection: simple ? (simplePrepared ? 'reviewed-contour-v1' : 'reviewed-no-head-v1') : undefined,
+      faceProtection: simple ? (reference.autoContour && !isReviewedContour(reference.publicPath) ? (simplePrepared ? 'auto-draft-contour-v1' : 'auto-draft-no-head-v1') : simplePrepared ? 'reviewed-contour-v1' : 'reviewed-no-head-v1') : undefined,
       resolution: outputResolution, editMode: simple ? "simple" : faceLocked ? "face-locked" : locked ? "garment-only" : "native", preservation, humanModelId, poseId, assigned, category, hem, framing,
       reference: { ...reference, url: referenceUrl },
       garmentBackInferred: view === "back" && garmentImageUrls.length < 2,

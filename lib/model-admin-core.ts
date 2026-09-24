@@ -1,6 +1,10 @@
 import type { HumanModel, PresetView } from './models-registry';
 export type FaceProtection = { width: number; height: number; sha256: string; protectedRows: number; transitionRows: number };
-export type ReferencePhoto = { filename: string; publicPath: string; protection?: FaceProtection };
+/** Face outline found automatically for a Listing Team draft set (never an installed set). Bound to the
+ * decoded pixels like a reviewed contour; see lib/draft-contour.ts. */
+export type AutoContour = { kind: 'contour' | 'no-head'; width: number; height: number; sha256: string;
+  points?: [number, number][]; featherPixels?: number; garmentBoundaryY?: number; source: 'auto-draft-v1'; detectedAt: string };
+export type ReferencePhoto = { filename: string; publicPath: string; protection?: FaceProtection; autoContour?: AutoContour };
 export type ManagedModel = HumanModel & { deleted?: boolean };
 export type CatalogChange = {
   id: string; at: string; modelId: string; poseId?: string;

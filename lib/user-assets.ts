@@ -23,6 +23,7 @@ export interface UserModel {
   name: string;
   createdAt: string;
   views: { front: string; side?: string; back?: string; full?: string };
+  contours?: Partial<Record<"front" | "side" | "back" | "full", import("./model-admin-core").AutoContour>>;
 }
 
 interface ReferenceIndex {
@@ -265,6 +266,13 @@ export async function listUserModels(): Promise<UserModel[]> {
     LOCAL_MODEL_RECORDS
   );
   return mergeAssetRecords(legacy, records);
+}
+
+/** Stores the automatic face outlines of a draft set on its record (lib/draft-contour.ts). */
+export async function setUserModelContours(model: UserModel, contours: UserModel["contours"]): Promise<UserModel> {
+  const entry: UserModel = { ...model, contours };
+  await writeAssetRecord(MODEL_RECORD_PREFIX, LOCAL_MODEL_RECORDS, model.id, { deleted: false, value: entry });
+  return entry;
 }
 
 export async function saveUserModel(

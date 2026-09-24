@@ -183,6 +183,35 @@ async function prepareGeneratorImageUrls(urls: string[]): Promise<string[]> {
   return Promise.all(urls.map((url) => uploadLocalPublicImageUrl(url)));
 }
 
+/**
+ * Head/hair box and the first garment row for a Listing Team draft reference photo, in 0-1000
+ * coordinates ({box_2d:[ymin,xmin,ymax,xmax], neckline_y}), or {no_head:true}. Gemini is used because
+ * it is trained to return boxes. The caller validates and pads; lib/draft-contour.ts.
+ */
+/** Florence-2 phrase grounding: pixel boxes for `text` in the image (draft face outlines). */
+export async function groundPhrase(imageUrl: string, text: string): Promise<{ x: number; y: number; w: number; h: number }[]> {
+  ensureConfigured();
+  const delays = [0, 700, 1600];
+  let lastErr: unknown;
+  for (const delay of delays) {
+    if (delay > 0) await sleep(delay);
+    try {
+      const result: any = await fal.subscribe("fal-ai/florence-2-large/caption-to-phrase-grounding", {
+        input: { image_url: imageUrl, text_input: text },
+        logs: false,
+      });
+      const boxes = (result?.data ?? result)?.results?.bboxes;
+      return Array.isArray(boxes)
+        ? boxes.filter((b: any) => [b?.x, b?.y, b?.w, b?.h].every((n) => typeof n === "number" && Number.isFinite(n)))
+            .map((b: any) => ({ x: b.x, y: b.y, w: b.w, h: b.h }))
+        : [];
+    } catch (err) {
+      lastErr = err;
+    }
+  }
+  throw lastErr instanceof Error ? lastErr : new Error("Phrase grounding failed.");
+}
+
 export function parseFaceBox(output: string): { x: number; y: number; width: number; height: number } | null {
   const match = output.match(/\{[\s\S]*?\}/);
   if (!match) return null;
