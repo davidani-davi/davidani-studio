@@ -67,6 +67,8 @@ export interface HumanModel {
   poses: ModelPose[];
   /** True for user-uploaded models stored in Blob (deletable in the UI). */
   userAdded?: boolean;
+  /** User models only: when the set was saved (the Listing Team picker shows the newest draft first). */
+  createdAt?: string;
   managed?: boolean;
   /** What the model wears below the waist (plates.json `wears`) and whether a
    *  bottom can be painted onto the plate (`low_ok`) — lib/plate-wear.ts. */
@@ -561,12 +563,13 @@ export async function listBaseHumanModels(): Promise<HumanModel[]> {
     const views: ModelPose["views"] = {};
     for (const view of ["front", "side", "back", "full"] as const) {
       const url = um.views[view];
-      if (url) views[view] = { filename: view, publicPath: url };
+      if (url) views[view] = { filename: view, publicPath: url, ...(um.contours?.[view] ? { autoContour: um.contours[view] } : {}) };
     }
     return {
       id: um.id,
       name: um.name,
       userAdded: true,
+      createdAt: um.createdAt,
       poses: [
         {
           id: `${um.id}-pose`,

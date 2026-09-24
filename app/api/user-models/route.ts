@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
-import { deleteUserModel, listUserModels, saveUserModel } from "@/lib/user-assets";
+import { deleteUserModel, listUserModels, saveUserModel, setUserModelContours } from "@/lib/user-assets";
+import { detectAutoContour } from "@/lib/draft-contour";
+import { referencePixels } from "@/lib/garment-only";
+import { groundPhrase } from "@/lib/fal";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth";
 
 export const runtime = "nodejs";
@@ -56,6 +59,19 @@ export async function POST(req: Request) {
       back: asImage(form.get("back")),
       full: asImage(form.get("full")),
     });
+    // Listing Team drafts ("Draft · <author> · <name>") get automatic face outlines so Simple garment
+    // swap can test them before David approves the set; a view without one is refused at render time.
+    if (name.startsWith("Draft · ")) {
+      const views = (["front", "side", "back", "full"] as const).filter((v) => model.views[v]);
+      const found = await Promise.all(views.map((v) =>
+        detectAutoContour(model.views[v]!, v, { referencePixels, ground: groundPhrase }).catch((e) => {
+          console.warn("[user-models] draft outline failed", v, e?.message);
+          return null;
+        })));
+      const contours = Object.fromEntries(views.flatMap((v, i) => (found[i] ? [[v, found[i]]] : [])));
+      const saved = await setUserModelContours(model, contours);
+      return NextResponse.json({ ok: true, model: saved, outlines: Object.fromEntries(views.map((v, i) => [v, found[i]?.kind ?? "missing"])) });
+    }
     return NextResponse.json({ ok: true, model });
   } catch (err: any) {
     return NextResponse.json(

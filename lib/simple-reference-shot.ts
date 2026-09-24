@@ -97,8 +97,12 @@ export function simpleReferenceShot(o: ReferenceShot) {
 }
 
 /** Exact source-bound review. Never fall back to horizontal head restoration. */
-export function simpleFaceMask(ref: ReferencePixels, publicPath: string, _view: string, _framing: string, _legacyReview?: import('./model-admin').FaceProtection): Buffer | undefined {
-  const preset = (contourPresets as Record<string, {kind:string;width:number;height:number;sha256:string}>)[publicPath.split('?')[0]];
+export const isReviewedContour = (publicPath: string) => Object.prototype.hasOwnProperty.call(contourPresets, publicPath.split('?')[0]);
+
+export function simpleFaceMask(ref: ReferencePixels, publicPath: string, _view: string, _framing: string, _legacyReview?: import('./model-admin').FaceProtection, auto?: import('./model-admin-core').AutoContour): Buffer | undefined {
+  const reviewed = (contourPresets as Record<string, {kind:string;width:number;height:number;sha256:string}>)[publicPath.split('?')[0]];
+  // A Listing Team draft set has no reviewed contour yet; it carries the outline found when it was saved.
+  const preset = reviewed || (auto?.source === 'auto-draft-v1' ? auto : undefined);
   if (!preset) throw Error('This reference needs a face/hair contour review before Simple garment swap. Choose a reviewed reference.');
   if (ref.width !== preset.width || ref.height !== preset.height || ref.sha256 !== preset.sha256)
     throw Error('The model reference changed. Its face/hair contour must be reviewed before generating.');
