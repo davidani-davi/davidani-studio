@@ -1,14 +1,30 @@
 import { NextResponse } from "next/server";
 import { deleteUserModel, listUserModels, saveUserModel } from "@/lib/user-assets";
+import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
+
+// Public in proxy.ts so the Listing Team portal (server side, X-DDTO-TOKEN) can save
+// draft reference sets; the studio UI still reaches it with its session cookie.
+async function authorized(req: Request): Promise<boolean> {
+  const expected = process.env.MODEL_SHOTS_TOKEN || process.env.APP_PASSWORD;
+  const got = req.headers.get("x-ddto-token") || "";
+  if (expected && got.length === expected.length && got === expected) return true;
+  const secret = process.env.AUTH_SECRET;
+  if (!secret) return false;
+  const cookie = req.headers.get("cookie") || "";
+  const match = cookie.match(new RegExp(`(?:^|;\\s*)${SESSION_COOKIE}=([^;]+)`));
+  return match ? verifySessionToken(decodeURIComponent(match[1]), secret) : false;
+}
+const unauthorized = () => NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
 
 function asImage(value: FormDataEntryValue | null): File | undefined {
   return value instanceof File && value.type.startsWith("image/") ? value : undefined;
 }
 
-export async function GET() {
+export async function GET(req: Request) {
+  if (!(await authorized(req))) return unauthorized();
   try {
     return NextResponse.json({ ok: true, models: await listUserModels() });
   } catch (err: any) {
@@ -20,6 +36,7 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  if (!(await authorized(req))) return unauthorized();
   try {
     const form = await req.formData();
     const name = String(form.get("name") ?? "").trim();
@@ -49,6 +66,7 @@ export async function POST(req: Request) {
 }
 
 export async function DELETE(req: Request) {
+  if (!(await authorized(req))) return unauthorized();
   try {
     const id = new URL(req.url).searchParams.get("id");
     if (!id) {
