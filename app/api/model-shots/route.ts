@@ -128,6 +128,7 @@ export async function GET(req: Request) {
         categories: isPantsReference(m.id) ? ["pants"] : undefined,
         referenceKind: isPantsReference(m.id) ? "pants" : undefined,
         userAdded: Boolean(m.userAdded),
+        ...(m.createdAt ? { createdAt: m.createdAt } : {}),
         managed: Boolean(m.managed),
         wears: m.wears,
         lowOk: m.lowOk === true,
