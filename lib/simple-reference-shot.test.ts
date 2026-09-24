@@ -187,3 +187,28 @@ it.each(['front','side','back','full'] as const)('keeps product ease independent
 it('does not apply top ease rules to bottoms-only edits',()=>{
  for(const category of ['pants','skirt'] as const)expect(simpleReferenceShot({...base,view:'front',category}).prompt).not.toContain('GARMENT EASE:');
 });
+
+describe('open-front inner layer (DWJ50270, 2026-09-24)',()=>{
+ it.each(['front','side','back','full'] as const)('an open cardigan keeps a plain inner top on %s',view=>{
+  const shot=simpleReferenceShot({...base,view,anchorImageUrl:'https://generated/front.png',garmentName:'Floral Embroidered Hooded Balloon Sleeve Cardigan'});
+  expect(shot.openFront).toBe(true);
+  expect(shot.prompt).toContain('INNER LAYER:');
+  expect(shot.prompt).toContain('plain white fitted tank top');
+  expect(shot.prompt).not.toContain('The new top is worn alone');
+  if(view!=='front')expect(shot.prompt).toContain('the plain inner top described under INNER LAYER stays');
+ });
+ it('a pullover top is still worn alone',()=>{
+  const shot=simpleReferenceShot({...base,view:'front',garmentName:'Striped Boxy Knit Pullover Sweater'});
+  expect(shot.openFront).toBe(false);
+  expect(shot.prompt).not.toContain('INNER LAYER:');
+  expect(shot.prompt).toContain('The new top is worn alone');
+ });
+ it('an operator note about the layer overrides the default',()=>{
+  const shot=simpleReferenceShot({...base,view:'front',garmentName:'Open Front Kimono',note:'Bare chest, no top under the kimono.'});
+  expect(shot.prompt).not.toContain('INNER LAYER:');
+  expect(shot.prompt).toContain('Requested change: Bare chest');
+ });
+ it('bottoms never get an inner layer',()=>{
+  expect(simpleReferenceShot({...base,view:'front',category:'pants',garmentName:'Jacket Print Wide Leg Pants'}).prompt).not.toContain('INNER LAYER:');
+ });
+});
