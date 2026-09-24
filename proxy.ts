@@ -5,8 +5,10 @@ import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth";
 // carries its own gate — a shared token in X-DDTO-TOKEN, checked in the route
 // and failing closed when MODEL_SHOTS_TOKEN is unset — and its caller is the
 // Faire extension's service worker, which has no session cookie and no way to
-// get one. Everything else still redirects to /login.
-const PUBLIC_PATHS = ["/login", "/api/auth", "/api/history/cleanup", "/api/model-shots", "/api/square", "/api/fal-account", "/api/saved-shots"];
+// get one. /api/user-models checks the same token (or the session cookie) in its
+// route: the Listing Team portal saves draft reference sets there. Everything
+// else still redirects to /login.
+const PUBLIC_PATHS = ["/login", "/api/auth", "/api/history/cleanup", "/api/model-shots", "/api/square", "/api/fal-account", "/api/saved-shots", "/api/user-models"];
 
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
