@@ -4,6 +4,7 @@ import {
   FACE_RULE,
   LONG_LAYER_STYLING,
   applyAnchor,
+  applyIdentity,
   assembleViewPrompt,
   applyOperatorNote,
   applyPlainBack,
@@ -185,5 +186,42 @@ describe("applyAnchor — the rendered front as the continuity reference", () =>
     expect(out.indexOf("FACE ANCHOR")).toBeLessThan(out.indexOf("Negative prompt:"));
     // without a face crop the wording is untouched
     expect(applyAnchor(base, true, false)).toContain("the LAST input image is the FRONT view");
+  });
+});
+
+describe("applyIdentity", () => {
+  // The face crop fixes WHO she is; this text fixes the skin texture,
+  // freckles and brow density a hundred-pixel head cannot carry (2026-09-18).
+  const BASE = "A studio photo of the garment. Negative prompt: no flat lay, no hanger.";
+
+  it("adds the identity detail when a face crop is present", () => {
+    const out = applyIdentity(BASE, "celine", true);
+    expect(out).toContain("IDENTITY DETAIL for Celine");
+    expect(out).toContain("#86624C"); // her sampled outer iris
+  });
+
+  it("does nothing on the front view, where the face is large enough already", () => {
+    expect(applyIdentity(BASE, "celine", false)).toBe(BASE);
+  });
+
+  it("does nothing for a model that is not a house face", () => {
+    expect(applyIdentity(BASE, "user-abc", true)).toBe(BASE);
+    expect(applyIdentity(BASE, null, true)).toBe(BASE);
+  });
+
+  it("accepts the picker's face: form", () => {
+    expect(applyIdentity(BASE, "face:vision", true)).toContain("IDENTITY DETAIL for Vision");
+  });
+
+  it("lands ahead of the negative prompt, or the GPT optimizer would strip it", () => {
+    const out = applyIdentity(BASE, "vision", true);
+    expect(out.indexOf("IDENTITY DETAIL")).toBeLessThan(out.indexOf("Negative prompt:"));
+    expect(out.endsWith("no flat lay, no hanger.")).toBe(true);
+  });
+
+  it("sits beside the FACE rule it refines when both are applied", () => {
+    const out = applyIdentity(applyAnchor(BASE, true, true), "vision", true);
+    expect(out.indexOf("FACE ANCHOR")).toBeLessThan(out.indexOf("IDENTITY DETAIL"));
+    expect(out.indexOf("IDENTITY DETAIL")).toBeLessThan(out.indexOf("Negative prompt:"));
   });
 });

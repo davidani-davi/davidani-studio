@@ -1,4 +1,6 @@
+import { IDENTITY_RULE, identityPromptOf } from "./face-identity";
 import type { PresetView } from "./models-registry";
+import { houseFaceOf } from "./no-plate";
 import type { PlateFraming } from "./plate-framing";
 
 /**
@@ -219,6 +221,31 @@ export function applyAnchor(basePrompt: string, hasAnchor: boolean, hasFace = fa
   if (!hasFace) return insertBeforeNegative(p, ANCHOR_RULE.trim());
   const anchor = ANCHOR_RULE.replace("the LAST input image is the FRONT view", "the SECOND-TO-LAST input image is the FRONT view");
   return insertBeforeNegative(p, `${anchor.trim()} ${FACE_RULE.trim()}`);
+}
+
+/**
+ * The identity detail for a house face, riding straight after the FACE rule
+ * (2026-09-18, lib/face-identity.ts).
+ *
+ * The face crop fixes WHO she is. On a full-length view it is about a hundred
+ * pixels tall, so it cannot also fix her skin texture, freckles or brow
+ * density, and the render fills those in toward its own smoother, more
+ * idealised default. This supplies them as measured text.
+ *
+ * It only makes sense where the face crop is already present, so it is a
+ * no-op without one: on the front view the face is large enough to speak for
+ * itself. Applied AFTER applyAnchor so the text lands beside the FACE rule it
+ * refines, and like every other suffix it goes ahead of "Negative prompt:"
+ * (see assembleViewPrompt) or the GPT optimizer would strip it.
+ */
+export function applyIdentity(basePrompt: string, face: unknown, hasFace = false): string {
+  const p = String(basePrompt || "");
+  if (!hasFace || !p) return p;
+  const id = houseFaceOf(face);
+  if (!id) return p;
+  const detail = identityPromptOf(id);
+  if (!detail) return p;
+  return insertBeforeNegative(p, `${IDENTITY_RULE.trim()} ${detail.trim()}`);
 }
 
 /**
