@@ -569,7 +569,7 @@ export default function LibraryClient() {
       );
       window.location.href = "/model-studio";
     } catch {
-      setError("Could not send this image to Single Model Studio.");
+      setError("Could not send this image to Single model.");
     }
   }
 
@@ -590,7 +590,7 @@ export default function LibraryClient() {
       );
       window.location.href = "/prompt-studio";
     } catch {
-      setError("Could not send this style to Prompt Studio.");
+      setError("Could not send this style to Prompt studio.");
     }
   }
 

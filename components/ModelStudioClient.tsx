@@ -1757,7 +1757,7 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
           const imageUrls = slotUrls.filter((url): url is string => typeof url === "string");
           if (imageUrls.length === 0) {
             throw new Error(
-              failures[0]?.error || "Multi Model Studio did not return any completed views."
+              failures[0]?.error || "Multi model did not return any completed views."
             );
           }
           const item = buildPartialItem();
@@ -1833,7 +1833,7 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
       {
         id: `${run.id}-retry-${Date.now()}`,
         kind: "model-beta",
-        label: `Multi Model Studio retry (${targetViews.join(", ")})`,
+        label: `Multi model retry (${targetViews.join(", ")})`,
         historyKey,
         currentIdKey,
       },
@@ -2002,7 +2002,7 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
           }
           return { historyItem: workingRun };
         } catch (err: any) {
-          setError(err.message || "Multi Model Studio retry failed");
+          setError(err.message || "Multi model retry failed");
           throw err;
         } finally {
           setLoading(false);

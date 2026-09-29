@@ -575,7 +575,7 @@ export default function InspirationClient() {
               >
                 {Array.from({ length: density === "large" ? 8 : 12 }, (_, index) => (
                   <div key={index} className="overflow-hidden rounded border border-neutral-200 bg-white">
-                    <div className="aspect-[4/3] animate-pulse bg-neutral-100" />
+                    <div className="aspect-[2/3] animate-pulse bg-neutral-100" />
                     <div className="space-y-2 p-2.5">
                       <div className="h-3 w-3/4 animate-pulse rounded bg-neutral-100" />
                       <div className="h-3 w-1/2 animate-pulse rounded bg-neutral-100" />
@@ -613,12 +613,12 @@ export default function InspirationClient() {
                         <button
                           type="button"
                           onClick={() => image && setPreview(image)}
-                          className={`block w-full bg-neutral-100 ${density === "large" ? "aspect-[3/4]" : "aspect-[4/3]"}`}
+                          className={`block w-full bg-neutral-100 aspect-[2/3]`}
                         >
                           {image ? (
                             <Thumb
                               src={image}
-                              size={640}
+                              size={density === "large" ? 640 : 384}
                               alt={source.title}
                               className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
                               fallback={

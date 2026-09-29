@@ -215,3 +215,5 @@ body.paper-app { padding-bottom:0; }
 
 /* Secondary buttons: page fill and an ink border on hover. */
 .paper-app button:not(:disabled):not([class~="text-left"]):is([class~="bg-white"]):is([class~="border"]):hover { background-color:var(--page); border-color:var(--fg); }
+.paper-app .identity-studio .ri-header { align-items:flex-start; }
+.paper-app :is([class~="border-neutral-900"],[class~="border-neutral-950"]) { border-color:var(--fg); }
