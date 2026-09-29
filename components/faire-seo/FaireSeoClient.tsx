@@ -674,9 +674,9 @@ export default function FaireSeoClient() {
               <button
                 onClick={() => trendInputRef.current?.click()}
                 disabled={uploading || working}
-                className="rounded-md border border-neutral-200 px-3 py-2 text-xs font-semibold text-neutral-700 disabled:opacity-50"
+                className="shrink-0 whitespace-nowrap rounded-md border border-neutral-200 px-3 py-2 text-xs font-semibold text-neutral-700 disabled:opacity-50"
               >
-                Upload List
+                Upload list
               </button>
             </div>
             <textarea

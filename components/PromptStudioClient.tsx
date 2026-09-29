@@ -368,20 +368,21 @@ export default function PromptStudioClient() {
                 Prompt Studio
               </h2>
             </div>
-            <div className="flex overflow-hidden rounded-lg border border-neutral-200 bg-neutral-50">
+            <div className="flex flex-wrap gap-1.5">
               {(Object.keys(toolCopy) as PromptTool[]).map((tool) => (
                 <button
                   key={tool}
                   type="button"
+                  aria-pressed={activeTool === tool}
                   onClick={() => {
                     setActiveTool(tool);
                     setPrompts("");
                     setCopied(false);
                   }}
-                  className={`flex-1 px-3 py-2 text-xs font-semibold transition ${
+                  className={`inline-flex h-[26px] items-center rounded border px-2.5 text-xs font-medium ${
                     activeTool === tool
-                      ? "bg-neutral-900 text-white"
-                      : "text-neutral-500 hover:bg-white hover:text-neutral-800"
+                      ? "border-neutral-900 bg-neutral-900 text-white"
+                      : "border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300"
                   }`}
                 >
                   {toolCopy[tool].label}
@@ -492,7 +493,7 @@ export default function PromptStudioClient() {
                   </label>
                 </div>
 
-                <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-3 text-[11px] leading-relaxed text-emerald-800">
+                <div className="rounded border border-neutral-200 bg-neutral-50 px-3 py-3 text-[11px] leading-relaxed text-neutral-700">
                   Locked rule: Image 1 = exact product. Image 2 = photographic reference. New
                   model, faithful garment details, native 16:9, complete head-to-toe framing.
                 </div>
