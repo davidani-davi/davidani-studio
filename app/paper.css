@@ -80,6 +80,12 @@ body.paper-app { padding-bottom:0; }
 .paper-app :is([class~="border-emerald-100"],[class~="border-emerald-200"],[class~="border-emerald-300"],[class~="border-emerald-500/30"],[class~="border-green-100"],[class~="border-green-200"],[class~="border-green-300"],[class~="border-green-500/30"],[class~="border-teal-100"],[class~="border-teal-200"],[class~="border-teal-300"],[class~="border-teal-500/30"]) { border-color:var(--line); }
 .paper-app :is([class~="border-emerald-400"],[class~="border-emerald-500"],[class~="border-emerald-600"],[class~="border-emerald-700"],[class~="border-green-400"],[class~="border-green-500"],[class~="border-green-600"],[class~="border-green-700"],[class~="border-teal-400"],[class~="border-teal-500"],[class~="border-teal-600"],[class~="border-teal-700"]) { border-color:var(--green); }
 
+/* Error toasts: a hairline card whose text carries the red, not a red slab. */
+.paper-app .fixed:is([class~="bg-red-600"]):is([class~="text-white"]) { background-color:var(--sheet); color:var(--red); border:1px solid var(--line); border-radius:3px; box-shadow:none; }
+/* A disabled primary reads as unavailable: hairline and muted, not faded ink. */
+.paper-app button:disabled:is([class~="bg-neutral-900"],[class~="bg-neutral-950"],[class~="bg-black"]),
+.paper-app :is(.reference-admin .ra-primary,.identity-studio .ri-primary):disabled { background-color:var(--sheet); color:var(--muted); border:1px solid var(--line); opacity:1; }
+
 /* Shared shell, after the Paper phone shell: a title bar (15/500 title, muted
    tagline beside it), then one row of 26px chips and the tool links. Every
    destination stays a visible link, on every screen size. */
@@ -107,6 +113,32 @@ body.paper-app { padding-bottom:0; }
 .paper-app .job-center-panel { background:var(--sheet); border:1px solid var(--line); border-radius:3px; box-shadow:none; }
 .paper-app :is(.job-row,.activity-row,.job-center-summary span,.job-center-empty--compact,.job-row__status,.job-center-actor select,.job-center-close) { border-radius:3px; }
 .paper-app :is(.job-center-eyebrow,.job-center-group__title) { font:12px var(--font); letter-spacing:0; text-transform:none; }
+/* Job Center, on Paper: sentence-case 12px labels at 400/500, hairline rows on
+   the sheet, tint pairs for status, no gradients. */
+.paper-app .job-center-panel { backdrop-filter:none; }
+.paper-app .job-center-trigger strong { font-weight:500; color:var(--fg); }
+.paper-app .job-center-trigger--active .job-center-trigger__dot { background:var(--green); box-shadow:none; animation:none; }
+.paper-app .job-center-panel__header { border-bottom:1px solid var(--line); }
+.paper-app .job-center-panel__header h2 { font-size:15px; font-weight:500; letter-spacing:0; color:var(--fg); }
+.paper-app .job-center-close { height:26px; padding:0 10px; border:1px solid var(--line); background:var(--sheet); color:var(--fg); font:500 12px var(--font); letter-spacing:0; text-transform:none; }
+.paper-app .job-center-close:hover { border-color:var(--fg); }
+.paper-app .job-center-summary span { background:none; border:1px solid var(--line); color:var(--muted); font-weight:500; }
+.paper-app .job-center-summary .job-center-actor span { border:0; padding:0; font-weight:400; }
+.paper-app :is(.job-center-actor,.job-center-group__head button,.job-row__time,.activity-row span,.activity-row time) { font-weight:400; letter-spacing:0; text-transform:none; color:var(--muted); }
+.paper-app .job-center-actor select { background:var(--sheet); border-color:var(--line); color:var(--fg); font-weight:400; }
+.paper-app .job-center-empty { color:var(--muted); }
+.paper-app .job-center-empty--compact { border:1px dashed var(--line); }
+.paper-app :is(.job-row,.job-row--queued,.job-row--analyzing,.job-row--generating,.job-row--saving,.activity-row) { background:var(--sheet); border:1px solid var(--line); }
+.paper-app .job-row__studio { font-weight:400; font-size:12px; letter-spacing:0; text-transform:none; color:var(--muted); }
+.paper-app .job-row__label { font-weight:500; color:var(--fg); }
+.paper-app .job-row__error { color:var(--red); }
+.paper-app .job-row__status { height:18px; display:inline-flex; align-items:center; padding:0 6px; background:var(--grey-bg); color:var(--muted); font:500 11.5px var(--font); letter-spacing:0; text-transform:none; }
+.paper-app .job-row--done .job-row__status { background:var(--green-bg); color:var(--green); }
+.paper-app .job-row--failed .job-row__status { background:var(--red-bg); color:var(--red); }
+.paper-app :is(.job-row--queued,.job-row--analyzing,.job-row--generating,.job-row--saving) .job-row__status { background:var(--amber-bg); color:var(--amber); }
+.paper-app :is(.job-row__actions a,.job-row__actions button) { font-weight:500; color:var(--fg); letter-spacing:0; text-transform:none; }
+.paper-app .activity-row p { color:var(--fg); }
+.paper-app .activity-row strong { font-weight:500; }
 .paper-app .prompt-action-bar { position:relative; bottom:auto; margin:0; border-radius:3px; background:var(--sheet); box-shadow:none; backdrop-filter:none; }
 .paper-app [role=tablist] { gap:6px; border:0; background:transparent; padding:0; flex-wrap:wrap; }
 .paper-app [role=tab] { border:1px solid var(--line); border-radius:3px; }
@@ -122,9 +154,25 @@ body.paper-app { padding-bottom:0; }
 .paper-app :is(.ra-library,.ra-content,.ri-view,.ri-actionbar) { background:var(--sheet); border-color:var(--line); }
 .paper-app .ra-collections { gap:8px; padding-bottom:12px; flex-wrap:wrap; }
 .paper-app .ra-eyebrow { letter-spacing:0; text-transform:none; color:var(--muted); }
+/* The global header already names the page and links back, so these pages
+   open with an h2 and carry Inter 400/500 only, with 28px controls. */
+.paper-app :is(.reference-admin,.identity-studio) :is(h1,h2,h3,b,strong,.ra-eyebrow,.ra-settings[open]>summary) { font-weight:500; letter-spacing:0; }
+.paper-app :is(.reference-admin,.identity-studio) :is(.ra-page-title,.ri-page-title) { margin:0 0 4px; font-size:22px; font-weight:500; letter-spacing:-.01em; }
+.paper-app .reference-admin .ra-collections button[aria-pressed=true] { font-weight:500; }
+.paper-app :is(.reference-admin button:not(.ra-model),.reference-admin .ra-file,.identity-studio button:not(.ri-identities button),.identity-studio .ri-upload) { min-height:28px; padding:4px 12px; font-size:13px; }
+.paper-app :is(.reference-admin,.identity-studio) :is(input:not([type=checkbox]):not([type=range]):not([type=file]),select) { min-height:32px; padding:5px 10px; }
+.paper-app .reference-admin .ra-settings>summary { min-height:0; }
+.paper-app .ra-library-tools .ra-primary { width:auto; justify-self:start; align-self:flex-start; }
+.paper-app .ra-header>button { margin-top:0; }
 .paper-login form { padding:40px; border:1px solid var(--line); border-radius:3px; }
 .paper-login h1 { font-size:22px; }
 .paper-login button[type=submit] { width:auto; padding:7px 18px; }
+
+/* The tools only fit beside the chips from ~1303px; below that they take their
+   own row, flush with the chips, with no leading hairline. */
+@media(max-width:1319px) {
+  .paper-tools { flex-basis:100%; padding-left:0; border-left:0; }
+}
 
 @media(max-width:767px) {
   .paper-app .studio-header { grid-template-columns:minmax(0,1fr); grid-template-areas:"brand" "meta" "tabs"; }
@@ -132,9 +180,10 @@ body.paper-app { padding-bottom:0; }
   .paper-app .studio-subtitle { flex-basis:100%; margin:0; white-space:normal; }
   .paper-app .studio-header__meta { justify-content:flex-start; padding-bottom:10px; }
   .paper-app .studio-metrics { display:flex; }
-  .paper-tools { flex-basis:100%; padding-left:0; border-left:0; }
   .paper-tools a { padding-block:7px; }
-  .paper-app .job-center-panel { top:16px; max-height:calc(100dvh - 32px); }
+  /* A full-screen sheet on phone, so the queue never floats over the ledger. */
+  .paper-app .job-center-panel { position:fixed; inset:0; width:auto; max-height:none; border:0; border-radius:0; overflow-y:auto; z-index:60; }
+  .paper-app .job-center-list { max-height:none; }
   .paper-app .fixed.bottom-6.right-6 { bottom:16px; }
   .paper-app :is(input,textarea,select) { font-size:16px; }
 }

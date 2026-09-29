@@ -659,7 +659,7 @@ export default function LibraryClient() {
           <button
             type="button"
             onClick={() => void load()}
-            className="rounded-lg bg-neutral-900 px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-800"
+            className="rounded-lg border border-neutral-200 bg-white px-4 py-2 text-sm font-medium text-neutral-900 hover:border-neutral-400"
           >
             Search
           </button>
@@ -726,7 +726,21 @@ export default function LibraryClient() {
           </div>
         )}
         {loading ? (
-          <p className="text-sm text-neutral-500">Loading library...</p>
+          <div role="status" aria-label="Loading library" className="space-y-4">
+            {[0, 1].map((index) => (
+              <div key={index} className="rounded-xl border border-neutral-200 bg-white p-4">
+                <div className="h-4 w-40 animate-pulse rounded bg-neutral-100" />
+                <div className="mt-2 h-3 w-56 animate-pulse rounded bg-neutral-100" />
+                <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_320px]">
+                  <div className="flex gap-3">
+                    <div className="aspect-[4/5] w-40 animate-pulse rounded bg-neutral-100 sm:w-48" />
+                    <div className="aspect-[4/5] w-40 animate-pulse rounded bg-neutral-100 sm:w-48" />
+                  </div>
+                  <div className="h-48 animate-pulse rounded bg-neutral-100" />
+                </div>
+              </div>
+            ))}
+          </div>
         ) : styles.length === 0 ? (
           <div className="rounded-xl border border-dashed border-neutral-300 bg-white px-5 py-10 text-center text-sm text-neutral-500">
             No styles yet. Upload a result from Image Studio or Single Model Studio to start the team
@@ -779,11 +793,11 @@ export default function LibraryClient() {
                             {style.styleNumber}
                           </h2>
                           {style.color && (
-                            <span className="rounded-full bg-neutral-900 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-white">
+                            <span className="inline-flex h-[18px] items-center rounded border border-neutral-200 px-1.5 text-[11px] font-medium text-neutral-700">
                               {style.color}
                             </span>
                           )}
-                          <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-neutral-600">
+                          <span className="inline-flex h-[18px] items-center rounded bg-neutral-100 px-1.5 text-[11.5px] font-medium text-neutral-600">
                             {style.views.length} view{style.views.length === 1 ? "" : "s"}
                           </span>
                         </div>
@@ -991,7 +1005,7 @@ export default function LibraryClient() {
                           >
                             {ecommerceGeneratingId === style.id
                               ? "Creating ecommerce set..."
-                              : "Create Full Ecommerce Set"}
+                              : "Create full ecommerce set"}
                           </button>
                           <button
                             type="button"

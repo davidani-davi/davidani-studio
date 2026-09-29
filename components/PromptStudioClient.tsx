@@ -584,7 +584,7 @@ export default function PromptStudioClient() {
                 ) : (
                   <>
                     {IconSparkle}
-                    Generate Prompts
+                    Generate prompts
                   </>
                 )}
               </button>

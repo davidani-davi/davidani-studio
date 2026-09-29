@@ -1166,7 +1166,7 @@ export default function OutputPanel({
                 <button
                   type="button"
                   onClick={onRetryFailedMultiModelViews}
-                  className="rounded-full bg-red-600 px-3 py-1 font-semibold text-white transition hover:bg-red-700"
+                  className="inline-flex h-[26px] shrink-0 items-center rounded border border-neutral-200 bg-white px-2.5 font-medium text-red-700 hover:border-neutral-400"
                 >
                   Retry failed only
                 </button>
@@ -1256,7 +1256,7 @@ export default function OutputPanel({
                           Completed views were saved.
                         </p>
                         {onRetryMultiModelView && (
-                          <span className="mt-3 inline-flex rounded-full bg-red-600 px-3 py-1 text-[11px] font-semibold text-white">
+                          <span className="mt-3 inline-flex h-[26px] items-center rounded border border-neutral-200 bg-white px-2.5 text-[11px] font-medium text-red-700">
                             Retry {photoshootViewLabel[view]} only
                           </span>
                         )}

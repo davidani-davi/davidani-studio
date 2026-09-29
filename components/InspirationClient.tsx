@@ -503,7 +503,7 @@ export default function InspirationClient() {
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="text-base font-semibold text-neutral-950">Moodboard</p>
-                    <span className="rounded-full bg-neutral-900 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-white">
+                    <span className="inline-flex h-[18px] items-center rounded bg-neutral-100 px-1.5 text-[11.5px] font-medium text-neutral-600">
                       {sources.length} saved
                     </span>
                     {filteredSources.length !== sources.length ? (
@@ -562,7 +562,26 @@ export default function InspirationClient() {
             </div>
 
             {loading ? (
-              <div className="p-10 text-center text-sm text-neutral-500">Loading inspiration...</div>
+              <div
+                role="status"
+                aria-label="Loading inspiration"
+                className={`grid p-4 ${
+                  density === "large"
+                    ? "grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4"
+                    : "grid-cols-2 gap-2.5 md:grid-cols-4 xl:grid-cols-6"
+                }`}
+              >
+                {Array.from({ length: density === "large" ? 8 : 12 }, (_, index) => (
+                  <div key={index} className="overflow-hidden rounded border border-neutral-200 bg-white">
+                    <div className="aspect-[4/3] animate-pulse bg-neutral-100" />
+                    <div className="space-y-2 p-2.5">
+                      <div className="h-3 w-3/4 animate-pulse rounded bg-neutral-100" />
+                      <div className="h-3 w-1/2 animate-pulse rounded bg-neutral-100" />
+                      <div className="h-[26px] animate-pulse rounded bg-neutral-100" />
+                    </div>
+                  </div>
+                ))}
+              </div>
             ) : sources.length === 0 ? (
               <div className="m-4 rounded-xl border border-dashed border-neutral-200 bg-neutral-50 p-10 text-center">
                 <p className="text-sm font-semibold text-neutral-800">Your first inspiration image will appear here.</p>
@@ -575,7 +594,7 @@ export default function InspirationClient() {
               </div>
             ) : (
               <div
-                className={`grid max-h-[calc(100vh-260px)] overflow-y-auto p-4 ${
+                className={`grid p-4 md:max-h-[calc(100vh-260px)] md:overflow-y-auto ${
                   density === "large"
                     ? "grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4"
                     : "grid-cols-2 gap-2.5 md:grid-cols-4 xl:grid-cols-6"
@@ -685,7 +704,7 @@ export default function InspirationClient() {
                                 : "border-neutral-200 bg-white text-neutral-700 hover:border-neutral-900"
                             }`}
                           >
-                            {liked ? "Liked for Taste" : "Like for Taste"}
+                            {liked ? "Liked for Taste" : "Like for taste"}
                           </button>
                         </div>
                         <div className="mt-1.5 flex items-center justify-between gap-2">

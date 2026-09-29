@@ -845,7 +845,7 @@ export default function CadExtractorClient() {
                 className="rounded-xl border border-neutral-300 bg-white px-4 py-2.5 text-sm font-semibold text-neutral-700 shadow-sm transition hover:border-neutral-500 hover:bg-neutral-100 active:scale-[0.98] disabled:cursor-not-allowed disabled:border-neutral-200 disabled:text-neutral-400"
                 title="Snapshot the current photos + settings as a queued run"
               >
-                Add to Queue
+                Add to queue
               </button>
               {pendingCount > 0 || queueRunning ? (
                 <button

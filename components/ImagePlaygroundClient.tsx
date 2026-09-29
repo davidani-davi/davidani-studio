@@ -1022,7 +1022,7 @@ function ImagePlaygroundWorkspace({
                 disabled={!promptCount || !orderedSelectedRefUrls.length}
                 className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-b from-neutral-800 to-neutral-950 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:from-neutral-700 hover:to-neutral-900 hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-neutral-300 disabled:bg-none disabled:text-neutral-500"
               >
-                ⚡ Generate {promptCount || ""}
+                Generate {promptCount || ""}
               </button>
             )}
           </div>

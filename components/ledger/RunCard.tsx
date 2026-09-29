@@ -88,8 +88,6 @@ export default function RunCard({
       className={`w-full rounded-xl border p-3 text-left transition ${
         active
           ? "border-neutral-900 bg-white shadow-sm ring-1 ring-neutral-900"
-          : verdict.tone === "check"
-          ? "border-amber-200 bg-amber-50/50 hover:border-amber-300"
           : "border-neutral-200 bg-white hover:border-neutral-400"
       }`}
     >
