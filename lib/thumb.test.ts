@@ -16,6 +16,7 @@ describe("thumbSrc", () => {
     "https://v3.fal.media/files/x.png",
     "https://cdr9xgexrrfthz5f.public.blob.vercel-storage.com/saved/x.png",
     "https://system.davidani.com/upload/style/DJ62056A%20BLACK_1.png",
+    "https://system.davidani.com/upload/style/unnamed%2834%29.jpg",
   ];
 
   it("covers every host the studio stores images on", () => {
@@ -34,6 +35,10 @@ describe("thumbSrc", () => {
     "https://abc.public.blob.vercel-storage.com/x.png",
     "https://system.davidani.com/data/Style.inStock.Json.asp",
     "https://system.davidani.com/upload/customer/x.png",
+    "https://system.davidani.com/upload/style/..%2Fcustomer%2Fx.png",
+    "https://system.davidani.com/upload/style/x%2f..%2fDP52005A_3.jpg",
+    "https://system.davidani.com/upload/style/..%5Ccustomer%5Cx.png",
+    "https://system.davidani.com/upload/style/sub/x.png",
     "https://system.davidani.com/upload/style/x.png?cb=1",
     "https://system.davidani.com:8443/upload/style/x.png",
     "https://v3.fal.media/files/x.png?nocache=1",
@@ -41,7 +46,7 @@ describe("thumbSrc", () => {
     "https://docs.fal.ai/logo.png",
   ];
 
-  it("refuses other stores, other folders, ports and query strings", () => {
+  it("refuses other stores, other folders, escapes out of a folder, ports and query strings", () => {
     for (const url of REFUSED) expect(allowed(url), url).toBe(false);
   });
 

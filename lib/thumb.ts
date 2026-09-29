@@ -18,11 +18,13 @@ export const WIDTHS = [32, 48, 64, 96, 128, 256, 384, 640, 750, 828, 1080, 1200,
 // fal's files are immutable (max-age 60 days), so a resized copy is made once
 // per width. The ERP overwrites a photo in place when a style is re-shot; its
 // copies follow Next's default 4-hour cache. No port and no query string, as
-// in next.config.js, so a URL can't dodge the cache or the pinned folder.
+// in next.config.js, so a URL can't dodge the cache or the pinned folder. ERP
+// photos sit directly in /upload/style/, and a name with an encoded slash or
+// backslash ("..%2F") could step out of it.
 const REMOTE: { host: RegExp; path?: RegExp }[] = [
   { host: /(^|\.)fal\.media$/ },
   { host: /^cdr9xgexrrfthz5f\.public\.blob\.vercel-storage\.com$/ },
-  { host: /^system\.davidani\.com$/, path: /^\/upload\/style\// },
+  { host: /^system\.davidani\.com$/, path: /^\/upload\/style\/(?!.*%(2f|5c))[^/]+$/i },
 ];
 
 function resizable(url: string): boolean {

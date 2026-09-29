@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type ImgHTMLAttributes, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ImgHTMLAttributes, type ReactNode } from "react";
 import { thumbSrc } from "@/lib/thumb";
 
 type Props = Omit<ImgHTMLAttributes<HTMLImageElement>, "src"> & {
@@ -26,8 +26,13 @@ type Props = Omit<ImgHTMLAttributes<HTMLImageElement>, "src"> & {
  */
 export default function Thumb(props: Props) {
   // A new image starts from scratch: no stale "failed" or "loaded" state.
-  return <ThumbImage key={props.src ?? ""} {...props} />;
+  return <ThumbImage key={`${props.src ?? ""}|${props.size}`} {...props} />;
 }
+
+// Originals an `upgrade` image has already downloaded in full. Showing one again
+// (flipping variants, reopening a preview) starts from the original, which the
+// browser has cached, instead of the resized copy.
+const upgraded = new Set<string>();
 
 function ThumbImage({
   src,
@@ -41,7 +46,7 @@ function ThumbImage({
   ...rest
 }: Props) {
   const original = src ?? "";
-  const [url, setUrl] = useState(() => thumbSrc(src, size));
+  const [url, setUrl] = useState(() => (upgrade && upgraded.has(original) ? original : thumbSrc(src, size)));
   const [loaded, setLoaded] = useState(false);
   const [dead, setDead] = useState(false);
   const ref = useRef<HTMLImageElement>(null);
@@ -57,8 +62,9 @@ function ThumbImage({
 
   // A server-rendered image can finish before React hydrates and attaches its
   // handlers. A finished load is read off the element; anything else is
-  // requested again so its load or error event reaches the handlers.
-  useEffect(() => {
+  // requested again so its load or error event reaches the handlers. Before
+  // paint, so a cached image doesn't flash in from blank.
+  useLayoutEffect(() => {
     const img = ref.current;
     if (!img || !url || !img.complete) return;
     if (img.naturalWidth) setLoaded(true);
@@ -73,7 +79,10 @@ function ThumbImage({
     const full = new Image();
     full.src = original;
     full.decode().then(
-      () => live && setUrl(original),
+      () => {
+        upgraded.add(original);
+        if (live) setUrl(original);
+      },
       // Keep the resized copy; the original may still be downloadable later.
       () => live && console.warn("[thumb] full-size original did not load", original),
     );

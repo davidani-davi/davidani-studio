@@ -4,6 +4,9 @@ import Thumb from "./Thumb";
 
 const FAL = "https://v3b.fal.media/files/b/0a97fd36/render.png";
 const FAL2 = "https://v3b.fal.media/files/b/0a97fd36/render-2.png";
+// Upgrades are remembered for the whole module, so each upgrade test has its own image.
+const FAL_DEAD = "https://v3b.fal.media/files/b/0a97fd36/render-dead.png";
+const FAL_AGAIN = "https://v3b.fal.media/files/b/0a97fd36/render-again.png";
 const resized = (url: string, w: number) => `/_next/image?url=${encodeURIComponent(url)}&w=${w}&q=75`;
 
 afterEach(() => {
@@ -105,10 +108,28 @@ describe("Thumb", () => {
   it("keeps the resized copy when the original does not load", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const preloads = stubPreloads();
-    render(<Thumb src={FAL} size={1920} alt="stage" upgrade />);
+    render(<Thumb src={FAL_DEAD} size={1920} alt="stage" upgrade />);
     await act(async () => preloads[0].reject());
-    expect(screen.getByAltText("stage").getAttribute("src")).toBe(resized(FAL, 1920));
-    expect(warn).toHaveBeenCalledWith("[thumb] full-size original did not load", FAL);
+    expect(screen.getByAltText("stage").getAttribute("src")).toBe(resized(FAL_DEAD, 1920));
+    expect(warn).toHaveBeenCalledWith("[thumb] full-size original did not load", FAL_DEAD);
+  });
+
+  it("shows an original it has already downloaded straight away next time", async () => {
+    const preloads = stubPreloads();
+    const { unmount } = render(<Thumb src={FAL_AGAIN} size={1920} alt="stage" upgrade />);
+    await act(async () => preloads[0].resolve());
+    unmount();
+    render(<Thumb src={FAL_AGAIN} size={1920} alt="stage" upgrade />);
+    const img = screen.getByAltText("stage");
+    expect(img.getAttribute("src")).toBe(FAL_AGAIN);
+    expect(img.className).not.toContain("opacity-0");
+    expect(preloads).toHaveLength(1);
+  });
+
+  it("fetches a new width when the size changes", () => {
+    const { rerender } = render(<Thumb src={FAL2} size={200} alt="x" />);
+    rerender(<Thumb src={FAL2} size={1000} alt="x" />);
+    expect(screen.getByAltText("x").getAttribute("src")).toBe(resized(FAL2, 1080));
   });
 
   it("does not fetch the original twice without being asked", () => {
