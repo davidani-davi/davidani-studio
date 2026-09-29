@@ -837,7 +837,7 @@ function ImagePlaygroundWorkspace({
               <button
                 type="button"
                 onClick={addPastedUrl}
-                className="rounded-lg border border-neutral-200 bg-neutral-50 px-3 text-xs font-semibold text-neutral-600 hover:bg-neutral-100"
+                className="rounded-lg border border-neutral-200 bg-white px-3 text-xs font-semibold text-neutral-700"
               >
                 Add
               </button>
@@ -891,7 +891,7 @@ function ImagePlaygroundWorkspace({
                     return (
                       <div
                         key={u.url}
-                        className={`group relative aspect-square overflow-hidden rounded-lg border ${
+                        className={`group relative aspect-[2/3] overflow-hidden rounded-lg border ${
                           selected
                             ? "border-neutral-900 ring-2 ring-neutral-900/10"
                             : "border-neutral-200"
@@ -968,7 +968,7 @@ function ImagePlaygroundWorkspace({
               <span>
                 {orderedSelectedRefUrls.length
                   ? `${orderedSelectedRefUrls.length} ref${orderedSelectedRefUrls.length === 1 ? "" : "s"} → ${promptCount} prompt${promptCount === 1 ? "" : "s"} × ${numPerPrompt} = ${totalImages} images`
-                  : "Select reference images in the left rail"}
+                  : "Select reference images first"}
               </span>
               <span className="inline-flex items-center gap-1.5 text-[11px]">
                 <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />

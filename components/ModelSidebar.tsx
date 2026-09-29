@@ -433,7 +433,7 @@ export default function ModelSidebar(p: Props) {
             return (
               <div
                 key={u.url}
-                className={`group relative aspect-square overflow-hidden rounded-lg border ${
+                className={`group relative aspect-[2/3] overflow-hidden rounded-lg border ${
                   selected
                     ? "border-brand-500 ring-2 ring-brand-200"
                     : "border-neutral-200"

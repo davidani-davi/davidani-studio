@@ -94,7 +94,7 @@ const toolCopy: Record<
     title: "F/W photoshoot generator",
     subtitle: "Pairs your product with yesterday’s proven photographic references.",
     placeholder:
-      "Upload a product, choose a photoshoot reference, then generate ready-to-paste Image Playground prompts.",
+      "Upload a product, choose a photoshoot reference, then generate ready-to-paste Image playground prompts.",
     metricLabel: "prompts",
   },
 };
@@ -642,7 +642,7 @@ export default function PromptStudioClient() {
                 Image 2 · Photographic reference
               </p>
               <p className="mt-1 text-[10px] leading-relaxed text-neutral-500">
-                Upload these two images to Image Playground in this exact left-to-right order.
+                Upload these two images to Image playground in this exact left-to-right order.
               </p>
             </>
           ) : null}

@@ -744,14 +744,11 @@ export default function TechpackStudioClient() {
           ) : (
             <div className="flex min-h-full items-center justify-center rounded-xl border border-dashed border-neutral-300 bg-white/60 p-10 text-center">
               <div className="max-w-md">
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-neutral-100 text-neutral-500">
-                  {IconSparkle}
-                </div>
-                <h1 className="mt-4 text-xl font-semibold text-neutral-950">
+                <h1 className="text-xl font-semibold text-neutral-950">
                   Upload a flat, sketch, or render
                 </h1>
                 <p className="mt-2 text-sm leading-relaxed text-neutral-500">
-                  Techpack Studio will generate a 7-page Davi&amp;Dani manufacturing pack with
+                  Techpack studio will generate a 7-page Davi&amp;Dani manufacturing pack with
                   construction callouts, BOM, colorways, measurements, grading, labels, and
                   packaging.
                 </p>

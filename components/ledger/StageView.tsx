@@ -266,7 +266,7 @@ export default function StageView({
   onDownload,
   onOpenDetails,
   frameAspect = { width: 2160, height: 2700 },
-  emptyHint = "Upload a product photo and press Generate. Finished runs land here at full size, and stack up in the ledger on the left.",
+  emptyHint = "Upload a product photo and press Generate. Finished runs land here at full size, and stack up in the run ledger.",
   pipeline = runPipeline,
   title = runTitle,
 }: {

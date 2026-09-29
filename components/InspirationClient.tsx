@@ -364,7 +364,7 @@ export default function InspirationClient() {
               Collect. Tag. Create.
             </h1>
             <p className="mt-2 text-sm leading-relaxed text-neutral-500">
-              Save visual references here, let AI tag them, then remix the strongest ideas in Prompt Studio.
+              Save visual references here, let AI tag them, then remix the strongest ideas in Prompt studio.
             </p>
           </div>
 

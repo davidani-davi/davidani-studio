@@ -178,7 +178,7 @@ export default function Composer({
           onClick={onBatch}
           disabled={!canBatch || busy}
           title={batchDisabledReason}
-          className="shrink-0 text-[11.5px] font-semibold text-neutral-500 underline-offset-2 transition hover:text-neutral-900 hover:underline disabled:cursor-not-allowed disabled:text-neutral-300 disabled:no-underline"
+          className="shrink-0 text-[11.5px] font-semibold text-neutral-500 underline-offset-2 transition hover:text-neutral-900 hover:underline disabled:cursor-not-allowed disabled:text-neutral-400 disabled:no-underline"
         >
           Batch
         </button>

@@ -465,7 +465,7 @@ export default function FaireBatchClient() {
                               ? "Forced plus — click to remove"
                               : "Click to force plus copy for this listing"
                           }
-                          className={`group relative block aspect-square w-full overflow-hidden rounded border-2 bg-neutral-100 transition-all disabled:opacity-40 ${
+                          className={`group relative block aspect-[2/3] w-full overflow-hidden rounded border-2 bg-neutral-100 transition-all disabled:opacity-40 ${
                             forced
                               ? "border-emerald-500 ring-2 ring-emerald-200"
                               : "border-neutral-200 hover:border-neutral-400"

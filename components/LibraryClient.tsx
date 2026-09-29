@@ -879,7 +879,7 @@ export default function LibraryClient() {
                                 src={view.imageUrl}
                                 size={640}
                                 alt={`${style.styleNumber} ${label}`}
-                                className="h-full w-full object-cover transition duration-200 group-hover:scale-[1.02]"
+                                className="h-full w-full object-cover"
                               />
                               <span className="absolute right-2 top-2 rounded-full bg-white/90 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-neutral-800 opacity-0 shadow-sm transition group-hover:opacity-100">
                                 View

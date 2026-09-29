@@ -3036,7 +3036,7 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
           frameAspect={{ width: 2000, height: 3000 }}
           pipeline={modelRunPipeline}
           title={modelRunTitle}
-          emptyHint="Drop a garment photo and press Generate. Finished runs land here at full size, and stack up in the ledger on the left."
+          emptyHint="Drop a garment photo and press Generate. Finished runs land here at full size, and stack up in the run ledger."
           onDownload={downloadOutput}
           onOpenDetails={() => setDetailsOpen(true)}
         />

@@ -670,7 +670,7 @@ export default function CadExtractorClient() {
                   return (
                     <div
                       key={u.url}
-                      className={`group relative aspect-square overflow-hidden rounded-lg border ${
+                      className={`group relative aspect-[2/3] overflow-hidden rounded-lg border ${
                         selected ? "border-neutral-900 ring-2 ring-neutral-900/10" : "border-neutral-200"
                       }`}
                     >
@@ -835,7 +835,7 @@ export default function CadExtractorClient() {
             <span className="text-xs text-neutral-500">
               {selectedRefUrls.length
                 ? `${selectedRefUrls.length} photo${selectedRefUrls.length === 1 ? "" : "s"} selected`
-                : "Select garment photos in the left rail"}
+                : "Select garment photos first"}
             </span>
             <div className="flex items-center gap-2">
               <button
