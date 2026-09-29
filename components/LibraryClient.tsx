@@ -716,7 +716,7 @@ export default function LibraryClient() {
           <div className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
         )}
         {bulkProgress && (
-          <div className="mb-4 rounded-lg bg-neutral-900 px-4 py-3 text-sm font-medium text-white">
+          <div className="mb-4 rounded-lg border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-700">
             {bulkProgress}
           </div>
         )}
@@ -896,7 +896,7 @@ export default function LibraryClient() {
                               <button
                                 type="button"
                                 onClick={() => sendToModelStudio(style, view)}
-                                className="rounded-lg bg-neutral-900 px-2.5 py-2 text-xs font-semibold text-white hover:bg-neutral-800"
+                                className="rounded-lg border border-neutral-200 bg-white px-2.5 py-2 text-xs font-semibold text-neutral-800 hover:border-neutral-900"
                               >
                                 Model
                               </button>
@@ -936,25 +936,23 @@ export default function LibraryClient() {
                             {launchScore >= 85 ? "Ready" : "Needs work"}
                           </span>
                         </div>
-                        <div className="mt-3 grid grid-cols-2 gap-1.5">
+                        {/* Paper state pills: saved green, missing red. */}
+                        <ul className="mt-3 flex flex-wrap gap-1.5">
                           {checklist.map((item) => (
-                            <div
+                            <li
                               key={item.label}
-                              className={`rounded-lg px-2 py-1.5 text-[10px] font-semibold ${
-                                item.done
-                                  ? "bg-emerald-50 text-emerald-700"
-                                  : "bg-neutral-50 text-neutral-400"
+                              className={`inline-flex h-[18px] items-center rounded px-[7px] text-[11.5px] font-medium ${
+                                item.done ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"
                               }`}
                             >
-                              {item.done ? "Done: " : "Missing: "}
-                              {item.label}
-                            </div>
+                              {item.done ? item.label : `${item.label} missing`}
+                            </li>
                           ))}
-                        </div>
+                        </ul>
                         <div className="mt-3 rounded-xl border border-neutral-200 bg-neutral-50 p-2">
                           <div className="mb-2 flex items-center justify-between gap-2">
                             <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
-                              Missing View Control
+                              Views
                             </p>
                           </div>
                           <div className="grid grid-cols-2 gap-1.5">
@@ -970,8 +968,8 @@ export default function LibraryClient() {
                                   disabled={Boolean(manualViewUploading)}
                                   className={`rounded-lg border px-2 py-2 text-[10px] font-semibold transition disabled:opacity-50 ${
                                     done
-                                      ? "border-emerald-100 bg-emerald-50 text-emerald-700"
-                                      : "border-neutral-200 bg-white text-neutral-700 hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700"
+                                      ? "border-neutral-200 bg-white text-emerald-700 hover:border-neutral-900"
+                                      : "border-neutral-200 bg-white text-neutral-700 hover:border-neutral-900"
                                   }`}
                                 >
                                   {uploading
@@ -998,7 +996,7 @@ export default function LibraryClient() {
                           <button
                             type="button"
                             onClick={() => sendToBestsellerRemix(style)}
-                            className="col-span-2 rounded-lg bg-neutral-950 px-3 py-2 text-xs font-semibold text-white hover:bg-neutral-800"
+                            className="col-span-2 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs font-semibold text-neutral-800 hover:border-neutral-900"
                           >
                             Bestseller Remix
                           </button>
