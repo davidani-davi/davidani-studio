@@ -87,7 +87,7 @@ function ShotFrame({
         />
       </button>
       <figcaption className="flex shrink-0 items-center gap-2">
-        <span className="font-mono text-[9px] font-medium uppercase tracking-[0.15em] text-neutral-400">
+        <span className="whitespace-nowrap font-mono text-[9px] font-medium uppercase tracking-[0.15em] text-neutral-400">
           {label}
         </span>
         {onKeep && (
@@ -186,7 +186,7 @@ function PaintingFrame({
         </div>
       </div>
       <figcaption className="flex shrink-0 items-center gap-2">
-        <span className="font-mono text-[9px] font-medium uppercase tracking-[0.15em] text-neutral-400">
+        <span className="whitespace-nowrap font-mono text-[9px] font-medium uppercase tracking-[0.15em] text-neutral-400">
           {label}
         </span>
         <span

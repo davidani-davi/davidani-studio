@@ -149,6 +149,7 @@ export default function RunCard({
                     size={256}
                     alt={`${shot.label} intake photo`}
                     className="h-full w-full object-contain"
+                    fallback={<span className="flex h-full w-full items-center justify-center px-1 text-center text-[9px] leading-tight text-neutral-400">Expired</span>}
                   />
                   <span className="absolute inset-x-0 bottom-0 bg-white/85 py-px text-center font-mono text-[7.5px] font-bold uppercase tracking-[0.1em] text-neutral-500">
                     {shot.label}
@@ -186,6 +187,7 @@ export default function RunCard({
                 size={256}
                 alt={`${title(run)} variant ${i + 1}`}
                 className="h-full w-full object-cover"
+                fallback={<span className="flex h-full w-full items-center justify-center px-1 text-center text-[9px] leading-tight text-neutral-400">Expired</span>}
               />
             </div>
           );

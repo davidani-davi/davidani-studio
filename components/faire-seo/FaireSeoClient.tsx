@@ -557,7 +557,7 @@ export default function FaireSeoClient() {
               dragging ? "border-neutral-950" : "border-neutral-300"
             }`}
           >
-            <p className="text-xs font-bold uppercase text-neutral-500">Faire Listing Optimizer</p>
+            <p className="text-xs font-bold uppercase text-neutral-500">Faire listing optimizer</p>
             <h2 className="mt-3 text-2xl font-semibold leading-tight text-neutral-950">
               Upload everything, then generate.
             </h2>
@@ -669,7 +669,7 @@ export default function FaireSeoClient() {
           <div className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
             <div className="mb-3 flex items-center justify-between gap-3">
               <div>
-                <h3 className="text-sm font-semibold text-neutral-950">Friday Trend Keywords</h3>
+                <h3 className="text-sm font-semibold text-neutral-950">Friday trend keywords</h3>
                 <p className="mt-1 text-xs leading-relaxed text-neutral-500">
                   Optional Faire Insider reference. Saved locally for future listings.
                 </p>

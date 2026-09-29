@@ -5,12 +5,12 @@
 .reference-admin h3{font-size:14px;font-weight:600;margin:0 0 12px}
 .reference-admin p{color:#74746e;margin:8px 0}
 .reference-admin a{text-decoration:underline;text-underline-offset:4px}
-.reference-admin button,.ra-file{background:white;border:1px solid #deded8;border-radius:6px;padding:10px 14px;cursor:pointer;font:inherit;color:inherit;min-height:44px}
+.reference-admin button,.ra-file{background:white;border:1px solid #deded8;border-radius:3px;padding:10px 14px;cursor:pointer;font:inherit;color:inherit;min-height:44px}
 .reference-admin button:hover,.ra-file:hover{border-color:#999b90;background:#fafaf7}
 .reference-admin button:disabled,.ra-file.disabled{opacity:.5;cursor:wait}
 .reference-admin button.ra-primary{background:#23231f;color:white;border-color:#23231f}
 .reference-admin .ra-danger{color:#a2392e}
-.reference-admin input:not([type=checkbox]):not([type=range]),.reference-admin select{display:block;width:100%;min-height:44px;padding:10px 12px;border:1px solid #deded8;border-radius:6px;background:white;color:#242420;font:inherit;margin-top:5px}
+.reference-admin input:not([type=checkbox]):not([type=range]),.reference-admin select{display:block;width:100%;min-height:44px;padding:10px 12px;border:1px solid #deded8;border-radius:3px;background:white;color:#242420;font:inherit;margin-top:5px}
 .reference-admin label{display:block;font-size:12px;color:#64665c}
 .reference-admin input[type=checkbox]{width:18px;height:18px;accent-color:#242420}
 .reference-admin input[type=range]{width:100%;accent-color:#242420}
@@ -18,11 +18,11 @@
 .ra-header>div>a{font-size:12px;color:#66695f}
 .ra-header>button{align-self:flex-start;margin-top:24px}
 .ra-collections{display:flex;gap:6px;max-width:1800px;margin:auto;border-bottom:1px solid #dcded4}
-.reference-admin .ra-collections button{display:flex;align-items:center;gap:10px;padding:12px 20px;border:0;border-bottom:3px solid transparent;border-radius:6px 6px 0 0;background:none;color:#6c6f63}
+.reference-admin .ra-collections button{display:flex;align-items:center;gap:10px;padding:12px 20px;border:0;border-bottom:3px solid transparent;border-radius:3px 3px 0 0;background:none;color:#6c6f63}
 .reference-admin .ra-collections button[aria-pressed=true]{border-bottom-color:#526e49;background:#edeee6;color:#242420;font-weight:600}
-.ra-collections span{font-size:11px;font-weight:500;background:#e3e5da;border-radius:10px;padding:1px 7px;min-width:24px;text-align:center}
+.ra-collections span{font-size:11px;font-weight:500;background:#e3e5da;border-radius:3px;padding:1px 7px;min-width:24px;text-align:center}
 .ra-layout{display:grid;grid-template-columns:300px minmax(0,1fr);gap:28px;margin:24px auto 0;max-width:1800px;align-items:start}
-.ra-library{position:sticky;top:20px;display:flex;flex-direction:column;min-height:0;max-height:calc(100dvh - 40px);border:1px solid #deded8;border-radius:10px;background:#fdfdfb;overflow:hidden}
+.ra-library{position:sticky;top:20px;display:flex;flex-direction:column;min-height:0;max-height:calc(100dvh - 40px);border:1px solid #deded8;border-radius:3px;background:#fdfdfb;overflow:hidden}
 .ra-library-tools{flex:none;display:flex;flex-direction:column;gap:12px;padding:16px;border-bottom:1px solid #e6e7df}
 .ra-library-title{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .ra-library-title h2{font-size:14px;font-weight:600;letter-spacing:0}
@@ -30,13 +30,13 @@
 .ra-library-tools input{margin:0!important}
 .ra-model-list{overflow:auto;min-height:0;padding:8px;display:flex;flex-direction:column;gap:6px;scrollbar-gutter:stable}
 .ra-model-list>p{padding:16px;font-size:13px}
-.reference-admin .ra-model{flex:none;display:flex;gap:12px;width:100%;min-height:90px;padding:10px;text-align:left;align-items:center;border:1px solid transparent;border-radius:7px;background:transparent}
+.reference-admin .ra-model{flex:none;display:flex;gap:12px;width:100%;min-height:90px;padding:10px;text-align:left;align-items:center;border:1px solid transparent;border-radius:3px;background:transparent}
 .reference-admin .ra-model.selected{border-color:#b8c2ac;background:#eef2e8;box-shadow:inset 3px 0 #526e49}
 .ra-model img{width:44px;height:66px;flex-shrink:0;object-fit:contain;background:#efeee8;border-radius:3px}
 .ra-model>span{display:block;min-width:0}
 .ra-model b{display:block;font-size:13px;font-weight:600;line-height:1.5;overflow-wrap:anywhere}
 .ra-model small{display:block;font-size:11px;line-height:1.5;color:#74746e;margin-top:5px}
-.ra-content{min-width:0;background:white;border:1px solid #deded8;border-radius:10px;padding:28px}
+.ra-content{min-width:0;background:white;border:1px solid #deded8;border-radius:3px;padding:28px}
 .ra-editor-heading{display:flex;align-items:center;justify-content:space-between;gap:20px;padding-bottom:18px}
 .ra-editor-heading h2{margin:5px 0}
 .ra-editor-heading p{margin:0;font-size:12px}
@@ -58,7 +58,7 @@
 .ra-photos{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px;margin-top:24px}
 .ra-photos-bottoms{grid-template-columns:repeat(3,minmax(0,1fr))}
 .ra-photo{min-width:0}
-.ra-photo-preview{aspect-ratio:2/3;background:#f3f2ee;display:flex;align-items:center;justify-content:center;text-align:center;color:#74746e;border:1px solid #e7e6e1;border-radius:6px;overflow:hidden}
+.ra-photo-preview{aspect-ratio:2/3;background:#f3f2ee;display:flex;align-items:center;justify-content:center;text-align:center;color:#74746e;border:1px solid #e7e6e1;border-radius:3px;overflow:hidden}
 .ra-photo-preview img{width:100%;height:100%;object-fit:contain}
 .ra-photo>p{font-size:11px}
 .ra-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
@@ -72,7 +72,7 @@
 .ra-help{border-top:1px solid #deded8;padding-top:18px;margin-top:24px!important;font-size:12px}
 .ra-empty{padding:80px 10px;text-align:center}
 .ra-scrim{position:fixed;inset:0;background:#0007;z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px}
-.ra-dialog{background:white;border:1px solid #deded8;border-radius:10px;padding:24px;width:440px;max-width:100%;max-height:94vh;overflow:auto}
+.ra-dialog{background:white;border:1px solid #deded8;border-radius:3px;padding:24px;width:440px;max-width:100%;max-height:94vh;overflow:auto}
 .ra-dialog label{margin:12px 0}
 .ra-review-image{position:relative;width:240px;max-width:100%;margin:16px auto}
 .ra-review-image img{display:block;width:100%;height:auto}

@@ -196,7 +196,7 @@ export default function Composer({
           size="sm"
           loadingText={analyzing ? "Analyzing" : "Generating"}
           icon={
-            <kbd className="rounded border border-white/30 px-1 font-mono text-[9px] opacity-80">
+            <kbd className="rounded border border-white/30 px-1 font-mono text-[9px] opacity-80 max-[480px]:hidden">
               ⌘↵
             </kbd>
           }

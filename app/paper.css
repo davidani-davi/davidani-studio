@@ -38,7 +38,6 @@ body.paper-app { padding-bottom:0; }
 .paper-app :is(.border-2,.border-b-2,.border-t-2):not(.animate-spin) { border-width:1px; }
 .paper-app :is(.bg-gradient-to-b,.bg-gradient-to-r,.bg-gradient-to-br) { background-image:none; }
 .paper-app button.bg-gradient-to-b { background-color:var(--fg); }
-.paper-app button.bg-gradient-to-b:disabled { background-color:var(--grey-bg); color:var(--muted); }
 .paper-app :is(.studio-workspace,.model-sidebar,.image-sidebar,.model-direction-panel,.studio-resizer,.job-row) { background:var(--sheet); box-shadow:none; }
 .paper-app :is(.model-sidebar-card,.image-sidebar-card) { background:var(--sheet); box-shadow:none; }
 .paper-app :is(.model-studio-layout,.image-studio-layout) { background:var(--page); gap:0; }
@@ -82,8 +81,9 @@ body.paper-app { padding-bottom:0; }
 
 /* Error toasts: a hairline card whose text carries the red, not a red slab. */
 .paper-app .fixed:is([class~="bg-red-600"]):is([class~="text-white"]) { background-color:var(--sheet); color:var(--red); border:1px solid var(--line); border-radius:3px; box-shadow:none; }
+@media(max-width:480px){ .paper-app .fixed:is([class~="bg-red-600"]):is([class~="text-white"]) { left:16px; right:16px; bottom:calc(16px + env(safe-area-inset-bottom)); max-width:none; } }
 /* A disabled primary reads as unavailable: hairline and muted, not faded ink. */
-.paper-app button:disabled:is([class~="bg-neutral-900"],[class~="bg-neutral-950"],[class~="bg-black"]),
+.paper-app button:disabled:is([class~="bg-neutral-900"],[class~="bg-neutral-950"],[class~="bg-black"],[class~="bg-primary"],[class~="bg-brand-500"],.bg-gradient-to-b),
 .paper-app :is(.reference-admin .ra-primary,.identity-studio .ri-primary):disabled { background-color:var(--sheet); color:var(--muted); border:1px solid var(--line); opacity:1; }
 
 /* Shared shell, after the Paper phone shell: a title bar (15/500 title, muted
@@ -116,6 +116,7 @@ body.paper-app { padding-bottom:0; }
 /* Job Center, on Paper: sentence-case 12px labels at 400/500, hairline rows on
    the sheet, tint pairs for status, no gradients. */
 .paper-app .job-center-panel { backdrop-filter:none; }
+.paper-app .job-center-trigger:hover { border-color:var(--fg); }
 .paper-app .job-center-trigger strong { font-weight:500; color:var(--fg); }
 .paper-app .job-center-trigger--active .job-center-trigger__dot { background:var(--green); box-shadow:none; animation:none; }
 .paper-app .job-center-panel__header { border-bottom:1px solid var(--line); }
@@ -136,7 +137,10 @@ body.paper-app { padding-bottom:0; }
 .paper-app .job-row--done .job-row__status { background:var(--green-bg); color:var(--green); }
 .paper-app .job-row--failed .job-row__status { background:var(--red-bg); color:var(--red); }
 .paper-app :is(.job-row--queued,.job-row--analyzing,.job-row--generating,.job-row--saving) .job-row__status { background:var(--amber-bg); color:var(--amber); }
-.paper-app :is(.job-row__actions a,.job-row__actions button) { font-weight:500; color:var(--fg); letter-spacing:0; text-transform:none; }
+.paper-app :is(.job-row__actions a,.job-row__actions button) { display:inline-flex; align-items:center; justify-content:center; min-height:26px; padding:0 10px; border:1px solid var(--line); border-radius:3px; background:var(--sheet); font-weight:500; color:var(--fg); letter-spacing:0; text-transform:none; text-decoration:none; }
+.paper-app .job-row__actions button { width:26px; padding:0; }
+.paper-app :is(.job-row__actions a,.job-row__actions button):hover { border-color:var(--fg); }
+@media(max-width:480px){ .paper-app :is(.job-row__actions a,.job-row__actions button) { min-height:32px; } .paper-app .job-row__actions button { width:32px; } }
 .paper-app .activity-row p { color:var(--fg); }
 .paper-app .activity-row strong { font-weight:500; }
 .paper-app .prompt-action-bar { position:relative; bottom:auto; margin:0; border-radius:3px; background:var(--sheet); box-shadow:none; backdrop-filter:none; }

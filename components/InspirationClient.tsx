@@ -358,7 +358,7 @@ export default function InspirationClient() {
         <aside className="border-b border-neutral-200 bg-white p-5 lg:border-b-0 lg:border-r">
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
-              Inspiration Library
+              Inspiration library
             </p>
             <h1 className="mt-1 text-xl font-medium leading-tight text-neutral-950">
               Collect. Tag. Create.
@@ -503,10 +503,12 @@ export default function InspirationClient() {
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="text-base font-semibold text-neutral-950">Moodboard</p>
-                    <span className="inline-flex h-[18px] items-center rounded bg-neutral-100 px-1.5 text-[11.5px] font-medium text-neutral-600">
-                      {sources.length} saved
-                    </span>
-                    {filteredSources.length !== sources.length ? (
+                    {loading ? null : (
+                      <span className="inline-flex h-[18px] items-center rounded bg-neutral-100 px-1.5 text-[11.5px] font-medium text-neutral-600">
+                        {sources.length} saved
+                      </span>
+                    )}
+                    {!loading && filteredSources.length !== sources.length ? (
                       <span className="rounded-full bg-neutral-100 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-neutral-500">
                         {filteredSources.length} showing
                       </span>
@@ -594,7 +596,7 @@ export default function InspirationClient() {
               </div>
             ) : (
               <div
-                className={`grid p-4 md:max-h-[calc(100vh-260px)] md:overflow-y-auto ${
+                className={`grid p-4 lg:max-h-[calc(100vh-260px)] lg:overflow-y-auto ${
                   density === "large"
                     ? "grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4"
                     : "grid-cols-2 gap-2.5 md:grid-cols-4 xl:grid-cols-6"
@@ -704,7 +706,7 @@ export default function InspirationClient() {
                                 : "border-neutral-200 bg-white text-neutral-700 hover:border-neutral-900"
                             }`}
                           >
-                            {liked ? "Liked for Taste" : "Like for taste"}
+                            {liked ? "Liked for taste" : "Like for taste"}
                           </button>
                         </div>
                         <div className="mt-1.5 flex items-center justify-between gap-2">

@@ -261,7 +261,7 @@ export default function ImagePlaygroundClient() {
         disabled={workspaceIds.length >= MAX_WORKSPACES}
         className="shrink-0 rounded-lg border border-dashed border-neutral-300 px-3 py-1.5 text-xs font-semibold text-neutral-600 hover:border-neutral-500 disabled:cursor-not-allowed disabled:opacity-40"
       >
-        + New Playground
+        New playground
       </button>
       <span className="ml-auto shrink-0 text-[10px] text-neutral-400">
         {Object.values(workspaceStatuses).filter((status) => status.running).length} running
@@ -816,7 +816,7 @@ function ImagePlaygroundWorkspace({
           >
             <div className="mb-2 flex items-center justify-between">
               <h2 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-700">
-                Reference Library
+                Reference library
               </h2>
               <span className="text-[10px] text-neutral-500">
                 {orderedSelectedRefUrls.length}/{refs.length} selected

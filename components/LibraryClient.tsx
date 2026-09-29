@@ -840,7 +840,7 @@ export default function LibraryClient() {
                         disabled={regeneratingId === style.id}
                         className="rounded-lg border border-neutral-200 px-3 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50 disabled:opacity-60"
                       >
-                        {regeneratingId === style.id ? "Analyzing..." : "Rewrite Faire Copy"}
+                        {regeneratingId === style.id ? "Analyzing..." : "Rewrite Faire copy"}
                       </button>
                       <button
                         type="button"
@@ -932,7 +932,7 @@ export default function LibraryClient() {
                         <div className="flex items-start justify-between gap-3">
                           <div>
                             <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
-                              Style Launch Pack
+                              Style launch pack
                             </p>
                             <p className="mt-1 text-sm font-semibold text-neutral-950">
                               Faire-ready assets
@@ -990,7 +990,7 @@ export default function LibraryClient() {
                                     ? "Uploading..."
                                     : done
                                     ? `${label} saved`
-                                    : `Upload ${label}`}
+                                    : `Upload ${label.toLowerCase()}`}
                                 </button>
                               );
                             })}
@@ -1001,7 +1001,7 @@ export default function LibraryClient() {
                             type="button"
                             onClick={() => void createEcommerceSet(style.id)}
                             disabled={ecommerceGeneratingId !== null}
-                            className="col-span-2 rounded-lg bg-brand-500 px-3 py-2 text-xs font-semibold text-white hover:bg-brand-600 disabled:opacity-50"
+                            className="col-span-2 justify-self-start rounded-lg bg-brand-500 px-3 py-2 text-xs font-semibold text-white hover:bg-brand-600 disabled:opacity-50"
                           >
                             {ecommerceGeneratingId === style.id
                               ? "Creating ecommerce set..."
@@ -1026,12 +1026,12 @@ export default function LibraryClient() {
                             onClick={() => void downloadAllViews(style)}
                             className="rounded-lg border border-neutral-200 px-3 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
                           >
-                            Download Views
+                            Download views
                           </button>
                         </div>
                       </div>
                       <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
-                        Faire SEO Title
+                        Faire SEO title
                       </p>
                       {isEditing ? (
                         <input

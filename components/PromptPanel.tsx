@@ -343,7 +343,7 @@ export default function PromptPanel(p: Props) {
       {/* ========== HEADER ========== */}
       <div className="flex items-center justify-between border-b border-neutral-200 px-6 py-4">
         <div>
-          <h2 className="text-sm font-semibold text-neutral-900">Shot Setup</h2>
+          <h2 className="text-sm font-semibold text-neutral-900">Shot setup</h2>
           <p className="text-[11px] text-neutral-500">
             Upload a garment, check the routing, then generate the product shot.
           </p>
@@ -842,7 +842,7 @@ export default function PromptPanel(p: Props) {
               <>
                 {IconWand}
                 <span>{p.generateLabel || "Generate"}</span>
-                <span className="ml-1 rounded bg-white/10 px-1.5 py-0.5 text-[10px] font-mono text-white/70">
+                <span className="ml-1 rounded bg-white/10 px-1.5 py-0.5 text-[10px] font-mono text-white/70 max-[480px]:hidden">
                   ⌘↵
                 </span>
               </>

@@ -628,7 +628,7 @@ export default function CadExtractorClient() {
           >
             <div className="mb-2 flex items-center justify-between">
               <h2 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-700">
-                Garment Photos
+                Garment photos
               </h2>
               <span className="text-[10px] text-neutral-500">
                 {selectedRefUrls.length}/{refs.length} selected
@@ -804,7 +804,7 @@ export default function CadExtractorClient() {
                         <button
                           type="button"
                           onClick={() => updateQueueItem(it.id, { status: "queued", error: undefined })}
-                          className="shrink-0 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-700 transition hover:bg-red-200"
+                          className="shrink-0 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-700 hover:underline"
                           title="Put this run back in the queue"
                         >
                           Retry
