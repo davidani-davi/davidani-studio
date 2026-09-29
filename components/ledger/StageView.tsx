@@ -86,8 +86,8 @@ function ShotFrame({
           }`}
         />
       </button>
-      <figcaption className="flex shrink-0 items-center gap-2">
-        <span className="font-mono text-[9px] font-medium uppercase tracking-[0.15em] text-neutral-400">
+      <figcaption className="flex max-w-full shrink-0 flex-wrap items-center justify-center gap-x-2 gap-y-1">
+        <span className="whitespace-nowrap font-mono text-[9px] font-medium uppercase tracking-[0.15em] text-neutral-400">
           {label}
         </span>
         {onKeep && (
@@ -185,8 +185,8 @@ function PaintingFrame({
           />
         </div>
       </div>
-      <figcaption className="flex shrink-0 items-center gap-2">
-        <span className="font-mono text-[9px] font-medium uppercase tracking-[0.15em] text-neutral-400">
+      <figcaption className="flex max-w-full shrink-0 flex-wrap items-center justify-center gap-x-2 gap-y-1">
+        <span className="whitespace-nowrap font-mono text-[9px] font-medium uppercase tracking-[0.15em] text-neutral-400">
           {label}
         </span>
         <span
@@ -242,7 +242,7 @@ function IntakeRail({
               ? "border-neutral-900 ring-1 ring-neutral-900"
               : "border-neutral-200 hover:border-neutral-400"
           }`}
-          style={{ aspectRatio: "4 / 5" }}
+          style={{ aspectRatio: "2 / 3" }}
         >
           <Thumb
             src={shot.url}
@@ -250,7 +250,7 @@ function IntakeRail({
             alt={`${shot.label} intake photo`}
             className="h-full w-full object-contain"
           />
-          <span className="absolute inset-x-0 bottom-0 bg-white/85 py-0.5 text-center font-mono text-[8px] font-bold uppercase tracking-[0.1em] text-neutral-600">
+          <span className="absolute inset-x-0 bottom-0 bg-white/90 py-0.5 text-center text-[10px] font-medium text-neutral-600">
             {shot.label}
           </span>
         </button>
@@ -266,7 +266,7 @@ export default function StageView({
   onDownload,
   onOpenDetails,
   frameAspect = { width: 2160, height: 2700 },
-  emptyHint = "Upload a product photo and press Generate. Finished runs land here at full size, and stack up in the ledger on the left.",
+  emptyHint = "Upload a product photo and press Generate. Finished runs land here at full size, and stack up in the run ledger.",
   pipeline = runPipeline,
   title = runTitle,
 }: {

@@ -358,13 +358,13 @@ export default function InspirationClient() {
         <aside className="border-b border-neutral-200 bg-white p-5 lg:border-b-0 lg:border-r">
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
-              Inspiration Library
+              Inspiration library
             </p>
-            <h1 className="mt-1 font-serif text-4xl leading-none text-neutral-950">
+            <h1 className="mt-1 text-xl font-medium leading-tight text-neutral-950">
               Collect. Tag. Create.
             </h1>
             <p className="mt-2 text-sm leading-relaxed text-neutral-500">
-              Save visual references here, let AI tag them, then remix the strongest ideas in Prompt Studio.
+              Save visual references here, let AI tag them, then remix the strongest ideas in Prompt studio.
             </p>
           </div>
 
@@ -470,7 +470,7 @@ export default function InspirationClient() {
                 className="inline-flex items-center justify-center gap-2 rounded-lg border border-neutral-200 px-3 py-2 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
               >
                 {analyzing ? <Spinner /> : IconSparkle}
-                AI Tag
+                AI tag
               </button>
               <button
                 type="button"
@@ -503,10 +503,12 @@ export default function InspirationClient() {
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="text-base font-semibold text-neutral-950">Moodboard</p>
-                    <span className="rounded-full bg-neutral-900 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-white">
-                      {sources.length} saved
-                    </span>
-                    {filteredSources.length !== sources.length ? (
+                    {loading ? null : (
+                      <span className="inline-flex h-[18px] items-center rounded bg-neutral-100 px-1.5 text-[11.5px] font-medium text-neutral-600">
+                        {sources.length} saved
+                      </span>
+                    )}
+                    {!loading && filteredSources.length !== sources.length ? (
                       <span className="rounded-full bg-neutral-100 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-neutral-500">
                         {filteredSources.length} showing
                       </span>
@@ -516,14 +518,17 @@ export default function InspirationClient() {
                     Use any saved reference as a design direction or bestseller remix.
                   </p>
                 </div>
-                <div className="rounded-full bg-neutral-100 p-1">
+                <div className="flex gap-1.5" role="group" aria-label="Card size">
                   {(["large", "dense"] as const).map((item) => (
                     <button
                       key={item}
                       type="button"
+                      aria-pressed={density === item}
                       onClick={() => setDensity(item)}
-                      className={`rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-wider transition ${
-                        density === item ? "bg-white text-neutral-950 shadow-sm" : "text-neutral-500 hover:text-neutral-800"
+                      className={`inline-flex h-[26px] items-center rounded border px-2.5 text-xs font-medium capitalize ${
+                        density === item
+                          ? "border-neutral-900 bg-neutral-900 text-white"
+                          : "border-neutral-200 bg-white text-neutral-600 hover:border-neutral-900 hover:text-neutral-900"
                       }`}
                     >
                       {item}
@@ -538,13 +543,14 @@ export default function InspirationClient() {
                   placeholder="Search western, barrel jeans, 4th of july..."
                   className="h-10 rounded-xl border border-neutral-200 bg-white px-3 text-sm outline-none focus:border-brand-500"
                 />
-                <div className="flex gap-2 overflow-x-auto pb-1">
+                <div className="flex flex-wrap content-start gap-1.5">
                   {["All", ...tags].map((tag) => (
                     <button
                       key={tag}
                       type="button"
+                      aria-pressed={activeTag === tag}
                       onClick={() => setActiveTag(tag)}
-                      className={`shrink-0 rounded-full border px-3 py-2 text-[10px] font-semibold uppercase tracking-wider transition ${
+                      className={`inline-flex h-[26px] items-center rounded border px-2.5 text-xs font-medium ${
                         activeTag === tag
                           ? "border-neutral-900 bg-neutral-900 text-white"
                           : "border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300"
@@ -558,7 +564,26 @@ export default function InspirationClient() {
             </div>
 
             {loading ? (
-              <div className="p-10 text-center text-sm text-neutral-500">Loading inspiration...</div>
+              <div
+                role="status"
+                aria-label="Loading inspiration"
+                className={`grid p-4 ${
+                  density === "large"
+                    ? "grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4"
+                    : "grid-cols-3 gap-2 md:grid-cols-4 md:gap-2.5 xl:grid-cols-6"
+                }`}
+              >
+                {Array.from({ length: density === "large" ? 8 : 12 }, (_, index) => (
+                  <div key={index} className="overflow-hidden rounded border border-neutral-200 bg-white">
+                    <div className="aspect-[2/3] animate-pulse bg-neutral-100" />
+                    <div className="space-y-2 p-2.5">
+                      <div className="h-3 w-3/4 animate-pulse rounded bg-neutral-100" />
+                      <div className="h-3 w-1/2 animate-pulse rounded bg-neutral-100" />
+                      <div className="h-[26px] animate-pulse rounded bg-neutral-100" />
+                    </div>
+                  </div>
+                ))}
+              </div>
             ) : sources.length === 0 ? (
               <div className="m-4 rounded-xl border border-dashed border-neutral-200 bg-neutral-50 p-10 text-center">
                 <p className="text-sm font-semibold text-neutral-800">Your first inspiration image will appear here.</p>
@@ -571,10 +596,10 @@ export default function InspirationClient() {
               </div>
             ) : (
               <div
-                className={`grid max-h-[calc(100vh-260px)] overflow-y-auto p-4 ${
+                className={`grid p-4 lg:max-h-[calc(100vh-260px)] lg:overflow-y-auto ${
                   density === "large"
                     ? "grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4"
-                    : "grid-cols-2 gap-2.5 md:grid-cols-4 xl:grid-cols-6"
+                    : "grid-cols-3 gap-2 md:grid-cols-4 md:gap-2.5 xl:grid-cols-6"
                 }`}
               >
                 {filteredSources.map((source) => {
@@ -588,10 +613,20 @@ export default function InspirationClient() {
                         <button
                           type="button"
                           onClick={() => image && setPreview(image)}
-                          className={`block w-full bg-neutral-100 ${density === "large" ? "aspect-[3/4]" : "aspect-[4/3]"}`}
+                          className={`block w-full bg-neutral-100 aspect-[2/3]`}
                         >
                           {image ? (
-                            <Thumb src={image} size={640} alt={source.title} className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]" />
+                            <Thumb
+                              src={image}
+                              size={density === "large" ? 640 : 384}
+                              alt={source.title}
+                              className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
+                              fallback={
+                                <span className="flex h-full items-center justify-center p-4 text-center text-xs text-neutral-500">
+                                  Image no longer available
+                                </span>
+                              }
+                            />
                           ) : (
                             <div className="flex h-full items-center justify-center p-4 text-center text-xs text-neutral-400">
                               Link saved without image preview
@@ -599,18 +634,7 @@ export default function InspirationClient() {
                           )}
                         </button>
                         {image ? (
-                          <div className="absolute inset-x-2 bottom-2 flex justify-end gap-1 opacity-0 transition group-hover:opacity-100">
-                            <button
-                              type="button"
-                              onClick={() => toggleSourceLike(source)}
-                              className={`rounded-full px-2.5 py-1 text-[10px] font-semibold shadow-sm backdrop-blur ${
-                                liked
-                                  ? "bg-brand-500 text-white hover:bg-brand-600"
-                                  : "bg-white/90 text-neutral-800 hover:bg-white"
-                              }`}
-                            >
-                              {liked ? "Liked" : "Like"}
-                            </button>
+                          <div className="absolute inset-x-2 bottom-2 flex flex-wrap justify-end gap-1 opacity-0 transition group-hover:opacity-100">
                             <button
                               type="button"
                               onClick={() => setPreview(image)}
@@ -649,55 +673,63 @@ export default function InspirationClient() {
                             )}
                           </div>
                         )}
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="min-w-0">
-                            <p className="truncate text-xs font-semibold text-neutral-950">{source.title}</p>
-                            <p className="mt-0.5 truncate text-[10px] text-neutral-500">{source.category}</p>
-                          </div>
-                          <div className="flex shrink-0 items-center gap-1">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setAddViewsTarget(source.id);
-                                window.setTimeout(() => addViewsInputRef.current?.click(), 0);
-                              }}
-                              className="rounded-full bg-neutral-100 px-2 py-1 text-[10px] font-semibold text-neutral-700 hover:bg-brand-50 hover:text-brand-700"
-                            >
-                              Add views
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => void deleteSource(source.id)}
-                              className="rounded-full px-2 py-1 text-[10px] font-semibold text-neutral-400 hover:bg-red-50 hover:text-red-600"
-                            >
-                              Remove
-                            </button>
-                          </div>
+                        <div className="min-w-0">
+                          <p className="truncate text-xs font-semibold text-neutral-950" title={source.title}>{source.title}</p>
+                          <p className="mt-0.5 truncate text-[11px] text-neutral-500">{source.category}</p>
                         </div>
                         <div className="mt-2 grid grid-cols-2 gap-1.5">
                           <button
                             type="button"
                             onClick={() => sendBestsellerRemix(source)}
-                            className="col-span-2 rounded-lg bg-neutral-950 px-2 py-1.5 text-[10px] font-semibold text-white hover:bg-neutral-800"
+                            title="Bestseller remix"
+                            className="col-span-2 truncate whitespace-nowrap rounded-lg border border-neutral-200 bg-white px-1.5 py-1 text-[11px] font-semibold text-neutral-800 hover:border-neutral-900"
                           >
-                            Bestseller Remix
+                            {/* Dense phone tiles are ~115px wide: the full label wrapped to two lines. */}
+                            {density === "dense" ? (
+                              <>
+                                <span className="md:hidden">Remix</span>
+                                <span className="hidden md:inline">Bestseller remix</span>
+                              </>
+                            ) : (
+                              "Bestseller remix"
+                            )}
                           </button>
                           <button
                             type="button"
+                            aria-pressed={liked}
                             onClick={() => toggleSourceLike(source)}
-                            className={`col-span-2 rounded-lg border px-2 py-1.5 text-[10px] font-semibold ${
+                            className={`col-span-2 truncate whitespace-nowrap rounded-lg border px-1.5 py-1 text-[11px] font-semibold ${
                               liked
-                                ? "border-brand-500 bg-brand-50 text-brand-700"
-                                : "border-neutral-200 text-neutral-700 hover:bg-neutral-50"
+                                ? "border-neutral-900 bg-neutral-900 text-white"
+                                : "border-neutral-200 bg-white text-neutral-700 hover:border-neutral-900"
                             }`}
                           >
-                            {liked ? "Liked for Taste" : "Like for Taste"}
+                            {liked ? "Liked for taste" : "Like for taste"}
+                          </button>
+                        </div>
+                        <div className="mt-1.5 flex items-center justify-between gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAddViewsTarget(source.id);
+                              window.setTimeout(() => addViewsInputRef.current?.click(), 0);
+                            }}
+                            className="whitespace-nowrap px-0 py-1 text-[11px] text-neutral-500 hover:text-neutral-950"
+                          >
+                            Add views
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void deleteSource(source.id)}
+                            className="whitespace-nowrap px-0 py-1 text-[11px] text-neutral-500 hover:text-red-600"
+                          >
+                            Remove
                           </button>
                         </div>
                         {source.tags?.length ? (
                           <div className="mt-2 flex flex-wrap gap-1">
                             {source.tags.slice(0, density === "large" ? 6 : 3).map((tag) => (
-                              <span key={tag} className="rounded-full bg-neutral-100 px-2 py-0.5 text-[9px] font-semibold text-neutral-600">
+                              <span key={tag} title={tag} className="h-[18px] max-w-full truncate rounded border border-neutral-200 px-1.5 text-[11px] leading-4 text-neutral-600">
                                 {tag}
                               </span>
                             ))}

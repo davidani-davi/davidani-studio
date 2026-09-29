@@ -50,7 +50,7 @@ export default function ModelAdmin(){
   return d.change;
  }
  async function action(body:Record<string,unknown>){setBusy(true);setError('');try{return await mutate(body);}catch(e:any){setError(e.message);}finally{setBusy(false);}}
- function pick(m:ManagedModel){setSelected(m.id);setPoseId('');setFrame('crop');setMessage('');}
+ function pick(m:ManagedModel){setSelected(m.id);setPoseId('');setFrame('crop');setMessage('');if(window.matchMedia?.('(max-width:700px)').matches)requestAnimationFrame(()=>document.querySelector('.ra-content')?.scrollIntoView({block:'start'}));}
  function choosePhoto(m:ManagedModel,p:ModelPose,view:PresetView,file:File){
   if(!['image/png','image/jpeg','image/webp'].includes(file.type)||file.size>20*1024*1024){setError('Choose a PNG, JPEG or WebP no larger than 20 MB.');return;}
   setEdit({model:m,pose:p,view,file,preview:URL.createObjectURL(file)});setProgress(0);setError('');
@@ -73,7 +73,7 @@ export default function ModelAdmin(){
   if(c){if(create==='model'){setSelected(c.modelId);setPoseId('');setTrash(false);setSection('tops');setSearch('');}else {setPoseId(c.poseId);setSection(newFrame==='low'?'bottoms':'tops');}setCreate(null);setNewName('');setNewGroup('');}
  }
  return <main className="reference-admin">
-  <header className="ra-header"><div><a href="/model-studio">← Model Studio</a><h1>Models &amp; pose references</h1><p>Manage the photos used by Model Studio on desktop and phone.</p><a href="/reference-identity-studio">Create reference identities ↗</a></div><button onClick={refresh} disabled={busy||loading}>Refresh</button></header>
+  <header className="ra-header"><div><h2 className="ra-page-title">Models &amp; pose references</h2><p>Manage the photos Single model and Multi model use, on desktop and phone.</p><a href="/reference-identity-studio">Create reference identities ↗</a></div><button onClick={refresh} disabled={busy||loading}>Refresh</button></header>
   {error&&<p role="alert" className="ra-error">{error} <a href="/login?next=/admin/models">Sign in</a></p>}
   {message&&<p role="status" className="ra-success">{message}</p>}
   <nav className="ra-collections" aria-label="Reference categories">

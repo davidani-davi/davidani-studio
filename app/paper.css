@@ -1,0 +1,227 @@
+/* Paper 1.2 — source of truth: ~/Code/DESIGN.md. This sheet lays Paper over
+   the studio's Tailwind markup: the theme (tailwind.config.ts) maps fonts,
+   radii, weights and the old brown to Paper, and the rules below catch what a
+   theme cannot (uppercase mono labels, shadows, rings, gradients). */
+:root, .paper-app {
+  --font: var(--font-inter), "Inter", system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  --page:#f4f3ef; --sheet:#fff; --fg:#1c1c1a; --muted:#6f6e69; --faint:#a3a29c;
+  --line:#e6e5e0; --line-soft:#eeede8; --r:3px;
+  --red:#a13a2f; --red-bg:#f8ebe8; --amber:#8a5a12; --amber-bg:#f7efe0;
+  --blue:#2f5d8a; --blue-bg:#e8eff6; --green:#2f6b3a; --green-bg:#e8f1e9; --grey-bg:#efeeea;
+  --polieco-bg:var(--page); --polieco-panel:var(--sheet); --polieco-panel-strong:var(--sheet);
+  --polieco-tint:var(--grey-bg); --polieco-tint-2:var(--page); --polieco-ink:var(--fg);
+  --polieco-soft:var(--muted); --polieco-faint:var(--line-soft); --polieco-line:var(--line);
+  --polieco-accent:var(--fg); --polieco-accent-soft:var(--grey-bg); --polieco-success:var(--green);
+  --polieco-panel-shadow:none; --polieco-small-shadow:none;
+  --polieco-fast:280ms cubic-bezier(.23,1,.32,1); --polieco-medium:340ms cubic-bezier(.23,1,.32,1);
+  --font-manrope:var(--font); --font-instrument-serif:var(--font); --font-jetbrains-mono:var(--font);
+  --ui-background:244 243 239; --ui-foreground:28 28 26; --ui-card:255 255 255;
+  --ui-muted:239 238 234; --ui-muted-foreground:111 110 105; --ui-primary:28 28 26;
+  --ui-primary-foreground:255 255 255; --ui-border:230 229 224;
+  --ui-destructive:161 58 47; --ui-ring:28 28 26;
+}
+html, body.paper-app { background:var(--page); color:var(--fg); font-family:var(--font); font-size:14px; line-height:1.55; }
+body.paper-app { padding-bottom:0; }
+.paper-app :is(h1,h2,h3,h4,strong,b) { font-weight:500; letter-spacing:-.01em; }
+.paper-app :is(.font-mono,.font-serif,.prompt-mono,[class*="tracking-wide"]) { font-family:var(--font); }
+.paper-app :is(.uppercase,[class*="tracking-wid"]) { text-transform:none; letter-spacing:0; }
+.paper-app :is(button,input,textarea,select) { font-family:var(--font); border-radius:var(--r); box-shadow:none; }
+.paper-app :is(button,a,input,textarea,select) { transition-property:color,background-color,border-color; transition-duration:280ms; transition-timing-function:cubic-bezier(.23,1,.32,1); }
+.paper-app :is(input,textarea,select):focus-visible { outline:1px solid var(--fg); outline-offset:0; border-color:var(--fg); }
+.paper-app :is(button,a):focus-visible { outline:2px solid var(--blue); outline-offset:3px; }
+.paper-app input[type=checkbox] { border-width:1px; border-radius:3px; box-shadow:none; color:var(--sheet); }
+.paper-app [class*="shadow"] { box-shadow:none !important; }
+.paper-app [class*="rounded-"]:not(.rounded-full):not(img):not(svg) { border-radius:var(--r) !important; }
+/* Circles are for avatars, dots and spinners; a padded rounded-full is a pill or a button. */
+.paper-app .rounded-full[class*="px-"] { border-radius:var(--r) !important; }
+.paper-app :is([class*="ring-1"],[class*="ring-2"],[class*="ring-4"]):not(:focus-visible) { box-shadow:none !important; }
+.paper-app :is(.border-2,.border-b-2,.border-t-2):not(.animate-spin) { border-width:1px; }
+.paper-app :is(.bg-gradient-to-b,.bg-gradient-to-r,.bg-gradient-to-br) { background-image:none; }
+.paper-app button.bg-gradient-to-b { background-color:var(--fg); }
+.paper-app :is(.studio-workspace,.model-sidebar,.image-sidebar,.model-direction-panel,.studio-resizer,.job-row) { background:var(--sheet); box-shadow:none; }
+.paper-app :is(.model-sidebar-card,.image-sidebar-card) { background:var(--sheet); box-shadow:none; }
+.paper-app :is(.model-studio-layout,.image-studio-layout) { background:var(--page); gap:0; }
+/* Tiny labels were legible only as uppercase mono; in Inter they need 11-12px. */
+.paper-app :is([class*="text-[7"],[class*="text-[8"]) { font-size:11px; }
+.paper-app :is([class*="text-[9px]"],[class*="text-[9.5px]"],[class*="text-[10px]"],[class*="text-[10.5px]"]) { font-size:11.5px; }
+.paper-app :is(.studio-resizer__handle,.job-center-trigger__dot) { box-shadow:none; }
+.paper-app .studio-resizer__handle { width:1px; }
+
+/* Tailwind's saturated status colours → Paper's tint pairs (DESIGN.md: red
+   error, amber warning, blue info, green saved). Whole-token matches, so
+   bg-red-50 never catches bg-red-500; hover variants only on hover. */
+.paper-app :is([class~="bg-red-50"],[class~="bg-red-100"],[class~="bg-red-50/50"],[class~="bg-red-50/60"],[class~="bg-red-500/10"],[class~="bg-rose-50"],[class~="bg-rose-100"],[class~="bg-rose-50/50"],[class~="bg-rose-50/60"],[class~="bg-rose-500/10"]) { background-color:var(--red-bg); }
+.paper-app :is([class~="hover:bg-red-50"],[class~="hover:bg-red-100"],[class~="hover:bg-rose-50"],[class~="hover:bg-rose-100"]):hover { background-color:var(--red-bg); }
+.paper-app :is([class~="bg-red-400"],[class~="bg-red-500"],[class~="bg-red-600"],[class~="bg-red-700"],[class~="bg-rose-400"],[class~="bg-rose-500"],[class~="bg-rose-600"],[class~="bg-rose-700"]) { background-color:var(--red); }
+.paper-app :is([class~="text-red-400"],[class~="text-red-500"],[class~="text-red-600"],[class~="text-red-700"],[class~="text-red-800"],[class~="text-red-900"],[class~="text-rose-400"],[class~="text-rose-500"],[class~="text-rose-600"],[class~="text-rose-700"],[class~="text-rose-800"],[class~="text-rose-900"]) { color:var(--red); }
+.paper-app :is([class~="hover:text-red-600"],[class~="hover:text-red-700"],[class~="hover:text-rose-600"],[class~="hover:text-rose-700"]):hover { color:var(--red); }
+.paper-app :is([class~="border-red-100"],[class~="border-red-200"],[class~="border-red-300"],[class~="border-red-500/30"],[class~="border-rose-100"],[class~="border-rose-200"],[class~="border-rose-300"],[class~="border-rose-500/30"]) { border-color:var(--line); }
+.paper-app :is([class~="border-red-400"],[class~="border-red-500"],[class~="border-red-600"],[class~="border-red-700"],[class~="border-rose-400"],[class~="border-rose-500"],[class~="border-rose-600"],[class~="border-rose-700"]) { border-color:var(--red); }
+.paper-app :is([class~="bg-amber-50"],[class~="bg-amber-100"],[class~="bg-amber-50/50"],[class~="bg-amber-50/60"],[class~="bg-amber-500/10"],[class~="bg-yellow-50"],[class~="bg-yellow-100"],[class~="bg-yellow-50/50"],[class~="bg-yellow-50/60"],[class~="bg-yellow-500/10"],[class~="bg-orange-50"],[class~="bg-orange-100"],[class~="bg-orange-50/50"],[class~="bg-orange-50/60"],[class~="bg-orange-500/10"]) { background-color:var(--amber-bg); }
+.paper-app :is([class~="hover:bg-amber-50"],[class~="hover:bg-amber-100"],[class~="hover:bg-yellow-50"],[class~="hover:bg-yellow-100"],[class~="hover:bg-orange-50"],[class~="hover:bg-orange-100"]):hover { background-color:var(--amber-bg); }
+.paper-app :is([class~="bg-amber-400"],[class~="bg-amber-500"],[class~="bg-amber-600"],[class~="bg-amber-700"],[class~="bg-yellow-400"],[class~="bg-yellow-500"],[class~="bg-yellow-600"],[class~="bg-yellow-700"],[class~="bg-orange-400"],[class~="bg-orange-500"],[class~="bg-orange-600"],[class~="bg-orange-700"]) { background-color:var(--amber); }
+.paper-app :is([class~="text-amber-400"],[class~="text-amber-500"],[class~="text-amber-600"],[class~="text-amber-700"],[class~="text-amber-800"],[class~="text-amber-900"],[class~="text-yellow-400"],[class~="text-yellow-500"],[class~="text-yellow-600"],[class~="text-yellow-700"],[class~="text-yellow-800"],[class~="text-yellow-900"],[class~="text-orange-400"],[class~="text-orange-500"],[class~="text-orange-600"],[class~="text-orange-700"],[class~="text-orange-800"],[class~="text-orange-900"]) { color:var(--amber); }
+.paper-app :is([class~="hover:text-amber-600"],[class~="hover:text-amber-700"],[class~="hover:text-yellow-600"],[class~="hover:text-yellow-700"],[class~="hover:text-orange-600"],[class~="hover:text-orange-700"]):hover { color:var(--amber); }
+.paper-app :is([class~="border-amber-100"],[class~="border-amber-200"],[class~="border-amber-300"],[class~="border-amber-500/30"],[class~="border-yellow-100"],[class~="border-yellow-200"],[class~="border-yellow-300"],[class~="border-yellow-500/30"],[class~="border-orange-100"],[class~="border-orange-200"],[class~="border-orange-300"],[class~="border-orange-500/30"]) { border-color:var(--line); }
+.paper-app :is([class~="border-amber-400"],[class~="border-amber-500"],[class~="border-amber-600"],[class~="border-amber-700"],[class~="border-yellow-400"],[class~="border-yellow-500"],[class~="border-yellow-600"],[class~="border-yellow-700"],[class~="border-orange-400"],[class~="border-orange-500"],[class~="border-orange-600"],[class~="border-orange-700"]) { border-color:var(--amber); }
+.paper-app :is([class~="bg-blue-50"],[class~="bg-blue-100"],[class~="bg-blue-50/50"],[class~="bg-blue-50/60"],[class~="bg-blue-500/10"],[class~="bg-sky-50"],[class~="bg-sky-100"],[class~="bg-sky-50/50"],[class~="bg-sky-50/60"],[class~="bg-sky-500/10"],[class~="bg-indigo-50"],[class~="bg-indigo-100"],[class~="bg-indigo-50/50"],[class~="bg-indigo-50/60"],[class~="bg-indigo-500/10"]) { background-color:var(--blue-bg); }
+.paper-app :is([class~="hover:bg-blue-50"],[class~="hover:bg-blue-100"],[class~="hover:bg-sky-50"],[class~="hover:bg-sky-100"],[class~="hover:bg-indigo-50"],[class~="hover:bg-indigo-100"]):hover { background-color:var(--blue-bg); }
+.paper-app :is([class~="bg-blue-400"],[class~="bg-blue-500"],[class~="bg-blue-600"],[class~="bg-blue-700"],[class~="bg-sky-400"],[class~="bg-sky-500"],[class~="bg-sky-600"],[class~="bg-sky-700"],[class~="bg-indigo-400"],[class~="bg-indigo-500"],[class~="bg-indigo-600"],[class~="bg-indigo-700"]) { background-color:var(--blue); }
+.paper-app :is([class~="text-blue-400"],[class~="text-blue-500"],[class~="text-blue-600"],[class~="text-blue-700"],[class~="text-blue-800"],[class~="text-blue-900"],[class~="text-sky-400"],[class~="text-sky-500"],[class~="text-sky-600"],[class~="text-sky-700"],[class~="text-sky-800"],[class~="text-sky-900"],[class~="text-indigo-400"],[class~="text-indigo-500"],[class~="text-indigo-600"],[class~="text-indigo-700"],[class~="text-indigo-800"],[class~="text-indigo-900"]) { color:var(--blue); }
+.paper-app :is([class~="hover:text-blue-600"],[class~="hover:text-blue-700"],[class~="hover:text-sky-600"],[class~="hover:text-sky-700"],[class~="hover:text-indigo-600"],[class~="hover:text-indigo-700"]):hover { color:var(--blue); }
+.paper-app :is([class~="border-blue-100"],[class~="border-blue-200"],[class~="border-blue-300"],[class~="border-blue-500/30"],[class~="border-sky-100"],[class~="border-sky-200"],[class~="border-sky-300"],[class~="border-sky-500/30"],[class~="border-indigo-100"],[class~="border-indigo-200"],[class~="border-indigo-300"],[class~="border-indigo-500/30"]) { border-color:var(--line); }
+.paper-app :is([class~="border-blue-400"],[class~="border-blue-500"],[class~="border-blue-600"],[class~="border-blue-700"],[class~="border-sky-400"],[class~="border-sky-500"],[class~="border-sky-600"],[class~="border-sky-700"],[class~="border-indigo-400"],[class~="border-indigo-500"],[class~="border-indigo-600"],[class~="border-indigo-700"]) { border-color:var(--blue); }
+.paper-app :is([class~="bg-emerald-50"],[class~="bg-emerald-100"],[class~="bg-emerald-50/50"],[class~="bg-emerald-50/60"],[class~="bg-emerald-500/10"],[class~="bg-green-50"],[class~="bg-green-100"],[class~="bg-green-50/50"],[class~="bg-green-50/60"],[class~="bg-green-500/10"],[class~="bg-teal-50"],[class~="bg-teal-100"],[class~="bg-teal-50/50"],[class~="bg-teal-50/60"],[class~="bg-teal-500/10"]) { background-color:var(--green-bg); }
+.paper-app :is([class~="hover:bg-emerald-50"],[class~="hover:bg-emerald-100"],[class~="hover:bg-green-50"],[class~="hover:bg-green-100"],[class~="hover:bg-teal-50"],[class~="hover:bg-teal-100"]):hover { background-color:var(--green-bg); }
+.paper-app :is([class~="bg-emerald-400"],[class~="bg-emerald-500"],[class~="bg-emerald-600"],[class~="bg-emerald-700"],[class~="bg-green-400"],[class~="bg-green-500"],[class~="bg-green-600"],[class~="bg-green-700"],[class~="bg-teal-400"],[class~="bg-teal-500"],[class~="bg-teal-600"],[class~="bg-teal-700"]) { background-color:var(--green); }
+.paper-app :is([class~="text-emerald-400"],[class~="text-emerald-500"],[class~="text-emerald-600"],[class~="text-emerald-700"],[class~="text-emerald-800"],[class~="text-emerald-900"],[class~="text-green-400"],[class~="text-green-500"],[class~="text-green-600"],[class~="text-green-700"],[class~="text-green-800"],[class~="text-green-900"],[class~="text-teal-400"],[class~="text-teal-500"],[class~="text-teal-600"],[class~="text-teal-700"],[class~="text-teal-800"],[class~="text-teal-900"]) { color:var(--green); }
+.paper-app :is([class~="hover:text-emerald-600"],[class~="hover:text-emerald-700"],[class~="hover:text-green-600"],[class~="hover:text-green-700"],[class~="hover:text-teal-600"],[class~="hover:text-teal-700"]):hover { color:var(--green); }
+.paper-app :is([class~="border-emerald-100"],[class~="border-emerald-200"],[class~="border-emerald-300"],[class~="border-emerald-500/30"],[class~="border-green-100"],[class~="border-green-200"],[class~="border-green-300"],[class~="border-green-500/30"],[class~="border-teal-100"],[class~="border-teal-200"],[class~="border-teal-300"],[class~="border-teal-500/30"]) { border-color:var(--line); }
+.paper-app :is([class~="border-emerald-400"],[class~="border-emerald-500"],[class~="border-emerald-600"],[class~="border-emerald-700"],[class~="border-green-400"],[class~="border-green-500"],[class~="border-green-600"],[class~="border-green-700"],[class~="border-teal-400"],[class~="border-teal-500"],[class~="border-teal-600"],[class~="border-teal-700"]) { border-color:var(--green); }
+
+/* Error toasts: a hairline card whose text carries the red, not a red slab. */
+.paper-app .fixed:is([class~="bg-red-600"]):is([class~="text-white"]) { background-color:var(--sheet); color:var(--red); border:1px solid var(--line); border-radius:3px; box-shadow:none; }
+@media(max-width:480px){ .paper-app .fixed:is([class~="bg-red-600"]):is([class~="text-white"]) { left:16px; right:16px; bottom:calc(16px + env(safe-area-inset-bottom)); max-width:none; } }
+/* A disabled secondary keeps its box and mutes its label instead of fading. */
+.paper-app button:disabled:is([class~="bg-white"],[class*="disabled:opacity-"]) { opacity:1; color:var(--muted); }
+.paper-app button:disabled:is([class*="disabled:opacity-"]):not([class~="bg-white"]) { border-color:var(--line); }
+/* A disabled primary reads as unavailable: hairline and muted, not faded ink. */
+.paper-app button:disabled:is([class~="bg-neutral-900"],[class~="bg-neutral-950"],[class~="bg-black"],[class~="bg-primary"],[class~="bg-brand-500"],[class~="bg-neutral-300"],.bg-gradient-to-b),
+.paper-app :is(.reference-admin .ra-primary,.identity-studio .ri-primary):disabled { background-color:var(--sheet); color:var(--muted); border:1px solid var(--line); opacity:1; }
+
+/* Shared shell, after the Paper phone shell: a title bar (15/500 title, muted
+   tagline beside it), then one row of 26px chips and the tool links. Every
+   destination stays a visible link, on every screen size. */
+.paper-app .studio-header { position:relative; top:auto; display:grid; grid-template-columns:minmax(0,1fr) auto; grid-template-areas:"brand meta" "tabs tabs"; align-items:center; column-gap:24px; row-gap:0; flex:none; padding:0 16px; min-height:0; background:var(--page); border-bottom:1px solid var(--line); box-shadow:none; backdrop-filter:none; z-index:30; }
+.studio-header__brand { grid-area:brand; display:flex; align-items:baseline; gap:8px; min-width:0; padding:12px 0 10px; }
+.studio-eyebrow { flex:none; color:var(--muted); font-size:13px; text-decoration:none; }
+.studio-eyebrow:hover { color:var(--fg); }
+.studio-header__sep { flex:none; color:var(--faint); font-size:13px; }
+.paper-app .studio-title { flex:none; margin:0; font-size:15px; line-height:1.4; font-weight:500; color:var(--fg); white-space:nowrap; }
+.paper-app .studio-subtitle { display:block; flex:0 1 auto; min-width:0; margin:0 0 0 6px; color:var(--muted); font-size:13px; line-height:1.4; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.paper-app .studio-header__meta { grid-area:meta; position:relative; top:auto; right:auto; display:flex; flex-wrap:wrap; justify-content:flex-end; align-items:center; gap:12px; min-width:0; }
+.paper-navigation { grid-area:tabs; display:flex; flex-wrap:wrap; align-items:center; gap:8px 16px; min-width:0; padding-bottom:10px; }
+.paper-workspaces { display:flex; flex-wrap:wrap; gap:6px; }
+.paper-workspaces a { display:inline-flex; align-items:center; height:26px; border:1px solid var(--line); border-radius:3px; padding:0 10px; color:var(--muted); font-size:12px; font-weight:500; background:var(--sheet); }
+.paper-workspaces a:hover { color:var(--fg); border-color:var(--fg); }
+.paper-workspaces a[aria-current] { background:var(--fg); border-color:var(--fg); color:#fff; }
+.paper-tools { display:flex; flex-wrap:wrap; align-items:center; gap:0 16px; padding-left:16px; border-left:1px solid var(--line); }
+.paper-tools a { font-size:12px; line-height:18px; padding:4px 0; color:var(--muted); border-bottom:1px solid transparent; }
+.paper-tools a:hover, .paper-tools a[aria-current] { color:var(--fg); border-bottom-color:var(--fg); }
+.paper-app .studio-metrics { display:flex; gap:12px; flex-wrap:wrap; }
+.paper-app .studio-metric { display:inline-flex; gap:6px; border:0; padding:0; background:none; font:12px var(--font); color:var(--muted); }
+.paper-app .studio-metric strong { color:var(--fg); }
+.paper-app .job-center-trigger { height:26px; border:1px solid var(--line); border-radius:3px; padding:0 10px; background:var(--sheet); color:var(--fg); box-shadow:none; font:12px var(--font); }
+.paper-app .job-center-trigger span:not(.job-center-trigger__dot) { display:inline; }
+.paper-app .job-center-panel { background:var(--sheet); border:1px solid var(--line); border-radius:3px; box-shadow:none; }
+.paper-app :is(.job-row,.activity-row,.job-center-summary span,.job-center-empty--compact,.job-row__status,.job-center-actor select,.job-center-close) { border-radius:3px; }
+.paper-app :is(.job-center-eyebrow,.job-center-group__title) { font:12px var(--font); letter-spacing:0; text-transform:none; }
+/* Job Center, on Paper: sentence-case 12px labels at 400/500, hairline rows on
+   the sheet, tint pairs for status, no gradients. */
+.paper-app .job-center-panel { backdrop-filter:none; }
+.paper-app .job-center-trigger:hover { border-color:var(--fg); }
+.paper-app .job-center-trigger strong { font-weight:500; color:var(--fg); }
+.paper-app .job-center-trigger--active .job-center-trigger__dot { background:var(--green); box-shadow:none; animation:none; }
+.paper-app .job-center-panel__header { border-bottom:1px solid var(--line); }
+.paper-app .job-center-panel__header h2 { font-size:15px; font-weight:500; letter-spacing:0; color:var(--fg); }
+.paper-app .job-center-close { height:26px; padding:0 10px; border:1px solid var(--line); background:var(--sheet); color:var(--fg); font:500 12px var(--font); letter-spacing:0; text-transform:none; }
+.paper-app .job-center-close:hover { border-color:var(--fg); }
+.paper-app .job-center-summary span { background:none; border:1px solid var(--line); color:var(--muted); font-weight:500; }
+.paper-app .job-center-summary .job-center-actor span { border:0; padding:0; font-weight:400; }
+.paper-app :is(.job-center-actor,.job-center-group__head button,.job-row__time,.activity-row span,.activity-row time) { font-weight:400; letter-spacing:0; text-transform:none; color:var(--muted); }
+.paper-app .job-center-actor select { background:var(--sheet); border-color:var(--line); color:var(--fg); font-weight:400; }
+.paper-app .job-center-empty { color:var(--muted); }
+.paper-app .job-center-empty--compact { border:1px dashed var(--line); }
+.paper-app :is(.job-row,.job-row--queued,.job-row--analyzing,.job-row--generating,.job-row--saving,.activity-row) { background:var(--sheet); border:1px solid var(--line); }
+.paper-app .job-row__studio { font-weight:400; font-size:12px; letter-spacing:0; text-transform:none; color:var(--muted); }
+.paper-app .job-row__label { font-weight:500; color:var(--fg); }
+.paper-app .job-row__error { color:var(--red); }
+.paper-app .job-row__status { height:18px; display:inline-flex; align-items:center; padding:0 6px; background:var(--grey-bg); color:var(--muted); font:500 11.5px var(--font); letter-spacing:0; text-transform:none; }
+.paper-app .job-row--done .job-row__status { background:var(--green-bg); color:var(--green); }
+.paper-app .job-row--failed .job-row__status { background:var(--red-bg); color:var(--red); }
+.paper-app :is(.job-row--queued,.job-row--analyzing,.job-row--generating,.job-row--saving) .job-row__status { background:var(--amber-bg); color:var(--amber); }
+.paper-app :is(.job-row__actions a,.job-row__actions button) { display:inline-flex; align-items:center; justify-content:center; min-height:26px; padding:0 10px; border:1px solid var(--line); border-radius:3px; background:var(--sheet); font-weight:500; color:var(--fg); letter-spacing:0; text-transform:none; text-decoration:none; }
+.paper-app .job-row__actions button { width:26px; padding:0; }
+.paper-app :is(.job-row__actions a,.job-row__actions button):hover { border-color:var(--fg); }
+@media(max-width:480px){ .paper-app :is(.job-row__actions a,.job-row__actions button) { min-height:32px; } .paper-app .job-row__actions button { width:32px; } }
+.paper-app .activity-row p { color:var(--fg); }
+.paper-app .activity-row strong { font-weight:500; }
+.paper-app .prompt-action-bar { position:relative; bottom:auto; margin:0; border-radius:3px; background:var(--sheet); box-shadow:none; backdrop-filter:none; }
+.paper-app [role=tablist] { gap:6px; border:0; background:transparent; padding:0; flex-wrap:wrap; }
+.paper-app [role=tab] { border:1px solid var(--line); border-radius:3px; }
+.paper-app [role=tab][aria-selected=true] { border-color:var(--fg); background:var(--fg); color:white; }
+
+/* Specialist surfaces use their existing geometry and the shared Paper rules. */
+.paper-app :is(.reference-admin,.identity-studio) { background:var(--page); color:var(--fg); font-family:var(--font); }
+.paper-app :is(.reference-admin,.identity-studio) :is(button,input,select,textarea,[class*=ra-],[class*=ri-]) { border-radius:3px; box-shadow:none; }
+.paper-app :is(.reference-admin,.identity-studio) h1 { font-size:22px; font-weight:500; letter-spacing:-.01em; }
+.paper-app :is(.reference-admin,.identity-studio) h2 { font-size:16px; font-weight:500; }
+.paper-app :is(.reference-admin,.identity-studio) :is(.ra-collections button,.ra-model.selected,.ri-identities button.selected) { border:1px solid var(--line); box-shadow:none; }
+.paper-app :is(.reference-admin,.identity-studio) :is(.ra-model.selected,.ri-identities button.selected) { border-color:var(--fg); background:var(--page); }
+.paper-app .reference-admin .ra-collections button[aria-pressed=true] { border-color:var(--fg); background:var(--fg); color:var(--sheet); font-weight:500; }
+.paper-app .reference-admin .ra-collections button[aria-pressed=true] span { background:transparent; color:inherit; }
+.paper-app :is(.ra-library,.ra-content,.ri-view,.ri-actionbar) { background:var(--sheet); border-color:var(--line); }
+.paper-app .ra-collections { gap:8px; padding-bottom:12px; flex-wrap:wrap; }
+.paper-app .ra-eyebrow { letter-spacing:0; text-transform:none; color:var(--muted); }
+/* The global header already names the page and links back, so these pages
+   open with an h2 and carry Inter 400/500 only, with 28px controls. */
+.paper-app :is(.reference-admin,.identity-studio) :is(h1,h2,h3,b,strong,.ra-eyebrow,.ra-settings[open]>summary) { font-weight:500; letter-spacing:0; }
+.paper-app :is(.reference-admin,.identity-studio) :is(.ra-page-title,.ri-page-title) { margin:0 0 4px; font-size:22px; font-weight:500; letter-spacing:-.01em; }
+.paper-app .reference-admin .ra-collections button[aria-pressed=true] { font-weight:500; }
+.paper-app :is(.reference-admin button:not(.ra-model),.reference-admin .ra-file,.identity-studio button:not(.ri-identities button),.identity-studio .ri-upload) { min-height:28px; padding:4px 12px; font-size:13px; }
+.paper-app :is(.reference-admin,.identity-studio) :is(input:not([type=checkbox]):not([type=range]):not([type=file]),select) { min-height:32px; padding:5px 10px; }
+.paper-app .reference-admin .ra-settings>summary { min-height:0; }
+.paper-app .ra-library-tools .ra-primary { width:auto; justify-self:start; align-self:flex-start; }
+.paper-app .ra-header>button { margin-top:0; }
+.paper-login form { padding:40px; border:1px solid var(--line); border-radius:3px; }
+.paper-login h1 { font-size:22px; }
+.paper-login button[type=submit] { width:auto; padding:7px 18px; }
+
+/* The tools only fit beside the chips from ~1303px; below that they take their
+   own row, flush with the chips, with no leading hairline. */
+@media(max-width:1319px) {
+  .paper-tools { flex-basis:100%; padding-left:0; border-left:0; }
+}
+
+@media(max-width:767px) {
+  .paper-app .studio-header { grid-template-columns:minmax(0,1fr); grid-template-areas:"brand" "meta" "tabs"; }
+  .studio-header__brand { flex-wrap:wrap; row-gap:2px; padding-bottom:8px; }
+  .paper-app .studio-subtitle { flex-basis:100%; margin:0; white-space:normal; }
+  .paper-app .studio-header__meta { justify-content:flex-start; padding-bottom:10px; }
+  .paper-app .studio-metrics { display:flex; }
+  .paper-tools a { padding-block:7px; }
+  /* A full-screen sheet on phone, so the queue never floats over the ledger. */
+  .paper-app .job-center-panel { position:fixed; inset:0; width:auto; max-height:none; border:0; border-radius:0; overflow-y:auto; z-index:60; }
+  .paper-app .job-center-list { max-height:none; }
+  .paper-app .fixed.bottom-6.right-6 { bottom:16px; }
+  .paper-app :is(input,textarea,select) { font-size:16px; }
+}
+@media(prefers-reduced-motion:reduce) {
+  .paper-app *, .paper-app *::before, .paper-app *::after { animation-duration:.01ms !important; transition-duration:.01ms !important; }
+}
+
+.paper-app .studio-boot { background:var(--page); backdrop-filter:none; }
+.paper-app .studio-boot__logo { border-radius:3px; box-shadow:none; font-weight:500; }
+.paper-app .studio-boot__text { font:12px var(--font); text-transform:none; letter-spacing:0; }
+.paper-app .group button[class*="group-hover:opacity-100"] { opacity:1; }
+@media(max-width:767px) {
+  html, body.paper-app { height:auto; overflow-x:clip; overflow-y:visible; }
+  .paper-app .ri-identities { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); overflow:visible; }
+  .paper-app .ri-identities button { min-width:0; }
+  .paper-app .paper-composer-dock { position:relative; }
+  .paper-app .image-studio-ledger { height:auto; }
+  .paper-app .image-studio-ledger>.overflow-y-auto { padding-bottom:12px !important; min-height:120px; }
+}
+
+/* Secondary buttons: page fill and an ink border on hover. */
+.paper-app button:not(:disabled):not([class~="text-left"]):is([class~="bg-white"]):is([class~="border"]):hover { background-color:var(--page); border-color:var(--fg); }
+.paper-app .identity-studio .ri-header { align-items:baseline; }
+.paper-app :is([class~="border-neutral-900"],[class~="border-neutral-950"]) { border-color:var(--fg); }
+/* Prompt action bar = Paper's bottom bar: auto-width 34px actions on desktop, one row of equal-width 44px
+   buttons on phones (globals.css stacks them as 46px full-width bars). The Variants picker keeps small chips. */
+.paper-app .prompt-action-bar > div > button { min-height:34px; padding-top:0; padding-bottom:0; }
+.paper-app .prompt-action-bar > label button { min-height:28px; min-width:32px; padding-top:0; padding-bottom:0; }
+@media(max-width:767px) {
+  .paper-app .prompt-action-bar > div { grid-template-columns:none; grid-auto-flow:column; grid-auto-columns:minmax(0,1fr); }
+  .paper-app .prompt-action-bar > div > button { min-height:44px; }
+}

@@ -212,7 +212,7 @@ function updateImageJob(id: string, patch: Partial<ImageJob>) {
     readImageJobs().find((job) => job.id === id) || {
       id,
       status: "generating",
-      label: "Image Studio generation",
+      label: "Image studio generation",
       startedAt: Date.now(),
       updatedAt: Date.now(),
     };
@@ -799,7 +799,7 @@ export default function StudioPage() {
     writeImageJob({
       id: jobId,
       status: "analyzing",
-      label: "Image Studio generation",
+      label: "Image studio generation",
       startedAt: Date.now(),
       updatedAt: Date.now(),
     });
@@ -811,7 +811,7 @@ export default function StudioPage() {
       {
         id: jobId,
         kind: "image",
-        label: "Image Studio generation",
+        label: "Image studio generation",
         historyKey: HISTORY_KEY,
         currentIdKey: CURRENT_ID_KEY,
       },
@@ -1676,7 +1676,7 @@ export default function StudioPage() {
     <main className="flex min-h-screen flex-col bg-neutral-50 lg:h-screen">
       <StudioHeader
         active="image"
-        title="Image Studio"
+        title="Image studio"
         subtitle="Generate clean product photos from uploaded garments."
         badge="V2.3"
         metrics={[

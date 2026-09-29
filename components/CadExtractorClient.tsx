@@ -17,9 +17,9 @@ const REFS_KEY = "davidani_cad_refs_v1";
 type ModeId = CadMode | "spec";
 
 const MODE_OPTIONS: { id: ModeId; label: string; blurb: string }[] = [
-  { id: "flat", label: "Flat Artwork Recovery", blurb: "Recover the flat printed artwork. No seamless tiling." },
-  { id: "seamless", label: "Seamless Production CAD", blurb: "Perfectly tileable square repeat. Infers hidden artwork." },
-  { id: "spec", label: "Spec Analysis", blurb: "Text spec: repeat type, colors, motifs, technique." },
+  { id: "flat", label: "Flat artwork recovery", blurb: "Recover the flat printed artwork. No seamless tiling." },
+  { id: "seamless", label: "Seamless production CAD", blurb: "Perfectly tileable square repeat. Infers hidden artwork." },
+  { id: "spec", label: "Spec analysis", blurb: "Text spec: repeat type, colors, motifs, technique." },
 ];
 
 type QueueStatus = "queued" | "running" | "done" | "failed";
@@ -548,7 +548,7 @@ export default function CadExtractorClient() {
     >
       <StudioHeader
         active="cad"
-        title="CAD Pattern Extractor"
+        title="CAD extractor"
         subtitle="Recover production-ready textile CAD artwork from garment photos."
         metrics={[
           { label: "Refs", value: selectedRefUrls.length },
@@ -628,7 +628,7 @@ export default function CadExtractorClient() {
           >
             <div className="mb-2 flex items-center justify-between">
               <h2 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-700">
-                Garment Photos
+                Garment photos
               </h2>
               <span className="text-[10px] text-neutral-500">
                 {selectedRefUrls.length}/{refs.length} selected
@@ -670,7 +670,7 @@ export default function CadExtractorClient() {
                   return (
                     <div
                       key={u.url}
-                      className={`group relative aspect-square overflow-hidden rounded-lg border ${
+                      className={`group relative aspect-[2/3] overflow-hidden rounded-lg border ${
                         selected ? "border-neutral-900 ring-2 ring-neutral-900/10" : "border-neutral-200"
                       }`}
                     >
@@ -716,7 +716,7 @@ export default function CadExtractorClient() {
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder={`e.g. base cloth is cream\nignore the chest pocket flap\nthe stars are screen-printed and intentionally cracked`}
                   disabled={running}
-                  className="prompt-mono min-h-0 flex-1 resize-none rounded-lg border border-neutral-200 px-4 py-3 text-[13px] leading-relaxed outline-none placeholder:text-neutral-400 focus:border-brand-500 disabled:bg-neutral-50"
+                  className="prompt-mono min-h-[240px] flex-1 lg:min-h-0 resize-none rounded-lg border border-neutral-200 px-4 py-3 text-[13px] leading-relaxed outline-none placeholder:text-neutral-400 focus:border-brand-500 disabled:bg-neutral-50"
                 />
               </label>
             ) : (
@@ -804,7 +804,7 @@ export default function CadExtractorClient() {
                         <button
                           type="button"
                           onClick={() => updateQueueItem(it.id, { status: "queued", error: undefined })}
-                          className="shrink-0 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-700 transition hover:bg-red-200"
+                          className="shrink-0 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-700 hover:underline"
                           title="Put this run back in the queue"
                         >
                           Retry
@@ -835,24 +835,24 @@ export default function CadExtractorClient() {
             <span className="text-xs text-neutral-500">
               {selectedRefUrls.length
                 ? `${selectedRefUrls.length} photo${selectedRefUrls.length === 1 ? "" : "s"} selected`
-                : "Select garment photos in the left rail"}
+                : "Select garment photos first"}
             </span>
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={addToQueue}
                 disabled={!selectedRefUrls.length}
-                className="rounded-xl border border-neutral-300 bg-white px-4 py-2.5 text-sm font-semibold text-neutral-700 shadow-sm transition hover:border-neutral-500 hover:bg-neutral-100 active:scale-[0.98] disabled:cursor-not-allowed disabled:border-neutral-200 disabled:text-neutral-400"
+                className="whitespace-nowrap rounded-xl border border-neutral-300 bg-white px-4 py-2.5 text-sm font-semibold text-neutral-700 shadow-sm transition hover:border-neutral-500 hover:bg-neutral-100 active:scale-[0.98] disabled:cursor-not-allowed disabled:border-neutral-200 disabled:text-neutral-400"
                 title="Snapshot the current photos + settings as a queued run"
               >
-                Add to Queue
+                Add to queue
               </button>
               {pendingCount > 0 || queueRunning ? (
                 <button
                   type="button"
                   onClick={runQueue}
                   disabled={running || queueRunning || !pendingCount}
-                  className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-b from-neutral-800 to-neutral-950 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:from-neutral-700 hover:to-neutral-900 hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-neutral-300 disabled:bg-none disabled:text-neutral-500"
+                  className="inline-flex items-center gap-2 whitespace-nowrap rounded-xl bg-gradient-to-b from-neutral-800 to-neutral-950 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:from-neutral-700 hover:to-neutral-900 hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-neutral-300 disabled:bg-none disabled:text-neutral-500"
                 >
                   {queueRunning ? (
                     <span className="inline-flex items-center gap-2">
@@ -867,7 +867,7 @@ export default function CadExtractorClient() {
                 type="button"
                 onClick={run}
                 disabled={running || queueRunning || !selectedRefUrls.length}
-                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-b from-neutral-800 to-neutral-950 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:from-neutral-700 hover:to-neutral-900 hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-neutral-300 disabled:bg-none disabled:text-neutral-500"
+                className="inline-flex items-center gap-2 whitespace-nowrap rounded-xl bg-gradient-to-b from-neutral-800 to-neutral-950 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:from-neutral-700 hover:to-neutral-900 hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-neutral-300 disabled:bg-none disabled:text-neutral-500"
               >
                 {running ? (
                   <span className="inline-flex items-center gap-2">

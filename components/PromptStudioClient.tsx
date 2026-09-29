@@ -82,8 +82,8 @@ const toolCopy: Record<
     metricLabel: "lines",
   },
   "bestseller-remix": {
-    label: "Bestseller Remix",
-    title: "Bestseller Remix",
+    label: "Bestseller remix",
+    title: "Bestseller remix",
     subtitle: "Generates 10 blank-line-separated product expansion prompts for new sellable SKUs.",
     placeholder:
       "Upload an apparel image, then generate bestseller remix prompts. The output appears here as plain text: 10 full-paragraph prompts, separated by one blank line.",
@@ -91,10 +91,10 @@ const toolCopy: Record<
   },
   photoshoot: {
     label: "Photoshoot",
-    title: "F/W Photoshoot Generator",
+    title: "F/W photoshoot generator",
     subtitle: "Pairs your product with yesterday’s proven photographic references.",
     placeholder:
-      "Upload a product, choose a photoshoot reference, then generate ready-to-paste Image Playground prompts.",
+      "Upload a product, choose a photoshoot reference, then generate ready-to-paste Image playground prompts.",
     metricLabel: "prompts",
   },
 };
@@ -244,7 +244,7 @@ export default function PromptStudioClient() {
     <main className="flex min-h-screen flex-col bg-neutral-50 lg:h-screen">
       <StudioHeader
         active="prompt"
-        title="Prompt Studio"
+        title="Prompt studio"
         subtitle="Turn garment images into production-ready AI prompts."
         metrics={[
           { label: "Prompts", value: promptCount },
@@ -365,23 +365,24 @@ export default function PromptStudioClient() {
             <div className="mb-3 flex items-center gap-2">
               <span className="text-neutral-400">{IconSparkle}</span>
               <h2 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-700">
-                Prompt Studio
+                Prompt studio
               </h2>
             </div>
-            <div className="flex overflow-hidden rounded-lg border border-neutral-200 bg-neutral-50">
+            <div className="flex flex-wrap gap-1.5">
               {(Object.keys(toolCopy) as PromptTool[]).map((tool) => (
                 <button
                   key={tool}
                   type="button"
+                  aria-pressed={activeTool === tool}
                   onClick={() => {
                     setActiveTool(tool);
                     setPrompts("");
                     setCopied(false);
                   }}
-                  className={`flex-1 px-3 py-2 text-xs font-semibold transition ${
+                  className={`inline-flex h-[26px] items-center rounded border px-2.5 text-xs font-medium ${
                     activeTool === tool
-                      ? "bg-neutral-900 text-white"
-                      : "text-neutral-500 hover:bg-white hover:text-neutral-800"
+                      ? "border-neutral-900 bg-neutral-900 text-white"
+                      : "border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300"
                   }`}
                 >
                   {toolCopy[tool].label}
@@ -409,7 +410,7 @@ export default function PromptStudioClient() {
             ) : activeTool === "bestseller-remix" ? (
               <div className="mt-5 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-3">
                 <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
-                  Bestseller Remix
+                  Bestseller remix
                 </p>
                 <p className="mt-1 text-[11px] leading-relaxed text-neutral-600">
                   Upload one apparel image to receive 10 line-sheet-ready product mockup prompts:
@@ -492,7 +493,7 @@ export default function PromptStudioClient() {
                   </label>
                 </div>
 
-                <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-3 text-[11px] leading-relaxed text-emerald-800">
+                <div className="rounded border border-neutral-200 bg-neutral-50 px-3 py-3 text-[11px] leading-relaxed text-neutral-700">
                   Locked rule: Image 1 = exact product. Image 2 = photographic reference. New
                   model, faithful garment details, native 16:9, complete head-to-toe framing.
                 </div>
@@ -536,7 +537,7 @@ export default function PromptStudioClient() {
               value={prompts}
               onChange={(e) => setPrompts(e.target.value)}
               placeholder={activeCopy.placeholder}
-              className="prompt-mono min-h-0 flex-1 resize-none px-6 py-5 text-[13px] leading-relaxed outline-none placeholder:text-neutral-400"
+              className="prompt-mono min-h-[240px] flex-1 lg:min-h-0 resize-none px-6 py-5 text-[13px] leading-relaxed outline-none placeholder:text-neutral-400"
             />
             <div className="pointer-events-none absolute bottom-3 right-6 rounded-full bg-white/80 px-2 py-0.5 text-[10px] font-mono text-neutral-400 backdrop-blur">
               {promptCount} {activeCopy.metricLabel}
@@ -559,7 +560,7 @@ export default function PromptStudioClient() {
                 className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed ${
                   prompts.trim()
                     ? "border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50"
-                    : "border-neutral-200 bg-neutral-100 text-neutral-400"
+                    : "border-neutral-200 bg-white text-neutral-400"
                 }`}
               >
                 {IconCopy}
@@ -569,7 +570,7 @@ export default function PromptStudioClient() {
                 type="button"
                 onClick={generatePrompts}
                 disabled={!selectedUrl || uploading || generating}
-                className={`inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold shadow-sm transition disabled:cursor-not-allowed ${
+                className={`inline-flex items-center gap-2 whitespace-nowrap rounded-xl px-5 py-2.5 text-sm font-semibold shadow-sm transition disabled:cursor-not-allowed ${
                   !selectedUrl || uploading || generating
                     ? "bg-neutral-300 text-neutral-500"
                     : "bg-gradient-to-b from-neutral-800 to-neutral-950 text-white hover:from-neutral-700 hover:to-neutral-900 hover:shadow-md active:scale-[0.98]"
@@ -583,7 +584,7 @@ export default function PromptStudioClient() {
                 ) : (
                   <>
                     {IconSparkle}
-                    Generate Prompts
+                    Generate prompts
                   </>
                 )}
               </button>
@@ -641,7 +642,7 @@ export default function PromptStudioClient() {
                 Image 2 · Photographic reference
               </p>
               <p className="mt-1 text-[10px] leading-relaxed text-neutral-500">
-                Upload these two images to Image Playground in this exact left-to-right order.
+                Upload these two images to Image playground in this exact left-to-right order.
               </p>
             </>
           ) : null}

@@ -261,7 +261,7 @@ export default function ImagePlaygroundClient() {
         disabled={workspaceIds.length >= MAX_WORKSPACES}
         className="shrink-0 rounded-lg border border-dashed border-neutral-300 px-3 py-1.5 text-xs font-semibold text-neutral-600 hover:border-neutral-500 disabled:cursor-not-allowed disabled:opacity-40"
       >
-        + New Playground
+        New playground
       </button>
       <span className="ml-auto shrink-0 text-[10px] text-neutral-400">
         {Object.values(workspaceStatuses).filter((status) => status.running).length} running
@@ -698,7 +698,7 @@ function ImagePlaygroundWorkspace({
     <main className="flex min-h-screen flex-col bg-neutral-50 lg:h-screen">
       <StudioHeader
         active="playground"
-        title="Image Playground"
+        title="Image playground"
         subtitle="Paste prompts (one per line) → batch generate. Fast, no friction."
         metrics={[
           { label: "Prompts", value: promptCount },
@@ -816,7 +816,7 @@ function ImagePlaygroundWorkspace({
           >
             <div className="mb-2 flex items-center justify-between">
               <h2 className="text-[11px] font-semibold uppercase tracking-widest text-neutral-700">
-                Reference Library
+                Reference library
               </h2>
               <span className="text-[10px] text-neutral-500">
                 {orderedSelectedRefUrls.length}/{refs.length} selected
@@ -837,7 +837,7 @@ function ImagePlaygroundWorkspace({
               <button
                 type="button"
                 onClick={addPastedUrl}
-                className="rounded-lg border border-neutral-200 bg-neutral-50 px-3 text-xs font-semibold text-neutral-600 hover:bg-neutral-100"
+                className="rounded-lg border border-neutral-200 bg-white px-3 text-xs font-semibold text-neutral-700"
               >
                 Add
               </button>
@@ -891,7 +891,7 @@ function ImagePlaygroundWorkspace({
                     return (
                       <div
                         key={u.url}
-                        className={`group relative aspect-square overflow-hidden rounded-lg border ${
+                        className={`group relative aspect-[2/3] overflow-hidden rounded-lg border ${
                           selected
                             ? "border-neutral-900 ring-2 ring-neutral-900/10"
                             : "border-neutral-200"
@@ -959,7 +959,7 @@ function ImagePlaygroundWorkspace({
               onChange={(e) => setPromptsText(e.target.value)}
               placeholder={`a moody portrait under neon lights\na sunlit linen shirt close-up\na minimalist product hero on cream background`}
               disabled={running}
-              className="prompt-mono min-h-0 flex-1 resize-none px-6 py-5 text-[13px] leading-relaxed outline-none placeholder:text-neutral-400 disabled:bg-neutral-50"
+              className="prompt-mono min-h-[240px] flex-1 lg:min-h-0 resize-none px-6 py-5 text-[13px] leading-relaxed outline-none placeholder:text-neutral-400 disabled:bg-neutral-50"
             />
           </div>
 
@@ -968,7 +968,7 @@ function ImagePlaygroundWorkspace({
               <span>
                 {orderedSelectedRefUrls.length
                   ? `${orderedSelectedRefUrls.length} ref${orderedSelectedRefUrls.length === 1 ? "" : "s"} → ${promptCount} prompt${promptCount === 1 ? "" : "s"} × ${numPerPrompt} = ${totalImages} images`
-                  : "Select reference images in the left rail"}
+                  : "Select reference images first"}
               </span>
               <span className="inline-flex items-center gap-1.5 text-[11px]">
                 <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
@@ -1022,7 +1022,7 @@ function ImagePlaygroundWorkspace({
                 disabled={!promptCount || !orderedSelectedRefUrls.length}
                 className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-b from-neutral-800 to-neutral-950 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:from-neutral-700 hover:to-neutral-900 hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-neutral-300 disabled:bg-none disabled:text-neutral-500"
               >
-                ⚡ Generate {promptCount || ""}
+                Generate {promptCount || ""}
               </button>
             )}
           </div>

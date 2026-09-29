@@ -1096,7 +1096,7 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
       {
         id,
         kind: beta ? "model-beta" : "model",
-        label: beta ? "Multi Model Studio generation" : "Single Model Studio generation",
+        label: beta ? "Multi model generation" : "Single model generation",
         historyKey,
         currentIdKey,
       },
@@ -1452,7 +1452,7 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
       {
         id,
         kind: "model-beta",
-        label: "Multi Model Studio generation",
+        label: "Multi model generation",
         historyKey,
         currentIdKey,
       },
@@ -1757,7 +1757,7 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
           const imageUrls = slotUrls.filter((url): url is string => typeof url === "string");
           if (imageUrls.length === 0) {
             throw new Error(
-              failures[0]?.error || "Multi Model Studio did not return any completed views."
+              failures[0]?.error || "Multi model did not return any completed views."
             );
           }
           const item = buildPartialItem();
@@ -1773,7 +1773,7 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
           }
           return { historyItem: item };
         } catch (err: any) {
-          setError(err.message || "Multi Model Studio generation failed");
+          setError(err.message || "Multi model generation failed");
           throw err;
         } finally {
           // The run is over either way: a card left marked pending would paint
@@ -1833,7 +1833,7 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
       {
         id: `${run.id}-retry-${Date.now()}`,
         kind: "model-beta",
-        label: `Multi Model Studio retry (${targetViews.join(", ")})`,
+        label: `Multi model retry (${targetViews.join(", ")})`,
         historyKey,
         currentIdKey,
       },
@@ -2002,7 +2002,7 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
           }
           return { historyItem: workingRun };
         } catch (err: any) {
-          setError(err.message || "Multi Model Studio retry failed");
+          setError(err.message || "Multi model retry failed");
           throw err;
         } finally {
           setLoading(false);
@@ -2917,7 +2917,7 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
     <main className="flex min-h-screen flex-col bg-neutral-50 lg:h-screen">
       <StudioHeader
         active={beta ? "model-beta" : "model"}
-        title={beta ? "Multi Model Studio" : "Single Model Studio"}
+        title={beta ? "Multi model" : "Single model"}
         subtitle={
           beta
             ? (selectedModelIsPants ? "Generate front, side and back pants photos in one run." : "Generate front, side, back, and full model photos in one run.")
@@ -3036,7 +3036,7 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
           frameAspect={{ width: 2000, height: 3000 }}
           pipeline={modelRunPipeline}
           title={modelRunTitle}
-          emptyHint="Drop a garment photo and press Generate. Finished runs land here at full size, and stack up in the ledger on the left."
+          emptyHint="Drop a garment photo and press Generate. Finished runs land here at full size, and stack up in the run ledger."
           onDownload={downloadOutput}
           onOpenDetails={() => setDetailsOpen(true)}
         />

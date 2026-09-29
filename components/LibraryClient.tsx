@@ -569,7 +569,7 @@ export default function LibraryClient() {
       );
       window.location.href = "/model-studio";
     } catch {
-      setError("Could not send this image to Single Model Studio.");
+      setError("Could not send this image to Single model.");
     }
   }
 
@@ -590,7 +590,7 @@ export default function LibraryClient() {
       );
       window.location.href = "/prompt-studio";
     } catch {
-      setError("Could not send this style to Prompt Studio.");
+      setError("Could not send this style to Prompt studio.");
     }
   }
 
@@ -656,21 +656,23 @@ export default function LibraryClient() {
             placeholder="Search title, description, color, view..."
             className="flex-1 rounded-lg border border-neutral-200 px-3 py-2 text-sm outline-none focus:border-neutral-900"
           />
-          <button
-            type="button"
-            onClick={() => void load()}
-            className="rounded-lg bg-neutral-900 px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-800"
-          >
-            Search
-          </button>
-          <button
-            type="button"
-            onClick={() => void redoVisibleSeo()}
-            disabled={bulkRegenerating || loading || filteredStyles.length === 0}
-            className="rounded-lg border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
-          >
-            {bulkRegenerating ? "Redoing..." : "Redo visible SEO"}
-          </button>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => void load()}
+              className="rounded-lg border border-neutral-200 bg-white px-4 py-2 text-sm font-medium text-neutral-900 hover:border-neutral-400"
+            >
+              Search
+            </button>
+            <button
+              type="button"
+              onClick={() => void redoVisibleSeo()}
+              disabled={bulkRegenerating || loading || filteredStyles.length === 0}
+              className="rounded-lg border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
+            >
+              {bulkRegenerating ? "Redoing..." : "Redo visible SEO"}
+            </button>
+          </div>
         </div>
       </section>
 
@@ -716,7 +718,7 @@ export default function LibraryClient() {
           <div className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
         )}
         {bulkProgress && (
-          <div className="mb-4 rounded-lg bg-neutral-900 px-4 py-3 text-sm font-medium text-white">
+          <div className="mb-4 rounded-lg border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-700">
             {bulkProgress}
           </div>
         )}
@@ -726,7 +728,21 @@ export default function LibraryClient() {
           </div>
         )}
         {loading ? (
-          <p className="text-sm text-neutral-500">Loading library...</p>
+          <div role="status" aria-label="Loading library" className="space-y-4">
+            {[0, 1].map((index) => (
+              <div key={index} className="rounded-xl border border-neutral-200 bg-white p-4">
+                <div className="h-4 w-40 animate-pulse rounded bg-neutral-100" />
+                <div className="mt-2 h-3 w-56 animate-pulse rounded bg-neutral-100" />
+                <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_320px]">
+                  <div className="flex gap-3">
+                    <div className="aspect-[4/5] w-40 animate-pulse rounded bg-neutral-100 sm:w-48" />
+                    <div className="aspect-[4/5] w-40 animate-pulse rounded bg-neutral-100 sm:w-48" />
+                  </div>
+                  <div className="h-48 animate-pulse rounded bg-neutral-100" />
+                </div>
+              </div>
+            ))}
+          </div>
         ) : styles.length === 0 ? (
           <div className="rounded-xl border border-dashed border-neutral-300 bg-white px-5 py-10 text-center text-sm text-neutral-500">
             No styles yet. Upload a result from Image Studio or Single Model Studio to start the team
@@ -779,11 +795,11 @@ export default function LibraryClient() {
                             {style.styleNumber}
                           </h2>
                           {style.color && (
-                            <span className="rounded-full bg-neutral-900 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-white">
+                            <span className="inline-flex h-[18px] items-center rounded border border-neutral-200 px-1.5 text-[11px] font-medium text-neutral-700">
                               {style.color}
                             </span>
                           )}
-                          <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-neutral-600">
+                          <span className="inline-flex h-[18px] items-center rounded bg-neutral-100 px-1.5 text-[11.5px] font-medium text-neutral-600">
                             {style.views.length} view{style.views.length === 1 ? "" : "s"}
                           </span>
                         </div>
@@ -826,7 +842,7 @@ export default function LibraryClient() {
                         disabled={regeneratingId === style.id}
                         className="rounded-lg border border-neutral-200 px-3 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50 disabled:opacity-60"
                       >
-                        {regeneratingId === style.id ? "Analyzing..." : "Rewrite Faire Copy"}
+                        {regeneratingId === style.id ? "Analyzing..." : "Rewrite Faire copy"}
                       </button>
                       <button
                         type="button"
@@ -865,7 +881,7 @@ export default function LibraryClient() {
                                 src={view.imageUrl}
                                 size={640}
                                 alt={`${style.styleNumber} ${label}`}
-                                className="h-full w-full object-cover transition duration-200 group-hover:scale-[1.02]"
+                                className="h-full w-full object-cover"
                               />
                               <span className="absolute right-2 top-2 rounded-full bg-white/90 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-neutral-800 opacity-0 shadow-sm transition group-hover:opacity-100">
                                 View
@@ -896,7 +912,7 @@ export default function LibraryClient() {
                               <button
                                 type="button"
                                 onClick={() => sendToModelStudio(style, view)}
-                                className="rounded-lg bg-neutral-900 px-2.5 py-2 text-xs font-semibold text-white hover:bg-neutral-800"
+                                className="rounded-lg border border-neutral-200 bg-white px-2.5 py-2 text-xs font-semibold text-neutral-800 hover:border-neutral-900"
                               >
                                 Model
                               </button>
@@ -918,7 +934,7 @@ export default function LibraryClient() {
                         <div className="flex items-start justify-between gap-3">
                           <div>
                             <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
-                              Style Launch Pack
+                              Style launch pack
                             </p>
                             <p className="mt-1 text-sm font-semibold text-neutral-950">
                               Faire-ready assets
@@ -936,25 +952,23 @@ export default function LibraryClient() {
                             {launchScore >= 85 ? "Ready" : "Needs work"}
                           </span>
                         </div>
-                        <div className="mt-3 grid grid-cols-2 gap-1.5">
+                        {/* Paper state pills: saved green, missing red. */}
+                        <ul className="mt-3 flex flex-wrap gap-1.5">
                           {checklist.map((item) => (
-                            <div
+                            <li
                               key={item.label}
-                              className={`rounded-lg px-2 py-1.5 text-[10px] font-semibold ${
-                                item.done
-                                  ? "bg-emerald-50 text-emerald-700"
-                                  : "bg-neutral-50 text-neutral-400"
+                              className={`inline-flex h-[18px] items-center rounded px-[7px] text-[11.5px] font-medium ${
+                                item.done ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"
                               }`}
                             >
-                              {item.done ? "Done: " : "Missing: "}
-                              {item.label}
-                            </div>
+                              {item.done ? item.label : `${item.label} missing`}
+                            </li>
                           ))}
-                        </div>
+                        </ul>
                         <div className="mt-3 rounded-xl border border-neutral-200 bg-neutral-50 p-2">
                           <div className="mb-2 flex items-center justify-between gap-2">
                             <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
-                              Missing View Control
+                              Views
                             </p>
                           </div>
                           <div className="grid grid-cols-2 gap-1.5">
@@ -970,15 +984,15 @@ export default function LibraryClient() {
                                   disabled={Boolean(manualViewUploading)}
                                   className={`rounded-lg border px-2 py-2 text-[10px] font-semibold transition disabled:opacity-50 ${
                                     done
-                                      ? "border-emerald-100 bg-emerald-50 text-emerald-700"
-                                      : "border-neutral-200 bg-white text-neutral-700 hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700"
+                                      ? "border-neutral-200 bg-white text-emerald-700 hover:border-neutral-900"
+                                      : "border-neutral-200 bg-white text-neutral-700 hover:border-neutral-900"
                                   }`}
                                 >
                                   {uploading
                                     ? "Uploading..."
                                     : done
                                     ? `${label} saved`
-                                    : `Upload ${label}`}
+                                    : `Upload ${label.toLowerCase()}`}
                                 </button>
                               );
                             })}
@@ -989,18 +1003,18 @@ export default function LibraryClient() {
                             type="button"
                             onClick={() => void createEcommerceSet(style.id)}
                             disabled={ecommerceGeneratingId !== null}
-                            className="col-span-2 rounded-lg bg-brand-500 px-3 py-2 text-xs font-semibold text-white hover:bg-brand-600 disabled:opacity-50"
+                            className="col-span-2 justify-self-start rounded-lg bg-brand-500 px-3 py-2 text-xs font-semibold text-white hover:bg-brand-600 disabled:opacity-50"
                           >
                             {ecommerceGeneratingId === style.id
                               ? "Creating ecommerce set..."
-                              : "Create Full Ecommerce Set"}
+                              : "Create full ecommerce set"}
                           </button>
                           <button
                             type="button"
                             onClick={() => sendToBestsellerRemix(style)}
-                            className="col-span-2 rounded-lg bg-neutral-950 px-3 py-2 text-xs font-semibold text-white hover:bg-neutral-800"
+                            className="col-span-2 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs font-semibold text-neutral-800 hover:border-neutral-900"
                           >
-                            Bestseller Remix
+                            Bestseller remix
                           </button>
                           <button
                             type="button"
@@ -1014,12 +1028,12 @@ export default function LibraryClient() {
                             onClick={() => void downloadAllViews(style)}
                             className="rounded-lg border border-neutral-200 px-3 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
                           >
-                            Download Views
+                            Download views
                           </button>
                         </div>
                       </div>
                       <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
-                        Faire SEO Title
+                        Faire SEO title
                       </p>
                       {isEditing ? (
                         <input
@@ -1035,7 +1049,7 @@ export default function LibraryClient() {
                         </p>
                       )}
                       <p className="mt-4 text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
-                        Faire Description
+                        Faire description
                       </p>
                       {isEditing ? (
                         <textarea
@@ -1090,7 +1104,7 @@ export default function LibraryClient() {
                         {style.faireBullets?.length ? (
                           <div>
                             <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
-                              Faire Bullets
+                              Faire bullets
                             </p>
                             <ul className="mt-2 space-y-1 text-xs leading-relaxed text-neutral-700">
                               {style.faireBullets.map((bullet) => (

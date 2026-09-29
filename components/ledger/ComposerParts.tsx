@@ -74,7 +74,7 @@ export function IntakeSlot({
           <Thumb src={url} size={384} loading="eager" alt={`${label} product photo`} className="h-full w-full object-contain" />
         ) : (
           <>
-            <span className="text-[20px] leading-none text-neutral-300 transition group-hover:text-neutral-400">
+            <span className="text-[20px] leading-none text-neutral-400 transition group-hover:text-neutral-600">
               +
             </span>
             <span className="text-[11px] font-medium text-neutral-400">Drop or click</span>
@@ -174,7 +174,7 @@ export function Flip({
       {value}
       <span
         aria-hidden="true"
-        className="text-[10px] text-neutral-300 transition group-hover:text-neutral-500 group-disabled:opacity-0"
+        className="text-[10px] text-neutral-500 transition group-hover:text-neutral-900 group-disabled:opacity-0"
       >
         ⇄
       </span>

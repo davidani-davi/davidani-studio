@@ -1,12 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { Button } from "@/components/motion/button";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/motion/tabs";
 import RunCard, { type RunCardProps } from "./RunCard";
 import type { HistoryItem } from "../types";
 import { filterRuns, wantsSecondLook, type LedgerFilter } from "@/lib/run-pipeline";
-import { nextDockHidden } from "@/lib/scroll-dock";
 
 /**
  * The left column: every run that has happened, newest first, with the
@@ -61,21 +59,8 @@ export default function RunLedger({
 
   const feed = useRef<HTMLDivElement>(null);
   const dock = useRef<HTMLDivElement>(null);
-  const lastTop = useRef(0);
-  const [ducked, setDucked] = useState(false);
-  /**
-   * The composer's height, mirrored onto the feed as bottom padding.
-   *
-   * The composer is positioned rather than laid out, so it can slide clear of
-   * the column without the feed reflowing under it mid-scroll — a height
-   * animation would change the scroll metrics on every frame of the thing that
-   * is being scrolled. The padding is what keeps the last run reachable, and
-   * it stays put whether the composer is up or down so the scroll position
-   * does not jump when it ducks.
-   */
+  // Reserve the measured composer height so the last image remains reachable.
   const [dockHeight, setDockHeight] = useState(0);
-  const dockHeightRef = useRef(0);
-  dockHeightRef.current = dockHeight;
 
   useEffect(() => {
     const el = dock.current;
@@ -85,23 +70,6 @@ export default function RunLedger({
     });
     observer.observe(el);
     return () => observer.disconnect();
-  }, []);
-
-  const onScroll = useCallback(() => {
-    const el = feed.current;
-    if (!el) return;
-    const top = el.scrollTop;
-    // Read into a local BEFORE the ref is advanced. Passing `lastTop.current`
-    // into the updater meant React read it whenever it got around to running
-    // the updater — by which time the line below had already set it to `top`,
-    // so the delta was always zero and the composer never moved.
-    const previous = lastTop.current;
-    // Minus the dock's own reserved space: that padding is not content, and
-    // counting it made a feed holding one short run look scrollable enough to
-    // duck the composer away from nothing.
-    const overflow = el.scrollHeight - el.clientHeight - dockHeightRef.current;
-    lastTop.current = top;
-    setDucked((hidden) => nextDockHidden({ hidden, top, lastTop: previous, overflow }));
   }, []);
 
   return (
@@ -153,7 +121,6 @@ export default function RunLedger({
 
       <div
         ref={feed}
-        onScroll={onScroll}
         className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto p-3"
         style={{ paddingBottom: dockHeight + 12 }}
       >
@@ -189,44 +156,7 @@ export default function RunLedger({
         )}
       </div>
 
-      {/*
-        The way back up, drawn.
-
-        Ducked, the composer is entirely off the column, and "scroll up" is a
-        gesture nobody is told about. A run ledger you cannot get the composer
-        back from is the same dead end the opened intake photo was.
-      */}
-      {/* beUI Button, primary: it is the one thing to press on a ledger whose
-          composer has left the screen, and it presses like every other. */}
-      <Button
-        type="button"
-        variant="primary"
-        size="sm"
-        onClick={() => setDucked(false)}
-        tabIndex={ducked ? 0 : -1}
-        aria-hidden={!ducked}
-        className={`absolute inset-x-0 bottom-3 z-30 mx-auto w-fit gap-1.5 rounded-full px-3.5 text-[11px] font-bold shadow-lg transition-[opacity,transform] duration-200 motion-reduce:transition-none ${
-          ducked ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-2 opacity-0"
-        }`}
-      >
-        <span aria-hidden="true" className="text-[12px] leading-none">
-          ↑
-        </span>
-        New run
-      </Button>
-
-      {/*
-        Focus brings it back: hidden it is still in the tab order, and tabbing
-        into a control that is off the bottom of the column is the one way this
-        could strand someone.
-      */}
-      <div
-        ref={dock}
-        onFocusCapture={() => setDucked(false)}
-        className={`absolute inset-x-0 bottom-0 z-20 transition-transform duration-300 ease-out motion-reduce:transition-none ${
-          ducked ? "translate-y-full" : "translate-y-0"
-        }`}
-      >
+      <div ref={dock} className="paper-composer-dock absolute inset-x-0 bottom-0 z-20">
         {composer}
       </div>
     </aside>

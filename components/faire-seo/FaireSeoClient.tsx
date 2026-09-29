@@ -532,7 +532,7 @@ export default function FaireSeoClient() {
 
       <StudioHeader
         active="faire-seo"
-        title="Faire SEO Optimization"
+        title="Faire SEO"
         subtitle="Upload images. Get a paste-ready Faire listing."
         badge="FAST"
         metrics={[
@@ -557,7 +557,7 @@ export default function FaireSeoClient() {
               dragging ? "border-neutral-950" : "border-neutral-300"
             }`}
           >
-            <p className="text-xs font-bold uppercase text-neutral-500">Faire Listing Optimizer</p>
+            <p className="text-xs font-bold uppercase text-neutral-500">Faire listing optimizer</p>
             <h2 className="mt-3 text-2xl font-semibold leading-tight text-neutral-950">
               Upload everything, then generate.
             </h2>
@@ -595,20 +595,23 @@ export default function FaireSeoClient() {
                 </button>
               </div>
             </div>
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading || importingUrl || working}
-              className="mt-5 w-full rounded-md bg-neutral-950 px-4 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {uploading ? "Uploading..." : working ? "Optimizing..." : "Upload Images"}
-            </button>
-            <button
-              onClick={() => optimizeListing(assets)}
-              disabled={!assets.length || uploading || importingUrl || working}
-              className="mt-3 w-full rounded-md border border-neutral-300 bg-white px-4 py-3 text-sm font-semibold text-neutral-900 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {working ? "Generating..." : "Generate Optimized Listing"}
-            </button>
+            {/* The primary is the next step: upload first, then generate. */}
+            <div className="mt-5 flex flex-wrap gap-2">
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading || importingUrl || working}
+                className={assets.length ? "rounded border border-neutral-200 bg-white px-4 py-2 text-sm font-medium text-neutral-900 hover:border-neutral-400 disabled:cursor-not-allowed disabled:text-neutral-400" : "rounded bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800 disabled:cursor-not-allowed"}
+              >
+                {uploading ? "Uploading..." : working ? "Optimizing..." : assets.length ? "Upload more images" : "Upload images"}
+              </button>
+              <button
+                onClick={() => optimizeListing(assets)}
+                disabled={!assets.length || uploading || importingUrl || working}
+                className={assets.length ? "rounded bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800 disabled:cursor-not-allowed" : "rounded border border-neutral-200 bg-white px-4 py-2 text-sm font-medium text-neutral-900 hover:border-neutral-400 disabled:cursor-not-allowed disabled:text-neutral-400"}
+              >
+                {working ? "Generating..." : "Generate optimized listing"}
+              </button>
+            </div>
             <p className="mt-3 text-sm font-semibold text-neutral-800">{status}</p>
             {working && runStartedAt !== null ? (
               <p className="mt-1 text-xs text-neutral-500">
@@ -666,7 +669,7 @@ export default function FaireSeoClient() {
           <div className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
             <div className="mb-3 flex items-center justify-between gap-3">
               <div>
-                <h3 className="text-sm font-semibold text-neutral-950">Friday Trend Keywords</h3>
+                <h3 className="text-sm font-semibold text-neutral-950">Friday trend keywords</h3>
                 <p className="mt-1 text-xs leading-relaxed text-neutral-500">
                   Optional Faire Insider reference. Saved locally for future listings.
                 </p>
@@ -674,9 +677,9 @@ export default function FaireSeoClient() {
               <button
                 onClick={() => trendInputRef.current?.click()}
                 disabled={uploading || working}
-                className="rounded-md border border-neutral-200 px-3 py-2 text-xs font-semibold text-neutral-700 disabled:opacity-50"
+                className="shrink-0 whitespace-nowrap rounded-md border border-neutral-200 px-3 py-2 text-xs font-semibold text-neutral-700 disabled:opacity-50"
               >
-                Upload List
+                Upload list
               </button>
             </div>
             <textarea
@@ -1029,7 +1032,7 @@ function KeyValueList({ values }: { values: FaireSeoResult["metadataSelections"]
     <div className="space-y-2">
       {entries.map(([key, value]) => (
         <div key={key} className="rounded-md border border-neutral-200 bg-neutral-50 p-3">
-          <p className="text-xs font-semibold uppercase text-neutral-500">{key.replace(/_/g, " ")}</p>
+          <p className="text-xs font-medium text-neutral-500">{key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, " ")}</p>
           <p className="mt-1 text-sm text-neutral-800">
             {Array.isArray(value) ? value.join(", ") : String(value)}
           </p>

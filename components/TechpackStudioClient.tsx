@@ -451,7 +451,7 @@ export default function TechpackStudioClient() {
     <main className="flex min-h-screen flex-col bg-neutral-50 lg:h-screen">
       <StudioHeader
         active="techpack"
-        title="Techpack Studio"
+        title="Techpack studio"
         subtitle="Generate factory-ready 7-page garment tech packs from sketches, flats, or renders."
         metrics={[
           { label: "Pages", value: techpack?.pages.length ?? 0 },
@@ -670,7 +670,7 @@ export default function TechpackStudioClient() {
               type="button"
               onClick={generate}
               disabled={!selectedUrl || !!uploading || generating}
-              className={`inline-flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold shadow-sm transition disabled:cursor-not-allowed ${
+              className={`inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl px-5 py-3 text-sm font-semibold shadow-sm transition disabled:cursor-not-allowed ${
                 !selectedUrl || uploading || generating
                   ? "bg-neutral-300 text-neutral-500"
                   : "bg-gradient-to-b from-neutral-800 to-neutral-950 text-white hover:from-neutral-700 hover:to-neutral-900"
@@ -684,7 +684,7 @@ export default function TechpackStudioClient() {
               ) : (
                 <>
                   {IconSparkle}
-                  Generate Tech Pack
+                  Generate tech pack
                 </>
               )}
             </button>
@@ -744,14 +744,11 @@ export default function TechpackStudioClient() {
           ) : (
             <div className="flex min-h-full items-center justify-center rounded-xl border border-dashed border-neutral-300 bg-white/60 p-10 text-center">
               <div className="max-w-md">
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-neutral-100 text-neutral-500">
-                  {IconSparkle}
-                </div>
-                <h1 className="mt-4 text-xl font-semibold text-neutral-950">
+                <h1 className="text-xl font-semibold text-neutral-950">
                   Upload a flat, sketch, or render
                 </h1>
                 <p className="mt-2 text-sm leading-relaxed text-neutral-500">
-                  Techpack Studio will generate a 7-page Davi&amp;Dani manufacturing pack with
+                  Techpack studio will generate a 7-page Davi&amp;Dani manufacturing pack with
                   construction callouts, BOM, colorways, measurements, grading, labels, and
                   packaging.
                 </p>

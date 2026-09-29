@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import JobCenter from "@/components/JobCenter";
@@ -27,7 +28,6 @@ export default function StudioHeader({
   eyebrow = "Davi & Dani",
   title = "Photo Studio",
   subtitle,
-  badge = "V2.3",
   metrics = [],
   action,
 }: Props) {
@@ -58,19 +58,11 @@ export default function StudioHeader({
     <header className="studio-header">
       <StudioBootOverlay />
       <div className="studio-header__brand">
-        <div className="studio-logo">D</div>
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="studio-eyebrow">{eyebrow}</p>
-            <span className="studio-version">{badge}</span>
-          </div>
-          <h1 className="studio-title">{title}</h1>
-          {subtitle ? <p className="studio-subtitle">{subtitle}</p> : null}
-        </div>
+        <Link href="/" className="studio-eyebrow">{eyebrow}</Link>
+        <span className="studio-header__sep" aria-hidden="true">/</span>
+        <h1 className="studio-title">{title}</h1>
+        {subtitle ? <p className="studio-subtitle" title={subtitle}>{subtitle}</p> : null}
       </div>
-
-      <TopTabs active={active} />
-
       <div className="studio-header__meta">
         <JobCenter />
         {visibleMetrics.length ? (
@@ -85,6 +77,7 @@ export default function StudioHeader({
         ) : null}
         {action}
       </div>
+      <TopTabs active={active} />
     </header>
   );
 }

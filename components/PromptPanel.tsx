@@ -343,13 +343,13 @@ export default function PromptPanel(p: Props) {
       {/* ========== HEADER ========== */}
       <div className="flex items-center justify-between border-b border-neutral-200 px-6 py-4">
         <div>
-          <h2 className="text-sm font-semibold text-neutral-900">Shot Setup</h2>
+          <h2 className="text-sm font-semibold text-neutral-900">Shot setup</h2>
           <p className="text-[11px] text-neutral-500">
             Upload a garment, check the routing, then generate the product shot.
           </p>
         </div>
         <span
-          className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold tabular-nums ${statusChip.className}`}
+          className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-semibold tabular-nums ${statusChip.className}`}
         >
           <span className={`h-1.5 w-1.5 rounded-full ${statusChip.dot}`} />
           {statusChip.text}
@@ -445,7 +445,7 @@ export default function PromptPanel(p: Props) {
                       title={option.hint}
                       className={`rounded-full border px-3 py-1.5 text-[11px] font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${
                         isActive
-                          ? "border-brand-300 bg-brand-50 text-brand-700"
+                          ? "border-neutral-900 bg-neutral-900 text-white"
                           : "border-neutral-200 bg-white text-neutral-600 hover:border-neutral-400 hover:bg-neutral-50"
                       }`}
                     >
@@ -640,7 +640,7 @@ export default function PromptPanel(p: Props) {
         <div className="mb-2 flex items-center justify-between gap-3">
           <div>
             <div className="text-[11px] font-semibold text-neutral-700">
-              Analysis Review
+              Analysis review
             </div>
             <div className="text-[11px] text-neutral-500">
               Edit if the detected garment looks wrong — the description drives
@@ -714,7 +714,7 @@ export default function PromptPanel(p: Props) {
         >
           <span>
             <span className="block text-[11px] font-semibold text-neutral-700">
-              Advanced Prompt
+              Advanced prompt
             </span>
             <span className="mt-0.5 block text-[11px] text-neutral-500">
               {hasPrompt ? `${words} words` : "Auto-generated"}
@@ -790,7 +790,7 @@ export default function PromptPanel(p: Props) {
               }
               className={`group relative inline-flex items-center gap-2 rounded-xl border px-4 py-3 text-sm font-semibold transition disabled:cursor-not-allowed ${
                 !p.canBatch || p.loading || p.analyzing || batchActive
-                  ? "border-neutral-200 bg-neutral-100 text-neutral-400"
+                  ? "border-neutral-200 bg-white text-neutral-400"
                   : "border-brand-300 bg-white text-brand-700 hover:bg-brand-50 hover:shadow-sm active:scale-[0.98]"
               }`}
             >
@@ -822,7 +822,7 @@ export default function PromptPanel(p: Props) {
           <button
             onClick={p.onGenerate}
             disabled={p.disabled || p.loading || p.analyzing || batchActive}
-            className={`group relative inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold shadow-sm transition disabled:cursor-not-allowed ${
+            className={`group relative inline-flex items-center gap-2 whitespace-nowrap rounded-xl px-6 py-3 text-sm font-semibold shadow-sm transition disabled:cursor-not-allowed ${
               p.disabled || p.loading || p.analyzing || batchActive
                 ? "bg-neutral-300 text-neutral-500"
                 : "bg-gradient-to-b from-neutral-800 to-neutral-950 text-white hover:from-neutral-700 hover:to-neutral-900 hover:shadow-md active:scale-[0.98]"
@@ -842,7 +842,7 @@ export default function PromptPanel(p: Props) {
               <>
                 {IconWand}
                 <span>{p.generateLabel || "Generate"}</span>
-                <span className="ml-1 rounded bg-white/10 px-1.5 py-0.5 text-[10px] font-mono text-white/70">
+                <span className="ml-1 rounded bg-white/10 px-1.5 py-0.5 text-[10px] font-mono text-white/70 max-[480px]:hidden">
                   ⌘↵
                 </span>
               </>

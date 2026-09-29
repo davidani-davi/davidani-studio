@@ -26,11 +26,11 @@ import {
 const ACTIVE_STATUSES = new Set<StudioJobStatus>(["queued", "analyzing", "generating", "saving"]);
 
 const STUDIO_LABELS: Record<StudioJobKind, string> = {
-  image: "Image Studio",
-  model: "Single Model Studio",
-  "model-beta": "Multi Model Studio",
-  prompt: "Prompt Studio",
-  techpack: "Techpack Studio",
+  image: "Image studio",
+  model: "Single model",
+  "model-beta": "Multi model",
+  prompt: "Prompt studio",
+  techpack: "Techpack studio",
   library: "Library",
 };
 
@@ -162,7 +162,7 @@ export default function JobCenter() {
         <div className="job-center-panel">
           <div className="job-center-panel__header">
             <div>
-              <p className="job-center-eyebrow">Job Center</p>
+              <p className="job-center-eyebrow">Job center</p>
               <h2>Production queue</h2>
             </div>
             <button type="button" onClick={() => setOpen(false)} className="job-center-close">

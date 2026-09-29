@@ -413,10 +413,10 @@ export default function FaireBatchClient() {
   }
 
   return (
-    <main className="min-h-screen bg-neutral-100 pb-12">
+    <main className="min-h-screen bg-[var(--page)] pb-12">
       <StudioHeader
         active="faire-seo"
-        title="Faire SEO Batch"
+        title="Faire SEO batch"
         subtitle="Paste Faire preview links — get optimized listings in parallel."
         badge="BATCH"
         metrics={[
@@ -430,7 +430,7 @@ export default function FaireBatchClient() {
       <div className="mx-auto grid max-w-[1380px] gap-5 px-4 py-5 xl:grid-cols-[440px_minmax(0,1fr)]">
         <section className="space-y-4">
           <div className="rounded-lg border border-neutral-300 bg-white p-5 shadow-sm">
-            <p className="text-xs font-bold uppercase text-neutral-500">Batch Faire Optimizer</p>
+            <p className="text-xs font-bold uppercase text-neutral-500">Batch Faire optimizer</p>
             <h2 className="mt-3 text-xl font-semibold text-neutral-950">Paste Faire URLs</h2>
             <p className="mt-2 text-sm leading-relaxed text-neutral-500">
               One URL per line. Up to {CONCURRENCY} run in parallel. Duplicates auto-removed.
@@ -465,7 +465,7 @@ export default function FaireBatchClient() {
                               ? "Forced plus — click to remove"
                               : "Click to force plus copy for this listing"
                           }
-                          className={`group relative block aspect-square w-full overflow-hidden rounded border-2 bg-neutral-100 transition-all disabled:opacity-40 ${
+                          className={`group relative block aspect-[2/3] w-full overflow-hidden rounded border-2 bg-neutral-100 transition-all disabled:opacity-40 ${
                             forced
                               ? "border-emerald-500 ring-2 ring-emerald-200"
                               : "border-neutral-200 hover:border-neutral-400"
@@ -497,9 +497,9 @@ export default function FaireBatchClient() {
             <button
               onClick={startBatch}
               disabled={running || !urlsText.trim()}
-              className="mt-3 w-full rounded-md bg-neutral-950 px-4 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+              className="mt-3 rounded-md bg-neutral-950 px-4 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {running ? `Running (${counts.working} active)...` : "Optimize All"}
+              {running ? `Running (${counts.working} active)...` : "Optimize all"}
             </button>
             {running ? (
               <p className="mt-2 text-xs font-semibold text-neutral-700">
@@ -574,7 +574,7 @@ export default function FaireBatchClient() {
               <div className="max-w-md">
                 <p className="text-xs font-bold uppercase text-neutral-500">Output</p>
                 <h2 className="mt-3 text-xl font-semibold text-neutral-950">
-                  Paste URLs and hit Optimize All.
+                  Paste URLs and hit Optimize all.
                 </h2>
                 <p className="mt-3 text-sm leading-relaxed text-neutral-500">
                   Each row tracks its own listing — independent status, copy buttons, and retry.

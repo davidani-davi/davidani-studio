@@ -77,7 +77,7 @@ export default function IdentityStudio(){
   catch(e:any){setError(e.message);}finally{setBusy(false);}
  }
  return <main className="identity-studio">
-  <header className="ri-header"><div><a href="/model-studio">← Model Studio</a><h1>Reference identity studio</h1><p>Create Celine and Vision reference photos from your own poses.</p></div><a href="/admin/models">Manage models &amp; references ↗</a></header>
+  <header className="ri-header"><div><h2 className="ri-page-title">Reference identity studio</h2><p>Create Celine and Vision reference photos from your own poses.</p></div><a href="/admin/models">Manage models &amp; references ↗</a></header>
   {error&&<p className="ri-error" role="alert">{error}{!ready&&<> <a href="/login?next=/reference-identity-studio">Sign in</a> · <button onClick={()=>location.reload()}>Reload</button></>}</p>}
   {message&&<p className="ri-success" role="status">{message}</p>}
   <section className="ri-controls"><label>Reference set name<input maxLength={100} value={name} disabled={locked||!ready} onChange={e=>setName(e.target.value)}/></label><label>Saved runs<select aria-label="Saved runs" value={active?.id||''} disabled={busy||Boolean(uploading)||Boolean(pending)} onChange={e=>e.target.value?loadSet(e.target.value):newDraft()}><option value="">New set</option>{sets.map(s=><option value={s.id} key={s.id}>{s.identity.name} · {s.name} · {new Date(s.createdAt).toLocaleString()}</option>)}</select></label><button onClick={newDraft} disabled={locked||!ready}>New set</button></section>

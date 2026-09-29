@@ -200,7 +200,7 @@ export default function ModelComposer({
             onClick={onBatch}
             disabled={!canBatch || busy}
             title={batchDisabledReason}
-            className="shrink-0 text-[11.5px] font-semibold text-neutral-500 underline-offset-2 transition hover:text-neutral-900 hover:underline disabled:cursor-not-allowed disabled:text-neutral-300 disabled:no-underline"
+            className="shrink-0 text-[11.5px] font-semibold text-neutral-500 underline-offset-2 transition hover:text-neutral-900 hover:underline disabled:cursor-not-allowed disabled:text-neutral-400 disabled:no-underline"
           >
             Batch
           </button>
@@ -213,7 +213,7 @@ export default function ModelComposer({
           size="sm"
           loadingText={analyzing ? "Analyzing" : "Generating"}
           icon={
-            <kbd className="rounded border border-white/30 px-1 font-mono text-[9px] opacity-80">
+            <kbd className="rounded border border-white/30 px-1 font-mono text-[9px] opacity-80 max-[480px]:hidden">
               ⌘↵
             </kbd>
           }
