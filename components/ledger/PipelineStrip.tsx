@@ -40,7 +40,7 @@ export default function PipelineStrip({
     <div className={`flex flex-wrap items-center gap-x-1.5 gap-y-1 ${text}`}>
       {steps.map((step, i) => (
         <div key={step.key} className="flex items-center gap-1.5">
-          {i > 0 && <span className="text-neutral-300">›</span>}
+          {i > 0 && <span className="text-neutral-400">›</span>}
           <span
             className={`flex items-center gap-1 font-medium uppercase tracking-[0.09em] ${
               TONE_TEXT[step.tone]

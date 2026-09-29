@@ -17,7 +17,7 @@ type NavItem = { id: StudioTab; label: string; href: string };
 
 /** Paper rule 4: every destination is a visible link, never a dropdown. Studios are the chips. */
 export const STUDIO_PAGES: NavItem[] = [
-  { id: "image", label: "Image Studio", href: "/" },
+  { id: "image", label: "Image studio", href: "/" },
   { id: "model", label: "Single model", href: "/model-studio" },
   { id: "model-beta", label: "Multi model", href: "/model-studio-beta" },
   { id: "photoshoot", label: "Photoshoot", href: "/photoshoot-studio" },

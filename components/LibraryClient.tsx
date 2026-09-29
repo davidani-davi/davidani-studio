@@ -1047,7 +1047,7 @@ export default function LibraryClient() {
                         </p>
                       )}
                       <p className="mt-4 text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
-                        Faire Description
+                        Faire description
                       </p>
                       {isEditing ? (
                         <textarea
@@ -1102,7 +1102,7 @@ export default function LibraryClient() {
                         {style.faireBullets?.length ? (
                           <div>
                             <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
-                              Faire Bullets
+                              Faire bullets
                             </p>
                             <ul className="mt-2 space-y-1 text-xs leading-relaxed text-neutral-700">
                               {style.faireBullets.map((bullet) => (

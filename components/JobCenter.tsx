@@ -162,7 +162,7 @@ export default function JobCenter() {
         <div className="job-center-panel">
           <div className="job-center-panel__header">
             <div>
-              <p className="job-center-eyebrow">Job Center</p>
+              <p className="job-center-eyebrow">Job center</p>
               <h2>Production queue</h2>
             </div>
             <button type="button" onClick={() => setOpen(false)} className="job-center-close">

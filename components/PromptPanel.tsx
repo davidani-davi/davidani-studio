@@ -822,7 +822,7 @@ export default function PromptPanel(p: Props) {
           <button
             onClick={p.onGenerate}
             disabled={p.disabled || p.loading || p.analyzing || batchActive}
-            className={`group relative inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold shadow-sm transition disabled:cursor-not-allowed ${
+            className={`group relative inline-flex items-center gap-2 whitespace-nowrap rounded-xl px-6 py-3 text-sm font-semibold shadow-sm transition disabled:cursor-not-allowed ${
               p.disabled || p.loading || p.analyzing || batchActive
                 ? "bg-neutral-300 text-neutral-500"
                 : "bg-gradient-to-b from-neutral-800 to-neutral-950 text-white hover:from-neutral-700 hover:to-neutral-900 hover:shadow-md active:scale-[0.98]"

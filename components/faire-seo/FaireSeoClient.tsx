@@ -532,7 +532,7 @@ export default function FaireSeoClient() {
 
       <StudioHeader
         active="faire-seo"
-        title="Faire SEO Optimization"
+        title="Faire SEO"
         subtitle="Upload images. Get a paste-ready Faire listing."
         badge="FAST"
         metrics={[

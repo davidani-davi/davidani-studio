@@ -1676,7 +1676,7 @@ export default function StudioPage() {
     <main className="flex min-h-screen flex-col bg-neutral-50 lg:h-screen">
       <StudioHeader
         active="image"
-        title="Image Studio"
+        title="Image studio"
         subtitle="Generate clean product photos from uploaded garments."
         badge="V2.3"
         metrics={[

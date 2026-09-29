@@ -82,8 +82,10 @@ body.paper-app { padding-bottom:0; }
 /* Error toasts: a hairline card whose text carries the red, not a red slab. */
 .paper-app .fixed:is([class~="bg-red-600"]):is([class~="text-white"]) { background-color:var(--sheet); color:var(--red); border:1px solid var(--line); border-radius:3px; box-shadow:none; }
 @media(max-width:480px){ .paper-app .fixed:is([class~="bg-red-600"]):is([class~="text-white"]) { left:16px; right:16px; bottom:calc(16px + env(safe-area-inset-bottom)); max-width:none; } }
+/* A disabled secondary keeps its box and mutes its label instead of fading. */
+.paper-app button:disabled[class~="bg-white"] { opacity:1; color:var(--faint); }
 /* A disabled primary reads as unavailable: hairline and muted, not faded ink. */
-.paper-app button:disabled:is([class~="bg-neutral-900"],[class~="bg-neutral-950"],[class~="bg-black"],[class~="bg-primary"],[class~="bg-brand-500"],.bg-gradient-to-b),
+.paper-app button:disabled:is([class~="bg-neutral-900"],[class~="bg-neutral-950"],[class~="bg-black"],[class~="bg-primary"],[class~="bg-brand-500"],[class~="bg-neutral-300"],.bg-gradient-to-b),
 .paper-app :is(.reference-admin .ra-primary,.identity-studio .ri-primary):disabled { background-color:var(--sheet); color:var(--muted); border:1px solid var(--line); opacity:1; }
 
 /* Shared shell, after the Paper phone shell: a title bar (15/500 title, muted

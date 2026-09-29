@@ -698,7 +698,7 @@ function ImagePlaygroundWorkspace({
     <main className="flex min-h-screen flex-col bg-neutral-50 lg:h-screen">
       <StudioHeader
         active="playground"
-        title="Image Playground"
+        title="Image playground"
         subtitle="Paste prompts (one per line) → batch generate. Fast, no friction."
         metrics={[
           { label: "Prompts", value: promptCount },
@@ -959,7 +959,7 @@ function ImagePlaygroundWorkspace({
               onChange={(e) => setPromptsText(e.target.value)}
               placeholder={`a moody portrait under neon lights\na sunlit linen shirt close-up\na minimalist product hero on cream background`}
               disabled={running}
-              className="prompt-mono min-h-0 flex-1 resize-none px-6 py-5 text-[13px] leading-relaxed outline-none placeholder:text-neutral-400 disabled:bg-neutral-50"
+              className="prompt-mono min-h-[240px] flex-1 lg:min-h-0 resize-none px-6 py-5 text-[13px] leading-relaxed outline-none placeholder:text-neutral-400 disabled:bg-neutral-50"
             />
           </div>
 

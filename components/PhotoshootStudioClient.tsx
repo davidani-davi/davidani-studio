@@ -176,7 +176,7 @@ export default function PhotoshootStudioClient() {
 
   return (
     <main className="min-h-screen bg-neutral-50">
-      <StudioHeader active="photoshoot" title="Photoshoot Generator" subtitle="Upload an ERP style, choose one shoot-day reference, and generate a consistent campaign." metrics={[{ label: "Products", value: products.length }, { label: "Shots", value: shotCount }, { label: "Active", value: running ? 1 : 0 }]} />
+      <StudioHeader active="photoshoot" title="Photoshoot" subtitle="Upload an ERP style, choose one shoot-day reference, and generate a consistent campaign." metrics={[{ label: "Products", value: products.length }, { label: "Shots", value: shotCount }, { label: "Active", value: running ? 1 : 0 }]} />
       <div className="grid min-h-[calc(100vh-88px)] grid-cols-1 xl:grid-cols-[330px_390px_1fr]">
         <aside className="border-r border-neutral-200 bg-white p-5">
           <p className="text-[11px] font-semibold uppercase tracking-widest text-neutral-500">1 · ERP product images</p>

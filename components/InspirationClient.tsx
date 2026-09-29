@@ -470,7 +470,7 @@ export default function InspirationClient() {
                 className="inline-flex items-center justify-center gap-2 rounded-lg border border-neutral-200 px-3 py-2 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
               >
                 {analyzing ? <Spinner /> : IconSparkle}
-                AI Tag
+                AI tag
               </button>
               <button
                 type="button"
@@ -634,18 +634,7 @@ export default function InspirationClient() {
                           )}
                         </button>
                         {image ? (
-                          <div className="absolute inset-x-2 bottom-2 flex justify-end gap-1 opacity-0 transition group-hover:opacity-100">
-                            <button
-                              type="button"
-                              onClick={() => toggleSourceLike(source)}
-                              className={`rounded-full px-2.5 py-1 text-[10px] font-semibold shadow-sm backdrop-blur ${
-                                liked
-                                  ? "bg-brand-500 text-white hover:bg-brand-600"
-                                  : "bg-white/90 text-neutral-800 hover:bg-white"
-                              }`}
-                            >
-                              {liked ? "Liked" : "Like"}
-                            </button>
+                          <div className="absolute inset-x-2 bottom-2 flex flex-wrap justify-end gap-1 opacity-0 transition group-hover:opacity-100">
                             <button
                               type="button"
                               onClick={() => setPreview(image)}

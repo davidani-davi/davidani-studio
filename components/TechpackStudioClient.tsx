@@ -451,7 +451,7 @@ export default function TechpackStudioClient() {
     <main className="flex min-h-screen flex-col bg-neutral-50 lg:h-screen">
       <StudioHeader
         active="techpack"
-        title="Techpack Studio"
+        title="Techpack studio"
         subtitle="Generate factory-ready 7-page garment tech packs from sketches, flats, or renders."
         metrics={[
           { label: "Pages", value: techpack?.pages.length ?? 0 },
@@ -670,7 +670,7 @@ export default function TechpackStudioClient() {
               type="button"
               onClick={generate}
               disabled={!selectedUrl || !!uploading || generating}
-              className={`inline-flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold shadow-sm transition disabled:cursor-not-allowed ${
+              className={`inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl px-5 py-3 text-sm font-semibold shadow-sm transition disabled:cursor-not-allowed ${
                 !selectedUrl || uploading || generating
                   ? "bg-neutral-300 text-neutral-500"
                   : "bg-gradient-to-b from-neutral-800 to-neutral-950 text-white hover:from-neutral-700 hover:to-neutral-900"
@@ -684,7 +684,7 @@ export default function TechpackStudioClient() {
               ) : (
                 <>
                   {IconSparkle}
-                  Generate Tech Pack
+                  Generate tech pack
                 </>
               )}
             </button>

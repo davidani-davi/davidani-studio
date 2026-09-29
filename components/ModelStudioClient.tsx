@@ -2917,7 +2917,7 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
     <main className="flex min-h-screen flex-col bg-neutral-50 lg:h-screen">
       <StudioHeader
         active={beta ? "model-beta" : "model"}
-        title={beta ? "Multi Model Studio" : "Single Model Studio"}
+        title={beta ? "Multi model" : "Single model"}
         subtitle={
           beta
             ? (selectedModelIsPants ? "Generate front, side and back pants photos in one run." : "Generate front, side, back, and full model photos in one run.")
