@@ -25,6 +25,14 @@ describe("Thumb", () => {
     expect(img.className).toContain("opacity-0");
   });
 
+  it("shows the fallback when neither copy loads", () => {
+    render(<Thumb src={FAL} size={200} alt="variant 1" fallback={<span>Image expired</span>} />);
+    fireEvent.error(screen.getByAltText("variant 1"));
+    fireEvent.error(screen.getByAltText("variant 1"));
+    expect(screen.queryByAltText("variant 1")).toBeNull();
+    expect(screen.getByText("Image expired")).toBeTruthy();
+  });
+
   it("keeps a caller's own transition", () => {
     render(<Thumb src={FAL} size={200} alt="x" className="transition duration-300 hover:scale-105" />);
     expect(screen.getByAltText("x").className).not.toContain("transition-opacity");

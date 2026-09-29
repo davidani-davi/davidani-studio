@@ -1,28 +1,32 @@
 "use client";
 
-import { useEffect, useRef, useState, type ImgHTMLAttributes } from "react";
+import { useEffect, useRef, useState, type ImgHTMLAttributes, type ReactNode } from "react";
 import { thumbSrc } from "@/lib/thumb";
 
 type Props = Omit<ImgHTMLAttributes<HTMLImageElement>, "src"> & {
   src: string | undefined | null;
   /** Pixel width to fetch: about twice the width it is drawn at. */
   size: number;
+  /** Shown instead when neither copy loads (e.g. an expired temp-file link). */
+  fallback?: ReactNode;
 };
 
 /**
  * An <img> that downloads a resized copy (lib/thumb.ts) instead of the full
  * render, lazily, and fades in once it has arrived; the box behind it is the
  * placeholder. If the resizer fails it falls back to the original once, and
- * if that fails too the image stays hidden rather than showing a broken icon.
+ * if that fails too it shows `fallback`, or stays hidden, never a broken icon.
  */
-export default function Thumb({ src, size, className = "", loading = "lazy", onLoad, onError, ...rest }: Props) {
+export default function Thumb({ src, size, fallback, className = "", loading = "lazy", onLoad, onError, ...rest }: Props) {
   const resized = thumbSrc(src, size);
   const [failed, setFailed] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [dead, setDead] = useState(false);
   const ref = useRef<HTMLImageElement>(null);
 
   useEffect(() => {
     setFailed(false);
+    setDead(false);
     // A cached image can finish before React hydrates and miss onLoad.
     const img = ref.current;
     setLoaded(Boolean(img?.complete && img.naturalWidth));
@@ -31,6 +35,8 @@ export default function Thumb({ src, size, className = "", loading = "lazy", onL
   const url = failed ? src ?? "" : resized;
   // Keep a caller's own `transition` (e.g. a hover zoom) intact.
   const fade = /\btransition\b/.test(className) ? "" : "transition-opacity duration-300";
+
+  if (dead && fallback) return <>{fallback}</>;
 
   return (
     // eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text
@@ -49,6 +55,7 @@ export default function Thumb({ src, size, className = "", loading = "lazy", onL
       onError={(event) => {
         // Second failure: stay hidden, so the box behind shows instead of a broken icon.
         if (!failed && url !== src) setFailed(true);
+        else setDead(true);
         onError?.(event);
       }}
     />
