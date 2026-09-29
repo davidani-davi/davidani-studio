@@ -681,15 +681,24 @@ export default function InspirationClient() {
                           <button
                             type="button"
                             onClick={() => sendBestsellerRemix(source)}
-                            className="col-span-2 rounded-lg border border-neutral-200 bg-white px-2 py-1.5 text-[11px] font-semibold text-neutral-800 hover:border-neutral-900"
+                            title="Bestseller remix"
+                            className="col-span-2 truncate whitespace-nowrap rounded-lg border border-neutral-200 bg-white px-1.5 py-1 text-[11px] font-semibold text-neutral-800 hover:border-neutral-900"
                           >
-                            Bestseller remix
+                            {/* Dense phone tiles are ~115px wide: the full label wrapped to two lines. */}
+                            {density === "dense" ? (
+                              <>
+                                <span className="md:hidden">Remix</span>
+                                <span className="hidden md:inline">Bestseller remix</span>
+                              </>
+                            ) : (
+                              "Bestseller remix"
+                            )}
                           </button>
                           <button
                             type="button"
                             aria-pressed={liked}
                             onClick={() => toggleSourceLike(source)}
-                            className={`col-span-2 rounded-lg border px-2 py-1.5 text-[11px] font-semibold ${
+                            className={`col-span-2 truncate whitespace-nowrap rounded-lg border px-1.5 py-1 text-[11px] font-semibold ${
                               liked
                                 ? "border-neutral-900 bg-neutral-900 text-white"
                                 : "border-neutral-200 bg-white text-neutral-700 hover:border-neutral-900"
@@ -705,14 +714,14 @@ export default function InspirationClient() {
                               setAddViewsTarget(source.id);
                               window.setTimeout(() => addViewsInputRef.current?.click(), 0);
                             }}
-                            className="px-0 py-1 text-[11px] text-neutral-500 hover:text-neutral-950"
+                            className="whitespace-nowrap px-0 py-1 text-[11px] text-neutral-500 hover:text-neutral-950"
                           >
                             Add views
                           </button>
                           <button
                             type="button"
                             onClick={() => void deleteSource(source.id)}
-                            className="px-0 py-1 text-[11px] text-neutral-500 hover:text-red-600"
+                            className="whitespace-nowrap px-0 py-1 text-[11px] text-neutral-500 hover:text-red-600"
                           >
                             Remove
                           </button>

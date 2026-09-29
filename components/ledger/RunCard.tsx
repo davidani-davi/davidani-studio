@@ -138,22 +138,20 @@ export default function RunCard({
           <>
             <div className="flex gap-1">
               {intake.slice(0, 2).map((shot) => (
-                <div
-                  key={shot.url}
-                  className="relative h-[76px] w-[58px] shrink-0 overflow-hidden rounded-md border border-neutral-200 bg-[#edeeee]"
-                >
-                  {/* Contain, because an intake photo is whatever shape the
-                      phone took it in — cover cropped the hem off. */}
-                  <Thumb
-                    src={shot.url}
-                    size={256}
-                    alt={`${shot.label} intake photo`}
-                    className="h-full w-full object-contain"
-                    fallback={<span className="flex h-full w-full items-center justify-center px-1 text-center text-[9px] leading-tight text-neutral-400">Expired</span>}
-                  />
-                  <span className="absolute inset-x-0 bottom-0 bg-white/85 py-px text-center font-mono text-[7.5px] font-bold uppercase tracking-[0.1em] text-neutral-500">
-                    {shot.label}
-                  </span>
+                <div key={shot.url} className="flex w-12 shrink-0 flex-col items-center gap-1">
+                  {/* A 2:3 box (Paper's 48x72 list-row photo). Contain, because
+                      an intake photo is whatever shape the phone took it in —
+                      cover cropped the hem off. */}
+                  <div className="relative h-[72px] w-12 overflow-hidden rounded-md border border-neutral-200 bg-[#edeeee]">
+                    <Thumb
+                      src={shot.url}
+                      size={256}
+                      alt={`${shot.label} intake photo`}
+                      className="h-full w-full object-contain"
+                      fallback={<span className="flex h-full w-full items-center justify-center px-1 text-center text-[9px] leading-tight text-neutral-400">Expired</span>}
+                    />
+                  </div>
+                  <span className="text-[9px] leading-none text-neutral-500">{shot.label}</span>
                 </div>
               ))}
             </div>

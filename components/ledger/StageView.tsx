@@ -242,7 +242,7 @@ function IntakeRail({
               ? "border-neutral-900 ring-1 ring-neutral-900"
               : "border-neutral-200 hover:border-neutral-400"
           }`}
-          style={{ aspectRatio: "4 / 5" }}
+          style={{ aspectRatio: "2 / 3" }}
         >
           <Thumb
             src={shot.url}
@@ -250,7 +250,7 @@ function IntakeRail({
             alt={`${shot.label} intake photo`}
             className="h-full w-full object-contain"
           />
-          <span className="absolute inset-x-0 bottom-0 bg-white/85 py-0.5 text-center font-mono text-[8px] font-bold uppercase tracking-[0.1em] text-neutral-600">
+          <span className="absolute inset-x-0 bottom-0 bg-white/90 py-0.5 text-center text-[10px] font-medium text-neutral-600">
             {shot.label}
           </span>
         </button>

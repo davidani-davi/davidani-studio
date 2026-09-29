@@ -445,7 +445,7 @@ export default function PromptPanel(p: Props) {
                       title={option.hint}
                       className={`rounded-full border px-3 py-1.5 text-[11px] font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${
                         isActive
-                          ? "border-brand-300 bg-brand-50 text-brand-700"
+                          ? "border-neutral-900 bg-neutral-900 text-white"
                           : "border-neutral-200 bg-white text-neutral-600 hover:border-neutral-400 hover:bg-neutral-50"
                       }`}
                     >
@@ -790,7 +790,7 @@ export default function PromptPanel(p: Props) {
               }
               className={`group relative inline-flex items-center gap-2 rounded-xl border px-4 py-3 text-sm font-semibold transition disabled:cursor-not-allowed ${
                 !p.canBatch || p.loading || p.analyzing || batchActive
-                  ? "border-neutral-200 bg-neutral-100 text-neutral-400"
+                  ? "border-neutral-200 bg-white text-neutral-400"
                   : "border-brand-300 bg-white text-brand-700 hover:bg-brand-50 hover:shadow-sm active:scale-[0.98]"
               }`}
             >
