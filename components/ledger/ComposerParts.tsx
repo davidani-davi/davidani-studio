@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import Thumb from "@/components/Thumb";
 
 /**
  * The two controls the composer is made of, shared by both studios.
@@ -70,8 +71,7 @@ export function IntakeSlot({
             the two places a bad render shows first. The ground is the
             studio's own #edeeee, so the letterboxing reads as the sweep.
           */
-          /* eslint-disable-next-line @next/next/no-img-element */
-          <img src={url} alt={`${label} product photo`} className="h-full w-full object-contain" />
+          <Thumb src={url} size={384} loading="eager" alt={`${label} product photo`} className="h-full w-full object-contain" />
         ) : (
           <>
             <span className="text-[20px] leading-none text-neutral-300 transition group-hover:text-neutral-400">

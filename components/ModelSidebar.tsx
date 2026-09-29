@@ -13,6 +13,7 @@ import { resizeIfNeeded } from "@/lib/image-resize";
 import type { HumanModel, ModelPose, PresetView } from "@/lib/models-registry";
 import { outfitFor, wardrobeGroups, wardrobeHalf } from "@/lib/plate-wear";
 import ImageLightbox, { ZoomButton } from "./ImageLightbox";
+import Thumb from "@/components/Thumb";
 
 interface Props {
   /* Output (AI image) model */
@@ -347,8 +348,7 @@ export default function ModelSidebar(p: Props) {
                   </div>
                   {upload ? (
                     <div className="group relative aspect-[4/3] overflow-hidden rounded-lg border border-brand-200 bg-white">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={upload.url} alt={upload.name} className="h-full w-full object-cover" />
+                      <Thumb src={upload.url} size={384} alt={upload.name} className="h-full w-full object-cover" />
                       <button
                         onClick={() => p.onRemoveUpload(upload.url)}
                         className="absolute left-2 top-2 rounded-full bg-black/70 px-2 py-0.5 text-[10px] font-semibold text-white opacity-0 transition group-hover:opacity-100"
@@ -444,8 +444,7 @@ export default function ModelSidebar(p: Props) {
                   className="absolute inset-0 block"
                   title={selected ? "Deselect" : "Use as reference"}
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={u.url} alt={u.name} className="h-full w-full object-cover" />
+                  <Thumb src={u.url} size={256} alt={u.name} className="h-full w-full object-cover" />
                   {selected && (
                     <span className="pointer-events-none absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-brand-600 text-[9px] font-bold text-white">
                       ✓
@@ -508,8 +507,7 @@ export default function ModelSidebar(p: Props) {
             {pantsReferences(p.humanModels).map(m => <button type="button" key={m.id}
               onClick={() => p.onHumanModelChange(m.id)} aria-pressed={m.id === p.selectedHumanModelId}
               className={`overflow-hidden rounded border text-left ${m.id === p.selectedHumanModelId ? 'border-neutral-900 bg-neutral-900 text-white' : 'border-neutral-200 bg-white'}`}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={m.poses[0]?.views.front?.publicPath} alt="" className="aspect-[2/3] w-full object-contain" />
+              <Thumb src={m.poses[0]?.views.front?.publicPath} size={384} alt="" className="aspect-[2/3] w-full object-contain" />
               <span className="block p-2 text-xs">{m.name}</span>
             </button>)}
           </div>}
@@ -609,8 +607,7 @@ export default function ModelSidebar(p: Props) {
                       >
                         <span className="relative h-12 w-9 shrink-0 overflow-hidden rounded-md border border-neutral-200 bg-neutral-100">
                           {thumb ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img src={thumb.publicPath} alt="" className="h-full w-full object-cover" />
+                            <Thumb src={thumb.publicPath} size={128} alt="" className="h-full w-full object-cover" />
                           ) : null}
                         </span>
                         <span className="min-w-0">
@@ -708,9 +705,9 @@ export default function ModelSidebar(p: Props) {
                         >
                           <span className="relative h-12 w-9 shrink-0 overflow-hidden rounded-md border border-neutral-200 bg-neutral-100">
                             {primaryThumb ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img
+                              <Thumb
                                 src={primaryThumb.publicPath || m.poses[0]?.publicPath}
+                                size={256}
                                 alt=""
                                 className="h-full w-full object-cover transition group-hover:scale-105"
                               />
@@ -845,9 +842,9 @@ export default function ModelSidebar(p: Props) {
                         }
                       >
                         {thumb ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
+                          <Thumb
                             src={typeof thumb === "string" ? thumb : thumb.publicPath}
+                            size={384}
                             alt={`${selectedPose?.label || "Selected look"} ${view.label} reference`}
                             className="h-full w-full object-cover transition group-hover:scale-105"
                           />
@@ -891,9 +888,9 @@ export default function ModelSidebar(p: Props) {
                           className="absolute inset-0 block"
                           title={pose.label}
                         >
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
+                          <Thumb
                             src={thumb?.publicPath || pose.publicPath}
+                            size={384}
                             alt={pose.label}
                             className="h-full w-full object-cover"
                           />
