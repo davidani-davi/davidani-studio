@@ -7,6 +7,7 @@ import ImageLightbox, { ZoomButton } from "./ImageLightbox";
 import { FEEDBACK_ISSUES, type FeedbackIssueKey } from "@/lib/feedback-memory";
 import RoutingPanel from "./RoutingPanel";
 import BackgroundSnapNote from "./BackgroundSnapNote";
+import Thumb from "@/components/Thumb";
 
 type FitRepairMode =
   | "all"
@@ -822,8 +823,7 @@ export default function OutputPanel({
                   }}
                   className="absolute inset-0 block"
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={u} alt="" className="h-full w-full object-cover" />
+                  <Thumb size={256} src={u} alt="" className="h-full w-full object-cover" />
                   <span className="absolute bottom-0.5 right-0.5 rounded bg-black/60 px-1 text-[9px] text-white">
                     {i + 1}
                   </span>
@@ -941,8 +941,7 @@ export default function OutputPanel({
                     title="Click to preview at full size"
                     className="flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-lg bg-neutral-50"
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
+                    <Thumb size={1080} upgrade loading="eager"
                       src={url}
                       alt={label}
                       className="max-h-full max-w-full cursor-zoom-in object-contain"
@@ -1059,8 +1058,7 @@ export default function OutputPanel({
                         }}
                         className="flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-lg bg-neutral-50"
                       >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
+                        <Thumb size={1080} upgrade loading="eager"
                           src={slot.url}
                           alt={`${photoshootViewLabel[activeView]} ${variantLabel}`}
                           className="max-h-full max-w-full object-contain"
@@ -1148,8 +1146,7 @@ export default function OutputPanel({
                     </span>
                   </div>
                   <div className="flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-xl bg-neutral-50">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
+                    <Thumb size={1080} upgrade loading="eager"
                       src={url}
                       alt={`Generated variant ${imageIndex + 1}`}
                       className="max-h-full max-w-full object-contain"
@@ -1247,8 +1244,7 @@ export default function OutputPanel({
                     }`}
                   >
                     {url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
+                      <Thumb size={1080} upgrade loading="eager"
                         src={url}
                         alt={`${photoshootViewLabel[view]} view`}
                         className="max-h-full max-w-full object-contain"
@@ -1283,8 +1279,7 @@ export default function OutputPanel({
             title="Click to preview at full size"
             className="group relative flex h-full max-h-full w-full max-w-full items-center justify-center"
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <Thumb size={1920} upgrade loading="eager"
               src={active}
               alt="Generated output"
               className="max-h-full max-w-full cursor-zoom-in rounded-lg object-contain shadow-sm transition group-hover:shadow-md"
@@ -1747,8 +1742,7 @@ export default function OutputPanel({
                         <div className="relative aspect-[3/4] bg-neutral-50">
                           {slot ? (
                             <>
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img
+                              <Thumb size={384}
                                 src={slot.url}
                                 alt={`${photoshootViewLabel[view]} generated view`}
                                 className="h-full w-full object-cover opacity-70"
@@ -1970,8 +1964,7 @@ export default function OutputPanel({
               >
                 {h.imageUrls[0] ? (
                   <span className="relative h-9 w-7 shrink-0 overflow-hidden rounded border border-neutral-200 bg-white">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={h.imageUrls[0]} alt="" className="h-full w-full object-cover" />
+                    <Thumb size={256} src={h.imageUrls[0]} alt="" className="h-full w-full object-cover" />
                     {h.multiOption && h.imageUrls.length > 1 && (
                       <span className="absolute bottom-0 right-0 rounded-tl bg-black/60 px-1 text-[8px] font-semibold text-white">
                         3

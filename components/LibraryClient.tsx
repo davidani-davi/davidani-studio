@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import StudioHeader from "@/components/StudioHeader";
 import type { LibraryStyle, LibraryView } from "@/lib/style-library";
+import Thumb from "@/components/Thumb";
 
 interface LibraryDraft {
   styleNumber: string;
@@ -860,9 +861,9 @@ export default function LibraryClient() {
                               }
                               className="relative block aspect-[4/5] w-full overflow-hidden rounded-lg bg-neutral-100 text-left focus:outline-none focus:ring-2 focus:ring-neutral-900"
                             >
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img
+                              <Thumb
                                 src={view.imageUrl}
+                                size={640}
                                 alt={`${style.styleNumber} ${label}`}
                                 className="h-full w-full object-cover transition duration-200 group-hover:scale-[1.02]"
                               />
@@ -1174,9 +1175,9 @@ export default function LibraryClient() {
                                   className="text-left"
                                 >
                                   <div className="aspect-[4/5] overflow-hidden rounded-lg bg-white">
-                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                    <img
+                                    <Thumb
                                       src={item.views[0]?.imageUrl}
+                                      size={256}
                                       alt={item.styleNumber}
                                       className="h-full w-full object-cover"
                                     />
@@ -1232,9 +1233,11 @@ export default function LibraryClient() {
               </div>
             </div>
             <div className="flex max-h-[calc(92vh-58px)] justify-center overflow-auto bg-neutral-100 p-4">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <Thumb
                 src={preview.url}
+                size={1920}
+                loading="eager"
+                upgrade
                 alt={preview.title}
                 className="max-h-[calc(92vh-90px)] w-auto max-w-full rounded-lg object-contain shadow-sm"
               />

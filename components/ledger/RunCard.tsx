@@ -12,6 +12,7 @@ import {
   type PipelineStep,
   type RunTone,
 } from "@/lib/run-pipeline";
+import Thumb from "@/components/Thumb";
 
 /**
  * One run in the ledger: both variants at thumbnail size, what it is, and the
@@ -145,9 +146,9 @@ export default function RunCard({
                 >
                   {/* Contain, because an intake photo is whatever shape the
                       phone took it in — cover cropped the hem off. */}
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
+                  <Thumb
                     src={shot.url}
+                    size={256}
                     alt={`${shot.label} intake photo`}
                     className="h-full w-full object-contain"
                   />
@@ -182,9 +183,9 @@ export default function RunCard({
                 isPick ? "border-neutral-900 ring-1 ring-neutral-900" : "border-neutral-200"
               } ${dimmed ? "opacity-50" : ""}`}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <Thumb
                 src={url}
+                size={256}
                 alt={`${title(run)} variant ${i + 1}`}
                 className="h-full w-full object-cover"
               />

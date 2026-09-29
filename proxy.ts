@@ -31,6 +31,9 @@ export async function proxy(req: NextRequest) {
   return NextResponse.next();
 }
 
+// /_next/image can't be gated here: Vercel serves it before the proxy runs
+// (checked 2026-09-29, an uncached width came back 200 with no session). The
+// pinned remote patterns in next.config.js are what fence the resizer in.
 export const config = {
   matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\..*).*)"],
 };

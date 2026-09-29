@@ -6,6 +6,7 @@ import StudioHeader from "@/components/StudioHeader";
 import { readTasteSignals, toggleTasteSignal } from "@/lib/design-memory";
 import { resizeIfNeeded } from "@/lib/image-resize";
 import type { InspirationSource } from "@/lib/inspiration-library";
+import Thumb from "@/components/Thumb";
 
 const PROMPT_STUDIO_IMPORT_KEY = "davidani:prompt-studio:import";
 
@@ -444,8 +445,7 @@ export default function InspirationClient() {
                     onClick={() => setPreview(url)}
                     className="group relative aspect-square overflow-hidden rounded-lg bg-neutral-100"
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={url} alt={draft.title || "Inspiration preview"} className="h-full w-full object-cover" />
+                    <Thumb src={url} size={384} alt={draft.title || "Inspiration preview"} className="h-full w-full object-cover" />
                     {idx === 0 && (
                       <span className="absolute left-1 top-1 rounded-full bg-white/90 px-1.5 py-0.5 text-[9px] font-semibold text-neutral-700">
                         Main
@@ -591,8 +591,7 @@ export default function InspirationClient() {
                           className={`block w-full bg-neutral-100 ${density === "large" ? "aspect-[3/4]" : "aspect-[4/3]"}`}
                         >
                           {image ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img src={image} alt={source.title} className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]" />
+                            <Thumb src={image} size={640} alt={source.title} className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]" />
                           ) : (
                             <div className="flex h-full items-center justify-center p-4 text-center text-xs text-neutral-400">
                               Link saved without image preview
@@ -640,8 +639,7 @@ export default function InspirationClient() {
                                 className="relative h-9 w-9 shrink-0 overflow-hidden rounded-md bg-neutral-100"
                                 title={`View ${idx + 1}`}
                               >
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img src={url} alt="" className="h-full w-full object-cover" />
+                                <Thumb src={url} size={256} alt="" className="h-full w-full object-cover" />
                               </button>
                             ))}
                             {gallery.length > 5 && (

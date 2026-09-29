@@ -9,6 +9,7 @@ import type { RoutingControls } from "./RoutingPanel";
 import type { CanvasSummary, RoutingPayload } from "@/lib/routing-summary";
 import type { UploadedImage } from "./types";
 import ImageLightbox, { ZoomButton } from "./ImageLightbox";
+import Thumb from "@/components/Thumb";
 
 interface Props {
   modelId: ModelId;
@@ -237,8 +238,7 @@ export default function Sidebar(p: Props) {
                     className="absolute inset-0"
                     title={`Preview ${slot.title.toLowerCase()}`}
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={slot.url} alt={slot.title} className="h-full w-full object-cover" />
+                    <Thumb src={slot.url} size={384} alt={slot.title} className="h-full w-full object-cover" />
                   </button>
                   <button
                     type="button"
@@ -335,9 +335,9 @@ export default function Sidebar(p: Props) {
               draggingReference ? "border-brand-500 ring-2 ring-brand-200" : "border-neutral-200"
             }`}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <Thumb
               src={referencePreviewSrc}
+              size={384}
               alt="Style reference"
               className="h-full w-full object-cover"
             />

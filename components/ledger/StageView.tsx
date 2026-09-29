@@ -14,6 +14,7 @@ import {
   type IntakeShot,
   type PipelineStep,
 } from "@/lib/run-pipeline";
+import Thumb from "@/components/Thumb";
 
 /**
  * The right half: whichever run the ledger is pointing at, as large as the
@@ -68,10 +69,18 @@ function ShotFrame({
         title={openTitle ?? (soloed ? "Back to both variants" : "Fill the stage with this variant")}
         className="flex min-h-0 w-full flex-1 items-center justify-center"
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+        {/* The stage copy is resized too; Download still saves the original. */}
+        <Thumb
           src={url}
+          size={1920}
+          loading="eager"
+          upgrade
           alt={alt}
+          fallback={
+            <span className="max-w-[240px] text-center text-[13px] leading-snug text-neutral-500">
+              This image could not be loaded. On an older run, the host it was saved on may have deleted it.
+            </span>
+          }
           className={`max-h-full max-w-full rounded-md border bg-[#edeeee] object-contain shadow-md ${
             kept ? "border-neutral-900 ring-2 ring-neutral-900" : "border-neutral-200"
           }`}
@@ -235,9 +244,9 @@ function IntakeRail({
           }`}
           style={{ aspectRatio: "4 / 5" }}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <Thumb
             src={shot.url}
+            size={256}
             alt={`${shot.label} intake photo`}
             className="h-full w-full object-contain"
           />
