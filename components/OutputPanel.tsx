@@ -941,7 +941,7 @@ export default function OutputPanel({
                     title="Click to preview at full size"
                     className="flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-lg bg-neutral-50"
                   >
-                    <Thumb size={1920}
+                    <Thumb size={1920} upgrade loading="eager"
                       src={url}
                       alt={label}
                       className="max-h-full max-w-full cursor-zoom-in object-contain"
@@ -1058,7 +1058,7 @@ export default function OutputPanel({
                         }}
                         className="flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-lg bg-neutral-50"
                       >
-                        <Thumb size={1920}
+                        <Thumb size={1920} upgrade loading="eager"
                           src={slot.url}
                           alt={`${photoshootViewLabel[activeView]} ${variantLabel}`}
                           className="max-h-full max-w-full object-contain"
@@ -1146,7 +1146,7 @@ export default function OutputPanel({
                     </span>
                   </div>
                   <div className="flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-xl bg-neutral-50">
-                    <Thumb size={1920}
+                    <Thumb size={1920} upgrade loading="eager"
                       src={url}
                       alt={`Generated variant ${imageIndex + 1}`}
                       className="max-h-full max-w-full object-contain"
@@ -1244,7 +1244,7 @@ export default function OutputPanel({
                     }`}
                   >
                     {url ? (
-                      <Thumb size={1920}
+                      <Thumb size={1920} upgrade loading="eager"
                         src={url}
                         alt={`${photoshootViewLabel[view]} view`}
                         className="max-h-full max-w-full object-contain"
@@ -1279,7 +1279,7 @@ export default function OutputPanel({
             title="Click to preview at full size"
             className="group relative flex h-full max-h-full w-full max-w-full items-center justify-center"
           >
-            <Thumb size={1920}
+            <Thumb size={1920} upgrade loading="eager"
               src={active}
               alt="Generated output"
               className="max-h-full max-w-full cursor-zoom-in rounded-lg object-contain shadow-sm transition group-hover:shadow-md"
@@ -1964,7 +1964,7 @@ export default function OutputPanel({
               >
                 {h.imageUrls[0] ? (
                   <span className="relative h-9 w-7 shrink-0 overflow-hidden rounded border border-neutral-200 bg-white">
-                    <Thumb size={128} src={h.imageUrls[0]} alt="" className="h-full w-full object-cover" />
+                    <Thumb size={256} src={h.imageUrls[0]} alt="" className="h-full w-full object-cover" />
                     {h.multiOption && h.imageUrls.length > 1 && (
                       <span className="absolute bottom-0 right-0 rounded-tl bg-black/60 px-1 text-[8px] font-semibold text-white">
                         3

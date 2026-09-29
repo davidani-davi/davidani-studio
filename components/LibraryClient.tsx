@@ -1237,6 +1237,7 @@ export default function LibraryClient() {
                 src={preview.url}
                 size={1920}
                 loading="eager"
+                upgrade
                 alt={preview.title}
                 className="max-h-[calc(92vh-90px)] w-auto max-w-full rounded-lg object-contain shadow-sm"
               />

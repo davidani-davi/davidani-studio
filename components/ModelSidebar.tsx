@@ -607,7 +607,7 @@ export default function ModelSidebar(p: Props) {
                       >
                         <span className="relative h-12 w-9 shrink-0 overflow-hidden rounded-md border border-neutral-200 bg-neutral-100">
                           {thumb ? (
-                            <Thumb src={thumb.publicPath} size={128} alt="" className="h-full w-full object-cover" />
+                            <Thumb src={thumb.publicPath} size={256} alt="" className="h-full w-full object-cover" />
                           ) : null}
                         </span>
                         <span className="min-w-0">

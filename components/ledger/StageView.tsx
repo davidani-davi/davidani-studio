@@ -74,6 +74,7 @@ function ShotFrame({
           src={url}
           size={1920}
           loading="eager"
+          upgrade
           alt={alt}
           fallback={
             <span className="max-w-[240px] text-center text-[13px] leading-snug text-neutral-500">

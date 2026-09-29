@@ -148,7 +148,7 @@ export default function RunCard({
                       phone took it in — cover cropped the hem off. */}
                   <Thumb
                     src={shot.url}
-                    size={128}
+                    size={256}
                     alt={`${shot.label} intake photo`}
                     className="h-full w-full object-contain"
                   />
@@ -185,7 +185,7 @@ export default function RunCard({
             >
               <Thumb
                 src={url}
-                size={192}
+                size={256}
                 alt={`${title(run)} variant ${i + 1}`}
                 className="h-full w-full object-cover"
               />

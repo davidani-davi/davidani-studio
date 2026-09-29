@@ -8,17 +8,21 @@
  * at the edge, so a 76px chip costs ~10 KB. Downloads and the lightbox keep
  * using the original URL.
  *
- * The hosts here must match `images.remotePatterns` in next.config.js, and the
- * widths must be ones Next accepts (its default imageSizes + deviceSizes).
+ * REMOTE must stay inside `images.remotePatterns` in next.config.js (the test
+ * checks it with Next's own matcher), and the widths must be ones Next accepts
+ * (its default imageSizes + deviceSizes).
  */
 
 const WIDTHS = [32, 48, 64, 96, 128, 256, 384, 640, 750, 828, 1080, 1200, 1920, 2048, 3840];
 
-const REMOTE_HOSTS = [
-  /(^|\.)fal\.media$/,
-  /(^|\.)fal\.ai$/,
-  /\.public\.blob\.vercel-storage\.com$/,
-  /^system\.davidani\.com$/,
+// fal's files are immutable (max-age 60 days), so a resized copy is made once
+// per width. The ERP overwrites a photo in place when a style is re-shot; its
+// copies follow Next's default 4-hour cache.
+const REMOTE: { host: RegExp; path?: RegExp }[] = [
+  { host: /(^|\.)fal\.media$/ },
+  { host: /\.fal\.ai$/ },
+  { host: /^cdr9xgexrrfthz5f\.public\.blob\.vercel-storage\.com$/ },
+  { host: /^system\.davidani\.com$/, path: /^\/upload\// },
 ];
 
 function resizable(url: string): boolean {
@@ -29,8 +33,11 @@ function resizable(url: string): boolean {
     return !url.startsWith("//") && !url.startsWith("/api/") && !url.startsWith("/_next/");
   }
   try {
-    const { protocol, hostname } = new URL(url);
-    return protocol === "https:" && REMOTE_HOSTS.some((host) => host.test(hostname));
+    const { protocol, hostname, pathname } = new URL(url);
+    return (
+      protocol === "https:" &&
+      REMOTE.some(({ host, path }) => host.test(hostname) && (!path || path.test(pathname)))
+    );
   } catch {
     return false;
   }

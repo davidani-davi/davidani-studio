@@ -9,6 +9,12 @@ type Props = Omit<ImgHTMLAttributes<HTMLImageElement>, "src"> & {
   size: number;
   /** Shown instead when neither copy loads (e.g. an expired temp-file link). */
   fallback?: ReactNode;
+  /**
+   * For the one big image someone inspects (stage, output, preview): show the
+   * resized copy first, then swap in the full original once it has downloaded,
+   * so fine detail is never judged on a WebP.
+   */
+  upgrade?: boolean;
 };
 
 /**
@@ -17,22 +23,59 @@ type Props = Omit<ImgHTMLAttributes<HTMLImageElement>, "src"> & {
  * placeholder. If the resizer fails it falls back to the original once, and
  * if that fails too it shows `fallback`, or stays hidden, never a broken icon.
  */
-export default function Thumb({ src, size, fallback, className = "", loading = "lazy", onLoad, onError, ...rest }: Props) {
-  const resized = thumbSrc(src, size);
-  const [failed, setFailed] = useState(false);
+export default function Thumb(props: Props) {
+  // A new image starts from scratch: no stale "failed" or "loaded" state.
+  return <ThumbImage key={props.src ?? ""} {...props} />;
+}
+
+function ThumbImage({
+  src,
+  size,
+  fallback,
+  upgrade = false,
+  className = "",
+  loading = "lazy",
+  onLoad,
+  onError,
+  ...rest
+}: Props) {
+  const original = src ?? "";
+  const [url, setUrl] = useState(() => thumbSrc(src, size));
   const [loaded, setLoaded] = useState(false);
   const [dead, setDead] = useState(false);
   const ref = useRef<HTMLImageElement>(null);
 
-  useEffect(() => {
-    setFailed(false);
-    setDead(false);
-    // A cached image can finish before React hydrates and miss onLoad.
-    const img = ref.current;
-    setLoaded(Boolean(img?.complete && img.naturalWidth));
-  }, [resized]);
+  function fail() {
+    if (url !== original) {
+      console.warn("[thumb] resized copy failed, using the original", original);
+      setUrl(original);
+    } else {
+      // Stay hidden, so the box behind shows instead of a broken icon.
+      setDead(true);
+    }
+  }
 
-  const url = failed ? src ?? "" : resized;
+  // A server-rendered image can finish, or fail, before React hydrates and
+  // attaches its handlers.
+  useEffect(() => {
+    const img = ref.current;
+    if (!img || !url || !img.complete) return;
+    if (img.naturalWidth) setLoaded(true);
+    else fail();
+    // Mount only: later loads and errors reach the handlers.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (!upgrade || !loaded || url === original) return;
+    const full = new Image();
+    full.onload = () => setUrl(original);
+    full.src = original;
+    return () => {
+      full.onload = null;
+    };
+  }, [upgrade, loaded, url, original]);
+
   // Keep a caller's own `transition` (e.g. a hover zoom) intact.
   const fade = /\btransition\b/.test(className) ? "" : "transition-opacity duration-300";
 
@@ -43,7 +86,7 @@ export default function Thumb({ src, size, fallback, className = "", loading = "
     <img
       {...rest}
       ref={ref}
-      src={url}
+      src={url || undefined}
       loading={loading}
       decoding="async"
       // No opacity class once loaded, so a caller's own (e.g. opacity-70) applies.
@@ -53,9 +96,7 @@ export default function Thumb({ src, size, fallback, className = "", loading = "
         onLoad?.(event);
       }}
       onError={(event) => {
-        // Second failure: stay hidden, so the box behind shows instead of a broken icon.
-        if (!failed && url !== src) setFailed(true);
-        else setDead(true);
+        fail();
         onError?.(event);
       }}
     />

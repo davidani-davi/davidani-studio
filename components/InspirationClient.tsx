@@ -639,7 +639,7 @@ export default function InspirationClient() {
                                 className="relative h-9 w-9 shrink-0 overflow-hidden rounded-md bg-neutral-100"
                                 title={`View ${idx + 1}`}
                               >
-                                <Thumb src={url} size={96} alt="" className="h-full w-full object-cover" />
+                                <Thumb src={url} size={256} alt="" className="h-full w-full object-cover" />
                               </button>
                             ))}
                             {gallery.length > 5 && (
