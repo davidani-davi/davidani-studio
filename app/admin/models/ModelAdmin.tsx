@@ -50,7 +50,7 @@ export default function ModelAdmin(){
   return d.change;
  }
  async function action(body:Record<string,unknown>){setBusy(true);setError('');try{return await mutate(body);}catch(e:any){setError(e.message);}finally{setBusy(false);}}
- function pick(m:ManagedModel){setSelected(m.id);setPoseId('');setFrame('crop');setMessage('');}
+ function pick(m:ManagedModel){setSelected(m.id);setPoseId('');setFrame('crop');setMessage('');if(window.matchMedia('(max-width:700px)').matches)requestAnimationFrame(()=>document.querySelector('.ra-content')?.scrollIntoView({block:'start'}));}
  function choosePhoto(m:ManagedModel,p:ModelPose,view:PresetView,file:File){
   if(!['image/png','image/jpeg','image/webp'].includes(file.type)||file.size>20*1024*1024){setError('Choose a PNG, JPEG or WebP no larger than 20 MB.');return;}
   setEdit({model:m,pose:p,view,file,preview:URL.createObjectURL(file)});setProgress(0);setError('');

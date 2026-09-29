@@ -157,9 +157,9 @@ body.paper-app { padding-bottom:0; }
 .paper-app :is(.reference-admin,.identity-studio) h1 { font-size:22px; font-weight:500; letter-spacing:-.01em; }
 .paper-app :is(.reference-admin,.identity-studio) h2 { font-size:16px; font-weight:500; }
 .paper-app :is(.reference-admin,.identity-studio) :is(.ra-collections button,.ra-model.selected,.ri-identities button.selected) { border:1px solid var(--line); box-shadow:none; }
-.paper-app :is(.ra-model.selected,.ri-identities button.selected) { border-color:var(--fg); background:var(--page); }
-.paper-app .ra-collections button[aria-pressed=true] { border-color:var(--fg); background:var(--fg); color:var(--sheet); }
-.paper-app .ra-collections button[aria-pressed=true] span { background:transparent; color:inherit; }
+.paper-app :is(.reference-admin,.identity-studio) :is(.ra-model.selected,.ri-identities button.selected) { border-color:var(--fg); background:var(--page); }
+.paper-app .reference-admin .ra-collections button[aria-pressed=true] { border-color:var(--fg); background:var(--fg); color:var(--sheet); font-weight:500; }
+.paper-app .reference-admin .ra-collections button[aria-pressed=true] span { background:transparent; color:inherit; }
 .paper-app :is(.ra-library,.ra-content,.ri-view,.ri-actionbar) { background:var(--sheet); border-color:var(--line); }
 .paper-app .ra-collections { gap:8px; padding-bottom:12px; flex-wrap:wrap; }
 .paper-app .ra-eyebrow { letter-spacing:0; text-transform:none; color:var(--muted); }
@@ -214,4 +214,4 @@ body.paper-app { padding-bottom:0; }
 }
 
 /* Secondary buttons: page fill and an ink border on hover. */
-.paper-app button:not(:disabled):is([class~="bg-white"]):is([class~="border"]):hover { background-color:var(--page); border-color:var(--fg); }
+.paper-app button:not(:disabled):not([class~="text-left"]):is([class~="bg-white"]):is([class~="border"]):hover { background-color:var(--page); border-color:var(--fg); }

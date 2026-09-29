@@ -1096,7 +1096,7 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
       {
         id,
         kind: beta ? "model-beta" : "model",
-        label: beta ? "Multi Model Studio generation" : "Single Model Studio generation",
+        label: beta ? "Multi model generation" : "Single model generation",
         historyKey,
         currentIdKey,
       },
@@ -1452,7 +1452,7 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
       {
         id,
         kind: "model-beta",
-        label: "Multi Model Studio generation",
+        label: "Multi model generation",
         historyKey,
         currentIdKey,
       },
@@ -1773,7 +1773,7 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
           }
           return { historyItem: item };
         } catch (err: any) {
-          setError(err.message || "Multi Model Studio generation failed");
+          setError(err.message || "Multi model generation failed");
           throw err;
         } finally {
           // The run is over either way: a card left marked pending would paint

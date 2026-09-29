@@ -37,11 +37,11 @@ const JOBS_KEY = "davidani_global_generation_jobs_v1";
 const MAX_JOBS = 30;
 const CLOUD_JOBS_USER_ID = "team";
 const STUDIO_LABELS: Record<StudioJobKind, string> = {
-  image: "Image Studio",
-  model: "Single Model Studio",
-  "model-beta": "Multi Model Studio",
-  prompt: "Prompt Studio",
-  techpack: "Techpack Studio",
+  image: "Image studio",
+  model: "Single model",
+  "model-beta": "Multi model",
+  prompt: "Prompt studio",
+  techpack: "Techpack studio",
   library: "Library",
 };
 
