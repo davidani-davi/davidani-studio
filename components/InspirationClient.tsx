@@ -710,7 +710,7 @@ export default function InspirationClient() {
                         {source.tags?.length ? (
                           <div className="mt-2 flex flex-wrap gap-1">
                             {source.tags.slice(0, density === "large" ? 6 : 3).map((tag) => (
-                              <span key={tag} className="inline-flex min-h-[18px] items-center rounded border border-neutral-200 px-1.5 text-[11px] leading-tight text-neutral-600">
+                              <span key={tag} title={tag} className="h-[18px] max-w-full truncate rounded border border-neutral-200 px-1.5 text-[11px] leading-4 text-neutral-600">
                                 {tag}
                               </span>
                             ))}
