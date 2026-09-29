@@ -570,7 +570,7 @@ export default function InspirationClient() {
                 className={`grid p-4 ${
                   density === "large"
                     ? "grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4"
-                    : "grid-cols-2 gap-2.5 md:grid-cols-4 xl:grid-cols-6"
+                    : "grid-cols-3 gap-2 md:grid-cols-4 md:gap-2.5 xl:grid-cols-6"
                 }`}
               >
                 {Array.from({ length: density === "large" ? 8 : 12 }, (_, index) => (
@@ -599,7 +599,7 @@ export default function InspirationClient() {
                 className={`grid p-4 lg:max-h-[calc(100vh-260px)] lg:overflow-y-auto ${
                   density === "large"
                     ? "grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4"
-                    : "grid-cols-2 gap-2.5 md:grid-cols-4 xl:grid-cols-6"
+                    : "grid-cols-3 gap-2 md:grid-cols-4 md:gap-2.5 xl:grid-cols-6"
                 }`}
               >
                 {filteredSources.map((source) => {
@@ -683,7 +683,7 @@ export default function InspirationClient() {
                             onClick={() => sendBestsellerRemix(source)}
                             className="col-span-2 rounded-lg border border-neutral-200 bg-white px-2 py-1.5 text-[11px] font-semibold text-neutral-800 hover:border-neutral-900"
                           >
-                            Bestseller Remix
+                            Bestseller remix
                           </button>
                           <button
                             type="button"

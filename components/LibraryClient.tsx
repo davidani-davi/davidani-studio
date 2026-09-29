@@ -656,21 +656,23 @@ export default function LibraryClient() {
             placeholder="Search title, description, color, view..."
             className="flex-1 rounded-lg border border-neutral-200 px-3 py-2 text-sm outline-none focus:border-neutral-900"
           />
-          <button
-            type="button"
-            onClick={() => void load()}
-            className="rounded-lg border border-neutral-200 bg-white px-4 py-2 text-sm font-medium text-neutral-900 hover:border-neutral-400"
-          >
-            Search
-          </button>
-          <button
-            type="button"
-            onClick={() => void redoVisibleSeo()}
-            disabled={bulkRegenerating || loading || filteredStyles.length === 0}
-            className="rounded-lg border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
-          >
-            {bulkRegenerating ? "Redoing..." : "Redo visible SEO"}
-          </button>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => void load()}
+              className="rounded-lg border border-neutral-200 bg-white px-4 py-2 text-sm font-medium text-neutral-900 hover:border-neutral-400"
+            >
+              Search
+            </button>
+            <button
+              type="button"
+              onClick={() => void redoVisibleSeo()}
+              disabled={bulkRegenerating || loading || filteredStyles.length === 0}
+              className="rounded-lg border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
+            >
+              {bulkRegenerating ? "Redoing..." : "Redo visible SEO"}
+            </button>
+          </div>
         </div>
       </section>
 
@@ -1012,7 +1014,7 @@ export default function LibraryClient() {
                             onClick={() => sendToBestsellerRemix(style)}
                             className="col-span-2 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs font-semibold text-neutral-800 hover:border-neutral-900"
                           >
-                            Bestseller Remix
+                            Bestseller remix
                           </button>
                           <button
                             type="button"

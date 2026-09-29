@@ -29,7 +29,7 @@ body.paper-app { padding-bottom:0; }
 .paper-app :is(button,a,input,textarea,select) { transition-property:color,background-color,border-color; transition-duration:280ms; transition-timing-function:cubic-bezier(.23,1,.32,1); }
 .paper-app :is(input,textarea,select):focus-visible { outline:1px solid var(--fg); outline-offset:0; border-color:var(--fg); }
 .paper-app :is(button,a):focus-visible { outline:2px solid var(--blue); outline-offset:3px; }
-.paper-app input[type=checkbox] { border-width:1px; box-shadow:none; }
+.paper-app input[type=checkbox] { border-width:1px; border-radius:3px; box-shadow:none; color:var(--sheet); }
 .paper-app [class*="shadow"] { box-shadow:none !important; }
 .paper-app [class*="rounded-"]:not(.rounded-full):not(img):not(svg) { border-radius:var(--r) !important; }
 /* Circles are for avatars, dots and spinners; a padded rounded-full is a pill or a button. */
@@ -206,8 +206,8 @@ body.paper-app { padding-bottom:0; }
 .paper-app .group button[class*="group-hover:opacity-100"] { opacity:1; }
 @media(max-width:767px) {
   html, body.paper-app { height:auto; overflow-x:clip; overflow-y:visible; }
-  .paper-app .ri-identities { flex-wrap:wrap; overflow:visible; }
-  .paper-app .ri-identities button { flex:1 1 160px; min-width:0; }
+  .paper-app .ri-identities { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); overflow:visible; }
+  .paper-app .ri-identities button { min-width:0; }
   .paper-app .paper-composer-dock { position:relative; }
   .paper-app .image-studio-ledger { height:auto; }
   .paper-app .image-studio-ledger>.overflow-y-auto { padding-bottom:12px !important; min-height:120px; }
@@ -215,5 +215,13 @@ body.paper-app { padding-bottom:0; }
 
 /* Secondary buttons: page fill and an ink border on hover. */
 .paper-app button:not(:disabled):not([class~="text-left"]):is([class~="bg-white"]):is([class~="border"]):hover { background-color:var(--page); border-color:var(--fg); }
-.paper-app .identity-studio .ri-header { align-items:flex-start; }
+.paper-app .identity-studio .ri-header { align-items:baseline; }
 .paper-app :is([class~="border-neutral-900"],[class~="border-neutral-950"]) { border-color:var(--fg); }
+/* Prompt action bar = Paper's bottom bar: auto-width 34px actions on desktop, one row of equal-width 44px
+   buttons on phones (globals.css stacks them as 46px full-width bars). The Variants picker keeps small chips. */
+.paper-app .prompt-action-bar > div > button { min-height:34px; padding-top:0; padding-bottom:0; }
+.paper-app .prompt-action-bar > label button { min-height:28px; min-width:32px; padding-top:0; padding-bottom:0; }
+@media(max-width:767px) {
+  .paper-app .prompt-action-bar > div { grid-template-columns:none; grid-auto-flow:column; grid-auto-columns:minmax(0,1fr); }
+  .paper-app .prompt-action-bar > div > button { min-height:44px; }
+}

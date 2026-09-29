@@ -813,8 +813,8 @@ export default function OutputPanel({
             {current.imageUrls.map((u, i) => (
               <div
                 key={u}
-                className={`group relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border ${
-                  i === safeIndex ? "border-brand-500 ring-2 ring-brand-200" : "border-neutral-200"
+                className={`group relative h-20 w-16 shrink-0 overflow-hidden rounded-lg border bg-neutral-50 ${
+                  i === safeIndex ? "border-neutral-900" : "border-neutral-200"
                 }`}
               >
                 <button
@@ -823,8 +823,14 @@ export default function OutputPanel({
                   }}
                   className="absolute inset-0 block"
                 >
-                  <Thumb size={256} src={u} alt="" className="h-full w-full object-cover" />
-                  <span className="absolute bottom-0.5 right-0.5 rounded bg-black/60 px-1 text-[9px] text-white">
+                  <Thumb
+                    size={256}
+                    src={u}
+                    alt=""
+                    className="h-full w-full object-cover"
+                    fallback={<span className="flex h-full w-full items-center justify-center px-1 text-center text-[9px] leading-tight text-neutral-400">Expired</span>}
+                  />
+                  <span className="absolute bottom-0.5 right-0.5 rounded border border-neutral-200 bg-white px-1 text-[9px] text-neutral-700">
                     {i + 1}
                   </span>
                 </button>
@@ -841,7 +847,7 @@ export default function OutputPanel({
                     download(u, i);
                   }}
                   title="Download this image"
-                  className="absolute right-1 top-1 grid h-5 w-5 place-items-center rounded bg-black/60 text-white opacity-0 transition hover:bg-black/80 group-hover:opacity-100"
+                  className="absolute right-1 top-1 grid h-5 w-5 place-items-center rounded border border-neutral-200 bg-white text-neutral-700 opacity-0 transition hover:border-neutral-900 group-hover:opacity-100"
                 >
                   <svg viewBox="0 0 20 20" fill="currentColor" className="h-3 w-3">
                     <path d="M10 3a1 1 0 011 1v7.586l2.293-2.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 11.586V4a1 1 0 011-1zm-6 12a1 1 0 011 1v1h10v-1a1 1 0 112 0v2a1 1 0 01-1 1H4a1 1 0 01-1-1v-2a1 1 0 011-1z" />
@@ -945,6 +951,11 @@ export default function OutputPanel({
                       src={url}
                       alt={label}
                       className="max-h-full max-w-full cursor-zoom-in object-contain"
+                      fallback={
+                        <span className="max-w-[240px] px-4 text-center text-[13px] leading-snug text-neutral-500">
+                          This image could not be loaded. On an older run, the host it was saved on may have deleted it.
+                        </span>
+                      }
                     />
                   </button>
                 </div>
@@ -1371,7 +1382,7 @@ export default function OutputPanel({
               >
                 <span>
                   <span className="block text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
-                    Compare + Feedback
+                    Compare and feedback
                   </span>
                   <span className="mt-0.5 block text-[11px] text-neutral-500">
                     Mark what changed, then regenerate with correction memory.
@@ -1478,7 +1489,7 @@ export default function OutputPanel({
               >
                 <span>
                   <span className="block text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
-                    Quality Control
+                    Quality control
                   </span>
                   <span className="mt-0.5 block text-[11px] text-neutral-500">
                     Guided repair for the selected result

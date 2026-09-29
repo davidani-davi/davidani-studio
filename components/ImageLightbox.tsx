@@ -175,7 +175,7 @@ export function ZoomButton({
       }}
       title={title}
       aria-label={title}
-      className={`flex h-5 w-5 items-center justify-center rounded-full bg-black/70 text-white transition hover:bg-black/90 ${className}`}
+      className={`flex h-5 w-5 items-center justify-center rounded border border-neutral-200 bg-white text-neutral-700 transition hover:border-neutral-900 ${className}`}
     >
       <svg viewBox="0 0 20 20" fill="currentColor" className="h-3 w-3">
         <path d="M9 3a6 6 0 014.472 10.03l3.249 3.248a1 1 0 01-1.414 1.415l-3.249-3.249A6 6 0 119 3zm0 2a4 4 0 100 8 4 4 0 000-8zm-.5 1.75a.75.75 0 01.75.75V8.5h1a.75.75 0 010 1.5h-1v1a.75.75 0 01-1.5 0v-1h-1a.75.75 0 010-1.5h1V7.5a.75.75 0 01.75-.75z" />

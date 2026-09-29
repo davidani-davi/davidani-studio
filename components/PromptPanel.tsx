@@ -349,7 +349,7 @@ export default function PromptPanel(p: Props) {
           </p>
         </div>
         <span
-          className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold tabular-nums ${statusChip.className}`}
+          className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-semibold tabular-nums ${statusChip.className}`}
         >
           <span className={`h-1.5 w-1.5 rounded-full ${statusChip.dot}`} />
           {statusChip.text}
@@ -640,7 +640,7 @@ export default function PromptPanel(p: Props) {
         <div className="mb-2 flex items-center justify-between gap-3">
           <div>
             <div className="text-[11px] font-semibold text-neutral-700">
-              Analysis Review
+              Analysis review
             </div>
             <div className="text-[11px] text-neutral-500">
               Edit if the detected garment looks wrong — the description drives
@@ -714,7 +714,7 @@ export default function PromptPanel(p: Props) {
         >
           <span>
             <span className="block text-[11px] font-semibold text-neutral-700">
-              Advanced Prompt
+              Advanced prompt
             </span>
             <span className="mt-0.5 block text-[11px] text-neutral-500">
               {hasPrompt ? `${words} words` : "Auto-generated"}

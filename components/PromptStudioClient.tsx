@@ -82,8 +82,8 @@ const toolCopy: Record<
     metricLabel: "lines",
   },
   "bestseller-remix": {
-    label: "Bestseller Remix",
-    title: "Bestseller Remix",
+    label: "Bestseller remix",
+    title: "Bestseller remix",
     subtitle: "Generates 10 blank-line-separated product expansion prompts for new sellable SKUs.",
     placeholder:
       "Upload an apparel image, then generate bestseller remix prompts. The output appears here as plain text: 10 full-paragraph prompts, separated by one blank line.",
@@ -410,7 +410,7 @@ export default function PromptStudioClient() {
             ) : activeTool === "bestseller-remix" ? (
               <div className="mt-5 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-3">
                 <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
-                  Bestseller Remix
+                  Bestseller remix
                 </p>
                 <p className="mt-1 text-[11px] leading-relaxed text-neutral-600">
                   Upload one apparel image to receive 10 line-sheet-ready product mockup prompts:
