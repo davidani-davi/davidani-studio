@@ -11,16 +11,15 @@ const nextConfig = {
     "/model-studio-beta": ["./public/models/**/*", "./public/pants-references/**/*"],
   },
   images: {
-    // Hosts lib/thumb.ts resizes; keep the two lists in step (lib/thumb.test.ts
-    // checks). /_next/image sits outside the password gate, so each new entry is
-    // pinned to our own store and folder, not a whole CDN.
+    // Only the hosts lib/thumb.ts resizes; keep the two lists in step
+    // (lib/thumb.test.ts checks with Next's own matcher). Each entry is pinned
+    // to one store or folder, with no port and no query string, and proxy.ts
+    // keeps /_next/image behind the login, so the resizer can't be borrowed.
     remotePatterns: [
-      { protocol: "https", hostname: "cdr9xgexrrfthz5f.public.blob.vercel-storage.com" },
-      { protocol: "https", hostname: "system.davidani.com", pathname: "/upload/**" },
-      { protocol: "https", hostname: "**.fal.media" },
-      { protocol: "https", hostname: "**.fal.ai" },
-      { protocol: "https", hostname: "v3.fal.media" },
-      { protocol: "https", hostname: "fal.media" },
+      { protocol: "https", hostname: "cdr9xgexrrfthz5f.public.blob.vercel-storage.com", port: "", search: "" },
+      { protocol: "https", hostname: "system.davidani.com", port: "", pathname: "/upload/style/**", search: "" },
+      { protocol: "https", hostname: "fal.media", port: "", search: "" },
+      { protocol: "https", hostname: "**.fal.media", port: "", search: "" },
     ],
   },
 };

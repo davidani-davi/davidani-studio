@@ -348,7 +348,7 @@ export default function ModelSidebar(p: Props) {
                   </div>
                   {upload ? (
                     <div className="group relative aspect-[4/3] overflow-hidden rounded-lg border border-brand-200 bg-white">
-                      <Thumb src={upload.url} size={384} alt={upload.name} className="h-full w-full object-cover" />
+                      <Thumb src={upload.url} size={640} alt={upload.name} className="h-full w-full object-cover" />
                       <button
                         onClick={() => p.onRemoveUpload(upload.url)}
                         className="absolute left-2 top-2 rounded-full bg-black/70 px-2 py-0.5 text-[10px] font-semibold text-white opacity-0 transition group-hover:opacity-100"

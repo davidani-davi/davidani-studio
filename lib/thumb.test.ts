@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
+import { imageConfigDefault } from "next/dist/shared/lib/image-config";
 import { hasRemoteMatch } from "next/dist/shared/lib/match-remote-pattern";
 import nextConfig from "../next.config.js";
-import { thumbSrc } from "./thumb";
+import { thumbSrc, WIDTHS } from "./thumb";
 
 const FAL = "https://v3b.fal.media/files/b/0a97fd36/6bYK_DJ62056A%20Black%20Back.png";
 
@@ -13,7 +14,6 @@ describe("thumbSrc", () => {
   const RESIZED = [
     "https://fal.media/files/x.png",
     "https://v3.fal.media/files/x.png",
-    "https://rest.alpha.fal.ai/storage/x.png",
     "https://cdr9xgexrrfthz5f.public.blob.vercel-storage.com/saved/x.png",
     "https://system.davidani.com/upload/style/DJ62056A%20BLACK_1.png",
   ];
@@ -22,19 +22,38 @@ describe("thumbSrc", () => {
     for (const url of RESIZED) expect(thumbSrc(url, 256)).toMatch(/^\/_next\/image\?url=/);
   });
 
+  const remotePatterns = nextConfig.images?.remotePatterns ?? [];
+  const allowed = (url: string) => hasRemoteMatch([], remotePatterns, new URL(url));
+
   it("only resizes what next.config.js lets the resizer fetch", () => {
-    const remotePatterns = nextConfig.images?.remotePatterns ?? [];
-    for (const url of RESIZED) expect(hasRemoteMatch([], remotePatterns, new URL(url))).toBe(true);
+    for (const url of RESIZED) expect(allowed(url)).toBe(true);
   });
 
-  it("does not resize someone else's store or a whole host", () => {
-    for (const url of [
-      "https://abc.public.blob.vercel-storage.com/x.png",
-      "https://system.davidani.com/data/Style.inStock.Json.asp",
-      "https://fal.ai/x.png",
-    ]) {
-      expect(thumbSrc(url, 256)).toBe(url);
-    }
+  // /_next/image can be called with any URL, not just the ones thumbSrc makes.
+  const REFUSED = [
+    "https://abc.public.blob.vercel-storage.com/x.png",
+    "https://system.davidani.com/data/Style.inStock.Json.asp",
+    "https://system.davidani.com/upload/customer/x.png",
+    "https://system.davidani.com/upload/style/x.png?cb=1",
+    "https://system.davidani.com:8443/upload/style/x.png",
+    "https://v3.fal.media/files/x.png?nocache=1",
+    "https://fal.ai/x.png",
+    "https://docs.fal.ai/logo.png",
+  ];
+
+  it("refuses other stores, other folders, ports and query strings", () => {
+    for (const url of REFUSED) expect(allowed(url), url).toBe(false);
+  });
+
+  it("does not resize anything the resizer would refuse", () => {
+    for (const url of REFUSED) expect(thumbSrc(url, 256)).toBe(url);
+  });
+
+  it("asks only for widths and a quality the resizer accepts", () => {
+    const images = { ...imageConfigDefault, ...nextConfig.images };
+    const sizes = [...images.imageSizes, ...images.deviceSizes];
+    for (const w of WIDTHS) expect(sizes).toContain(w);
+    expect(images.qualities ?? [75]).toContain(75);
   });
 
   it("resizes files the app serves from public/", () => {

@@ -13,16 +13,16 @@
  * (its default imageSizes + deviceSizes).
  */
 
-const WIDTHS = [32, 48, 64, 96, 128, 256, 384, 640, 750, 828, 1080, 1200, 1920, 2048, 3840];
+export const WIDTHS = [32, 48, 64, 96, 128, 256, 384, 640, 750, 828, 1080, 1200, 1920, 2048, 3840];
 
 // fal's files are immutable (max-age 60 days), so a resized copy is made once
 // per width. The ERP overwrites a photo in place when a style is re-shot; its
-// copies follow Next's default 4-hour cache.
+// copies follow Next's default 4-hour cache. No port and no query string, as
+// in next.config.js, so a URL can't dodge the cache or the pinned folder.
 const REMOTE: { host: RegExp; path?: RegExp }[] = [
   { host: /(^|\.)fal\.media$/ },
-  { host: /\.fal\.ai$/ },
   { host: /^cdr9xgexrrfthz5f\.public\.blob\.vercel-storage\.com$/ },
-  { host: /^system\.davidani\.com$/, path: /^\/upload\// },
+  { host: /^system\.davidani\.com$/, path: /^\/upload\/style\// },
 ];
 
 function resizable(url: string): boolean {
@@ -33,9 +33,11 @@ function resizable(url: string): boolean {
     return !url.startsWith("//") && !url.startsWith("/api/") && !url.startsWith("/_next/");
   }
   try {
-    const { protocol, hostname, pathname } = new URL(url);
+    const { protocol, hostname, port, pathname, search } = new URL(url);
     return (
       protocol === "https:" &&
+      !port &&
+      !search &&
       REMOTE.some(({ host, path }) => host.test(hostname) && (!path || path.test(pathname)))
     );
   } catch {

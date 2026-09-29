@@ -78,7 +78,7 @@ function ShotFrame({
           alt={alt}
           fallback={
             <span className="max-w-[240px] text-center text-[13px] leading-snug text-neutral-500">
-              This image is no longer available. The host it was saved on has deleted it.
+              This image could not be loaded. On an older run, the host it was saved on may have deleted it.
             </span>
           }
           className={`max-h-full max-w-full rounded-md border bg-[#edeeee] object-contain shadow-md ${

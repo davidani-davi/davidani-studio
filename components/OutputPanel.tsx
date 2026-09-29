@@ -941,7 +941,7 @@ export default function OutputPanel({
                     title="Click to preview at full size"
                     className="flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-lg bg-neutral-50"
                   >
-                    <Thumb size={1920} upgrade loading="eager"
+                    <Thumb size={1080} loading="eager"
                       src={url}
                       alt={label}
                       className="max-h-full max-w-full cursor-zoom-in object-contain"
@@ -1058,7 +1058,7 @@ export default function OutputPanel({
                         }}
                         className="flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-lg bg-neutral-50"
                       >
-                        <Thumb size={1920} upgrade loading="eager"
+                        <Thumb size={1080} loading="eager"
                           src={slot.url}
                           alt={`${photoshootViewLabel[activeView]} ${variantLabel}`}
                           className="max-h-full max-w-full object-contain"
@@ -1146,7 +1146,7 @@ export default function OutputPanel({
                     </span>
                   </div>
                   <div className="flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-xl bg-neutral-50">
-                    <Thumb size={1920} upgrade loading="eager"
+                    <Thumb size={1080} loading="eager"
                       src={url}
                       alt={`Generated variant ${imageIndex + 1}`}
                       className="max-h-full max-w-full object-contain"
@@ -1244,7 +1244,7 @@ export default function OutputPanel({
                     }`}
                   >
                     {url ? (
-                      <Thumb size={1920} upgrade loading="eager"
+                      <Thumb size={1080} loading="eager"
                         src={url}
                         alt={`${photoshootViewLabel[view]} view`}
                         className="max-h-full max-w-full object-contain"

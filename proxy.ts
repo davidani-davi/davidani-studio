@@ -31,6 +31,8 @@ export async function proxy(req: NextRequest) {
   return NextResponse.next();
 }
 
+// /_next/image is gated too: an open resizer lets anyone run up image
+// transformations on our account and send fetches at the ERP.
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\..*).*)"],
+  matcher: ["/((?!_next/static|favicon.ico|.*\\..*).*)"],
 };

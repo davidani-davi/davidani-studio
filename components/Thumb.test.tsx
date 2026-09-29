@@ -6,33 +6,52 @@ const FAL = "https://v3b.fal.media/files/b/0a97fd36/render.png";
 const FAL2 = "https://v3b.fal.media/files/b/0a97fd36/render-2.png";
 const resized = (url: string, w: number) => `/_next/image?url=${encodeURIComponent(url)}&w=${w}&q=75`;
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+});
+
+/** Stands in for `new Image()`: records each preload so a test can settle it. */
+function stubPreloads() {
+  const preloads: { src: string; resolve: () => void; reject: () => void }[] = [];
+  vi.stubGlobal(
+    "Image",
+    class {
+      src = "";
+      decode() {
+        return new Promise<void>((resolve, reject) => preloads.push({ src: this.src, resolve, reject }));
+      }
+    },
+  );
+  return preloads;
+}
 
 describe("Thumb", () => {
   it("loads the resized copy lazily and fades in once it arrives", () => {
     render(<Thumb src={FAL} size={200} alt="variant 1" className="h-full w-full" />);
     const img = screen.getByAltText("variant 1") as HTMLImageElement;
-    expect(img.getAttribute("src")).toBe(`/_next/image?url=${encodeURIComponent(FAL)}&w=256&q=75`);
+    expect(img.getAttribute("src")).toBe(resized(FAL, 256));
     expect(img.getAttribute("loading")).toBe("lazy");
     expect(img.className).toContain("opacity-0");
     fireEvent.load(img);
     expect(img.className).not.toContain("opacity-0");
   });
 
-  it("falls back to the original when the resizer fails, then stays hidden", () => {
+  it("falls back to the original when the resizer fails, then hides a dead image", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     render(<Thumb src={FAL} size={200} alt="variant 1" />);
     const img = screen.getByAltText("variant 1") as HTMLImageElement;
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     fireEvent.error(img);
     expect(img.getAttribute("src")).toBe(FAL);
     expect(warn).toHaveBeenCalledWith("[thumb] resized copy failed, using the original", FAL);
-    warn.mockRestore();
     fireEvent.error(img);
     expect(img.getAttribute("src")).toBe(FAL);
-    expect(img.className).toContain("opacity-0");
+    // Hidden, so the box behind shows instead of a broken-image icon.
+    expect(img.className).toContain("invisible");
   });
 
   it("shows the fallback when neither copy loads", () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
     render(<Thumb src={FAL} size={200} alt="variant 1" fallback={<span>Image expired</span>} />);
     fireEvent.error(screen.getByAltText("variant 1"));
     fireEvent.error(screen.getByAltText("variant 1"));
@@ -40,53 +59,62 @@ describe("Thumb", () => {
     expect(screen.getByText("Image expired")).toBeTruthy();
   });
 
+  it("lets an image the resizer can't take paint as it downloads", () => {
+    render(<Thumb src="https://i.pinimg.com/1200x/88/59/8a/x.jpg" size={200} alt="pin" />);
+    const img = screen.getByAltText("pin");
+    expect(img.getAttribute("src")).toBe("https://i.pinimg.com/1200x/88/59/8a/x.jpg");
+    expect(img.className).not.toContain("opacity-0");
+  });
+
   it("keeps a caller's own transition", () => {
     render(<Thumb src={FAL} size={200} alt="x" className="transition duration-300 hover:scale-105" />);
     expect(screen.getByAltText("x").className).not.toContain("transition-opacity");
   });
 
+  it("shows an image that finished before hydration", () => {
+    vi.spyOn(HTMLImageElement.prototype, "complete", "get").mockReturnValue(true);
+    vi.spyOn(HTMLImageElement.prototype, "naturalWidth", "get").mockReturnValue(256);
+    render(<Thumb src={FAL} size={200} alt="x" />);
+    expect(screen.getByAltText("x").className).not.toContain("opacity-0");
+  });
+
   it("starts over when it is handed a different image", () => {
-    const { rerender } = render(<Thumb src={FAL} size={200} alt="x" />);
     vi.spyOn(console, "warn").mockImplementation(() => {});
+    const { rerender } = render(<Thumb src={FAL} size={200} alt="x" />);
     fireEvent.error(screen.getByAltText("x"));
     fireEvent.error(screen.getByAltText("x"));
     rerender(<Thumb src={FAL2} size={200} alt="x" />);
     const img = screen.getByAltText("x");
     expect(img.getAttribute("src")).toBe(resized(FAL2, 256));
     expect(img.className).toContain("opacity-0");
+    expect(img.className).not.toContain("invisible");
   });
 
-  it("swaps in the full original once it has downloaded, when asked to", () => {
-    const preloads: { src: string; onload: (() => void) | null }[] = [];
-    vi.stubGlobal(
-      "Image",
-      class {
-        onload: (() => void) | null = null;
-        set src(value: string) {
-          preloads.push(this as unknown as { src: string; onload: () => void });
-          (this as unknown as { url: string }).url = value;
-        }
-        get src() {
-          return (this as unknown as { url: string }).url;
-        }
-      },
-    );
+  it("downloads the full original alongside the resized copy and swaps it in", async () => {
+    const preloads = stubPreloads();
     render(<Thumb src={FAL} size={1920} alt="stage" upgrade loading="eager" />);
     const img = screen.getByAltText("stage");
     expect(img.getAttribute("src")).toBe(resized(FAL, 1920));
-    expect(preloads).toHaveLength(0);
-    fireEvent.load(img);
+    // Started at once, not after the resized copy has arrived.
     expect(preloads.map((p) => p.src)).toEqual([FAL]);
-    act(() => preloads[0].onload?.());
+    await act(async () => preloads[0].resolve());
     expect(img.getAttribute("src")).toBe(FAL);
     expect(img.className).not.toContain("opacity-0");
   });
 
+  it("keeps the resized copy when the original does not load", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const preloads = stubPreloads();
+    render(<Thumb src={FAL} size={1920} alt="stage" upgrade />);
+    await act(async () => preloads[0].reject());
+    expect(screen.getByAltText("stage").getAttribute("src")).toBe(resized(FAL, 1920));
+    expect(warn).toHaveBeenCalledWith("[thumb] full-size original did not load", FAL);
+  });
+
   it("does not fetch the original twice without being asked", () => {
-    const Spy = vi.fn();
-    vi.stubGlobal("Image", Spy);
+    const preloads = stubPreloads();
     render(<Thumb src={FAL} size={200} alt="chip" />);
     fireEvent.load(screen.getByAltText("chip"));
-    expect(Spy).not.toHaveBeenCalled();
+    expect(preloads).toHaveLength(0);
   });
 });
