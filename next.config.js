@@ -13,8 +13,8 @@ const nextConfig = {
   images: {
     // Only the hosts lib/thumb.ts resizes; keep the two lists in step
     // (lib/thumb.test.ts checks with Next's own matcher). Each entry is pinned
-    // to one store or folder, with no port and no query string, and proxy.ts
-    // keeps /_next/image behind the login, so the resizer can't be borrowed.
+    // to one store or folder, with no port and no query string. /_next/image
+    // is public (Vercel serves it before proxy.ts), so this list is its fence.
     remotePatterns: [
       { protocol: "https", hostname: "cdr9xgexrrfthz5f.public.blob.vercel-storage.com", port: "", search: "" },
       { protocol: "https", hostname: "system.davidani.com", port: "", pathname: "/upload/style/**", search: "" },
