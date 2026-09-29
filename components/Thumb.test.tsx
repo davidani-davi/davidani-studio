@@ -7,6 +7,8 @@ const FAL2 = "https://v3b.fal.media/files/b/0a97fd36/render-2.png";
 // Upgrades are remembered for the whole module, so each upgrade test has its own image.
 const FAL_DEAD = "https://v3b.fal.media/files/b/0a97fd36/render-dead.png";
 const FAL_AGAIN = "https://v3b.fal.media/files/b/0a97fd36/render-again.png";
+const FAL_FALLBACK = "https://v3b.fal.media/files/b/0a97fd36/render-fallback.png";
+const FAL_GONE = "https://v3b.fal.media/files/b/0a97fd36/render-gone.png";
 const resized = (url: string, w: number) => `/_next/image?url=${encodeURIComponent(url)}&w=${w}&q=75`;
 
 afterEach(() => {
@@ -112,6 +114,28 @@ describe("Thumb", () => {
     await act(async () => preloads[0].reject());
     expect(screen.getByAltText("stage").getAttribute("src")).toBe(resized(FAL_DEAD, 1920));
     expect(warn).toHaveBeenCalledWith("[thumb] full-size original did not load", FAL_DEAD);
+  });
+
+  it("lets the <img> take over the original when the resized copy fails mid-preload", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const preloads = stubPreloads();
+    render(<Thumb src={FAL_FALLBACK} size={1920} alt="stage" upgrade />);
+    const img = screen.getByAltText("stage");
+    fireEvent.error(img);
+    expect(img.getAttribute("src")).toBe(FAL_FALLBACK);
+    // No second preload of the same file.
+    expect(preloads).toHaveLength(1);
+    await act(async () => preloads[0].resolve());
+    expect(img.getAttribute("src")).toBe(FAL_FALLBACK);
+  });
+
+  it("ignores a preload that finishes after it has gone", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const preloads = stubPreloads();
+    const { unmount } = render(<Thumb src={FAL_GONE} size={1920} alt="stage" upgrade />);
+    unmount();
+    await act(async () => preloads[0].resolve());
+    expect(error).not.toHaveBeenCalled();
   });
 
   it("shows an original it has already downloaded straight away next time", async () => {

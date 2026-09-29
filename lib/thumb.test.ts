@@ -39,6 +39,7 @@ describe("thumbSrc", () => {
     "https://system.davidani.com/upload/style/x%2f..%2fDP52005A_3.jpg",
     "https://system.davidani.com/upload/style/..%5Ccustomer%5Cx.png",
     "https://system.davidani.com/upload/style/sub/x.png",
+    "https://system.davidani.com/UPLOAD/STYLE/x.png",
     "https://system.davidani.com/upload/style/x.png?cb=1",
     "https://system.davidani.com:8443/upload/style/x.png",
     "https://v3.fal.media/files/x.png?nocache=1",

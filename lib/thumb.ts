@@ -24,7 +24,7 @@ export const WIDTHS = [32, 48, 64, 96, 128, 256, 384, 640, 750, 828, 1080, 1200,
 const REMOTE: { host: RegExp; path?: RegExp }[] = [
   { host: /(^|\.)fal\.media$/ },
   { host: /^cdr9xgexrrfthz5f\.public\.blob\.vercel-storage\.com$/ },
-  { host: /^system\.davidani\.com$/, path: /^\/upload\/style\/(?!.*%(2f|5c))[^/]+$/i },
+  { host: /^system\.davidani\.com$/, path: /^\/upload\/style\/(?!.*%(?:2[fF]|5[cC]))[^/]+$/ },
 ];
 
 function resizable(url: string): boolean {
