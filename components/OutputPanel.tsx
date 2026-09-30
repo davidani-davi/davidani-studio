@@ -443,16 +443,17 @@ export default function OutputPanel({
       : undefined;
   const lightboxGalleryLabels =
     current?.multiOption
-      ? ["Variant A", "Variant B", "Variant C"]
+      ? ["Variant 1", "Variant 2", "Variant 3"]
       : current?.abTest
-      ? ["Variant A", "Variant B"]
+      ? ["Variant 1", "Variant 2"]
       : isMultiModelSet && current?.viewLabels?.length
       ? current.viewLabels.map((label) => {
           const normalized = label.toLowerCase() as PhotoshootView;
           return photoshootViewLabel[normalized] || label;
         })
       : undefined;
-  const variantLabels = ["Variant A", "Variant B", "Variant C"];
+  // Numbered like the stage and the run ledger ("Front · Variant 1").
+  const variantLabels = ["Variant 1", "Variant 2", "Variant 3"];
   const selectedMultiOptionIndex =
     current?.multiOption?.picksByView?.front ??
     current?.multiOption?.selectedIndex ??
@@ -922,7 +923,7 @@ export default function OutputPanel({
                     <span className="text-sm font-semibold text-neutral-900">{label}</span>
                     {selected ? (
                       <span className="rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold text-brand-700">
-                        ★ Picked
+                        Picked
                       </span>
                     ) : (
                       <button
@@ -934,7 +935,7 @@ export default function OutputPanel({
                         }}
                         className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-semibold text-neutral-500 transition hover:bg-brand-50 hover:text-brand-700"
                       >
-                        ☆ Pick
+                        Pick
                       </button>
                     )}
                   </div>
@@ -952,7 +953,8 @@ export default function OutputPanel({
                       alt={label}
                       className="max-h-full max-w-full cursor-zoom-in object-contain"
                       fallback={
-                        <span className="max-w-[240px] px-4 text-center text-[13px] leading-snug text-neutral-500">
+                        // Holds the render's 4:5 shape instead of filling the card.
+                        <span className="flex aspect-[4/5] max-h-full w-full items-center justify-center rounded-md border border-neutral-200 bg-white px-4 text-center text-[13px] leading-snug text-neutral-500">
                           This image could not be loaded. On an older run, the host it was saved on may have deleted it.
                         </span>
                       }
@@ -1045,7 +1047,7 @@ export default function OutputPanel({
                         </span>
                         {selected ? (
                           <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
-                            ★ Picked
+                            Picked
                           </span>
                         ) : (
                           <button

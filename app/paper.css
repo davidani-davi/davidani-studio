@@ -38,6 +38,9 @@ body.paper-app { padding-bottom:0; }
 .paper-app :is(.border-2,.border-b-2,.border-t-2):not(.animate-spin) { border-width:1px; }
 .paper-app :is(.bg-gradient-to-b,.bg-gradient-to-r,.bg-gradient-to-br) { background-image:none; }
 .paper-app button.bg-gradient-to-b { background-color:var(--fg); }
+/* Selected = the 1px border turns --fg (DESIGN.md rule 10). Every border-brand-500 in the studio is a
+   selected, active or drag state; globals.css had mapped it to the hairline. */
+.paper-app [class~="border-brand-500"] { border-color:var(--fg); }
 .paper-app :is(.studio-workspace,.model-sidebar,.image-sidebar,.model-direction-panel,.studio-resizer,.job-row) { background:var(--sheet); box-shadow:none; }
 .paper-app :is(.model-sidebar-card,.image-sidebar-card) { background:var(--sheet); box-shadow:none; }
 .paper-app :is(.model-studio-layout,.image-studio-layout) { background:var(--page); gap:0; }
@@ -224,4 +227,5 @@ body.paper-app { padding-bottom:0; }
 @media(max-width:767px) {
   .paper-app .prompt-action-bar > div { grid-template-columns:none; grid-auto-flow:column; grid-auto-columns:minmax(0,1fr); }
   .paper-app .prompt-action-bar > div > button { min-height:44px; }
+  .paper-app .prompt-action-bar > label { justify-content:flex-start; }
 }

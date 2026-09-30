@@ -751,18 +751,21 @@ export default function PromptPanel(p: Props) {
         {!p.hideVariantControl && p.numImages !== undefined && p.onNumImagesChange && (
         <label className="flex items-center gap-2 text-xs text-neutral-600">
           <span className="font-medium">Variants</span>
-          <div className="flex overflow-hidden rounded-lg border border-neutral-200 bg-white">
+          {/* Separate chips, not a joined segmented box (Paper has no segmented control). */}
+          <div className="flex gap-1">
             {[1, 2, 3, 4].map((n) => {
               const active = p.numImages === n;
               return (
                 <button
                   key={n}
+                  type="button"
+                  aria-pressed={active}
                   onClick={() => p.onNumImagesChange?.(n)}
                   disabled={batchActive}
-                  className={`border-r border-neutral-200 px-2.5 py-1 text-xs font-medium last:border-r-0 transition disabled:opacity-40 ${
+                  className={`min-w-[28px] rounded-md border px-2 py-1 text-xs font-medium transition disabled:opacity-40 ${
                     active
-                      ? "bg-neutral-900 text-white"
-                      : "text-neutral-600 hover:bg-neutral-50"
+                      ? "border-neutral-900 bg-neutral-900 text-white"
+                      : "border-neutral-200 bg-white text-neutral-600 hover:border-[color:var(--fg)]"
                   }`}
                 >
                   {n}
