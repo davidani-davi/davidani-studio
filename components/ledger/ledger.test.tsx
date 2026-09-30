@@ -194,6 +194,37 @@ describe("ledger", () => {
     expect(onSelect).toHaveBeenCalledWith("abcd1234");
   });
 
+  // Stacked (below 1024px) the stage sits under the composer, so a pressed card
+  // changed a pane the phone couldn't see and the tap looked dead.
+  describe("on a stacked layout", () => {
+    function withStage(stacked: boolean) {
+      const stage = document.createElement("section");
+      stage.className = "image-studio-stage";
+      stage.scrollIntoView = vi.fn();
+      document.body.appendChild(stage);
+      const matchMedia = vi.fn().mockReturnValue({ matches: stacked });
+      vi.stubGlobal("matchMedia", matchMedia);
+      return { stage, matchMedia, done: () => { stage.remove(); vi.unstubAllGlobals(); } };
+    }
+
+    it("brings the stage into view when a card is pressed", () => {
+      const { stage, matchMedia, done } = withStage(true);
+      renderLedger([makeRun({ id: "abcd1234" })]);
+      fireEvent.click(screen.getByRole("button", { name: /camo yoke/i }));
+      expect(matchMedia).toHaveBeenCalledWith("(max-width: 1023px)");
+      expect(stage.scrollIntoView).toHaveBeenCalledWith({ block: "start", behavior: "smooth" });
+      done();
+    });
+
+    it("leaves the page where it is side by side", () => {
+      const { stage, done } = withStage(false);
+      renderLedger([makeRun({ id: "abcd1234" })]);
+      fireEvent.click(screen.getByRole("button", { name: /camo yoke/i }));
+      expect(stage.scrollIntoView).not.toHaveBeenCalled();
+      done();
+    });
+  });
+
   it("says why the list is empty rather than showing a bare panel", () => {
     renderLedger([]);
     expect(screen.getByText(/no runs yet/i)).toBeInTheDocument();
