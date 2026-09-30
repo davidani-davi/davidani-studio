@@ -12,12 +12,12 @@ David said the studio "is so slow and not up to date with the rest of the Davi &
 ## 2. Paper restyle: merged to main as b1ab240 (#28), live and checked at 1440 / 430
 - **What changed:** the whole studio moves onto Paper (~/Code/DESIGN.md).
   - `app/paper.css` maps the Tailwind utilities onto Paper tokens under `.paper-app`, plus markup fixes (see the PR).
-- **Follow-ups (the #28 NITs): branch `claude/paper-followups`, PR open, merge only with David's OK.**
+- **Follow-ups (the #28 NITs): merged as 0dfe595 (#30), live and checked on production at 1440 / 430.**
   - Variants 1–4 as separate chips, "Variant 1/2/3" everywhere, 4:5 hairline fallback when a render is gone,
     no hover lift/zoom, Prompt studio 2:3 tiles + hairline badges.
   - Selected = 1px `--fg` border studio-wide (`paper.css`: globals.css had mapped `border-brand-500` to the hairline).
   - Review rounds 9–10: 8.2 FAIL, 8.8 PASS; round-10 notes fixed in 701449a.
-- **NEXT:** after the merge, check production at 1440 / 430 (stage with 3 variants, Setup drawer, Prompt studio).
+- **NEXT:** nothing open on the restyle. Still unchecked: a real iPhone (WebKit), uploads, Image studio `/`.
 - **main is protected since 2026-09-29:** a PR needs `test` + `Vercel` green; repo auto-merge is on
   (`gh pr merge --auto --squash`). Admins can still push directly (enforce_admins off).
 
