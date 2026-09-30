@@ -22,6 +22,17 @@ const FILTERS: Array<{ value: LedgerFilter; label: string }> = [
   { value: "check", label: "Check" },
 ];
 
+/**
+ * Below 1024px the shell stacks (globals.css) and the stage sits under the
+ * composer, so a pressed card changed a pane the phone couldn't see and the tap
+ * looked dead. Scroll the stage up to meet it, as ModelAdmin does for its
+ * detail pane.
+ */
+function revealStage() {
+  if (!window.matchMedia?.("(max-width: 1023px)").matches) return;
+  document.querySelector(".image-studio-stage")?.scrollIntoView({ block: "start", behavior: "smooth" });
+}
+
 export default function RunLedger({
   runs,
   currentId,
@@ -130,7 +141,10 @@ export default function RunLedger({
             run={run}
             active={run.id === currentId}
             running={run.id === runningId}
-            onSelect={() => onSelect(run.id)}
+            onSelect={() => {
+              onSelect(run.id);
+              revealStage();
+            }}
             {...card}
           />
         ))}
