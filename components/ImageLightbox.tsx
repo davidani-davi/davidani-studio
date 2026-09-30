@@ -16,7 +16,7 @@ import { useEffect } from "react";
  *   - when `images` + `currentIndex` + `onIndexChange` are passed, ←/→ arrow
  *     keys (and on-screen prev/next buttons) navigate within the array
  *     without closing the overlay. Used by the Studio 1 multi-option grid
- *     to flip between Variant A / B / C in expanded view.
+ *     to flip between Variant 1 / 2 / 3 in expanded view.
  */
 interface Props {
   src: string | null;
@@ -32,7 +32,7 @@ interface Props {
   images?: string[];
   currentIndex?: number;
   onIndexChange?: (nextIndex: number) => void;
-  /** Optional per-index labels (e.g. "Variant A"). Shown as a chip. */
+  /** Optional per-index labels (e.g. "Variant 1"). Shown as a chip. */
   labels?: string[];
 }
 

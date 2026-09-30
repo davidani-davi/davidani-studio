@@ -608,7 +608,7 @@ export default function InspirationClient() {
                   const tasteSignal = tasteSignalForSource(source);
                   const liked = likedKeys.has(tasteSignal.key);
                   return (
-                    <article key={source.id} className="group overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+                    <article key={source.id} className="group overflow-hidden rounded-lg border border-neutral-200 bg-white transition-colors hover:border-neutral-400">
                       <div className="relative">
                         <button
                           type="button"

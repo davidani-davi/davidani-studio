@@ -439,7 +439,7 @@ export default function PromptStudioClient() {
                             setPhotoshootReferenceId(reference.id);
                             setPrompts("");
                           }}
-                          className={`group relative aspect-[4/5] overflow-hidden rounded-lg border transition ${
+                          className={`group relative aspect-[2/3] overflow-hidden rounded-lg border transition ${
                             selected
                               ? "border-neutral-900 ring-2 ring-neutral-900/15"
                               : "border-neutral-200 hover:border-neutral-400"
@@ -450,7 +450,7 @@ export default function PromptStudioClient() {
                             alt={reference.label}
                             className="h-full w-full object-cover"
                           />
-                          <span className="absolute left-1 top-1 rounded bg-black/75 px-1.5 py-0.5 text-[9px] font-semibold text-white">
+                          <span className="absolute left-1 top-1 rounded border border-neutral-200 bg-white px-1 text-[9px] font-medium text-neutral-700">
                             {index + 1}
                           </span>
                         </button>
@@ -537,7 +537,7 @@ export default function PromptStudioClient() {
               value={prompts}
               onChange={(e) => setPrompts(e.target.value)}
               placeholder={activeCopy.placeholder}
-              className="prompt-mono min-h-[240px] flex-1 lg:min-h-0 resize-none px-6 py-5 text-[13px] leading-relaxed outline-none placeholder:text-neutral-400"
+              className="prompt-mono min-h-[240px] flex-1 lg:min-h-0 resize-none px-4 py-4 text-[13px] leading-relaxed outline-none placeholder:font-sans placeholder:text-neutral-500 sm:px-6 sm:py-5"
             />
             <div className="pointer-events-none absolute bottom-3 right-6 rounded-full bg-white/80 px-2 py-0.5 text-[10px] font-mono text-neutral-400 backdrop-blur">
               {promptCount} {activeCopy.metricLabel}
