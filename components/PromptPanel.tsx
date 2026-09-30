@@ -765,7 +765,7 @@ export default function PromptPanel(p: Props) {
                   className={`min-w-[28px] rounded-md border px-2 py-1 text-xs font-medium transition disabled:opacity-40 ${
                     active
                       ? "border-neutral-900 bg-neutral-900 text-white"
-                      : "border-neutral-200 bg-white text-neutral-600 hover:border-neutral-900"
+                      : "border-neutral-200 bg-white text-neutral-600 hover:border-[color:var(--fg)]"
                   }`}
                 >
                   {n}

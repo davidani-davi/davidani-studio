@@ -77,7 +77,7 @@ function ShotFrame({
           upgrade
           alt={alt}
           fallback={
-            <span className="max-w-[240px] text-center text-[13px] leading-snug text-neutral-500">
+            <span className="max-w-[280px] rounded-md border border-neutral-200 bg-white px-6 py-10 text-center text-[13px] leading-snug text-neutral-500">
               This image could not be loaded. On an older run, the host it was saved on may have deleted it.
             </span>
           }

@@ -709,7 +709,7 @@ export default function ModelSidebar(p: Props) {
                                 src={primaryThumb.publicPath || m.poses[0]?.publicPath}
                                 size={256}
                                 alt=""
-                                className="h-full w-full object-cover transition group-hover:scale-105"
+                                className="h-full w-full object-cover"
                               />
                             ) : null}
                             {active && (
@@ -846,7 +846,7 @@ export default function ModelSidebar(p: Props) {
                             src={typeof thumb === "string" ? thumb : thumb.publicPath}
                             size={384}
                             alt={`${selectedPose?.label || "Selected look"} ${view.label} reference`}
-                            className="h-full w-full object-cover transition group-hover:scale-105"
+                            className="h-full w-full object-cover"
                           />
                         ) : null}
                         <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent px-2 pb-2 pt-8 text-[11px] font-semibold text-white">

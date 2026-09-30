@@ -608,7 +608,7 @@ export default function InspirationClient() {
                   const tasteSignal = tasteSignalForSource(source);
                   const liked = likedKeys.has(tasteSignal.key);
                   return (
-                    <article key={source.id} className="group overflow-hidden rounded-lg border border-neutral-200 bg-white transition-colors hover:border-neutral-400">
+                    <article key={source.id} className="group overflow-hidden rounded-lg border border-neutral-200 bg-white transition-colors hover:border-[color:var(--faint)]">
                       <div className="relative">
                         <button
                           type="button"
@@ -620,7 +620,7 @@ export default function InspirationClient() {
                               src={image}
                               size={density === "large" ? 640 : 384}
                               alt={source.title}
-                              className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
+                              className="h-full w-full object-cover"
                               fallback={
                                 <span className="flex h-full items-center justify-center p-4 text-center text-xs text-neutral-500">
                                   Image no longer available

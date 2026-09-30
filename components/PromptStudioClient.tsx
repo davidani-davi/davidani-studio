@@ -537,7 +537,7 @@ export default function PromptStudioClient() {
               value={prompts}
               onChange={(e) => setPrompts(e.target.value)}
               placeholder={activeCopy.placeholder}
-              className="prompt-mono min-h-[240px] flex-1 lg:min-h-0 resize-none px-4 py-4 text-[13px] leading-relaxed outline-none placeholder:font-sans placeholder:text-neutral-500 sm:px-6 sm:py-5"
+              className="prompt-mono min-h-[240px] flex-1 lg:min-h-0 resize-none px-4 py-4 text-[13px] leading-relaxed outline-none placeholder:font-sans placeholder:text-[color:var(--muted)] sm:px-6 sm:py-5"
             />
             <div className="pointer-events-none absolute bottom-3 right-6 rounded-full bg-white/80 px-2 py-0.5 text-[10px] font-mono text-neutral-400 backdrop-blur">
               {promptCount} {activeCopy.metricLabel}
@@ -606,11 +606,11 @@ export default function PromptStudioClient() {
                 <img
                   src={selectedUpload.url}
                   alt={selectedUpload.name}
-                  className="aspect-[4/5] w-full object-cover"
+                  className="aspect-[2/3] w-full object-cover"
                 />
               </button>
             ) : (
-              <div className="flex aspect-[4/5] items-center justify-center text-xs text-neutral-400">
+              <div className="flex aspect-[2/3] items-center justify-center text-xs text-neutral-400">
                 No garment selected
               </div>
             )}
@@ -632,7 +632,7 @@ export default function PromptStudioClient() {
                       <img
                         src={reference.url}
                         alt={reference.label}
-                        className="aspect-[4/5] w-full object-cover"
+                        className="aspect-[2/3] w-full object-cover"
                       />
                     </button>
                   ) : null;
