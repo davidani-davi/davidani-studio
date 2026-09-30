@@ -77,7 +77,7 @@ function ShotFrame({
           upgrade
           alt={alt}
           fallback={
-            <span className="max-w-[280px] rounded-md border border-neutral-200 bg-white px-6 py-10 text-center text-[13px] leading-snug text-neutral-500">
+            <span className="max-w-[280px] rounded-md border border-neutral-200 bg-white px-3 py-10 sm:px-6 text-center text-[13px] leading-snug text-neutral-500">
               This image could not be loaded. On an older run, the host it was saved on may have deleted it.
             </span>
           }
@@ -482,6 +482,10 @@ export default function StageView({
             />
           </div>
         ))}
+        {/* Odd count in a 2-up grid: fill the last cell so the gap colour doesn't show as a slab. */}
+        {visible.length + awaited.length > 1 && (visible.length + awaited.length) % 2 === 1 && (
+          <div aria-hidden className="bg-neutral-50" />
+        )}
             {visible.length === 0 && awaited.length === 0 && (
               <div className="flex items-center justify-center text-[12px] text-neutral-500">
                 {running ? "Painting variants…" : "This run produced no images."}

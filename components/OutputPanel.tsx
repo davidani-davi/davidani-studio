@@ -923,7 +923,7 @@ export default function OutputPanel({
                     <span className="text-sm font-semibold text-neutral-900">{label}</span>
                     {selected ? (
                       <span className="rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold text-brand-700">
-                        ★ Picked
+                        Picked
                       </span>
                     ) : (
                       <button
@@ -935,7 +935,7 @@ export default function OutputPanel({
                         }}
                         className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-semibold text-neutral-500 transition hover:bg-brand-50 hover:text-brand-700"
                       >
-                        ☆ Pick
+                        Pick
                       </button>
                     )}
                   </div>
@@ -1047,7 +1047,7 @@ export default function OutputPanel({
                         </span>
                         {selected ? (
                           <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
-                            ★ Picked
+                            Picked
                           </span>
                         ) : (
                           <button

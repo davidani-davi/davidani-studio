@@ -849,7 +849,7 @@ export default function ModelSidebar(p: Props) {
                             className="h-full w-full object-cover"
                           />
                         ) : null}
-                        <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent px-2 pb-2 pt-8 text-[11px] font-semibold text-white">
+                        <span className="absolute inset-x-0 bottom-0 border-t border-neutral-200 bg-white/90 px-2 py-1 text-[11px] font-medium text-neutral-700">
                           {view.label}
                         </span>
                       </button>
@@ -863,7 +863,7 @@ export default function ModelSidebar(p: Props) {
             ) : (
               <>
                 <label className="mb-1 block text-[10px] font-medium text-neutral-500">
-                  Look Preset
+                  Look preset
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   {poses.map((pose) => {
@@ -894,7 +894,7 @@ export default function ModelSidebar(p: Props) {
                             alt={pose.label}
                             className="h-full w-full object-cover"
                           />
-                          <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/55 to-transparent px-2 pb-1.5 pt-6 text-left text-[10px] font-semibold text-white">
+                          <span className={`absolute inset-x-0 bottom-0 border-t px-2 py-1 text-left text-[10px] font-medium ${active ? "border-neutral-900 bg-neutral-900 text-white" : "border-neutral-200 bg-white/90 text-neutral-700"}`}>
                             {pose.label}
                           </span>
                           {active && (
