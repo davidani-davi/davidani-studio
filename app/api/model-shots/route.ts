@@ -1,6 +1,6 @@
 import { directOutfitInput, renderDirectOutfit, DIRECT_IDENTITIES } from '@/lib/direct-outfit';
 import { isPantsReference, pantsReferences } from "@/lib/pants-references";
-import { simpleReferenceShot, simpleFaceMask, isReviewedContour, SIMPLE_IMAGE_SIZE } from '@/lib/simple-reference-shot';
+import { simpleReferenceShot, simpleFaceMask, isReviewedContour, simpleImageSize } from '@/lib/simple-reference-shot';
 import sharp from 'sharp';
 import { referencePixels, validateEdit, editMask, compositeGarment, providerMask, donutsFaceMask } from '@/lib/garment-only';
 import { uploadToFal } from '@/lib/fal';
@@ -356,11 +356,12 @@ async function renderShot(req: Request, body: any): Promise<Response> {
     const simpleInput = simple ? simpleReferenceShot({ view, referenceUrl, garmentImageUrls, category, framing, color: typeof known.color === 'string' ? known.color : undefined, note, anchorImageUrl, garmentName: typeof known.title === 'string' ? known.title : undefined }) : undefined;
     if (simpleInput) { input.prompt = simpleInput.prompt; input.image_urls = simpleInput.image_urls; }
     let simplePrepared: { ref: Awaited<ReturnType<typeof referencePixels>>; mask: Buffer } | undefined;
+    let simpleRef: Awaited<ReturnType<typeof referencePixels>> | undefined;
     if (simple) {
       if (reference.reframed) throw Error('Simple garment swap needs an exact view reference. Choose a complete reference set.');
       const response = await fetch(referenceUrl, {cache:'no-store'});
       if (!response.ok) throw Error('Reference could not be loaded.');
-      const ref = await referencePixels(Buffer.from(await response.arrayBuffer()));
+      const ref = simpleRef = await referencePixels(Buffer.from(await response.arrayBuffer()));
       const mask = simpleFaceMask(ref, reference.publicPath, view, framing, reference.protection, reference.autoContour);
       if (mask) simplePrepared = {ref,mask};
     }
@@ -387,7 +388,8 @@ async function renderShot(req: Request, body: any): Promise<Response> {
       input.prompt=`Edit the original reference photograph. Replace ONLY the ${category === 'pants' || category === 'skirt' ? 'bottoms' : 'garment'} with the garment from the other image. Keep the original pose, arm and hand positions, other clothing, shoes, background and framing. Do not add hands at the waistband or pockets. One person, two arms, two hands. Keep the head unchanged. No sharpening. ${known.color ? 'Garment color: '+known.color+'.' : ''} ${note || ''}`;
     }
     let url: string;
-    let outputResolution = simple || nanoReference ? "1K" : "4K";
+    // Simple GPT renders at medium quality ("2K"); Nano keeps its own 1K path.
+    let outputResolution = nanoReference ? "1K" : simple ? "2K" : "4K";
     if (body.engine === "tryon") {
       // This engine has no prompt/framing control; do not silently substitute it
       // for a selected GPT engine or claim an unavailable pants-only crop.
@@ -404,7 +406,7 @@ async function renderShot(req: Request, body: any): Promise<Response> {
         body: JSON.stringify({ modelId, humanModelId, poseId, view,
           canvasImageUrl: prepared?.canvasUrl || referenceUrl, garmentImageUrls: simpleInput?.garmentImageUrls || garmentImageUrls,
           preserveSecondaryReferences: true, rawPrompt: true, prompt: input.prompt,
-          imageSize: simple ? SIMPLE_IMAGE_SIZE : prepared ? {width:prepared.ref.width,height:prepared.ref.height} : GPT_NATIVE_SIZE, maskUrl: prepared?.maskUrl, aspectRatio: "2:3", resolution: simple ? "1K" : "4K", format: "png", numImages: 1 }),
+          imageSize: simple ? simpleImageSize(simpleRef) : prepared ? {width:prepared.ref.width,height:prepared.ref.height} : GPT_NATIVE_SIZE, maskUrl: prepared?.maskUrl, aspectRatio: "2:3", resolution: simple ? "2K" : "4K", format: "png", numImages: 1 }),
       }));
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || "Image generation failed");
