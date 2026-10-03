@@ -51,6 +51,11 @@ function poseOnly(o: SimpleShot, scope: 'top' | 'bottoms' | 'outfit'): string {
   return ` POSE ONLY: Image 1 lends only the wearer, her pose, framing, background and lighting. How image 1's own clothing fits is not a reference for the new garment: dress her fresh from her body outward, so the garment's ${what} come entirely from image 2 and this style's own fit.${facts}${others}`;
 }
 
+// Bases wider than 1024 px render at 2048 × 3072 so the garment is not
+// upscaled when it is composited back onto the full-size photo.
+export const SIMPLE_LARGE_IMAGE_SIZE = { width: 2048, height: 3072 };
+export const simpleImageSize = (ref?: { width: number }) => ref && ref.width > SIMPLE_IMAGE_SIZE.width ? SIMPLE_LARGE_IMAGE_SIZE : SIMPLE_IMAGE_SIZE;
+
 export function simpleReferenceShot(o: SimpleShot) {
   const side = o.garmentSideUrl && !o.garmentImageUrls.includes(o.garmentSideUrl) ? o.garmentSideUrl : '';
   const sideView = o.view === 'side' && Boolean(side);
