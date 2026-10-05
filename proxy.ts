@@ -8,7 +8,7 @@ import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth";
 // get one. /api/user-models checks the same token (or the session cookie) in its
 // route: the Listing Team portal saves draft reference sets there. Everything
 // else still redirects to /login.
-const PUBLIC_PATHS = ["/login", "/api/auth", "/api/history/cleanup", "/api/model-shots", "/api/square", "/api/fal-account", "/api/saved-shots", "/api/user-models"];
+const PUBLIC_PATHS = ["/login", "/api/auth", "/api/history/cleanup", "/api/model-shots", "/api/square", "/api/recolour", "/api/fal-account", "/api/saved-shots", "/api/user-models"];
 
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
