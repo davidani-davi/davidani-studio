@@ -40,7 +40,7 @@ describe('protected model-shot route',()=>{
   expect(payload.prompt).toContain('with cuffs at the wrists');
   expect(data.anchored).toBe(view!=='front');
   expect(payload.maskUrl).toBeUndefined();expect(payload.imageSize).toEqual({width:1024,height:1536});
-  expect(payload.resolution).toBe('1K');expect(payload.rawPrompt).toBe(true);
+  expect(payload.resolution).toBe('2K');expect(payload.rawPrompt).toBe(true);
   expect(data.editMode).toBe('simple');
   {
    expect(data.preservation).toMatchObject({verified:true,changedProtectedPixels:0});
@@ -59,6 +59,9 @@ describe('protected model-shot route',()=>{
   const data=await r.json();expect(data.ok).toBe(true);
   expect(data.faceProtection).toBe('reviewed-no-head-v1');expect(data.preservation).toBeUndefined();
   expect(mocks.generate).toHaveBeenCalledTimes(1);
+  // A 2000 × 3000 base gets the larger medium-quality render, not 1024 × 1536.
+  const payload=await mocks.generate.mock.calls[0][0].json();
+  expect(payload.imageSize).toEqual({width:2048,height:3072});expect(payload.resolution).toBe('2K');
  });
  it('Simple rejects changed source pixels before spending, including back views',async()=>{
   for(const view of ['front','back']){
