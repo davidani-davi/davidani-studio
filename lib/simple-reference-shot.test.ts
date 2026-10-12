@@ -186,6 +186,9 @@ it.each(['front','side','back','full'] as const)('keeps product ease independent
 });
 it('does not apply top ease rules to bottoms-only edits',()=>{
  for(const category of ['pants','skirt'] as const)expect(simpleReferenceShot({...base,view:'front',category}).prompt).not.toContain('GARMENT EASE:');
+ const skirt=simpleReferenceShot({...base,view:'side',category:'skirt'}).prompt;
+ expect(skirt).toContain('SKIRT CONSTRUCTION:');expect(skirt).toContain('no inseam, crotch or separate leg tubes');expect(skirt).not.toContain('TROUSER CONSTRUCTION:');
+ expect(simpleReferenceShot({...base,view:'front',category:'pants'}).prompt).toContain('TROUSER CONSTRUCTION:');
 });
 
 describe('open-front inner layer (DWJ50270, 2026-09-24)',()=>{

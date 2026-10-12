@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import {beforeEach,afterEach,describe,it,expect,vi} from 'vitest';
 import sharp from 'sharp';
 import presets from '@/lib/simple-contour-presets.json';
+import pantsData from '@/lib/pants-references.json';
 import {referencePixels,type GarmentEdit} from '@/lib/garment-only';
 const mocks=vi.hoisted(()=>({upload:vi.fn(),generate:vi.fn()}));
 vi.mock('@/lib/fal',async original=>({...await original<typeof import('@/lib/fal')>(),uploadToFal:mocks.upload}));
@@ -52,6 +53,20 @@ describe('protected model-shot route',()=>{
    expect(output.subarray(preset.garmentBoundaryY*preset.width*4).equals(clean.subarray(preset.garmentBoundaryY*preset.width*4))).toBe(true);
   }
   expect(data.faceProtection).toBe('reviewed-contour-v1');
+ });
+ it('skirts use the shared bottoms collection: bare-legged auto base, three views, skirt construction',async()=>{
+  // each reference URL serves its own installed file, so the reviewed-contour hash check runs for real
+  vi.stubGlobal('fetch',vi.fn(async(input:string|URL|Request)=>{const u=String(input);const path=decodeURIComponent(new URL(u).pathname);
+   const local='public'+path;return new Response(new Uint8Array(hosted.get(u)||(u.startsWith('https://generated/')?generated:fs.existsSync(local)?fs.readFileSync(local):original)));}));
+  const shorts=new Set(pantsData.filter(r=>r.silhouette==='shorts').map(r=>'pants-'+r.style.toLowerCase()));
+  const r=await POST(request({view:'front',editMode:'simple',humanModelId:'auto',poseId:'',styleCode:'DS62164',known:{category:'skirt',styleCode:'DS62164',title:'Plaid Godet Panel Denim Midi Skirt'}}));
+  const data=await r.json();expect(data.ok).toBe(true);
+  const picked=String(data.assigned||'').split(' · ')[0];expect(shorts.has(picked),picked).toBe(true);
+  const sent=await mocks.generate.mock.calls[0][0].json();expect(JSON.stringify(sent)).toContain('SKIRT CONSTRUCTION:');
+  const house=await POST(request({view:'front',editMode:'simple',humanModelId:'studio 98',poseId:'studio 98',known:{category:'skirt'}}));
+  expect(house.status).toBe(400);expect((await house.json()).error).toContain('shared bottoms collection');
+  const full=await POST(request({view:'full',editMode:'simple',humanModelId:'studio 103',poseId:'studio 103',known:{category:'skirt'}}));
+  expect(full.status).toBe(400);expect((await full.json()).error).toContain('front, side and back only');
  });
  it('Simple headless references use reviewed pass-through without a preservation claim',async()=>{
   original=fs.readFileSync('public/models/studio 103/front.jpg');

@@ -125,7 +125,8 @@ export async function GET(req: Request) {
       return {
         id: m.id,
         name: m.name,
-        categories: isPantsReference(m.id) ? ["pants"] : undefined,
+        // the shared bottom-half collection serves DP and DS alike (2026-10-12)
+        categories: isPantsReference(m.id) ? ["pants", "skirt"] : undefined,
         referenceKind: isPantsReference(m.id) ? "pants" : undefined,
         userAdded: Boolean(m.userAdded),
         ...(m.createdAt ? { createdAt: m.createdAt } : {}),
@@ -165,8 +166,8 @@ export async function POST(req: Request) {
     return json({ ok: false, error: "invalid JSON body" }, 400);
   }
 
-  if (!["direct","real-shoot"].includes(body.editMode) && body.view === "full" && (isPantsReference(body.humanModelId) || shotCategory({...body.known, category: body.category ?? body.known?.category}) === "pants"))
-    return json({ok:false,error:"Pants generate front, side and back only."},400);
+  if (!["direct","real-shoot"].includes(body.editMode) && body.view === "full" && (isPantsReference(body.humanModelId) || ["pants","skirt"].includes(shotCategory({...body.known, category: body.category ?? body.known?.category}))))
+    return json({ok:false,error:"Pants and skirts generate front, side and back only."},400);
 
   /**
    * `async: true` — answer with a task id now, render after the response and
@@ -281,8 +282,12 @@ async function renderShot(req: Request, body: any): Promise<Response> {
   // head-to-thigh, everything else full-length. The extension planned the run
   // with the same rule and says which category it used.
   const category = shotCategory({ ...known, category: body.category ?? (known as { category?: unknown }).category });
-  if (category === "pants" && view === "full")
-    return json({ ok: false, error: "Pants generate front, side and back only." }, 400);
+  // Pants and skirts share one bottom-half collection (real DP/DS shoots,
+  // waist-down, face-free) with front, side and back only (2026-10-12: the
+  // house waist-down plates have no back, so skirts had no usable reference).
+  const bottoms = category === "pants" || category === "skirt";
+  if (bottoms && view === "full")
+    return json({ ok: false, error: "Pants and skirts generate front, side and back only." }, 400);
   // A long layer (a coat, a longline cardigan) has its hem in every frame, so
   // it is shot on the full-length plate throughout (lib/plate-framing.ts hemFor).
   const hem = hemFor({ ...known, hem: body.hem ?? known.hem });
@@ -323,7 +328,11 @@ async function renderShot(req: Request, body: any): Promise<Response> {
     if (!styleCode) {
       return json({ ok: false, error: "auto model needs a styleCode to assign from" }, 400);
     }
-    const choice = assignPlate(styleCode, category === "pants" ? pantsReferences(catalogue) : catalogue.filter(m => !isPantsReference(m.id)), {
+    // A skirt shows legs below its hem, so auto picks a bare-legged (shorts)
+    // base when one exists rather than asking the model to invent legs.
+    const shared = pantsReferences(catalogue), bareLegs = shared.filter(m => m.wears === "shorts");
+    const pool = category === "skirt" ? (bareLegs.length ? bareLegs : shared) : category === "pants" ? shared : catalogue.filter(m => !isPantsReference(m.id));
+    const choice = assignPlate(styleCode, pool, {
       preferPrefix: body.platePrefix, category,
       silhouette: silhouetteOf((known as { title?: unknown }).title ?? body.title),
     });
@@ -334,10 +343,10 @@ async function renderShot(req: Request, body: any): Promise<Response> {
   }
   if (!humanModelId || !poseId) return json({ ok: false, error: "humanModelId and poseId are required" }, 400);
 
-  if (category === "pants" && !isPantsReference(humanModelId))
-    return json({ok:false,error:"Choose a reference from the shared pants collection."},400);
-  if (isPantsReference(humanModelId) && category !== "pants")
-    return json({ ok: false, error: "This is a pants reference. Choose a model reference for this garment." }, 400);
+  if (bottoms && !isPantsReference(humanModelId))
+    return json({ok:false,error:"Choose a reference from the shared bottoms collection."},400);
+  if (isPantsReference(humanModelId) && !bottoms)
+    return json({ ok: false, error: "This is a bottoms reference. Choose a model reference for this garment." }, 400);
   if (body.engine !== "tryon" && !nanoReference && !isGptModel(modelId))
     return json({ ok: false, error: `Unsupported image model: ${modelId}` }, 400);
 
