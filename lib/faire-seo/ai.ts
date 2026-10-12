@@ -9,8 +9,8 @@ import {
   sortedVisibleSchema,
 } from "@/lib/faire-seo/schema";
 
-const VISION_MODEL = "anthropic/claude-haiku-4.5";
-const ANTHROPIC_MODEL_ID = "claude-haiku-4-5-20251001";
+const VISION_MODEL = "anthropic/claude-haiku-5.5";
+const ANTHROPIC_MODEL_ID = "claude-haiku-5-5";
 
 export interface OptimizeFaireListingOutput {
   fields: ExtractedField[];

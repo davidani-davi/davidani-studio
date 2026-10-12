@@ -33,12 +33,12 @@ function ensureConfigured() {
  * inspiration analysis, design-studio concept extraction). Centralized so a
  * single swap propagates everywhere.
  *
- * Claude Haiku 4.5 — chosen over Sonnet 3.7 because the analyzer task is
+ * Claude Haiku 5.5 (fal retired haiku-4.5 from any-llm/vision, 2026-10) — Haiku chosen over Sonnet 3.7 because the analyzer task is
  * constrained-format extraction (GARMENT / FEATURES / POSE / SCENE noun
  * phrases), where Haiku's accuracy is comparable but ~2x faster (saves
  * ~3s per generation).
  */
-const VISION_MODEL = "anthropic/claude-haiku-4.5";
+const VISION_MODEL = "anthropic/claude-haiku-5.5";
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
