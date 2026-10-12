@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- Model library (2026-10-12): deleting a model keeps you on the live list with the next model open and a "Moved … to Trash" notice with Undo. It used to jump into Trash with the deleted model selected, and the Tops / Bottoms / All tabs showed Trash counts ("Tops 1"), so it looked like the only model left. Tabs now always count live models, Trash shows its own count and lists every section, and a trashed model gets one Restore button.
 - Simple garment swap names the garment cut from the listing title (DET60277 Oatmeal: an oversized poncho on a boxy elbow-sleeve plate came back as that tee, recoloured). `garmentName` on the simple shot, from `known.title`.
 - Simple garment swap (2026-09-11, DET60277): side, back and full now take the set's approved front render as image 3, the authoritative colour and construction reference. Each view had re-read the colour from the warehouse photo and landed on a different brown, and the inferred back grew a second hem tier (`lib/simple-reference-shot.ts`, `anchorImageUrl` passed through in the route; the native path stays independent). A top is worn alone: the plate's own tee is removed instead of kept as "other clothing", so nothing peeks at the neckline or hem.
 - Model shots: a long top or outerwear piece (a coat of any kind, longline, duster, knee/midi/maxi length in the title) is shot on the full-length plate in every view. The head-to-thigh crop plate has no room for its hem, and DJ67094 came back as a shacket on the side and a stretched, oversized figure on the front (`lib/plate-framing.ts` hemFor).
