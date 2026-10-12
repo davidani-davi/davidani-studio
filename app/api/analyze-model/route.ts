@@ -135,7 +135,7 @@ RULES:
 
   const result: any = await subscribeVisionWithRetry(
     {
-      model: "anthropic/claude-haiku-4.5",
+      model: "anthropic/claude-haiku-5.5",
       system_prompt: SYSTEM,
       prompt:
         "Analyze the garment in this photograph using the two-line GARMENT / FEATURES format. Output exactly those two lines, nothing else.",
