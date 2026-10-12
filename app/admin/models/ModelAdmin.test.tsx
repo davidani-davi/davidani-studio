@@ -28,8 +28,10 @@ describe('reference library navigation',()=>{
   await screen.findByRole('heading',{name:'Choose a model'});
   fireEvent.change(screen.getByRole('textbox',{name:'Search models'}),{target:{value:''}});
   fireEvent.click(screen.getByRole('button',{name:/^Bottoms/}));
-  fireEvent.click(screen.getByRole('button',{name:'Trash',exact:true}));
+  fireEvent.click(screen.getByRole('button',{name:/^Trash\s*1$/}));
   await screen.findByRole('heading',{name:'Retired pants'});
+  expect(screen.getByRole('heading',{name:'Trash · 1 model'})).toBeInTheDocument();
+  expect(screen.getByRole('button',{name:/^Bottoms/})).toHaveAttribute('aria-pressed','false');
   expect(screen.getByRole('button',{name:'Restore model'})).toBeVisible();
   fireEvent.click(screen.getByRole('button',{name:'Back to models'}));
   await screen.findByRole('heading',{name:'DP52083 · Donuts'});
@@ -42,6 +44,31 @@ describe('reference library navigation',()=>{
   expect(screen.getByLabelText('Pose set')).toHaveValue('low');
   fireEvent.click(screen.getByRole('button',{name:'Add pose set'}));
   expect(within(screen.getByRole('dialog')).getByLabelText('Front, side and back framing')).toHaveValue('low');
+ });
+ it('stays on the live list after a delete, counts live models and offers Undo',async()=>{
+  vi.stubGlobal('confirm',vi.fn(()=>true));
+  const posts:any[]=[];
+  vi.mocked(fetch).mockImplementation(async(_url,init)=>{
+   if(init?.method!=='POST')return new Response(JSON.stringify({models,cloudUploads:false}));
+   const body=JSON.parse(String(init.body));posts.push(body.action);
+   return new Response(JSON.stringify({change:{kind:'model',modelId:body.modelId,patch:{deleted:body.action==='deleteModel'}}}));
+  });
+  render(<ModelAdmin/>);await screen.findByRole('heading',{name:'Celine 1'});
+  expect(screen.getByRole('button',{name:/^Tops/})).toHaveTextContent('2');
+  fireEvent.click(screen.getByRole('button',{name:'Delete model'}));
+  const notice=await screen.findByRole('status');
+  expect(notice).toHaveTextContent('Moved Celine 1 to Trash.');
+  // Still on Tops, the next live model is open, and the counts are live counts.
+  await screen.findByRole('heading',{name:'Shared reference'});
+  expect(screen.getByRole('heading',{name:'Tops references'})).toBeInTheDocument();
+  expect(screen.getByRole('button',{name:/^Tops/})).toHaveTextContent('1');
+  expect(screen.getByRole('button',{name:/^Trash/})).toHaveTextContent('2');
+  expect(within(screen.getByRole('complementary',{name:'Reference library'})).queryByRole('button',{name:/Celine 1/})).toBeNull();
+  fireEvent.click(within(notice).getByRole('button',{name:'Undo'}));
+  await screen.findByRole('heading',{name:'Celine 1'});
+  expect(screen.getByRole('status')).toHaveTextContent('Restored Celine 1.');
+  expect(screen.getByRole('button',{name:/^Tops/})).toHaveTextContent('2');
+  expect(posts).toEqual(['deleteModel','restoreModel']);
  });
  it('keeps errors visible and allows a failed read to be retried',async()=>{
   vi.mocked(fetch).mockResolvedValueOnce(new Response(JSON.stringify({error:'Unavailable'}),{status:503}));
