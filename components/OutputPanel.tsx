@@ -8,6 +8,7 @@ import { FEEDBACK_ISSUES, type FeedbackIssueKey } from "@/lib/feedback-memory";
 import RoutingPanel from "./RoutingPanel";
 import BackgroundSnapNote from "./BackgroundSnapNote";
 import Thumb from "@/components/Thumb";
+import { uploadImages } from "@/lib/upload-images";
 
 type FitRepairMode =
   | "all"
@@ -597,17 +598,13 @@ export default function OutputPanel({
     if (!onQualityControl || !activePrompt) return;
     setFitReferenceUploading(true);
     try {
-      const form = new FormData();
-      form.append("files", file);
-      const res = await fetch("/api/upload", { method: "POST", body: form });
-      const data = await res.json();
-      if (!res.ok || !data?.ok || !data.uploads?.[0]?.url) {
-        throw new Error(data?.error || "Fit reference upload failed");
-      }
+      // Shrunk in the browser, then sent straight to storage (lib/upload-images.ts).
+      const [uploaded] = await uploadImages("Fit reference upload", [file]);
+      if (!uploaded?.url) throw new Error("Fit reference upload failed");
       onQualityControl({
         action: "retry-closer",
         fitMode: "upload-reference",
-        fitReferenceUrl: data.uploads[0].url,
+        fitReferenceUrl: uploaded.url,
         repairNote: repairNoteWithGuidance(),
         prompt: activePrompt,
         sourceUrl: activeSource,
@@ -624,15 +621,10 @@ export default function OutputPanel({
   async function uploadBackReference(file: File): Promise<string | null> {
     setBackReferenceUploading(true);
     try {
-      const form = new FormData();
-      form.append("files", file);
-      const res = await fetch("/api/upload", { method: "POST", body: form });
-      const data = await res.json();
-      if (!res.ok || !data?.ok || !data.uploads?.[0]?.url) {
-        throw new Error(data?.error || "Back view upload failed");
-      }
-      setBackReferenceUrl(data.uploads[0].url);
-      return data.uploads[0].url;
+      const [uploaded] = await uploadImages("Back view upload", [file]);
+      if (!uploaded?.url) throw new Error("Back view upload failed");
+      setBackReferenceUrl(uploaded.url);
+      return uploaded.url;
     } catch (err: any) {
       alert(err?.message || "Back view upload failed");
       return null;

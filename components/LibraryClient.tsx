@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import StudioHeader from "@/components/StudioHeader";
 import type { LibraryStyle, LibraryView } from "@/lib/style-library";
 import Thumb from "@/components/Thumb";
+import { uploadImages } from "@/lib/upload-images";
 
 interface LibraryDraft {
   styleNumber: string;
@@ -516,13 +517,9 @@ export default function LibraryClient() {
     setEcommerceStatus(`Uploading ${target.label.toLowerCase()} view...`);
     setError(null);
     try {
-      const form = new FormData();
-      form.append("files", file);
-      const uploadRes = await fetch("/api/upload", { method: "POST", body: form });
-      const uploadData = await uploadRes.json();
-      if (!uploadRes.ok || !uploadData?.ok || !uploadData.uploads?.[0]?.url) {
-        throw new Error(uploadData?.error || "View upload failed");
-      }
+      // Shrunk in the browser, then sent straight to storage (lib/upload-images.ts).
+      const [uploaded] = await uploadImages("View upload", [file]);
+      if (!uploaded?.url) throw new Error("View upload failed");
 
       const res = await fetch("/api/library", {
         method: "POST",
@@ -531,7 +528,7 @@ export default function LibraryClient() {
           styleNumber: styles.find((style) => style.id === target.styleId)?.styleNumber,
           color: styles.find((style) => style.id === target.styleId)?.color,
           viewLabel: target.label,
-          imageUrl: uploadData.uploads[0].url,
+          imageUrl: uploaded.url,
         }),
       });
       const data = await res.json();

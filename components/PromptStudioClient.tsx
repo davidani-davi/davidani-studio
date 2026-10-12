@@ -4,8 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import StudioHeader from "@/components/StudioHeader";
 import ImageLightbox, { ZoomButton } from "@/components/ImageLightbox";
 import type { UploadedImage } from "@/components/types";
-import { resizeIfNeeded } from "@/lib/image-resize";
-import { ProgressBar, uploadWithProgress } from "@/components/RunProgress";
+import { uploadImages } from "@/lib/upload-images";
+import { ProgressBar } from "@/components/RunProgress";
 import { PHOTOSHOOT_REFERENCES } from "@/lib/photoshoot-references";
 
 async function fetchJson(label: string, input: string, init?: RequestInit): Promise<any> {
@@ -164,15 +164,11 @@ export default function PromptStudioClient() {
     setUploadFraction(0);
     setError(null);
     try {
-      const resized = await Promise.all(Array.from(files).map((f) => resizeIfNeeded(f)));
-      const form = new FormData();
-      resized.forEach((f) => form.append("files", f));
-      // Bytes-sent progress covers the browser -> server leg; hold at 90%
-      // until the server finishes forwarding to storage and responds.
-      const data = await uploadWithProgress("Upload", "/api/upload", form, (f) =>
-        setUploadFraction(f * 0.9)
-      );
-      const added: UploadedImage[] = data.uploads ?? [];
+      // Shrunk in the browser, then sent straight to storage
+      // (lib/upload-images.ts). Hold at 90% until every file is stored.
+      const added: UploadedImage[] = await uploadImages("Upload", Array.from(files), {
+        onProgress: (f) => setUploadFraction(f * 0.9),
+      });
       if (!added.length) throw new Error("Upload succeeded but no image URL returned");
       setUploads((list) => [...list, ...added]);
       setSelectedUrl(added[0].url);
