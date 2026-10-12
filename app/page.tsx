@@ -31,7 +31,7 @@ import type { BackgroundSnapReport } from "@/lib/background-snap";
 import { styleNumbersForQueue } from "@/lib/style-from-filename";
 import { buildBatchSummary } from "@/lib/batch-summary";
 import type { CanvasChoice } from "@/lib/canvas-registry";
-import { resizeIfNeeded } from "@/lib/image-resize";
+import { uploadImages } from "@/lib/upload-images";
 import { optimizePromptForModel } from "@/lib/prompt-strategy";
 import {
   addFeedbackMemory,
@@ -643,16 +643,9 @@ export default function StudioPage() {
     setReferenceUploading(true);
     setError(null);
     try {
-      // Shrink oversized phone photos client-side — Vercel's serverless
-      // functions reject bodies larger than 4.5 MB.
-      const resized = await resizeIfNeeded(file);
-      const form = new FormData();
-      form.append("files", resized);
-      const data = await fetchJson("Upload reference", "/api/upload", {
-        method: "POST",
-        body: form,
-      });
-      const url: string | undefined = data.uploads?.[0]?.url;
+      // Shrunk in the browser, then sent straight to storage (lib/upload-images.ts).
+      const [uploaded] = await uploadImages("Upload reference", [file]);
+      const url: string | undefined = uploaded?.url;
       if (!url) throw new Error("Upload succeeded but no URL returned");
       setReferenceImageUrl(url);
     } catch (err: any) {
@@ -687,16 +680,8 @@ export default function StudioPage() {
     setUploading(true);
     setError(null);
     try {
-      // Shrink oversized photos before sending to our upload endpoint.
-      // See lib/image-resize.ts for rationale (Vercel body-size limit).
-      const resized = await Promise.all(
-        Array.from(files).map((f) => resizeIfNeeded(f))
-      );
-      const form = new FormData();
-      resized.forEach((f) => form.append("files", f));
-
-      const data = await fetchJson("Upload", "/api/upload", { method: "POST", body: form });
-      const added: UploadedImage[] = data.uploads;
+      // Shrunk in the browser, then sent straight to storage (lib/upload-images.ts).
+      const added: UploadedImage[] = await uploadImages("Upload", Array.from(files));
       if (added.length > 0) {
         setUploads((list) => [...list, ...added]);
         setSelected((s) => [...s, ...added.map((a) => a.url)]);

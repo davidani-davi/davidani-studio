@@ -27,8 +27,7 @@ import type {
   OverlayMode,
   OverlayPlacement,
 } from "@/lib/fal";
-import { resizeIfNeeded } from "@/lib/image-resize";
-import { uploadWithProgress } from "@/components/RunProgress";
+import { uploadImages } from "@/lib/upload-images";
 import { MODELS, type ModelId } from "@/lib/models";
 import type { HumanModel, PresetView } from "@/lib/models-registry";
 import {
@@ -389,6 +388,9 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
 
   useEffect(() => {
     const refreshCatalog = () => { fetchModelsOnce().then(models => { if(models) setHumanModels(models); }); };
+    // The page renders from a cached catalogue (lib/human-models-cached.ts);
+    // this fresh read corrects it right after mount.
+    refreshCatalog();
     window.addEventListener("focus", refreshCatalog);
     return () => window.removeEventListener("focus", refreshCatalog);
   }, []);
@@ -789,17 +791,11 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
     setUploadFraction(0);
     setError(null);
     try {
-      const resized = await Promise.all(
-        Array.from(files).map((f) => resizeIfNeeded(f))
-      );
-      const form = new FormData();
-      resized.forEach((f) => form.append("files", f));
-      // Bytes-sent progress covers the browser -> server leg; hold at 90%
-      // until the server finishes forwarding to storage and responds.
-      const data = await uploadWithProgress("Upload", "/api/upload", form, (f) =>
-        setUploadFraction(f * 0.9)
-      );
-      const added: UploadedImage[] = data.uploads;
+      // Shrunk in the browser, then sent straight to storage
+      // (lib/upload-images.ts). Hold at 90% until every file is stored.
+      const added: UploadedImage[] = await uploadImages("Upload", Array.from(files), {
+        onProgress: (f) => setUploadFraction(f * 0.9),
+      });
       setUploads((list) => [...list, ...added]);
       if (typeof slot === "number" && added[0]) {
         setSelectedSlot(slot, added[0].url);

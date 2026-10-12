@@ -312,6 +312,29 @@ input[type="checkbox"]:disabled {
   text-transform: uppercase;
 }
 
+/* Placeholder block for content still on its way (components/StudioLoading). */
+.studio-skeleton {
+  position: relative;
+  overflow: hidden;
+  border-radius: 6px;
+  background: rgba(28, 24, 20, 0.07);
+}
+
+.studio-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 253, 248, 0.7), transparent);
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .studio-skeleton::after {
+    animation: none;
+  }
+}
+
 @keyframes studio-boot-pulse {
   0%,
   100% {

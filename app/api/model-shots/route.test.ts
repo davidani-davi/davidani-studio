@@ -15,6 +15,8 @@ vi.mock('@/lib/direct-outfit', async () => ({...await vi.importActual<any>('@/li
 const ORIGINAL = { ...process.env };
 // This suite asserts the bundled catalog, independent of local admin edits.
 vi.mock('@/lib/model-admin', async () => ({...await vi.importActual<any>('@/lib/model-admin'),readCatalogChanges:async()=>[]}));
+// The Studio pages read the catalogue through Next's data cache, which only exists inside Next.
+vi.mock('next/cache', () => ({unstable_cache: (fn: any) => fn}));
 
 async function load() {
   vi.resetModules();

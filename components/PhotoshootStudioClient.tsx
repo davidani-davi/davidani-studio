@@ -5,6 +5,7 @@ import StudioHeader from "@/components/StudioHeader";
 import { PHOTOSHOOT_REFERENCES } from "@/lib/photoshoot-references";
 import type { UploadedImage } from "@/components/types";
 import { resizeIfNeeded } from "@/lib/image-resize";
+import { uploadImages } from "@/lib/upload-images";
 
 type Reference = { id: string; label: string; url: string; builtIn?: boolean };
 type Result = { id: string; reference: Reference; shotNumber: number; status: "queued" | "running" | "done" | "failed"; variationIndex: number; shotVariation?: string; url?: string; error?: string };
@@ -58,13 +59,8 @@ export default function PhotoshootStudioClient() {
     setUploadingProduct(true);
     setError(null);
     try {
-      const resized = await Promise.all(
-        Array.from(files).slice(0, 6).map((file) => resizeIfNeeded(file))
-      );
-      const form = new FormData();
-      resized.forEach((file) => form.append("files", file));
-      const data = await json("/api/upload", { method: "POST", body: form });
-      setProducts(data.uploads || []);
+      // Shrunk in the browser, then sent straight to storage (lib/upload-images.ts).
+      setProducts(await uploadImages("Product upload", Array.from(files).slice(0, 6)));
       setResults([]);
     } catch (err: any) {
       setError(err?.message || "Product upload failed");

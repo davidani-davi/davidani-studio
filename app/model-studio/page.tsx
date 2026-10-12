@@ -1,14 +1,14 @@
 import ModelStudioClient from "@/components/ModelStudioClient";
-import { listAllHumanModels } from "@/lib/models-registry";
+import { listAllHumanModelsForPage } from "@/lib/human-models-cached";
 import { isDerivedPlate } from "@/lib/plate-framing";
 
-// Force re-render on every request so newly-added pose files (e.g. front2.png)
-// in public/models/ are picked up without a rebuild. listAllHumanModels
-// re-scans the filesystem (and re-reads Blob user models) each call.
+// Rendered per request from a 5-minute copy of the catalogue
+// (lib/human-models-cached.ts); the client re-reads /api/models on mount, so
+// a newly added or deleted reference still shows up within a second.
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export default async function ModelStudioPage() {
-  const humanModels = await listAllHumanModels();
+  const humanModels = await listAllHumanModelsForPage();
   return <ModelStudioClient initialHumanModels={humanModels.filter(m => !isDerivedPlate(m.id))} />;
 }
