@@ -2259,13 +2259,10 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
   async function uploadFeedbackMarkup(markupDataUrl: string): Promise<string | null> {
     if (!markupDataUrl) return null;
     const blob = await (await fetch(markupDataUrl)).blob();
-    const form = new FormData();
-    form.append("files", new File([blob], "feedback-markup.png", { type: "image/png" }));
-    const data = await fetchJson("Upload feedback markup", "/api/upload", {
-      method: "POST",
-      body: form,
-    });
-    return data.uploads?.[0]?.url || null;
+    const [uploaded] = await uploadImages("Upload feedback markup", [
+      new File([blob], "feedback-markup.png", { type: "image/png" }),
+    ]);
+    return uploaded?.url || null;
   }
 
   async function runFeedbackRegeneration(params: {

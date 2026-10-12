@@ -216,10 +216,8 @@ export default function ModelSidebar(p: Props) {
         const file = newModelFiles[view];
         if (!file) continue;
         // Up to 4 photos ride in one multipart body, which must stay under
-        // Vercel's 4.5 MB request-body cap. resizeIfNeeded's default 3 MB
-        // skip threshold lets four ~2.5 MB photos add up to ~10 MB
-        // untouched, so this form asks for a much tighter 1 MB threshold to
-        // keep the aggregate safely under the limit.
+        // Vercel's 4.5 MB request-body cap, so each is held to 1 MB before
+        // it is left untouched (the default today, kept explicit here).
         const out = await resizeIfNeeded(file, { skipIfBytesUnder: 1024 * 1024 });
         resized.push(out);
         form.append(view, out);

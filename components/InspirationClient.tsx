@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import ImageLightbox from "@/components/ImageLightbox";
 import StudioHeader from "@/components/StudioHeader";
 import { readTasteSignals, toggleTasteSignal } from "@/lib/design-memory";
-import { resizeIfNeeded } from "@/lib/image-resize";
+import { uploadImages } from "@/lib/upload-images";
 import type { InspirationSource } from "@/lib/inspiration-library";
 import Thumb from "@/components/Thumb";
 
@@ -165,17 +165,9 @@ export default function InspirationClient() {
     try {
       const picked = Array.from(files).filter((file) => file.type.startsWith("image/"));
       if (!picked.length) return;
-      const form = new FormData();
-      for (const file of picked.slice(0, 12)) {
-        form.append("files", await resizeIfNeeded(file));
-      }
-      const uploaded = await fetchJson("Upload inspiration", "/api/upload", {
-        method: "POST",
-        body: form,
-      });
-      const imageUrls = (uploaded.uploads || [])
-        .map((item: { url?: string }) => item.url)
-        .filter(Boolean);
+      // Shrunk in the browser, then sent straight to storage (lib/upload-images.ts).
+      const uploaded = await uploadImages("Upload inspiration", picked.slice(0, 12));
+      const imageUrls = uploaded.map((item) => item.url).filter(Boolean);
       const imageUrl = imageUrls[0];
       if (!imageUrl) throw new Error("Upload succeeded but no image URL returned");
       setDraft((item) => ({
@@ -199,17 +191,9 @@ export default function InspirationClient() {
     try {
       const picked = Array.from(files).filter((file) => file.type.startsWith("image/"));
       if (!picked.length) return;
-      const form = new FormData();
-      for (const file of picked.slice(0, 12)) {
-        form.append("files", await resizeIfNeeded(file));
-      }
-      const uploaded = await fetchJson("Upload inspiration views", "/api/upload", {
-        method: "POST",
-        body: form,
-      });
-      const imageUrls = (uploaded.uploads || [])
-        .map((item: { url?: string }) => item.url)
-        .filter(Boolean);
+      // Shrunk in the browser, then sent straight to storage (lib/upload-images.ts).
+      const uploaded = await uploadImages("Upload inspiration views", picked.slice(0, 12));
+      const imageUrls = uploaded.map((item) => item.url).filter(Boolean);
       if (!imageUrls.length) throw new Error("Upload succeeded but no image URLs returned");
       const data = await fetchJson("Save inspiration views", "/api/inspiration", {
         method: "PATCH",

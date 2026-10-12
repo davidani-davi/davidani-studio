@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import StudioHeader from "@/components/StudioHeader";
-import { resizeIfNeeded } from "@/lib/image-resize";
+import { uploadImages } from "@/lib/upload-images";
 import {
   estimateRunMs,
   formatRemaining,
@@ -384,12 +384,10 @@ export default function FaireSeoClient() {
 
     try {
       const hashes = await Promise.all(list.map((file) => sha256(file)));
-      const resized = await Promise.all(list.map((file) => resizeIfNeeded(file)));
-      const form = new FormData();
-      resized.forEach((file) => form.append("files", file));
-      const data = await fetchJson("Upload", "/api/upload", { method: "POST", body: form });
+      // Shrunk in the browser, then sent straight to storage (lib/upload-images.ts).
+      const uploads = await uploadImages("Upload", list);
 
-      const added: FaireUploadedAsset[] = (data.uploads || []).map((upload: any, index: number) => ({
+      const added: FaireUploadedAsset[] = uploads.map((upload, index) => ({
         id: `${Date.now()}-${index}-${hashes[index].slice(0, 8)}`,
         name: String(upload.name || list[index]?.name || "upload.png"),
         url: String(upload.url),

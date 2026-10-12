@@ -5,7 +5,7 @@ import StudioHeader from "@/components/StudioHeader";
 import ImageLightbox, { ZoomButton } from "@/components/ImageLightbox";
 import type { UploadedImage } from "@/components/types";
 import { MODELS, type ModelId, ASPECT_RATIOS, RESOLUTIONS } from "@/lib/models";
-import { resizeIfNeeded } from "@/lib/image-resize";
+import { uploadImages } from "@/lib/upload-images";
 import {
   alphabeticImageLabel,
   appendUniqueReferences,
@@ -479,11 +479,8 @@ function ImagePlaygroundWorkspace({
     setUploading(true);
     setError(null);
     try {
-      const resized = await Promise.all(Array.from(files).map((f) => resizeIfNeeded(f)));
-      const form = new FormData();
-      resized.forEach((f) => form.append("files", f));
-      const data = await fetchJson("Upload", "/api/upload", { method: "POST", body: form });
-      const added: UploadedImage[] = data.uploads ?? [];
+      // Shrunk in the browser, then sent straight to storage (lib/upload-images.ts).
+      const added: UploadedImage[] = await uploadImages("Upload", Array.from(files));
       if (!added.length) throw new Error("Upload returned no URLs");
       setRefs((list) => appendUniqueReferences(list, added));
       setSelectedRefUrls((cur) => Array.from(new Set([...cur, ...added.map((u) => u.url)])));
