@@ -30,9 +30,23 @@ describe('independent native reference shots',()=>{
       }
     });
   }
-  it.each(['gpt-image-25','gpt-image','nano-banana-pro'])('rejects a pants full shot with %s before spending',async modelId=>{
-    expect((await POST(request({view:'full',modelId}))).status).toBe(400);
+  it.each(['gpt-image-25','gpt-image','nano-banana-pro'])('a pants full shot on a waist-down set needs a full-body photo (%s), before spending',async modelId=>{
+    const res=await POST(request({view:'full',modelId,humanModelId:'pants-dp62024',poseId:'dp62024'}));
+    expect(res.status).toBe(400);expect((await res.json()).error).toMatch(/full-body photo/);
     expect(generate).not.toHaveBeenCalled();expect(runReferenceShot).not.toHaveBeenCalled();
+  });
+  it('a pants full shot renders on the full-body photo picked from the ERP',async()=>{
+    const fullReferenceUrl='https://system.davidani.com/upload/style/DP62024A_1.jpg';
+    const res=await POST(request({view:'full',modelId:'nano-banana-pro',humanModelId:'pants-dp62024',poseId:'dp62024',fullReferenceUrl}));
+    expect(res.status).toBe(200);const data=await res.json();
+    expect(data.reference.url).toBe(fullReferenceUrl);
+    expect(vi.mocked(runReferenceShot).mock.calls[0][0].image_urls[0]).toBe(fullReferenceUrl);
+  });
+  it('Donuts uses its own full view; a photo from anywhere else is refused',async()=>{
+    const own=await POST(request({view:'full',modelId:'nano-banana-pro'}));
+    expect(own.status).toBe(200);expect((await own.json()).reference.url).toMatch(/\/full\./);
+    const bad=await POST(request({view:'full',modelId:'nano-banana-pro',fullReferenceUrl:'https://evil.example/x.jpg'}));
+    expect(bad.status).toBe(400);expect(runReferenceShot).toHaveBeenCalledTimes(1);
   });
   it.each([['gpt2','gpt-image'],['nano','nano-banana-pro']])('respects engine-only %s selections',async(engine,modelId)=>{
     const data=await (await POST(request({view:'front',engine}))).json();expect(data.modelId).toBe(modelId);

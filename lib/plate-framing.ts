@@ -89,12 +89,8 @@ export function showsBottoms(category: ShotCategory, hem: Hem): boolean {
 
 /** The views a run shoots for a category, in shooting order, with the plate framing each is handed. */
 export function shotPlan(category: ShotCategory, hem: Hem = ""): ShotStep[] {
-  if (category === "pants") return [
-    { view: "front", framing: "low" },
-    { view: "side", framing: "low" },
-    { view: "back", framing: "low" },
-  ];
-  if (category === "skirt") {
+  // Pants and skirts: waist-down front, side and back plus one full shot on a full-body photo.
+  if (category === "pants" || category === "skirt") {
     return [
       { view: "front", framing: "low" },
       { view: "side", framing: "low" },
