@@ -3,7 +3,10 @@ import { isPantsReference, pantsReferences } from "@/lib/pants-references";
 import { simpleReferenceShot, simpleFaceMask, isReviewedContour, SIMPLE_IMAGE_SIZE } from '@/lib/simple-reference-shot';
 import sharp from 'sharp';
 import { referencePixels, validateEdit, editMask, compositeGarment, providerMask, donutsFaceMask } from '@/lib/garment-only';
-import { uploadToFal } from '@/lib/fal';
+import { uploadToFal, groundPhrase } from '@/lib/fal';
+import { detectAutoContour } from '@/lib/draft-contour';
+import { isFullBodyBase } from '@/lib/full-body-base';
+import type { AutoContour } from '@/lib/model-admin-core';
 import { buildReferenceShot, runReferenceShot, NANO_REFERENCE_MODEL } from '@/lib/nano-reference-shots';
 import { viewReference, referenceCoverage } from '@/lib/view-reference';
 import { NextResponse, after } from "next/server";
@@ -166,8 +169,11 @@ export async function POST(req: Request) {
     return json({ ok: false, error: "invalid JSON body" }, 400);
   }
 
-  if (!["direct","real-shoot"].includes(body.editMode) && body.view === "full" && (isPantsReference(body.humanModelId) || ["pants","skirt"].includes(shotCategory({...body.known, category: body.category ?? body.known?.category}))))
-    return json({ok:false,error:"Pants and skirts generate front, side and back only."},400);
+  // Keep original face (the DONUTS full-shot face lock) stays retired; bottoms full shots use Simple.
+  if (body.editMode === "face-locked")
+    return json({ ok: false, error: "Keep original face is retired. Use Simple garment swap." }, 400);
+  if (body.fullReferenceUrl != null && body.fullReferenceUrl !== "" && !isFullBodyBase(body.fullReferenceUrl))
+    return json({ ok: false, error: "Use a full-body photo from the ERP or one you uploaded." }, 400);
 
   /**
    * `async: true` — answer with a task id now, render after the response and
@@ -286,8 +292,10 @@ async function renderShot(req: Request, body: any): Promise<Response> {
   // waist-down, face-free) with front, side and back only (2026-10-12: the
   // house waist-down plates have no back, so skirts had no usable reference).
   const bottoms = category === "pants" || category === "skirt";
-  if (bottoms && view === "full")
-    return json({ ok: false, error: "Pants and skirts generate front, side and back only." }, 400);
+  // Bottoms add a full shot again (David, 2026-10-13). The shared bottoms references are waist-down
+  // shoots, so its base is a full-body photo the operator picks from the ERP or uploads; a
+  // reference set that carries its own full view (Donuts) needs none.
+  const fullBase = bottoms && view === "full" && typeof body.fullReferenceUrl === "string" ? body.fullReferenceUrl : "";
   // A long layer (a coat, a longline cardigan) has its hem in every frame, so
   // it is shot on the full-length plate throughout (lib/plate-framing.ts hemFor).
   const hem = hemFor({ ...known, hem: body.hem ?? known.hem });
@@ -352,8 +360,23 @@ async function renderShot(req: Request, body: any): Promise<Response> {
 
   // Exact view selection happens before any paid request. Never fall back to front.
   let reference;
-  try { reference = viewReference(catalogue, humanModelId, poseId, view, framing); }
-  catch (err: any) { return json({ ok: false, view, error: err.message }, 400); }
+  try {
+    reference = fullBase
+      ? { humanModelId, poseId, view, publicPath: fullBase, framing, protection: undefined, autoContour: undefined as AutoContour | undefined, reframed: false, synthesized: false }
+      : viewReference(catalogue, humanModelId, poseId, view, framing);
+  }
+  catch (err: any) {
+    return json({ ok: false, view, error: bottoms && view === "full"
+      ? "Choose a full-body photo for the full shot: pick one from the ERP or upload your own." : err.message }, 400);
+  }
+  // A full-body base without a reviewed face outline (an ERP pick, an upload, Donuts' archived
+  // full) gets the outline found automatically, as a Listing Team draft set does; when the head
+  // cannot be found confidently Simple refuses it rather than repaint the face.
+  if (simple && bottoms && view === "full" && !reference.autoContour && !isReviewedContour(reference.publicPath)) {
+    const found = await detectAutoContour(new URL(reference.publicPath, req.url).toString(), "full", { referencePixels, ground: groundPhrase }).catch(() => null);
+    if (!found) return json({ ok: false, view, error: "Model Studio could not outline the face in this full-body photo. Choose another one (head fully in frame)." }, 400);
+    reference = { ...reference, autoContour: found };
+  }
   humanModelId = reference.humanModelId;
   poseId = reference.poseId;
   try {

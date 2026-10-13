@@ -4,8 +4,8 @@ import sharp from 'sharp';
 import presets from '@/lib/simple-contour-presets.json';
 import pantsData from '@/lib/pants-references.json';
 import {referencePixels,type GarmentEdit} from '@/lib/garment-only';
-const mocks=vi.hoisted(()=>({upload:vi.fn(),generate:vi.fn()}));
-vi.mock('@/lib/fal',async original=>({...await original<typeof import('@/lib/fal')>(),uploadToFal:mocks.upload}));
+const mocks=vi.hoisted(()=>({upload:vi.fn(),generate:vi.fn(),ground:vi.fn()}));
+vi.mock('@/lib/fal',async original=>({...await original<typeof import('@/lib/fal')>(),uploadToFal:mocks.upload,groundPhrase:mocks.ground}));
 vi.mock('../generate-model/route',()=>({POST:mocks.generate}));
 import {GET,POST} from './route';
 let original:Buffer,generated:Buffer,edit:GarmentEdit,hosted=new Map<string,Buffer>();
@@ -18,6 +18,7 @@ beforeEach(async()=>{
  edit={version:1,referencePath:'/models/studio 98/full.png',referenceSha256:ref.sha256,width:1024,height:1536,regions:[[[.2,.3],[.8,.3],[.8,.9],[.2,.9]]],protectedRegions:[[[.25,0],[.75,0],[.75,.25],[.25,.25]]],reviewed:true,protectedHeadReviewed:true};
  mocks.upload.mockImplementation(async(blob:Blob,name:string)=>{const url='https://host/'+name;hosted.set(url,Buffer.from(await blob.arrayBuffer()));return url;});
  mocks.generate.mockImplementation(async()=>Response.json({images:[{url:'https://generated/result.png'}]}));
+ mocks.ground.mockResolvedValue([]);
  vi.stubGlobal('fetch',vi.fn(async(input:string|URL|Request)=>{const u=String(input);return new Response(new Uint8Array(hosted.get(u)|| (u.startsWith('https://generated/')?generated:original)));}));
 });
 afterEach(()=>{vi.unstubAllEnvs();vi.unstubAllGlobals();vi.clearAllMocks();});
@@ -65,8 +66,19 @@ describe('protected model-shot route',()=>{
   const sent=await mocks.generate.mock.calls[0][0].json();expect(JSON.stringify(sent)).toContain('SKIRT CONSTRUCTION:');
   const house=await POST(request({view:'front',editMode:'simple',humanModelId:'studio 98',poseId:'studio 98',known:{category:'skirt'}}));
   expect(house.status).toBe(400);expect((await house.json()).error).toContain('shared bottoms collection');
-  const full=await POST(request({view:'full',editMode:'simple',humanModelId:'studio 103',poseId:'studio 103',known:{category:'skirt'}}));
-  expect(full.status).toBe(400);expect((await full.json()).error).toContain('front, side and back only');
+  const full=await POST(request({view:'full',editMode:'simple',humanModelId:'pants-dp62024',poseId:'dp62024',known:{category:'skirt'}}));
+  expect(full.status).toBe(400);expect((await full.json()).error).toMatch(/full-body photo/);
+ });
+ it('a bottoms full shot outlines the face of the picked full-body photo, and refuses one it cannot outline',async()=>{
+  const fullReferenceUrl='https://system.davidani.com/upload/style/DP62024A_1.jpg';
+  const body={view:'full',editMode:'simple',humanModelId:'pants-dp62024',poseId:'dp62024',known:{category:'pants'},fullReferenceUrl};
+  const none=await POST(request(body));
+  expect(none.status).toBe(400);expect((await none.json()).error).toMatch(/could not outline the face/);expect(mocks.generate).not.toHaveBeenCalled();
+  const boxes:Record<string,object[]>={head:[{x:400,y:100,w:200,h:250}],face:[{x:430,y:150,w:140,h:180}],clothing:[{x:250,y:420,w:520,h:1000}]};
+  mocks.ground.mockImplementation(async(_url:string,text:string)=>boxes[text]||[]);
+  const r=await POST(request(body));const data=await r.json();
+  expect(data.ok,data.error).toBe(true);expect(data.reference.url).toBe(fullReferenceUrl);expect(data.faceProtection).toBe('auto-draft-contour-v1');
+  expect(mocks.ground.mock.calls.every(([url])=>url===fullReferenceUrl)).toBe(true);
  });
  it('Simple headless references use reviewed pass-through without a preservation claim',async()=>{
   original=fs.readFileSync('public/models/studio 103/front.jpg');
@@ -84,7 +96,7 @@ describe('protected model-shot route',()=>{
  });
  it('pants reject the retired full-shot face lock before spending',async()=>{
   const response=await POST(request({humanModelId:'studio 103',poseId:'studio 103',known:{category:'pants'},editMode:'face-locked',garmentEdit:undefined}));
-  expect(response.status).toBe(400);expect((await response.json()).error).toContain('front, side and back only');
+  expect(response.status).toBe(400);expect((await response.json()).error).toMatch(/retired/);
   expect(mocks.generate).not.toHaveBeenCalled();
  });
  it('face lock refuses unreviewed references and categories before generation',async()=>{

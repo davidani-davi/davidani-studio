@@ -18,7 +18,8 @@ export function withPantsReferences(models: HumanModel[]): HumanModel[] {
   const base = models.map(m => m.id !== 'studio 103' ? m : {
     ...m, name: 'DP52083 · Donuts', character: undefined, expression: undefined,
     poses: m.poses.map(p => ({ ...p, framing: 'low' as const,
-      views: Object.fromEntries(PANTS_VIEWS.filter(v => p.views[v]).map(v => [v, p.views[v]])) })),
+      // Its archived full image is the one bottoms full-shot base already in the library.
+      views: Object.fromEntries([...PANTS_VIEWS, 'full' as const].filter(v => p.views[v]).map(v => [v, p.views[v]])) })),
   });
   return [...base, ...references.map(r => ({
     id: `pants-${r.style.toLowerCase()}`, name: `${r.style} · ${r.label}`,

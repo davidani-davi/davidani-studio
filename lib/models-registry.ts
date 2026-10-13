@@ -591,7 +591,6 @@ export async function listAllHumanModels(): Promise<HumanModel[]> {
   return applyCatalogChanges(base, changes);
 }
 export async function managedPosePath(modelId: string, poseId: string, view: PresetView, variantIndex = 0): Promise<string> {
-  if (isPantsReference(modelId) && view === "full") throw Error("Pants references support front, side and back only.");
   const model = (await listAllHumanModels()).find(m => m.id === modelId);
   if (!model) throw Error(`Unknown model: ${modelId}`);
   const pose = model.poses.find(p => p.id === poseId);

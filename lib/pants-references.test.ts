@@ -7,12 +7,14 @@ import { viewReference } from './view-reference';
 import {assignPlate} from './plate-assign';
 
 describe('shared pants collection',()=>{
- it('keeps Donuts first followed by all eighteen ERP styles, with no identity groups or full shots',()=>{
+ it('keeps Donuts first followed by all eighteen ERP styles, with no identity groups; only Donuts keeps a full view',()=>{
   const ref={filename:'front.jpg',publicPath:'/models/studio 103/front.jpg'};
   const models=withPantsReferences([{id:'studio 103',name:'Celine Donuts',character:'celine',poses:[{id:'studio 103',label:'Donuts',filename:'front.jpg',publicPath:ref.publicPath,subdir:'',views:{front:ref,full:ref}}]}]);
   expect(pantsReferences(models).map(m=>m.id)).toEqual(['studio 103','pants-dp62024','pants-dp67305','pants-dp60245','pants-dp62024a','pants-dp43109','pants-dp69017','pants-dp67040','pants-dp60197b','pants-dp62138','pants-dp67113','pants-dp58506','pants-dp52122','pants-dp52005a','pants-dp58132','pants-dp62024b','pants-dp62087','pants-dp60023a','pants-dp60160']);
   expect(models[0].poses[0].views.front).toEqual(ref);
-  for(const m of models){expect(m.character).toBeUndefined();expect(m.poses[0].views.full).toBeUndefined();}
+  expect(models[0].poses[0].views.full).toEqual(ref);
+  for(const m of models.slice(1)){expect(m.character).toBeUndefined();expect(m.poses[0].views.full).toBeUndefined();}
+  expect(models[0].character).toBeUndefined();
  });
  it('each requested view resolves to its own unchanged ERP file',()=>{
   const models=withPantsReferences([]);
