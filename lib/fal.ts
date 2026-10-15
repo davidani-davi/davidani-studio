@@ -638,7 +638,7 @@ function parseGarmentAnalysisOutput(
   const viewMatch = output.match(/VIEW:\s*(.+?)\s*(?:\r?\n|$)/i);
   const garment = (garmentMatch?.[1] || "").trim().replace(/\.$/, "");
   const features = (featuresMatch?.[1] || "").trim().replace(/\.$/, "");
-  // Absent on the gallery and two-piece extractors, and on any older cached
+  // Absent on the two-piece extractor, and on any older cached
   // vision response. "unknown" is a real answer here — the rail says Front and
   // marks it a default rather than claiming it read the photograph.
   const view = parseGarmentView(viewMatch?.[1]);
@@ -652,67 +652,114 @@ function parseGarmentAnalysisOutput(
 }
 
 /**
- * Analyzer variant for a GALLERY CONTACT SHEET rather than one photo.
+ * Gallery contact sheet -> WHICH garment is the product, and nothing more.
  *
- * Same two-line GARMENT / FEATURES contract as ANALYSIS_SYSTEM_PROMPT, and all
- * of its anti-hallucination and descriptor rules still apply — but the hero
- * question is answered by cross-referencing frames instead of guessing from
- * layering order in a single shot. DDT9040 (a black crochet fringe halter shot
- * under a sheer pearl cardigan) was rendered as the cardigan from one photo;
- * across its gallery the halter is in every frame and the cardigan is not.
+ * DDT9040 (a black crochet fringe halter shot under a sheer pearl cardigan)
+ * was rendered as the cardigan from one photo; across its gallery the halter
+ * is in every frame and the cardigan is not. So the gallery answers the hero
+ * question, by cross-referencing frames instead of guessing from layering
+ * order in a single shot.
+ *
+ * It must NOT answer the colour question. A style's gallery spans every
+ * colourway, and while it also wrote the GARMENT / FEATURES description, the
+ * description carried the gallery's colours rather than the upload's. On
+ * 2026-10-15, 10 of 21 category flat lays came out in another colourway or
+ * print (DP52083 donut-print pants, DT40184 Ivory, DS52187A Lavender,
+ * DD50119); the same uploads described from the photo alone came out right.
+ * So this names the product with no colour words, and
+ * extractCatalogGarmentFields describes the upload with that name as a hint.
  */
-const GALLERY_HERO_PREFIX = `You are looking at a CONTACT SHEET: several separate photographs of ONE product, tiled into a single image. The frames come from the same product's photo gallery, so every frame contains the product, while the other pieces the model wears change between frames or are absent from some.
+const GALLERY_IDENTITY_SYSTEM_PROMPT = `You are looking at a CONTACT SHEET: several separate photographs of ONE product, tiled into a single image. The frames come from the same product's photo gallery, so every frame contains the product, while the other pieces the model wears change between frames or are absent from some. The frames may show the product in DIFFERENT COLOURWAYS AND PRINTS: one garment design made up in several colours.
 
-IDENTIFY THE PRODUCT FIRST, by comparing frames:
+IDENTIFY THE PRODUCT by comparing frames:
 
-- The product is the ONE garment that appears in EVERY frame. A garment missing from even one frame is styling, not product.
+- The product is the ONE garment design that appears in EVERY frame, in whatever colour. A garment missing from even one frame is styling, not product.
 - The product is what the close-up and cropped frames are centred on. Photographers zoom into the product, not the styling.
-- If two garments both appear in every frame, pick the one the close-ups centre on, and the one whose construction detail (texture, trim, hardware, pattern) is shown most deliberately.
+- If two garments both appear in every frame, pick the one the close-ups centre on, and the one whose construction detail (texture, trim, hardware) is shown most deliberately.
 - Ignore trousers, skirts, shoes, bags, jewellery and outer layers that are only there to style the shot.
 - Frames that disagree about the product's CONSTRUCTION are describing one garment from different angles, not two candidates to choose between. A bottom that reads as a skirt from the front and as shorts from the back or side is a SKORT — one garment — and must be named "skort". Resolve the disagreement by naming the construction that explains every frame, never by picking whichever frame you saw first.
 
-Then describe ONLY that one garment, using the exact two-line format and every rule below. Describe it as it appears across the whole sheet, not in any single frame.
+Then output exactly one line, with no preamble, no markdown and no extra lines:
 
-`;
+PRODUCT: <the garment type with its silhouette and defining construction, at most 12 words. Examples: "crochet fringe halter top", "wide-leg drawstring pants", "tiered ruffle mini skirt", "hooded long-sleeve sweatshirt dress". NEVER name a colour, print, pattern, wash or fabric colour: the frames mix colourways, so any colour you name may be the wrong one.>`;
+
+export function galleryIdentityPrompt(frames: number): string {
+  return (
+    `This contact sheet holds ${frames} photographs of one product, possibly in several colourways. ` +
+    `Identify the single garment design present in every frame and output the one PRODUCT line from ` +
+    `your system prompt, with no colour or print words.`
+  );
+}
+
+/** The PRODUCT line as a short, single-line noun phrase, or null. */
+export function parseGalleryIdentity(output: string): string | null {
+  const match = output.match(/PRODUCT:\s*(.+?)\s*(?:\r?\n|$)/i);
+  const name = (match?.[1] || "")
+    .trim()
+    .replace(/^["'“]+|["'”]+$/g, "")
+    .replace(/\.$/, "")
+    .trim();
+  return name ? name.slice(0, 120) : null;
+}
 
 /**
- * Extract GARMENT / FEATURES for the hero product in a gallery contact sheet.
- * Same output shape as extractCatalogGarmentFields, so callers are unchanged.
+ * Name the product a gallery contact sheet shows, without colour. Best effort:
+ * null on any failure, and the caller describes the upload with no hint.
  */
-export async function extractHeroGarmentFields(
+export async function identifyGalleryProduct(
   contactSheetUrl: string,
   frames: number,
   label = "analyze-gallery"
+): Promise<string | null> {
+  try {
+    const result: any = await subscribeVisionWithRetry(
+      {
+        model: VISION_MODEL,
+        system_prompt: GALLERY_IDENTITY_SYSTEM_PROMPT,
+        prompt: galleryIdentityPrompt(frames),
+        image_url: contactSheetUrl,
+      },
+      "gallery product identification"
+    );
+    const data = result?.data ?? result;
+    const output: string = (data?.output ?? data?.response ?? data?.text ?? "").trim();
+    const product = parseGalleryIdentity(output);
+    console.log(`[${label}] gallery product:`, product ?? `(unparsed: ${output.slice(0, 120)})`);
+    return product;
+  } catch (err: any) {
+    console.warn(`[${label}] gallery identification failed:`, err?.message || err);
+    return null;
+  }
+}
+
+/**
+ * The user prompt for describing one photo. With a gallery-derived product
+ * name it says WHICH garment to describe, and that colour, print and wash come
+ * from this photo, never from the name.
+ */
+export function catalogAnalysisPrompt(productHint?: string | null): string {
+  if (!productHint) {
+    return "Analyze the garment in this photograph using the two-line GARMENT / FEATURES format defined in your system prompt. Output exactly those two lines, nothing else.";
+  }
+  return (
+    `The product in this photograph is the ${productHint}, identified from the style's photo gallery; ` +
+    `any other garment in the photograph is styling. Analyze only that garment, exactly as it appears ` +
+    `in THIS photograph, using the format defined in your system prompt. Its colour, print, pattern and ` +
+    `wash come from this photograph alone: the gallery shows other colourways, so if the product name ` +
+    `above suggests a colour or print, ignore it. Output exactly the lines the format asks for, nothing else.`
+  );
+}
+
+export async function extractCatalogGarmentFields(
+  imageUrl: string,
+  label = "analyze",
+  productHint?: string | null
 ) {
   const result: any = await subscribeVisionWithRetry(
     {
       model: VISION_MODEL,
-      system_prompt: GALLERY_HERO_PREFIX + ANALYSIS_SYSTEM_PROMPT,
-      prompt:
-        `This contact sheet holds ${frames} photographs of one product. Identify the single garment ` +
-        `present in every frame — the product — and describe only that garment using the two-line ` +
-        `GARMENT / FEATURES format from your system prompt. Output exactly those two lines, nothing else.`,
-      image_url: contactSheetUrl,
-    },
-    "gallery hero analysis"
-  );
-
-  const data = result?.data ?? result;
-  const output: string = (data?.output ?? data?.response ?? data?.text ?? "").trim();
-  if (!output) throw new Error("Gallery hero analysis returned no text output.");
-
-  const fields = parseGarmentAnalysisOutput(output, label);
-  console.log(`[${label}] hero garment:`, fields.garment);
-  return fields;
-}
-
-export async function extractCatalogGarmentFields(imageUrl: string, label = "analyze") {
-  const result: any = await subscribeVisionWithRetry(
-    {
-      model: VISION_MODEL,
       system_prompt: ANALYSIS_SYSTEM_PROMPT,
-      prompt:
-        "Analyze the garment in this photograph using the two-line GARMENT / FEATURES format defined in your system prompt. Output exactly those two lines, nothing else.",
+      prompt: catalogAnalysisPrompt(productHint),
       image_url: imageUrl,
     },
     "garment analysis"
@@ -887,10 +934,22 @@ function buildBackgroundClause(mode: BackgroundCanvasMode): string {
  * attached reference photograph"). The API array order still does the real
  * semantic work: image_urls[0] is the canvas, later images are references.
  */
+/**
+ * Pins colour and print to the uploaded photo. Without it the analyzer's words
+ * outrank the reference image whenever the two disagree; this is the line that
+ * brought all 10 wrong-colourway flat lays of 2026-10-15 back to the upload's
+ * own colour and print.
+ */
+export function colourLockClause(garment: string): string {
+  const g = garment.trim() || "garment";
+  return `The product is the ${g} in the uploaded photo: render only that garment, in exactly that colour and print.`;
+}
+
 export function buildTwoImagePrompt(
   garment: string,
   features: string,
-  backgroundMode: BackgroundCanvasMode = "preserve"
+  backgroundMode: BackgroundCanvasMode = "preserve",
+  opts: { colourLock?: boolean } = {}
 ): string {
   // Inner renderer — called once to introspect the static template, then
   // again with sanitized analyzer output.
@@ -1007,7 +1066,11 @@ export function buildTwoImagePrompt(
   const used = descriptorsInTemplate(render("", ""));
   const cleanGarment = sanitizeAnalyzerText(garment, used);
   const cleanFeatures = sanitizeAnalyzerText(features, used);
-  return render(cleanGarment, cleanFeatures);
+  const prompt = render(cleanGarment, cleanFeatures);
+  // Appended after the descriptor pass, never inside render(): the template
+  // introspection would count its words as the template's own and strip them
+  // from the analyzer text.
+  return opts.colourLock ? `${prompt} ${colourLockClause(cleanGarment)}` : prompt;
 }
 
 export async function analyzeGarmentToPrompt(

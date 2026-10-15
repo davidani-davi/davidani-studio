@@ -4,8 +4,8 @@ import {
   buildTwoImagePrompt,
   buildTwoPiecePrompt,
   extractCatalogGarmentFields,
-  extractHeroGarmentFields,
   extractTwoPieceFields,
+  identifyGalleryProduct,
 } from "@/lib/fal";
 import {
   inferCategory,
@@ -102,6 +102,11 @@ export async function POST(req: Request) {
     // the cardigan is not. Only worth building for a single garment — a set
     // uses the four-field extractor, and a front/back contract run already has
     // two views of the same SKU.
+    //
+    // The gallery names the product and nothing more. It spans every
+    // colourway, so colour and print are read from the upload: when the gallery
+    // wrote the description, 10 of 21 flat lays on 2026-10-15 came out in
+    // another colourway (see identifyGalleryProduct in lib/fal.ts).
     const wantsGallery = Boolean(styleNumber) && !treatAsSet && !isContract;
     const gallery = wantsGallery ? await buildGalleryContactSheet(styleNumber!) : null;
 
@@ -117,6 +122,9 @@ export async function POST(req: Request) {
         // for the same intake photo, so it must not be served from a cache
         // entry built without one.
         gallery: gallery?.url ?? null,
+        // v2: the gallery only names the product; the intake photo is
+        // described. Keeps gallery-described (wrong-colourway) entries out.
+        describe: "intake-photo-v2",
       },
       async () => {
         if (treatAsSet) {
@@ -129,15 +137,13 @@ export async function POST(req: Request) {
           ]);
           return { kind: "contract" as const, front, back };
         }
-        if (gallery) {
-          return {
-            kind: "single" as const,
-            single: await extractHeroGarmentFields(gallery.url, gallery.frames),
-          };
-        }
+        const product = gallery
+          ? await identifyGalleryProduct(gallery.url, gallery.frames)
+          : null;
         return {
           kind: "single" as const,
-          single: await extractCatalogGarmentFields(primaryImageUrl),
+          single: await extractCatalogGarmentFields(primaryImageUrl, "analyze", product),
+          product,
         };
       }
     );
@@ -174,7 +180,11 @@ export async function POST(req: Request) {
       if (extracted.kind === "contract") {
         return buildFrontBackContractPrompt(extracted.front, extracted.back, mode);
       }
-      return buildTwoImagePrompt(extracted.single.garment, extracted.single.features, mode);
+      // The colour lock rides only on the single-garment prompt: there the
+      // upload is the one reference image, so it alone decides colour and print.
+      return buildTwoImagePrompt(extracted.single.garment, extracted.single.features, mode, {
+        colourLock: true,
+      });
     };
     const promptByMode = { preserve: assemble("preserve"), backdrop: assemble("backdrop") };
 
@@ -193,11 +203,14 @@ export async function POST(req: Request) {
     // source string the client would have to parse back apart.
     const styleCode = decodeStyleCode(styleNumber);
     // Which side of the garment the intake photo shows. Only the single-photo
-    // path can answer it: the two-piece extractor describes a set, the
-    // contract path already has both sides by construction, and the gallery
-    // hero reads a contact sheet of mixed views.
+    // path can answer it: the two-piece extractor describes a set, and the
+    // contract path already has both sides by construction. A gallery only
+    // names the product now, so the view is still read from the upload.
     const detectedView: GarmentView =
-      extracted.kind === "single" && !gallery ? extracted.single.view ?? "unknown" : "unknown";
+      extracted.kind === "single" ? extracted.single.view ?? "unknown" : "unknown";
+    // The gallery counts only when it actually named the product.
+    const galleryProduct = extracted.kind === "single" ? extracted.product ?? null : null;
+    const galleryUsed = gallery && galleryProduct ? gallery : null;
 
     const routing = {
       styleCode: styleCode
@@ -214,8 +227,8 @@ export async function POST(req: Request) {
         mapErpCategory(erpRaw) !== styleCode.category
           ? { field: "erp" as const, value: erpRaw }
           : null,
-      describedFrom: gallery
-        ? { kind: "gallery" as const, frames: gallery.frames }
+      describedFrom: galleryUsed
+        ? { kind: "gallery" as const, frames: galleryUsed.frames, product: galleryProduct! }
         : { kind: "intake-photo" as const },
       /** Where the style number came from, so the UI can say so. */
       styleNumber: styleNumber ? { value: styleNumber, trust: styleNumberTrust ?? "asserted" } : null,
@@ -225,7 +238,7 @@ export async function POST(req: Request) {
 
     console.log(
       `[analyze] category=${category} (${categorySource}; vision said ${visionCategory}) ` +
-        `garmentSource=${gallery ? `erp-gallery:${gallery.frames}frames` : "intake-photo"} ` +
+        `garmentSource=${galleryUsed ? `intake-photo+erp-gallery:${galleryUsed.frames}frames` : "intake-photo"} ` +
         `categoryTrust=${categoryTrust} ` +
         `front=${frontCanvas.path} back=${backCanvas.path} ` +
         `fallback(front=${frontCanvas.fallbackReason ?? "none"}, ` +
@@ -241,7 +254,7 @@ export async function POST(req: Request) {
       category,
       categorySource,
       visionCategory,
-      garmentSource: gallery ? `erp-gallery:${gallery.frames}` : "intake-photo",
+      garmentSource: galleryUsed ? `intake-photo+erp-gallery:${galleryUsed.frames}` : "intake-photo",
       routing,
       canvas: { front: frontCanvas, back: backCanvas },
       // Facts about the upload that used to be controls the operator set
