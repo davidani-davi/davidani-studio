@@ -27,7 +27,7 @@ describe("RoutingPanel", () => {
     expect(screen.getByText("DWTS → Coordinated set")).toBeTruthy();
     expect(screen.getByText("Jackets / Outwear")).toBeTruthy(); // struck, still legible
     expect(screen.getByText("Overridden")).toBeTruthy();
-    expect(screen.getByText("Style gallery · 9 frames")).toBeTruthy();
+    expect(screen.getByText("Uploaded photo + gallery · 9 frames")).toBeTruthy();
     expect(screen.getByText("canvas-set-front")).toBeTruthy();
   });
 

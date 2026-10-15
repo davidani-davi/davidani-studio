@@ -22,7 +22,13 @@ export interface RoutingPayload {
   vision: { category: GarmentCategory };
   decidedBy: string;
   overrode: { field: "erp"; value: string } | null;
-  describedFrom: { kind: "gallery"; frames: number } | { kind: "intake-photo" };
+  /**
+   * "gallery": the style's gallery named the product (product, colour-free)
+   * and the uploaded photo was described; colour and print come from it.
+   */
+  describedFrom:
+    | { kind: "gallery"; frames: number; product?: string }
+    | { kind: "intake-photo" };
 }
 
 export interface RoutingRow {
@@ -161,12 +167,12 @@ export function summarizeRouting(
     label: "Described from",
     value:
       routing.describedFrom.kind === "gallery"
-        ? `Style gallery · ${routing.describedFrom.frames} frames`
+        ? `Uploaded photo + gallery · ${routing.describedFrom.frames} frames`
         : "Uploaded photo",
     state: routing.describedFrom.kind === "gallery" ? "decided" : "fallback",
     note:
       routing.describedFrom.kind === "gallery"
-        ? "The garment in every frame is the product"
+        ? "Gallery picks the product; colour and print come from the photo"
         : "One photo cannot tell the product from what it is styled with",
   });
 
