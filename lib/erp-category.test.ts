@@ -2,6 +2,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   __resetErpCache,
+  ERP_USER_AGENT,
+  erpFetch,
+  erpFetchBytes,
+  erpPost,
   fetchErpCategory,
   mapErpCategory,
   resolveErpCategory,
@@ -164,5 +168,36 @@ describe("parses the ERP's JS-object response", () => {
   it("returns null when the response has no category at all", async () => {
     stubErp("({idStyle:'X'})");
     expect(await fetchErpCategory("X")).toBeNull();
+  });
+});
+
+describe("every ERP request looks like Chrome", () => {
+  // Since 2026-10-21 the ERP answers 403 to any non-browser User-Agent,
+  // a bare "Mozilla/5.0" included, photos under /upload/style/ too.
+  it("sends the full Chrome User-Agent on login, probe, GET, POST and photo fetch", async () => {
+    process.env.ERP_USER_ID = "u";
+    process.env.ERP_PASSWORD = "p";
+    const spy = vi.fn().mockImplementation(async (url: string) => ({
+      ok: true,
+      url: String(url).includes("xt.login.asp") ? `${url}` : "https://system.davidani.com/main.asp",
+      headers: {
+        getSetCookie: () => (String(url).includes("xt.login.asp") ? ["ASPSESSIONIDXYZ=abc; path=/"] : []),
+        get: () => "image/png",
+      },
+      text: async () => "<html>dashboard</html>",
+      arrayBuffer: async () => new Uint8Array([1, 2, 3]).buffer,
+    }));
+    vi.stubGlobal("fetch", spy);
+
+    expect(await erpFetch("/data/x.asp")).not.toBeNull();
+    expect(await erpPost("/data/y.asp", { a: "1" })).not.toBeNull();
+    expect(await erpFetchBytes("/upload/style/DP62024A_1.jpg")).not.toBeNull();
+
+    expect(spy).toHaveBeenCalledTimes(5);
+    for (const [, init] of spy.mock.calls) {
+      expect(init.headers["User-Agent"]).toBe(ERP_USER_AGENT);
+    }
+    expect(ERP_USER_AGENT).toMatch(/Chrome\/\d+/);
+    expect(ERP_USER_AGENT).not.toBe("Mozilla/5.0");
   });
 });
