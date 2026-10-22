@@ -35,6 +35,17 @@ import type { GarmentCategory } from "./canvas-registry";
  */
 
 const BASE = "https://system.davidani.com";
+
+/**
+ * Every ERP request must look like Chrome. Since 2026-10-21 the ERP answers
+ * 403 to any other User-Agent, a bare "Mozilla/5.0" included, and that covers
+ * the /upload/style/ photo files as well as the login and data pages. The same
+ * evening it also started refusing the exact Chrome/141.0.0.0 string, and GETs
+ * whose query carries start= (none here). ERP_USER_AGENT in the env overrides it.
+ */
+export const ERP_USER_AGENT =
+  process.env.ERP_USER_AGENT ||
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36";
 const LOOKUP_TIMEOUT_MS = 6000;
 const CATEGORY_TTL_MS = 60 * 60 * 1000; // categories are near-static
 const SESSION_TTL_MS = 20 * 60 * 1000;
@@ -80,7 +91,7 @@ async function login(): Promise<string | null> {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
-      "User-Agent": "Mozilla/5.0",
+      "User-Agent": ERP_USER_AGENT,
       Referer: `${BASE}/login.asp`,
     },
     body,
@@ -97,7 +108,7 @@ async function login(): Promise<string | null> {
   // The ERP sets ASPSESSIONID even on a FAILED login, so probe an authed page
   // rather than trusting the cookie's existence (same check as erp_client.py).
   const probe = await fetch(`${BASE}/main.asp`, {
-    headers: { Cookie: jar, "User-Agent": "Mozilla/5.0" },
+    headers: { Cookie: jar, "User-Agent": ERP_USER_AGENT },
     signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS),
   });
   const text = await probe.text();
@@ -119,7 +130,7 @@ export async function erpFetch(pathAndQuery: string): Promise<string | null> {
     const jar = await login();
     if (!jar) return null;
     const res = await fetch(`${BASE}${pathAndQuery}`, {
-      headers: { Cookie: jar, "User-Agent": "Mozilla/5.0", Referer: `${BASE}/main.asp` },
+      headers: { Cookie: jar, "User-Agent": ERP_USER_AGENT, Referer: `${BASE}/main.asp` },
       signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS),
     });
     return res.ok ? await res.text() : null;
@@ -141,7 +152,7 @@ export async function erpPost(
       method: "POST",
       headers: {
         Cookie: jar,
-        "User-Agent": "Mozilla/5.0",
+        "User-Agent": ERP_USER_AGENT,
         Referer: `${BASE}/main.asp`,
         "Content-Type": "application/x-www-form-urlencoded",
       },
@@ -163,7 +174,7 @@ export async function erpFetchBytes(url: string): Promise<Buffer | null> {
     const abs = url.startsWith("http") ? url : `${BASE}${url}`;
     // The ERP serves filenames with spaces and parentheses unencoded.
     const res = await fetch(encodeURI(abs), {
-      headers: { Cookie: jar, "User-Agent": "Mozilla/5.0", Referer: `${BASE}/main.asp` },
+      headers: { Cookie: jar, "User-Agent": ERP_USER_AGENT, Referer: `${BASE}/main.asp` },
       signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS),
     });
     if (!res.ok) return null;
