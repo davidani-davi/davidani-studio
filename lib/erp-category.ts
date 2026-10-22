@@ -48,7 +48,7 @@ export const ERP_USER_AGENT =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36";
 const LOOKUP_TIMEOUT_MS = 6000;
 const CATEGORY_TTL_MS = 60 * 60 * 1000; // categories are near-static
-const SESSION_TTL_MS = 20 * 60 * 1000;
+const SESSION_TTL_MS = 18 * 60 * 1000; // idle window; refreshed on every good call
 
 /**
  * ERP category strings, verified against 205 sampled live styles. `BOTTOM`
@@ -73,13 +73,68 @@ function fresh(at: number, ttl: number) {
   return Date.now() - at < ttl;
 }
 
-/** Log in and return the session cookie header. Never logs credentials. */
+/*
+ * Login discipline (the ERP operator asked us to cut program logins, 2026-10-22):
+ *  - one login in flight per instance: concurrent callers await the same promise;
+ *  - after a refused or failed login, no retry for 15 s, doubling to 15 min;
+ *  - a reply that is the login page drops the cookie and re-logs once per call;
+ *    any other failure (403, 5xx, timeout) never triggers a login.
+ */
+let pending: Promise<string | null> | null = null;
+let failUntil = 0;
+let failStreak = 0;
+
+/** The login page, or the short redirect script /data pages send once a session expires.
+ * Not just "/login.asp": main.asp carries it in a commented-out line on every load. */
+export function looksLikeLogin(text: string): boolean {
+  return text.slice(0, 8000).includes("userPass") || (text.length < 400 && text.includes("login.asp"));
+}
+
+/** The session cookie header: the cached one, else one shared login. Never logs credentials. */
 async function login(): Promise<string | null> {
+  if (cookie && fresh(cookie.at, SESSION_TTL_MS)) return cookie.value;
+  if (Date.now() < failUntil) return null;
+  if (!pending) {
+    pending = doLogin()
+      .catch(() => null)
+      .then((jar) => {
+        if (jar) failStreak = 0;
+        else failUntil = Date.now() + Math.min(15_000 * 2 ** failStreak++, 15 * 60_000);
+        return jar;
+      })
+      .finally(() => {
+        pending = null;
+      });
+  }
+  return pending;
+}
+
+/** Drop the session if it is still the one that just failed. */
+function dropSession(jar: string) {
+  if (cookie?.value === jar) cookie = null;
+}
+
+/** Run one ERP text request; re-log once if the reply is the login page. */
+async function withSession(run: (jar: string) => Promise<Response>): Promise<string | null> {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const jar = await login();
+    if (!jar) return null;
+    const res = await run(jar);
+    if (!res.ok) return null;
+    const text = await res.text();
+    if (!looksLikeLogin(text)) {
+      if (cookie?.value === jar) cookie.at = Date.now();
+      return text;
+    }
+    dropSession(jar);
+  }
+  return null;
+}
+
+async function doLogin(): Promise<string | null> {
   const userId = process.env.ERP_USER_ID;
   const password = process.env.ERP_PASSWORD;
   if (!userId || !password) return null;
-
-  if (cookie && fresh(cookie.at, SESSION_TTL_MS)) return cookie.value;
 
   const body = new URLSearchParams({
     userId,
@@ -127,13 +182,12 @@ async function login(): Promise<string | null> {
  */
 export async function erpFetch(pathAndQuery: string): Promise<string | null> {
   try {
-    const jar = await login();
-    if (!jar) return null;
-    const res = await fetch(`${BASE}${pathAndQuery}`, {
-      headers: { Cookie: jar, "User-Agent": ERP_USER_AGENT, Referer: `${BASE}/main.asp` },
-      signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS),
-    });
-    return res.ok ? await res.text() : null;
+    return await withSession((jar) =>
+      fetch(`${BASE}${pathAndQuery}`, {
+        headers: { Cookie: jar, "User-Agent": ERP_USER_AGENT, Referer: `${BASE}/main.asp` },
+        signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS),
+      })
+    );
   } catch (err: any) {
     console.warn("[erp] request failed:", err?.name || err);
     return null;
@@ -146,20 +200,19 @@ export async function erpPost(
   form: Record<string, string>
 ): Promise<string | null> {
   try {
-    const jar = await login();
-    if (!jar) return null;
-    const res = await fetch(`${BASE}${path}`, {
-      method: "POST",
-      headers: {
-        Cookie: jar,
-        "User-Agent": ERP_USER_AGENT,
-        Referer: `${BASE}/main.asp`,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: new URLSearchParams(form),
-      signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS),
-    });
-    return res.ok ? await res.text() : null;
+    return await withSession((jar) =>
+      fetch(`${BASE}${path}`, {
+        method: "POST",
+        headers: {
+          Cookie: jar,
+          "User-Agent": ERP_USER_AGENT,
+          Referer: `${BASE}/main.asp`,
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams(form),
+        signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS),
+      })
+    );
   } catch (err: any) {
     console.warn("[erp] request failed:", err?.name || err);
     return null;
@@ -272,5 +325,8 @@ export async function resolveErpCategory(
 /** Test seam: clear memoised session + category cache. */
 export function __resetErpCache() {
   cookie = null;
+  pending = null;
+  failUntil = 0;
+  failStreak = 0;
   categoryCache.clear();
 }
