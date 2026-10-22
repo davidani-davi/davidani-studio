@@ -5,6 +5,10 @@ import contourPresets from './simple-contour-presets.json';
 import {contourFaceMask, type ReviewedFaceContour} from './contour-face-mask';
 
 export const SIMPLE_IMAGE_SIZE = { width: 1024, height: 1536 };
+// Bases wider than 1024 px render at 2048 × 3072 so the garment is not
+// upscaled about 2× when it is composited back onto the full-size photo.
+export const SIMPLE_LARGE_IMAGE_SIZE = { width: 2048, height: 3072 };
+export const simpleImageSize = (ref?: { width: number }) => ref && ref.width > SIMPLE_IMAGE_SIZE.width ? SIMPLE_LARGE_IMAGE_SIZE : SIMPLE_IMAGE_SIZE;
 export function simpleReferenceShot(o: ReferenceShot) {
   const garment = o.view === 'back' && o.garmentImageUrls[1] ? o.garmentImageUrls[1] : o.garmentImageUrls[0];
   if (!o.referenceUrl || !garment) throw Error('Choose a model reference and garment photo.');
