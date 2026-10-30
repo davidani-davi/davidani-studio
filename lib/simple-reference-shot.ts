@@ -39,7 +39,9 @@ function poseOnly(o: SimpleShot, scope: 'top' | 'bottoms' | 'outfit'): string {
     : 'silhouette, body ease, shoulder placement, sleeve fullness and hem';
   const title = String(o.garmentName || '');
   const shape = scope === 'top' ? undefined : SHAPES.find(([re]) => re.test(title))?.[1];
-  const words = [fitFor({ title, description: o.garmentDescription })?.phrase, shape].filter(Boolean);
+  // The shared fit phrases assume long sleeves ("sleeves ending at the wrist"); sleeve length comes from image 2.
+  const phrase = fitFor({ title, description: o.garmentDescription })?.phrase?.replace(/,\s*sleeves ending at the wrist(?: bone)?/i, '');
+  const words = [phrase, shape].filter(Boolean);
   const facts = words.length ? ` This style is ${words.join('; ')}.` : '';
   const notes = (o.styleNotes || []).map(n => String(n).replace(/["\n\r]+/g, ' ').replace(/\s+/g, ' ').trim()).filter(Boolean).slice(0, 6);
   const others = notes.length ? ` Notes typed for this style's other colours: apply what they say about fit, shape, length and construction to this colour too, and ignore anything about another colour, print or one specific photo: ${notes.map(n => `"${n}"`).join('; ')}.${o.note ? ' The requested change at the end wins over these notes.' : ''}` : '';

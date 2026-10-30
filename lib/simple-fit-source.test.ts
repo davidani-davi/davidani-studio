@@ -15,6 +15,11 @@ describe('Simple fit source (Fit + pose / Pose only)',()=>{
   expect(shot.prompt).toContain("POSE ONLY: Image 1 lends only the wearer, her pose, framing, background and lighting.");
   expect(shot.prompt).toContain("How image 1's own clothing fits is not a reference");
   expect(shot.prompt).toContain('This style is oversized and roomy');
+  // Sleeve length comes from image 2: a short-sleeve oversized tee must not be told "to the wrist".
+  expect(shot.prompt).toContain('just off her natural shoulder line.');
+  expect(shot.prompt).not.toContain('sleeves ending at the wrist');
+  const relaxed=simpleReferenceShot({...base,garmentName:'Relaxed Graphic Tee',fitSource:'style'});
+  expect(relaxed.prompt).toContain('This style is relaxed through the body, shoulder seams at her natural shoulder line.');
   expect(shot.prompt.indexOf('POSE ONLY')).toBeLessThan(shot.prompt.indexOf('GARMENT EASE'));
   expect(shot.image_urls).toEqual([base.referenceUrl,base.garmentImageUrls[0]]);
  });
