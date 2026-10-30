@@ -1,11 +1,54 @@
 import type { ReferenceShot } from './nano-reference-shots';
 import type { ReferencePixels } from './garment-only';
-import { lengthFor } from './garment-contract';
+import { lengthFor, fitFor } from './garment-contract';
 import contourPresets from './simple-contour-presets.json';
 import {contourFaceMask, type ReviewedFaceContour} from './contour-face-mask';
 
 export const SIMPLE_IMAGE_SIZE = { width: 1024, height: 1536 };
-export function simpleReferenceShot(o: ReferenceShot) {
+
+/** Where a Simple render takes the garment's fit from (David, 2026-10-30). Each reference offers two
+ *  options: 'reference' (Fit + pose, the default and every earlier run) lets image 1 lend its pose and,
+ *  in practice, how its own clothing sits; 'style' (Pose only) lends the pose alone and decides the fit
+ *  from the product photo, the title's fit words and notes typed for the style's other colours. */
+export type FitSource = 'reference' | 'style';
+export interface SimpleShot extends ReferenceShot {
+  fitSource?: FitSource;
+  /** The listing description, read for fit words when the fit comes from the style. */
+  garmentDescription?: string;
+  /** Pose only: notes typed for this style's other colours, e.g. "NAVY front: sleeves to the wrist". */
+  styleNotes?: string[];
+}
+
+// Leg and skirt shapes a bottoms, dress or set title names; pose only states them as the style's fit.
+const SHAPES: Array<[RegExp, string]> = [
+  [/\bwide[- ]leg\b|\bpalazzo\b/i, 'wide-leg: the legs fall wide and straight from the hip, well away from her legs'],
+  [/\bbarrel\b/i, 'barrel-leg: the legs curve out through the knee and narrow again at the hem'],
+  [/\b(flared?|bell[- ]bottoms?)\b/i, 'flared: close through the thigh, widening from the knee to the hem'],
+  [/\bboot[- ]?cut\b/i, 'bootcut: close through the thigh with a slight flare from the knee'],
+  [/\b(skinny|leggings?)\b/i, 'skinny: close to the leg down to the hem'],
+  [/\bstraight[- ]leg\b|\bstraight (?:pants?|jeans|trousers)\b/i, 'straight-leg: one even width from the hip to the hem'],
+  [/\bjoggers?\b/i, 'jogger: relaxed through the leg, gathered at the ankle cuff'],
+  [/\b(baggy|slouchy)\b/i, 'baggy: loose through the hip and leg'],
+  [/\ba[- ]line\b/i, 'A-line: fitted at the waist, widening evenly to the hem'],
+  [/\bpencil\b/i, 'pencil: close over the hips and thighs, straight to the hem'],
+];
+
+function poseOnly(o: SimpleShot, scope: 'top' | 'bottoms' | 'outfit'): string {
+  const what = scope === 'bottoms' ? 'rise, leg or skirt width, taper or flare and hem length'
+    : scope === 'outfit' ? 'silhouette, body ease, waist, sleeve fullness, leg or skirt width and every hem'
+    : 'silhouette, body ease, shoulder placement, sleeve fullness and hem';
+  const title = String(o.garmentName || '');
+  const shape = scope === 'top' ? undefined : SHAPES.find(([re]) => re.test(title))?.[1];
+  // The shared fit phrases assume long sleeves ("sleeves ending at the wrist"); sleeve length comes from image 2.
+  const phrase = fitFor({ title, description: o.garmentDescription })?.phrase?.replace(/,\s*sleeves ending at the wrist(?: bone)?/i, '');
+  const words = [phrase, shape].filter(Boolean);
+  const facts = words.length ? ` This style is ${words.join('; ')}.` : '';
+  const notes = (o.styleNotes || []).map(n => String(n).replace(/["\n\r]+/g, ' ').replace(/\s+/g, ' ').trim()).filter(Boolean).slice(0, 6);
+  const others = notes.length ? ` Notes typed for this style's other colours: apply what they say about fit, shape, length and construction to this colour too, and ignore anything about another colour, print or one specific photo: ${notes.map(n => `"${n}"`).join('; ')}.${o.note ? ' The requested change at the end wins over these notes.' : ''}` : '';
+  return ` POSE ONLY: Image 1 lends only the wearer, her pose, framing, background and lighting. How image 1's own clothing fits is not a reference for the new garment: dress her fresh from her body outward, so the garment's ${what} come entirely from image 2 and this style's own fit.${facts}${others}`;
+}
+
+export function simpleReferenceShot(o: SimpleShot) {
   const garment = o.view === 'back' && o.garmentImageUrls[1] ? o.garmentImageUrls[1] : o.garmentImageUrls[0];
   if (!o.referenceUrl || !garment) throw Error('Choose a model reference and garment photo.');
   const scope = o.category === 'pants' || o.category === 'skirt' ? 'bottoms' : o.category === 'dress' || o.category === 'set' ? 'outfit' : 'top';
@@ -94,9 +137,10 @@ export function simpleReferenceShot(o: ReferenceShot) {
   const sleeves = scope === 'bottoms' ? '' : " SLEEVE CONSTRUCTION: Image 1 supplies only the wearer and pose, never the replacement garment's sleeve shape or exposed-arm coverage. Determine sleeve length from the product photograph in image 2 even when no garment title is supplied. If it shows long sleeves, render full-length sleeves down to the wrists in every view, with cuffs at the wrists; do not shorten them to elbow or three-quarter length, push them up, or retain image 1's bare forearms. Preserve the source sleeve volume, drop shoulder and cuff construction. If the source is short-sleeved or sleeveless, preserve that instead. Replacing a sleeve may cover skin that was exposed in image 1; keep the underlying arm and hand pose. An inferred back keeps the same sleeve length and cuffs as the supplied front.";
   const fit = scope === 'bottoms' ? '' : " GARMENT EASE: Transfer the product photograph's chest width, body ease, shoulder placement, armhole depth, sleeve fullness and hem width relative to its wearer. The outline of image 1's old top is not an edit boundary: let the new garment extend beyond it into the background when needed. A relaxed or boxy product hangs away from the waist; do not taper it to match a fitted reference top. Preserve fitted products as fitted, without adding volume. Cropped describes length, not a tight fit. Keep the underlying body and hand pose, allowing fabric to drape naturally around the arms rather than pulling the body panel tight. Preserve the size and spacing of cable and pointelle motifs and visible button count; do not compress or stretch the knit pattern to fit the old top's outline.";
   const details = "Preserve every visible contrast stitch, thread color, seam row, trim and binding from image 2, especially around the neckline, shoulders, cuffs and hem. Keep their placement, width and contrast against the fabric; never replace contrasting thread with fabric-colored stitching. Removing styling layers or jewelry must not remove garment stitching. If image 3 omits a product detail visible in image 2, restore the detail from image 2 instead of copying that omission.";
-  const prompt = `Edit image 1 as the exact base photograph. Replace only the ${scope} with the garment in image 2. Match its fabric, cut, length, print and construction.${inner} ${details}${fit}${sleeves}${setScope}${legs}${cut} ${colour} Allow natural fold shadows and highlights, but do not tint the garment to match image 1’s clothing or background. ${keep} Preserve the face, expression, head position and hairstyle unchanged. No sharpening, retouching or enhancement. One clean photograph of one person.${inferred ? ' No back garment photo is supplied; use a plain continuation of the fabric without invented rear graphics.' : ''}${o.note ? ` Requested change: ${o.note}` : ''}`;
+  const fitFromStyle = o.fitSource === 'style';
+  const prompt = `Edit image 1 as the exact base photograph. Replace only the ${scope} with the garment in image 2. Match its fabric, cut, length, print and construction.${fitFromStyle ? poseOnly(o, scope) : ''}${inner} ${details}${fit}${sleeves}${setScope}${legs}${cut} ${colour} Allow natural fold shadows and highlights, but do not tint the garment to match image 1’s clothing or background. ${keep} Preserve the face, expression, head position and hairstyle unchanged. No sharpening, retouching or enhancement. One clean photograph of one person.${inferred ? ' No back garment photo is supplied; use a plain continuation of the fabric without invented rear graphics.' : ''}${o.note ? ` Requested change: ${o.note}` : ''}`;
   const image_urls = anchor ? [o.referenceUrl, garment, anchor] : [o.referenceUrl, garment];
-  return {prompt, openFront, garmentImageUrls:anchor ? [garment, anchor] : [garment], image_urls, garmentBackInferred:inferred, anchored: Boolean(anchor)};
+  return {prompt, openFront, garmentImageUrls:anchor ? [garment, anchor] : [garment], image_urls, garmentBackInferred:inferred, anchored: Boolean(anchor), fitSource: (fitFromStyle ? 'style' : 'reference') as FitSource};
 }
 
 /** Exact source-bound review. Never fall back to horizontal head restoration. */
