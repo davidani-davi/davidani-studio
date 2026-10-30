@@ -28,6 +28,27 @@ describe('draft reference outlines', () => {
     expect(back.garmentBoundaryY).toBeLessThan(365); // reviewed studio 97/back.png garment row
     expect(buildAutoContour(REF, { head: [{ x: 396, y: 31, w: 298, h: 397 }], face: [], clothing: [{ x: 152, y: 392, w: 706, h: 1054 }] }, 'front')).toBeNull();
   });
+  it('outlines Listing Team photos whose face box ends just inside the feather band, and ignores face boxes on backs', () => {
+    // Florence-2 boxes measured 2026-10-30 on Jeonga's 1365x2048 sets that were refused before.
+    const R = { width: 1365, height: 2048, sha256: 'abc' };
+    const cases: [string, Grounding][] = [
+      ['front', { head: [{ x: 497.5, y: 70.7, w: 324.9, h: 399.4 }], face: [{ x: 541.2, y: 166.9, w: 215.7, h: 297.0 }], clothing: [{ x: 180.9, y: 476.2, w: 911.8, h: 1566.7 }] }], // VISION 3
+      ['side', { head: [{ x: 402.0, y: 52.2, w: 455.9, h: 458.8 }], face: [{ x: 432.0, y: 183.3, w: 245.7, h: 323.6 }], clothing: [{ x: 296.9, y: 521.2, w: 774.0, h: 1519.6 }] }], // CELINE 3
+      ['full', { head: [{ x: 528.9, y: 52.2, w: 217.0, h: 256 }], face: [{ x: 605.4, y: 107.5, w: 125.6, h: 186.4 }], clothing: [{ x: 408.8, y: 310.3, w: 544.6, h: 1669.1 }] }], // CELINE 3
+      ['back', { head: [{ x: 425.2, y: 46.1, w: 446.4, h: 512 }], face: [{ x: 425.2, y: 191.5, w: 152.9, h: 327.7 }], clothing: [{ x: 149.5, y: 539.6, w: 1131.6, h: 1503.2 }] }], // CELINE 1
+      ['back', { head: [{ x: 421.1, y: 60.4, w: 404.0, h: 434.2 }], face: [{ x: 448.4, y: 189.4, w: 151.5, h: 290.8 }], clothing: [{ x: 232.7, y: 511.0, w: 898.2, h: 1529.9 }] }], // CELINE 2
+      ['back', { head: [{ x: 561.7, y: 54.3, w: 278.5, h: 305.2 }], face: [{ x: 565.8, y: 195.6, w: 75.1, h: 118.8 }], clothing: [{ x: 408.8, y: 341.0, w: 551.5, h: 1036.3 }, { x: 408.8, y: 537.6, w: 551.5, h: 837.6 }] }], // VISION 2
+    ];
+    for (const [view, box] of cases) {
+      const c = buildAutoContour(R, box, view)!;
+      expect(c?.kind).toBe('contour');
+      expect(Math.max(...c.points!.map(p => p[1])) + c.featherPixels!).toBeLessThanOrEqual(c.garmentBoundaryY!);
+      const f = box.face![0], h = box.head[0];
+      // The outline still covers the face down to its chin on a front/side/full, and the head on a back.
+      const probe = view === 'back' ? [h.x + h.w / 2, h.y + h.h * .4] : [f.x + f.w / 2, f.y + f.h * .9];
+      expect(inside(probe, c.points!)).toBe(true);
+    }
+  });
   it('refuses implausible or cut-off heads and records waist-down crops as headless', () => {
     expect(buildAutoContour(REF, { ...g, head: [{ x: 288, y: 36, w: 20, h: 321 }] }, 'front')).toBeNull();
     expect(buildAutoContour(REF, { ...g, head: [{ x: 288, y: 2, w: 272, h: 321 }] }, 'front')).toBeNull();

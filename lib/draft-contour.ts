@@ -46,7 +46,8 @@ export function buildAutoContour(ref: Pick<ReferencePixels, 'width' | 'height' |
   const garmentRow = Math.floor(Math.min(...below) - H * (view === 'back' ? .03 : .005));
   const headBottom = head.y + head.h;
   // The face box pins the profile (nose, lips, chin) that a hair-centred head box can miss on a side view.
-  const face = (g.face || []).filter(f => f.w * f.h < head.w * head.h && f.x + f.w / 2 > head.x && f.x + f.w / 2 < head.x + head.w && f.y + f.h / 2 > head.y && f.y + f.h / 2 < headBottom)
+  // A back view shows no face: a "face" box there is hair or an ear, so the head box alone decides.
+  const face = view === 'back' ? undefined : (g.face || []).filter(f => f.w * f.h < head.w * head.h && f.x + f.w / 2 > head.x && f.x + f.w / 2 < head.x + head.w && f.y + f.h / 2 > head.y && f.y + f.h / 2 < headBottom)
     .sort((a, b) => b.w * b.h - a.w * a.h)[0];
   // Narrow the feather (down to 6 px) when the chin sits close to the garment.
   const feather = Math.max(6, Math.min(Math.round(W * .025), Math.floor(Math.min(W, H) / 4) - 1, Math.floor(garmentRow - headBottom - 2)));
@@ -55,7 +56,9 @@ export function buildAutoContour(ref: Pick<ReferencePixels, 'width' | 'height' |
   const b = Math.min(garmentRow - feather - 2, headBottom + head.h * .35);
   // Never cut the chin off (it would be left to the garment edit). Hair below it lying over the garment
   // may go, as in the reviewed outlines; without a face box, allow that only on a back view.
-  if (face ? face.y + face.h > b : headBottom - b > head.h * (view === 'back' ? .3 : .08)) return null;
+  // Florence's face box runs a little below the chin, so it may end inside the feather band by up to 4% of its
+  // height, never past the garment line itself (VISION 3 front, 2026-10-30: 7 px over, chin clear of the neckline).
+  if (face ? face.y + face.h > Math.min(b + face.h * .04, garmentRow) : headBottom - b > head.h * (view === 'back' ? .3 : .08)) return null;
   const l = Math.max(0, head.x - head.w * .03), r = Math.min(W - 1, head.x + head.w * 1.03), t = Math.max(0, head.y - head.h * .03);
   const shape = UNIT.map(([x, y]) => [l + x * (r - l), t + y * (b - t)] as [number, number]);
   if (face) {
