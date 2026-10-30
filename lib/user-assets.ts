@@ -268,9 +268,10 @@ export async function listUserModels(): Promise<UserModel[]> {
   return mergeAssetRecords(legacy, records);
 }
 
-/** Stores the automatic face outlines of a draft set on its record (lib/draft-contour.ts). */
-export async function setUserModelContours(model: UserModel, contours: UserModel["contours"]): Promise<UserModel> {
-  const entry: UserModel = { ...model, contours };
+/** Stores the automatic face outlines of a draft set on its record (lib/draft-contour.ts), and its views when
+ *  photos were moved to the right view (lib/view-arrange.ts). The photo files keep their names. */
+export async function setUserModelContours(model: UserModel, contours: UserModel["contours"], views: UserModel["views"] = model.views): Promise<UserModel> {
+  const entry: UserModel = { ...model, views, contours };
   await writeAssetRecord(MODEL_RECORD_PREFIX, LOCAL_MODEL_RECORDS, model.id, { deleted: false, value: entry });
   return entry;
 }

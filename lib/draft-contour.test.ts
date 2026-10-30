@@ -1,7 +1,8 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
 import fs from 'node:fs';
-import { buildAutoContour, detectAutoContour, type Grounding } from './draft-contour';
+import { buildAutoContour, buildLooseContour, detectAutoContour, type Grounding } from './draft-contour';
+import { contourFaceMask } from './contour-face-mask';
 import { simpleFaceMask } from './simple-reference-shot';
 import { referencePixels } from './garment-only';
 import { viewReference } from './view-reference';
@@ -81,5 +82,32 @@ describe('draft reference outlines', () => {
     const models: any = [{ id: 'user-x', name: 'Draft · Jeonga · test', userAdded: true, poses: [{ id: 'user-x-pose', views: { side: { filename: 'side', publicPath: 'https://blob.example/side.jpg', autoContour: c } } }] }];
     const r = viewReference(models, 'user-x', 'user-x-pose', 'side', 'crop');
     expect(r.autoContour).toBe(c); expect(r.reframed).toBe(false);
+  });
+  it('never leaves a photo with a head unoutlined: back rule for a back photo in a front slot, then a loose outline', async () => {
+    const bytes = fs.readFileSync('public/models/crop 100/front.png'), ref = await referencePixels(bytes);
+    const detect = (box: Grounding, view: string) => detectAutoContour('https://blob.example/f.png', view, { fetch: (async () => new Response(bytes)) as any, referencePixels, ground: async (_u, text) => (box as any)[text] || [] });
+    // CELINE 4: her back photo saved as Front. The front rule refuses it (hair over the collar); the back rule takes it.
+    const backPhoto: Grounding = { head: [{ x: 396, y: 31, w: 298, h: 397 }], face: [], clothing: [{ x: 152, y: 392, w: 706, h: 1054 }] };
+    expect(buildAutoContour(ref, backPhoto, 'front')).toBeNull();
+    expect(await detect(backPhoto, 'front')).toMatchObject({ kind: 'contour', fit: 'back-rule' });
+    // A head touching the top edge fails both rules: the loose outline still protects the upper head.
+    const cut: Grounding = { ...g, head: [{ x: 288, y: 2, w: 272, h: 321 }] };
+    const loose = (await detect(cut, 'front'))!;
+    expect(loose).toMatchObject({ kind: 'contour', fit: 'loose' });
+    const mask = contourFaceMask(ref, loose as any);
+    expect(mask[(2 + 321 * .4 | 0) * ref.width + (288 + 136)]).toBe(0);   // forehead/eyes kept
+    expect(mask[(ref.height - 10) * ref.width + (288 + 136)]).toBe(255);  // garment generated
+    // Face only, no head box: grown out to the hair. Nothing at all: headless, nothing protected.
+    expect(buildLooseContour(ref, { head: [], face: g.face, clothing: g.clothing }, 'side')).toMatchObject({ kind: 'contour', fit: 'loose' });
+    expect(buildLooseContour(ref, { head: [], face: [], clothing: g.clothing }, 'front')).toMatchObject({ kind: 'no-head', fit: 'none-found' });
+  });
+  it('keeps a loose outline inside the frame and above the garment line', () => {
+    for (const box of [{ x: 0, y: 0, w: 500, h: 600 }, { x: 900, y: 10, w: 124, h: 200 }, { x: 300, y: 40, w: 300, h: 340 }]) {
+      const c = buildLooseContour(REF, { head: [box], clothing: [{ x: 100, y: box.y + box.h * .9, w: 800, h: 900 }] }, 'front');
+      expect(c.kind).toBe('contour');
+      for (const [x, y] of c.points!) { expect(x).toBeGreaterThanOrEqual(0); expect(x).toBeLessThan(REF.width); expect(y).toBeGreaterThanOrEqual(0); expect(y).toBeLessThan(REF.height); }
+      expect(c.featherPixels!).toBeGreaterThanOrEqual(6); expect(c.featherPixels!).toBeLessThanOrEqual(Math.min(REF.width, REF.height) / 4);
+      expect(Math.max(...c.points!.map(p => p[1]))).toBeGreaterThanOrEqual(box.y + box.h * .55 - 1);
+    }
   });
 });
