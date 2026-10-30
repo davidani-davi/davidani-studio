@@ -275,6 +275,13 @@ export async function setUserModelContours(model: UserModel, contours: UserModel
   return entry;
 }
 
+/** Renames a saved set (Listing Team portal: Rename on the Reference library page). */
+export async function renameUserModel(model: UserModel, name: string): Promise<UserModel> {
+  const entry: UserModel = { ...model, name: name.trim() };
+  await writeAssetRecord(MODEL_RECORD_PREFIX, LOCAL_MODEL_RECORDS, model.id, { deleted: false, value: entry });
+  return entry;
+}
+
 export async function saveUserModel(
   name: string,
   files: { front: File; side?: File; back?: File; full?: File }

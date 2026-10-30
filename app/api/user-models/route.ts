@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { deleteUserModel, listUserModels, saveUserModel, setUserModelContours } from "@/lib/user-assets";
+import { deleteUserModel, listUserModels, renameUserModel, saveUserModel, setUserModelContours } from "@/lib/user-assets";
 import { detectAutoContour } from "@/lib/draft-contour";
 import { referencePixels } from "@/lib/garment-only";
 import { groundPhrase } from "@/lib/fal";
@@ -84,13 +84,26 @@ export async function POST(req: Request) {
 /**
  * Re-detects the face outline of every view of a saved set that has none (`{ id }`), after the outline rule
  * changes. Views that already have an outline keep it untouched, so their renders do not change.
+ * `{ id, name }` renames the set instead (a draft keeps its "Draft · " prefix).
  */
 export async function PATCH(req: Request) {
   if (!(await authorized(req))) return unauthorized();
   try {
-    const { id } = await req.json().catch(() => ({} as { id?: string }));
+    // {id, name} renames the set (Listing Team portal); {id} alone re-checks the views that have no outline.
+    const { id, name } = await req.json().catch(() => ({} as { id?: string; name?: unknown }));
+    const newName = name === undefined ? undefined : typeof name === "string" ? name.trim() : "";
+    if (newName !== undefined && (!newName || newName.length > 120)) {
+      return NextResponse.json({ ok: false, error: "A set name of 1-120 characters is required." }, { status: 400 });
+    }
     const model = (await listUserModels()).find((m) => m.id === id);
     if (!model) return NextResponse.json({ ok: false, error: "No saved set with that id." }, { status: 404 });
+    if (newName !== undefined) {
+      // The prefix is what keeps a teammate's draft private to its author in Model Studio.
+      if (model.name.startsWith("Draft · ") && !newName.startsWith("Draft · ")) {
+        return NextResponse.json({ ok: false, error: 'A draft set keeps its "Draft · " prefix.' }, { status: 400 });
+      }
+      return NextResponse.json({ ok: true, model: await renameUserModel(model, newName) });
+    }
     const views = (["front", "side", "back", "full"] as const).filter((v) => model.views[v]);
     const todo = views.filter((v) => !model.contours?.[v]);
     const found = await Promise.all(todo.map((v) =>
