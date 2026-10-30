@@ -81,6 +81,31 @@ export async function POST(req: Request) {
   }
 }
 
+/**
+ * Re-detects the face outline of every view of a saved set that has none (`{ id }`), after the outline rule
+ * changes. Views that already have an outline keep it untouched, so their renders do not change.
+ */
+export async function PATCH(req: Request) {
+  if (!(await authorized(req))) return unauthorized();
+  try {
+    const { id } = await req.json().catch(() => ({} as { id?: string }));
+    const model = (await listUserModels()).find((m) => m.id === id);
+    if (!model) return NextResponse.json({ ok: false, error: "No saved set with that id." }, { status: 404 });
+    const views = (["front", "side", "back", "full"] as const).filter((v) => model.views[v]);
+    const todo = views.filter((v) => !model.contours?.[v]);
+    const found = await Promise.all(todo.map((v) =>
+      detectAutoContour(model.views[v]!, v, { referencePixels, ground: groundPhrase }).catch((e) => {
+        console.warn("[user-models] outline re-check failed", v, e?.message);
+        return null;
+      })));
+    const contours = { ...(model.contours || {}), ...Object.fromEntries(todo.flatMap((v, i) => (found[i] ? [[v, found[i]]] : []))) };
+    const saved = found.some(Boolean) ? await setUserModelContours(model, contours) : model;
+    return NextResponse.json({ ok: true, model: saved, rechecked: todo, outlines: Object.fromEntries(views.map((v) => [v, saved.contours?.[v]?.kind ?? "missing"])) });
+  } catch (err: any) {
+    return NextResponse.json({ ok: false, error: err?.message ?? "Failed to re-check outlines" }, { status: 500 });
+  }
+}
+
 export async function DELETE(req: Request) {
   if (!(await authorized(req))) return unauthorized();
   try {
