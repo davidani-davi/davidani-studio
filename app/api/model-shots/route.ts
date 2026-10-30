@@ -390,7 +390,9 @@ async function renderShot(req: Request, body: any): Promise<Response> {
     const fitSource = simple && body.fitSource === 'style' ? 'style' as const : 'reference' as const;
     const styleNotes = fitSource === 'style' && Array.isArray(body.styleNotes) ? body.styleNotes.map(sanitizeOperatorNote).filter(Boolean).slice(0, 6) : [];
     const simpleInput = simple ? simpleReferenceShot({ view, referenceUrl, garmentImageUrls, category, framing, color: typeof known.color === 'string' ? known.color : undefined, note, anchorImageUrl, garmentName: typeof known.title === 'string' ? known.title : undefined,
-      fitSource, styleNotes, garmentDescription: typeof known.description === 'string' ? known.description : undefined }) : undefined;
+      fitSource, styleNotes, garmentDescription: typeof known.description === 'string' ? known.description : undefined,
+      // A real side photo of the garment (2026-10-30): the side view's garment photo, a check image elsewhere.
+      garmentSideUrl: typeof body.garmentSideImageUrl === 'string' && /^https:\/\//.test(body.garmentSideImageUrl) ? body.garmentSideImageUrl : undefined }) : undefined;
     if (simpleInput) { input.prompt = simpleInput.prompt; input.image_urls = simpleInput.image_urls; }
     let simplePrepared: { ref: Awaited<ReturnType<typeof referencePixels>>; mask: Buffer } | undefined;
     if (simple) {
@@ -467,7 +469,7 @@ async function renderShot(req: Request, body: any): Promise<Response> {
       resolution: outputResolution, editMode: simple ? "simple" : faceLocked ? "face-locked" : locked ? "garment-only" : "native", preservation, humanModelId, poseId, assigned, category, hem, framing,
       reference: { ...reference, url: referenceUrl },
       garmentBackInferred: view === "back" && garmentImageUrls.length < 2,
-      anchored: Boolean(simpleInput?.anchored), fitSource: simpleInput?.fitSource, restore: { applied: false }, photoFinish: { method: protectedInput ? "original-face-pixels" : "native", applied: !!protectedInput }, corrections: [] });
+      anchored: Boolean(simpleInput?.anchored), fitSource: simpleInput?.fitSource, garmentSideUsed: simpleInput ? simpleInput.garmentSideUsed : undefined, restore: { applied: false }, photoFinish: { method: protectedInput ? "original-face-pixels" : "native", applied: !!protectedInput }, corrections: [] });
   } catch (err: any) {
     return json({ ok: false, view, error: String(err?.message || err) }, 502);
   }

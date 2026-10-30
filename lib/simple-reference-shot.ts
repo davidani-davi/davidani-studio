@@ -17,6 +17,9 @@ export interface SimpleShot extends ReferenceShot {
   garmentDescription?: string;
   /** Pose only: notes typed for this style's other colours, e.g. "NAVY front: sleeves to the wrist". */
   styleNotes?: string[];
+  /** A real side photo of the garment (David, 2026-10-30). The side view is built from it; front, back and
+   *  full read it only to check depth, length and side details. */
+  garmentSideUrl?: string;
 }
 
 // Leg and skirt shapes a bottoms, dress or set title names; pose only states them as the style's fit.
@@ -49,7 +52,9 @@ function poseOnly(o: SimpleShot, scope: 'top' | 'bottoms' | 'outfit'): string {
 }
 
 export function simpleReferenceShot(o: SimpleShot) {
-  const garment = o.view === 'back' && o.garmentImageUrls[1] ? o.garmentImageUrls[1] : o.garmentImageUrls[0];
+  const side = o.garmentSideUrl && !o.garmentImageUrls.includes(o.garmentSideUrl) ? o.garmentSideUrl : '';
+  const sideView = o.view === 'side' && Boolean(side);
+  const garment = sideView ? side : o.view === 'back' && o.garmentImageUrls[1] ? o.garmentImageUrls[1] : o.garmentImageUrls[0];
   if (!o.referenceUrl || !garment) throw Error('Choose a model reference and garment photo.');
   const scope = o.category === 'pants' || o.category === 'skirt' ? 'bottoms' : o.category === 'dress' || o.category === 'set' ? 'outfit' : 'top';
   const inferred = o.view === 'back' && !o.garmentImageUrls[1];
@@ -136,11 +141,20 @@ export function simpleReferenceShot(o: SimpleShot) {
   const cut = name ? ` The garment is a "${name}": reproduce that cut, silhouette, sleeve length and hem exactly as shown in image 2, the actual garment photograph — image 2 alone decides where the hem falls, never the shape, length or proportions of the ${scope} image 1 wears.${hem}` : '';
   const sleeves = scope === 'bottoms' ? '' : " SLEEVE CONSTRUCTION: Image 1 supplies only the wearer and pose, never the replacement garment's sleeve shape or exposed-arm coverage. Determine sleeve length from the product photograph in image 2 even when no garment title is supplied. If it shows long sleeves, render full-length sleeves down to the wrists in every view, with cuffs at the wrists; do not shorten them to elbow or three-quarter length, push them up, or retain image 1's bare forearms. Preserve the source sleeve volume, drop shoulder and cuff construction. If the source is short-sleeved or sleeveless, preserve that instead. Replacing a sleeve may cover skin that was exposed in image 1; keep the underlying arm and hand pose. An inferred back keeps the same sleeve length and cuffs as the supplied front.";
   const fit = scope === 'bottoms' ? '' : " GARMENT EASE: Transfer the product photograph's chest width, body ease, shoulder placement, armhole depth, sleeve fullness and hem width relative to its wearer. The outline of image 1's old top is not an edit boundary: let the new garment extend beyond it into the background when needed. A relaxed or boxy product hangs away from the waist; do not taper it to match a fitted reference top. Preserve fitted products as fitted, without adding volume. Cropped describes length, not a tight fit. Keep the underlying body and hand pose, allowing fabric to drape naturally around the arms rather than pulling the body panel tight. Preserve the size and spacing of cable and pointelle motifs and visible button count; do not compress or stretch the knit pattern to fit the old top's outline.";
-  const details = "Preserve every visible contrast stitch, thread color, seam row, trim and binding from image 2, especially around the neckline, shoulders, cuffs and hem. Keep their placement, width and contrast against the fabric; never replace contrasting thread with fabric-colored stitching. Removing styling layers or jewelry must not remove garment stitching. If image 3 omits a product detail visible in image 2, restore the detail from image 2 instead of copying that omission.";
+  const details = "Preserve every visible contrast stitch, thread color, seam row, trim and binding from image 2, especially around the neckline, shoulders, cuffs and hem. Keep their placement, width and contrast against the fabric; never replace contrasting thread with fabric-colored stitching. Removing styling layers or jewelry must not remove garment stitching."
+    // Image 3 is the front render when there is one; on a front with a side photo it is the side photo instead.
+    + (side && !anchor ? '' : " If image 3 omits a product detail visible in image 2, restore the detail from image 2 instead of copying that omission.");
   const fitFromStyle = o.fitSource === 'style';
-  const prompt = `Edit image 1 as the exact base photograph. Replace only the ${scope} with the garment in image 2. Match its fabric, cut, length, print and construction.${fitFromStyle ? poseOnly(o, scope) : ''}${inner} ${details}${fit}${sleeves}${setScope}${legs}${cut} ${colour} Allow natural fold shadows and highlights, but do not tint the garment to match image 1’s clothing or background. ${keep} Preserve the face, expression, head position and hairstyle unchanged. No sharpening, retouching or enhancement. One clean photograph of one person.${inferred ? ' No back garment photo is supplied; use a plain continuation of the fabric without invented rear graphics.' : ''}${o.note ? ` Requested change: ${o.note}` : ''}`;
-  const image_urls = anchor ? [o.referenceUrl, garment, anchor] : [o.referenceUrl, garment];
-  return {prompt, openFront, garmentImageUrls:anchor ? [garment, anchor] : [garment], image_urls, garmentBackInferred:inferred, anchored: Boolean(anchor), fitSource: (fitFromStyle ? 'style' : 'reference') as FitSource};
+  // The side photo rides after the anchor: on the side view the product front takes that place instead.
+  const extra = side ? (sideView ? o.garmentImageUrls[0] : side) : '';
+  const extraN = anchor ? 4 : 3;
+  const sideNote = !side ? '' : sideView
+    ? ` SIDE PHOTO: Image 2 is the product photographed from the side, the same angle as this view: it decides the side silhouette, body depth and drape, side seams, slits and pockets, the sleeve profile and the hem line seen from the side. Image ${extraN} is the same product photographed from the front: use it only for print, colour and front construction that turns into view, never to change image 2's side shape.`
+    : ` SIDE PHOTO: Image ${extraN} is the same product photographed from the side. Use it only to confirm body depth and drape, garment length, side seams, slits and pockets${inferred ? ', and how the hem, any slit or vent and the length fall at the back, since no back photo is supplied' : ''}. Image 2 stays the authority for this view; never move a detail that only shows from the side onto the ${o.view === 'back' ? 'back' : 'front'}.`;
+  const prompt = `Edit image 1 as the exact base photograph. Replace only the ${scope} with the garment in image 2. Match its fabric, cut, length, print and construction.${fitFromStyle ? poseOnly(o, scope) : ''}${inner} ${details}${fit}${sleeves}${setScope}${legs}${cut} ${colour}${sideNote} Allow natural fold shadows and highlights, but do not tint the garment to match image 1’s clothing or background. ${keep} Preserve the face, expression, head position and hairstyle unchanged. No sharpening, retouching or enhancement. One clean photograph of one person.${inferred ? ' No back garment photo is supplied; use a plain continuation of the fabric without invented rear graphics.' : ''}${o.note ? ` Requested change: ${o.note}` : ''}`;
+  const secondary = [garment, anchor, extra].filter(Boolean);
+  const image_urls = [o.referenceUrl, ...secondary];
+  return {prompt, openFront, garmentImageUrls: secondary, image_urls, garmentBackInferred:inferred, anchored: Boolean(anchor), garmentSideUsed: Boolean(side), fitSource: (fitFromStyle ? 'style' : 'reference') as FitSource};
 }
 
 /** Exact source-bound review. Never fall back to horizontal head restoration. */
