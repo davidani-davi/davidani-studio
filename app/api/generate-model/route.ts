@@ -112,18 +112,14 @@ export async function POST(req: Request) {
       );
     }
 
-    const poseUrl = await resolvePoseUrl(
-      req,
-      humanModelId,
-      poseId,
-      view || "front",
-      safePoseVariantIndex
-    );
-
-    const canvasUrl =
-      typeof canvasImageUrl === "string" && canvasImageUrl.trim()
-        ? canvasImageUrl.trim()
-        : poseUrl;
+    // The canvas is the photo the model edits. The library's own view photo only has to exist
+    // when no canvas is given: a bottoms full shot paints on a picked full-body photo, and the
+    // shared bottoms sets have no full view (DP62259 Full failed on this, 2026-10-30).
+    const canvas = typeof canvasImageUrl === "string" ? canvasImageUrl.trim() : "";
+    const lookUpPose = () =>
+      resolvePoseUrl(req, humanModelId, poseId, view || "front", safePoseVariantIndex);
+    const poseUrl = canvas ? await lookUpPose().catch(() => canvas) : await lookUpPose();
+    const canvasUrl = canvas || poseUrl;
 
     let result;
     try {
