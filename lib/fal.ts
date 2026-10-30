@@ -188,6 +188,25 @@ async function prepareGeneratorImageUrls(urls: string[]): Promise<string[]> {
  * coordinates ({box_2d:[ymin,xmin,ymax,xmax], neckline_y}), or {no_head:true}. Gemini is used because
  * it is trained to return boxes. The caller validates and pads; lib/draft-contour.ts.
  */
+const VIEW_READ_PROMPT =
+  'This is a fashion catalog photo of one model. Reply with one line of JSON and nothing else: {"facing":"front"|"side"|"back","feet":true|false}. ' +
+  'facing is where her body points: "front" = toward the camera, including a slight turn with both eyes visible; ' +
+  '"side" = a profile or a strong three-quarter turn, the body clearly turned away from the camera; ' +
+  '"back" = her back toward the camera, the face hidden or only seen over the shoulder. feet = both of her feet are visible in the frame.';
+
+/** Which way the model faces in an uploaded reference photo, and whether it is full-length (lib/view-arrange.ts). Null on any failure. */
+export async function readReferenceView(imageUrl: string): Promise<import("./view-arrange").ViewRead | null> {
+  try {
+    const result: any = await subscribeVisionWithRetry({ model: VISION_MODEL, prompt: VIEW_READ_PROMPT, image_url: imageUrl }, "reference view read");
+    const data = result?.data ?? result;
+    const { parseViewRead } = await import("./view-arrange");
+    return parseViewRead(String(data?.output ?? data?.response ?? data?.text ?? ""));
+  } catch (err: any) {
+    console.warn("[reference view read] failed:", err?.message || err);
+    return null;
+  }
+}
+
 /** Florence-2 phrase grounding: pixel boxes for `text` in the image (draft face outlines). */
 export async function groundPhrase(imageUrl: string, text: string): Promise<{ x: number; y: number; w: number; h: number }[]> {
   ensureConfigured();

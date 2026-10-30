@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import { deleteUserModel, listUserModels, saveUserModel, setUserModelContours } from "@/lib/user-assets";
+import { deleteUserModel, listUserModels, renameUserModel, saveUserModel, setUserModelContours } from "@/lib/user-assets";
 import { detectAutoContour } from "@/lib/draft-contour";
+import { outlineDraftSet } from "@/lib/draft-outlines";
 import { referencePixels } from "@/lib/garment-only";
-import { groundPhrase } from "@/lib/fal";
+import { groundPhrase, readReferenceView } from "@/lib/fal";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth";
 
 export const runtime = "nodejs";
@@ -21,6 +22,12 @@ async function authorized(req: Request): Promise<boolean> {
   return match ? verifySessionToken(decodeURIComponent(match[1]), secret) : false;
 }
 const unauthorized = () => NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
+
+const draftDeps = {
+  detect: (url: string, view: string) => detectAutoContour(url, view, { referencePixels, ground: groundPhrase }),
+  read: readReferenceView,
+  save: setUserModelContours,
+};
 
 function asImage(value: FormDataEntryValue | null): File | undefined {
   return value instanceof File && value.type.startsWith("image/") ? value : undefined;
@@ -61,16 +68,11 @@ export async function POST(req: Request) {
     });
     // Listing Team drafts ("Draft · <author> · <name>") get automatic face outlines so Simple garment
     // swap can test them before David approves the set; a view without one is refused at render time.
+    // Photos saved under the wrong view are moved first (lib/view-arrange.ts); `arranged` says which.
+    // `arrange=0` keeps the views as sent (a one-photo replacement of an installed set).
     if (name.startsWith("Draft · ")) {
-      const views = (["front", "side", "back", "full"] as const).filter((v) => model.views[v]);
-      const found = await Promise.all(views.map((v) =>
-        detectAutoContour(model.views[v]!, v, { referencePixels, ground: groundPhrase }).catch((e) => {
-          console.warn("[user-models] draft outline failed", v, e?.message);
-          return null;
-        })));
-      const contours = Object.fromEntries(views.flatMap((v, i) => (found[i] ? [[v, found[i]]] : [])));
-      const saved = await setUserModelContours(model, contours);
-      return NextResponse.json({ ok: true, model: saved, outlines: Object.fromEntries(views.map((v, i) => [v, found[i]?.kind ?? "missing"])) });
+      const { model: saved, outlines, arranged } = await outlineDraftSet(model, draftDeps, { arrange: form.get("arrange") !== "0" });
+      return NextResponse.json({ ok: true, model: saved, outlines, arranged });
     }
     return NextResponse.json({ ok: true, model });
   } catch (err: any) {
@@ -84,23 +86,28 @@ export async function POST(req: Request) {
 /**
  * Re-detects the face outline of every view of a saved set that has none (`{ id }`), after the outline rule
  * changes. Views that already have an outline keep it untouched, so their renders do not change.
+ * `{ id, arrange: true }` first moves photos saved under the wrong view, as a new draft set does on save.
+ * `{ id, name }` renames the set instead (a draft keeps its "Draft · " prefix).
  */
 export async function PATCH(req: Request) {
   if (!(await authorized(req))) return unauthorized();
   try {
-    const { id } = await req.json().catch(() => ({} as { id?: string }));
+    // {id, name} renames the set (Listing Team portal); {id} alone re-checks the views that have no outline.
+    const { id, name, arrange } = await req.json().catch(() => ({} as { id?: string; name?: unknown; arrange?: unknown }));
+    const newName = name === undefined ? undefined : typeof name === "string" ? name.trim() : "";
+    if (newName !== undefined && (!newName || newName.length > 120)) {
+      return NextResponse.json({ ok: false, error: "A set name of 1-120 characters is required." }, { status: 400 });
+    }
     const model = (await listUserModels()).find((m) => m.id === id);
     if (!model) return NextResponse.json({ ok: false, error: "No saved set with that id." }, { status: 404 });
-    const views = (["front", "side", "back", "full"] as const).filter((v) => model.views[v]);
-    const todo = views.filter((v) => !model.contours?.[v]);
-    const found = await Promise.all(todo.map((v) =>
-      detectAutoContour(model.views[v]!, v, { referencePixels, ground: groundPhrase }).catch((e) => {
-        console.warn("[user-models] outline re-check failed", v, e?.message);
-        return null;
-      })));
-    const contours = { ...(model.contours || {}), ...Object.fromEntries(todo.flatMap((v, i) => (found[i] ? [[v, found[i]]] : []))) };
-    const saved = found.some(Boolean) ? await setUserModelContours(model, contours) : model;
-    return NextResponse.json({ ok: true, model: saved, rechecked: todo, outlines: Object.fromEntries(views.map((v) => [v, saved.contours?.[v]?.kind ?? "missing"])) });
+    if (newName !== undefined) {
+      // The prefix is what keeps a teammate's draft private to its author in Model Studio.
+      if (model.name.startsWith("Draft · ") && !newName.startsWith("Draft · ")) {
+        return NextResponse.json({ ok: false, error: 'A draft set keeps its "Draft · " prefix.' }, { status: 400 });
+      }
+      return NextResponse.json({ ok: true, model: await renameUserModel(model, newName) });
+    }
+    return NextResponse.json({ ok: true, ...(await outlineDraftSet(model, draftDeps, { arrange: arrange === true })) });
   } catch (err: any) {
     return NextResponse.json({ ok: false, error: err?.message ?? "Failed to re-check outlines" }, { status: 500 });
   }

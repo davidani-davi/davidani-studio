@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach } from "vitest";
-import { DELETE, GET, POST } from "./route";
+import { DELETE, GET, PATCH, POST } from "./route";
 
 // The Listing Team portal saves draft reference sets here with X-DDTO-TOKEN; the route
 // is public in proxy.ts, so it must refuse anything without the token or a session.
@@ -9,11 +9,20 @@ describe("user-models auth", () => {
     expect((await GET(new Request("https://studio/api/user-models"))).status).toBe(401);
     expect((await POST(new Request("https://studio/api/user-models", { method: "POST", body: new FormData() }))).status).toBe(401);
     expect((await DELETE(new Request("https://studio/api/user-models?id=x", { method: "DELETE" }))).status).toBe(401);
+    expect((await PATCH(new Request("https://studio/api/user-models", { method: "PATCH", body: JSON.stringify({ id: "x", name: "Draft · a · b" }) }))).status).toBe(401);
     expect((await POST(new Request("https://studio/api/user-models", { method: "POST", body: new FormData(), headers: { "x-ddto-token": "wrong" } }))).status).toBe(401);
   });
   it("accepts the token and validates the form", async () => {
     const res = await POST(new Request("https://studio/api/user-models", { method: "POST", body: new FormData(), headers: { "x-ddto-token": "user-models-test" } }));
     expect(res.status).toBe(400);
     expect((await res.json()).error).toMatch(/name/);
+  });
+  it("refuses a blank or overlong name on rename before touching storage", async () => {
+    const patch = (body: unknown) => PATCH(new Request("https://studio/api/user-models", { method: "PATCH", body: JSON.stringify(body), headers: { "x-ddto-token": "user-models-test" } }));
+    for (const name of ["", "   ", 7, "x".repeat(121)]) {
+      const res = await patch({ id: "x", name });
+      expect(res.status).toBe(400);
+      expect((await res.json()).error).toMatch(/1-120/);
+    }
   });
 });

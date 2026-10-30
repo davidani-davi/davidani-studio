@@ -371,10 +371,10 @@ async function renderShot(req: Request, body: any): Promise<Response> {
   }
   // A full-body base without a reviewed face outline (an ERP pick, an upload, Donuts' archived
   // full) gets the outline found automatically, as a Listing Team draft set does; when the head
-  // cannot be found confidently Simple refuses it rather than repaint the face.
+  // cannot be found at all Simple refuses it rather than repaint the face (another photo can be picked).
   if (simple && bottoms && view === "full" && !reference.autoContour && !isReviewedContour(reference.publicPath)) {
     const found = await detectAutoContour(new URL(reference.publicPath, req.url).toString(), "full", { referencePixels, ground: groundPhrase }).catch(() => null);
-    if (!found) return json({ ok: false, view, error: "Model Studio could not outline the face in this full-body photo. Choose another one (head fully in frame)." }, 400);
+    if (!found || found.fit === "none-found") return json({ ok: false, view, error: "Model Studio could not outline the face in this full-body photo. Choose another one (head fully in frame)." }, 400);
     reference = { ...reference, autoContour: found };
   }
   humanModelId = reference.humanModelId;

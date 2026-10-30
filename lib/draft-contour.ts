@@ -7,7 +7,8 @@ import type { ReferencePixels } from './garment-only';
  * found automatically when it is saved (Florence-2 "head", "face" and "clothing" boxes): the same 12-point head
  * shape the library review uses (output/contour-library-audit/build-library-contours.py), feathered
  * outward, ending above the garment line, and bound to the decoded pixels. When the head cannot be
- * found confidently the view gets no outline and Simple garment swap refuses it, exactly as for an unreviewed reference.
+ * found confidently by that rule, detectAutoContour falls back to a looser outline (buildLooseContour), so a saved set
+ * is never refused for a missing one.
  */
 const UNIT: [number, number][] = [[.2,0],[.8,0],[.98,.15],[1,.5],[.96,.7],[.8,.86],[.62,.98],[.45,1],[.27,.91],[.1,.77],[0,.52],[.02,.18]];
 
@@ -70,7 +71,42 @@ export function buildAutoContour(ref: Pick<ReferencePixels, 'width' | 'height' |
   return { ...base, kind: 'contour', points, featherPixels: feather, garmentBoundaryY: garmentRow };
 }
 
-/** Detects one view: decodes the stored bytes exactly as a render will, then grounds head and clothing. */
+/**
+ * The outline of last resort, so an uploaded set is never left without one (David, 2026-10-30: Generate must work on
+ * every set Jeonga uploads). It follows the head box only, ends a feather above the garment line when there is one,
+ * and always keeps the upper head (hair, forehead, eyes) even if the chin then falls to the garment edit. With no head
+ * or face found at all the photo is treated as headless: nothing is protected, and the face may change.
+ */
+export function buildLooseContour(ref: Pick<ReferencePixels, 'width' | 'height' | 'sha256'>, g: Grounding, view: string, now = new Date()): AutoContour {
+  const base = { width: ref.width, height: ref.height, sha256: ref.sha256, source: 'auto-draft-v1' as const, detectedAt: now.toISOString() };
+  const W = ref.width, H = ref.height;
+  const plausible = (b: Box) => b.w >= W * .03 && b.h >= H * .03 && b.w <= W * .7 && b.h <= H * .6 && b.y + b.h / 2 < H * .6;
+  const biggest = (list: Box[] = []) => list.filter(plausible).sort((a, b) => b.w * b.h - a.w * a.h)[0];
+  const faceBox = view === 'back' ? undefined : biggest(g.face);
+  let head = biggest(g.head);
+  // No head box: grow the face box out to the hair.
+  if (!head && faceBox) head = { x: Math.max(0, faceBox.x - faceBox.w * .2), y: Math.max(0, faceBox.y - faceBox.h * .35), w: faceBox.w * 1.4, h: faceBox.h * 1.35 };
+  if (!head) return { ...base, kind: 'no-head', fit: 'none-found' };
+  const headBottom = head.y + head.h;
+  const below = g.clothing.filter(b => b.w >= W * .1 && b.h >= H * .1 && b.y > head.y + head.h * .5).map(b => b.y);
+  const garmentRow = Math.floor(below.length ? Math.min(...below) - H * .01 : Math.min(H - 1, headBottom + head.h * .6));
+  const feather = Math.max(6, Math.min(Math.round(W * .025), Math.floor(Math.min(W, H) / 4) - 1));
+  const b = Math.min(H - 1, Math.max(head.y + head.h * .55, Math.min(garmentRow - feather - 2, headBottom + head.h * .35)));
+  const l = Math.max(0, head.x - head.w * .03), r = Math.min(W - 1, head.x + head.w * 1.03), t = Math.max(0, head.y - head.h * .03);
+  const shape = UNIT.map(([x, y]) => [l + x * (r - l), t + y * (b - t)] as [number, number]);
+  if (faceBox) {
+    const fl = Math.max(0, faceBox.x - faceBox.w * .1), fr = Math.min(W - 1, faceBox.x + faceBox.w * 1.1), ft = Math.max(0, faceBox.y - faceBox.h * .05), fb = Math.min(b, faceBox.y + faceBox.h * 1.05);
+    if (fb > ft) shape.push([fl, ft], [fr, ft], [fr, fb], [fl, fb]);
+  }
+  const points = hull(shape).map(([x, y]) => [Math.min(W - 1, Math.max(0, Math.round(x * 100) / 100)), Math.min(H - 1, Math.max(0, Math.round(y * 100) / 100))] as [number, number]);
+  return { ...base, kind: 'contour', points, featherPixels: feather, garmentBoundaryY: Math.max(garmentRow, Math.ceil(b + feather)), fit: 'loose' };
+}
+
+/**
+ * Detects one view: decodes the stored bytes exactly as a render will, then grounds head and clothing.
+ * Strict rule first; then the back-view rule (a back photo saved under another view keeps its hair over the
+ * collar); then the loose outline. Only a photo that cannot be downloaded is left without one.
+ */
 export async function detectAutoContour(url: string, view: string, deps: {
   fetch?: typeof fetch; referencePixels: (bytes: Buffer) => Promise<ReferencePixels>; ground: (url: string, text: string) => Promise<Box[]>;
 }): Promise<AutoContour | null> {
@@ -79,5 +115,9 @@ export async function detectAutoContour(url: string, view: string, deps: {
   if (!response.ok) return null;
   const ref = await deps.referencePixels(Buffer.from(await response.arrayBuffer()));
   const [head, face, clothing] = await Promise.all([deps.ground(url, 'head'), deps.ground(url, 'face'), deps.ground(url, 'clothing')]);
-  return buildAutoContour(ref, { head, face, clothing }, view);
+  const g = { head, face, clothing };
+  const strict = buildAutoContour(ref, g, view);
+  if (strict) return strict;
+  const asBack = view === 'back' ? null : buildAutoContour(ref, g, 'back');
+  return asBack ? { ...asBack, fit: 'back-rule' } : buildLooseContour(ref, g, view);
 }
