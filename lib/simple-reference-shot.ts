@@ -162,11 +162,19 @@ export const isReviewedContour = (publicPath: string) => Object.prototype.hasOwn
 
 export function simpleFaceMask(ref: ReferencePixels, publicPath: string, _view: string, _framing: string, _legacyReview?: import('./model-admin').FaceProtection, auto?: import('./model-admin-core').AutoContour): Buffer | undefined {
   const reviewed = (contourPresets as Record<string, {kind:string;width:number;height:number;sha256:string}>)[publicPath.split('?')[0]];
-  // A Listing Team draft set has no reviewed contour yet; it carries the outline found when it was saved.
-  const preset = reviewed || (auto?.source === 'auto-draft-v1' ? auto : undefined);
+  // Order (SOP §7 step 3): reviewed preset, then a recast pose's own swap mask (lib/user-poses.ts), then the outline a
+  // Listing Team draft set got when it was saved. A photo carries one outline, so at most one of the last two applies.
+  const preset = reviewed || (auto?.source === 'recast-mask-v1' || auto?.source === 'auto-draft-v1' ? auto : undefined);
   if (!preset) throw Error('This reference needs a face/hair contour review before Simple garment swap. Choose a reviewed reference.');
   if (ref.width !== preset.width || ref.height !== preset.height || ref.sha256 !== preset.sha256)
     throw Error('The model reference changed. Its face/hair contour must be reviewed before generating.');
   if (preset.kind === 'no-head') return undefined;
   return contourFaceMask(ref, preset as ReviewedFaceContour & {kind:string});
+}
+
+/** The `faceProtection` a Simple render reports: which outline protected the face (simpleFaceMask's order). */
+export function faceProtectionOf(publicPath: string, auto: import('./model-admin-core').AutoContour | undefined, masked: boolean): string {
+  if (!auto || isReviewedContour(publicPath)) return masked ? 'reviewed-contour-v1' : 'reviewed-no-head-v1';
+  if (auto.source === 'recast-mask-v1') return masked ? 'recast-mask-contour-v1' : 'recast-mask-no-head-v1';
+  return masked ? 'auto-draft-contour-v1' : 'auto-draft-no-head-v1';
 }

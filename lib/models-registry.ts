@@ -69,6 +69,8 @@ export interface HumanModel {
   userAdded?: boolean;
   /** User models only: when the set was saved (the Listing Team picker shows the newest draft first). */
   createdAt?: string;
+  /** User models only: every pose of a recast set (lib/user-poses.ts); /api/model-shots picks one per view. */
+  userPoses?: import("./user-poses").UserPose[];
   managed?: boolean;
   /** What the model wears below the waist (plates.json `wears`) and whether a
    *  bottom can be painted onto the plate (`low_ok`) — lib/plate-wear.ts. */
@@ -570,6 +572,7 @@ export async function listBaseHumanModels(): Promise<HumanModel[]> {
       name: um.name,
       userAdded: true,
       createdAt: um.createdAt,
+      ...(um.poses?.length ? { userPoses: um.poses } : {}),
       poses: [
         {
           id: `${um.id}-pose`,
