@@ -10,6 +10,8 @@ import {
   mergeAssetRecords,
   type AssetRecord,
 } from "./user-asset-records";
+import { defaultPoses, type UserPose } from "./user-poses";
+import { mapLimit } from "./map-limit";
 
 export interface UserReference {
   id: string;
@@ -24,6 +26,8 @@ export interface UserModel {
   createdAt: string;
   views: { front: string; side?: string; back?: string; full?: string };
   contours?: Partial<Record<"front" | "side" | "back" | "full", import("./model-admin-core").AutoContour>>;
+  /** Every photo of a recast look with its shoot tags (lib/user-poses.ts). With poses, views/contours = the default pose per view. */
+  poses?: UserPose[];
 }
 
 interface ReferenceIndex {
@@ -201,6 +205,18 @@ async function storeImage(key: string, file: File): Promise<string> {
   return `/user-assets/${key}`;
 }
 
+/** Stores bytes exactly as given: a pose's outline is bound to its decoded pixels, so a pose photo is never re-encoded. */
+async function storeBytes(key: string, bytes: Buffer, contentType: string): Promise<string> {
+  if (canUseBlob()) {
+    const blob = await put(key, bytes, { access: "public", allowOverwrite: true, contentType });
+    return blob.url;
+  }
+  const target = path.join(LOCAL_FILES_DIR, key);
+  await fs.mkdir(path.dirname(target), { recursive: true });
+  await fs.writeFile(target, bytes);
+  return `/user-assets/${key}`;
+}
+
 async function removeImage(url: string): Promise<void> {
   try {
     if (canUseBlob() && url.startsWith("https://")) {
@@ -316,15 +332,82 @@ export async function saveUserModel(
   return entry;
 }
 
+// ---------- poses (recast sets) ----------
+
+/** A pose checked by lib/pose-upload.ts, with the exact bytes to store. */
+export interface PreparedPose {
+  pose: Omit<UserPose, "url" | "thumbUrl">;
+  bytes: Buffer;
+  ext: "png" | "jpg" | "webp";
+  thumb?: Buffer;
+}
+
+const POSE_CONTENT_TYPES = { png: "image/png", jpg: "image/jpeg", webp: "image/webp" } as const;
+
+/** The views/contours of a set with poses: its default pose per view. Null when no front pose is live. */
+export function poseDefaults(poses: UserPose[]): Pick<UserModel, "views" | "contours"> | null {
+  const picked = defaultPoses(poses);
+  if (!picked.front) return null;
+  const views: UserModel["views"] = { front: picked.front.url };
+  const contours: NonNullable<UserModel["contours"]> = {};
+  for (const view of MODEL_VIEWS) {
+    const pose = picked[view];
+    if (!pose) continue;
+    views[view] = pose.url;
+    if (pose.contour) contours[view] = pose.contour;
+  }
+  return { views, contours };
+}
+
+/**
+ * Saves a recast look as one live set: every pose photo (and its thumbnail) as sent, failing poses included (they are
+ * kept, never picked). Refused when no front pose is live, because a set needs a front photo.
+ */
+export async function saveUserModelPoses(name: string, prepared: PreparedPose[]): Promise<UserModel> {
+  if (!poseDefaults(prepared.map((p) => ({ ...p.pose, url: "-" })))) {
+    throw new Error("No front pose passed its checks, so the set would have no front photo.");
+  }
+  const id = makeAssetId(name);
+  const stored: string[] = [];
+  try {
+    const poses = await mapLimit(prepared, 4, async (p) => {
+      const base = `user-models/${id}/poses/${p.pose.id}`;
+      const url = await storeBytes(`${base}.${p.ext}`, p.bytes, POSE_CONTENT_TYPES[p.ext]);
+      stored.push(url);
+      const thumbUrl = p.thumb ? await storeBytes(`${base}-thumb.jpg`, p.thumb, "image/jpeg") : undefined;
+      if (thumbUrl) stored.push(thumbUrl);
+      return { ...p.pose, url, ...(thumbUrl ? { thumbUrl } : {}) } as UserPose;
+    });
+    const entry: UserModel = { id, name: name.trim(), createdAt: nowIso(), ...poseDefaults(poses)!, poses };
+    await writeAssetRecord(MODEL_RECORD_PREFIX, LOCAL_MODEL_RECORDS, id, { deleted: false, value: entry });
+    return entry;
+  } catch (err) {
+    for (const url of stored) await removeImage(url);
+    throw err;
+  }
+}
+
+/** Saves a set's poses (Remove this pose) and moves its views/contours to the new default poses. */
+export async function setUserModelPoses(model: UserModel, poses: UserPose[]): Promise<UserModel> {
+  const defaults = poseDefaults(poses);
+  if (!defaults) throw new Error("That is the last live front pose of this set. Delete the set instead.");
+  const entry: UserModel = { ...model, ...defaults, poses };
+  await writeAssetRecord(MODEL_RECORD_PREFIX, LOCAL_MODEL_RECORDS, model.id, { deleted: false, value: entry });
+  return entry;
+}
+
 export async function deleteUserModel(id: string): Promise<void> {
   const target = (await listUserModels()).find((model) => model.id === id);
   await writeAssetRecord(MODEL_RECORD_PREFIX, LOCAL_MODEL_RECORDS, id, {
     deleted: true,
   });
   if (target) {
-    for (const url of Object.values(target.views)) {
-      if (url) await removeImage(url);
-    }
+    // Views of a set with poses point at pose photos, so each URL is removed once.
+    const urls = new Set<string>([
+      ...Object.values(target.views),
+      ...(target.poses || []).flatMap((pose) => [pose.url, pose.thumbUrl]),
+    ].filter((url): url is string => Boolean(url)));
+    for (const url of urls) await removeImage(url);
   }
 }
 

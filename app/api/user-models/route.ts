@@ -1,33 +1,52 @@
 import { NextResponse } from "next/server";
-import { deleteUserModel, listUserModels, renameUserModel, saveUserModel, setUserModelContours } from "@/lib/user-assets";
+import { deleteUserModel, listUserModels, renameUserModel, saveUserModel, saveUserModelPoses, setUserModelContours } from "@/lib/user-assets";
 import { detectAutoContour } from "@/lib/draft-contour";
 import { outlineDraftSet } from "@/lib/draft-outlines";
 import { referencePixels } from "@/lib/garment-only";
 import { groundPhrase, readReferenceView } from "@/lib/fal";
-import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth";
+import { authorized, unauthorized } from "@/lib/request-auth";
+import { defaultPoses } from "@/lib/user-poses";
+import { poseSummary, preparePoses, PoseUploadError, validatePoseInputs } from "@/lib/pose-upload";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
 
 // Public in proxy.ts so the Listing Team portal (server side, X-DDTO-TOKEN) can save
-// draft reference sets; the studio UI still reaches it with its session cookie.
-async function authorized(req: Request): Promise<boolean> {
-  const expected = process.env.MODEL_SHOTS_TOKEN || process.env.APP_PASSWORD;
-  const got = req.headers.get("x-ddto-token") || "";
-  if (expected && got.length === expected.length && got === expected) return true;
-  const secret = process.env.AUTH_SECRET;
-  if (!secret) return false;
-  const cookie = req.headers.get("cookie") || "";
-  const match = cookie.match(new RegExp(`(?:^|;\\s*)${SESSION_COOKIE}=([^;]+)`));
-  return match ? verifySessionToken(decodeURIComponent(match[1]), secret) : false;
-}
-const unauthorized = () => NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
+// draft reference sets; the studio UI still reaches it with its session cookie (lib/request-auth.ts).
 
 const draftDeps = {
   detect: (url: string, view: string) => detectAutoContour(url, view, { referencePixels, ground: groundPhrase }),
   read: readReferenceView,
   save: setUserModelContours,
 };
+
+/**
+ * A recast look (Chloe recast; faire-management chloe_recast/upload.mjs): JSON `{ name, poses: [{ id, view, framing,
+ * stance, arms, url, contour, checks, source }] }` with hosted photo URLs. Each pose keeps its sent `recast-mask-v1`
+ * outline only when it matches the photo's pixels (lib/pose-upload.ts); views come from the shoot tags, so nothing is
+ * moved. The set is stored live with every pose; poses that fail are kept and never picked.
+ */
+async function savePoseSet(req: Request) {
+  const body = await req.json().catch(() => null);
+  const name = typeof body?.name === "string" ? body.name.trim() : "";
+  if (!name || name.length > 120) {
+    return NextResponse.json({ ok: false, error: "A set name of 1-120 characters is required." }, { status: 400 });
+  }
+  try {
+    const prepared = await preparePoses(validatePoseInputs(body?.poses), {
+      referencePixels,
+      detect: (url, view) => detectAutoContour(url, view, { referencePixels, ground: groundPhrase }),
+    });
+    const poses = prepared.map((p) => poseSummary(p.pose));
+    if (!defaultPoses(prepared.map((p) => ({ ...p.pose, url: "-" }))).front) {
+      return NextResponse.json({ ok: false, error: "No front pose passed its checks, so the set would have no front photo.", poses }, { status: 422 });
+    }
+    return NextResponse.json({ ok: true, model: await saveUserModelPoses(name, prepared), poses });
+  } catch (err: any) {
+    if (err instanceof PoseUploadError) return NextResponse.json({ ok: false, error: err.message }, { status: err.status });
+    throw err;
+  }
+}
 
 function asImage(value: FormDataEntryValue | null): File | undefined {
   return value instanceof File && value.type.startsWith("image/") ? value : undefined;
@@ -48,6 +67,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   if (!(await authorized(req))) return unauthorized();
   try {
+    if ((req.headers.get("content-type") || "").includes("application/json")) return await savePoseSet(req);
     const form = await req.formData();
     const name = String(form.get("name") ?? "").trim();
     const front = asImage(form.get("front"));

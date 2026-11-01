@@ -1,9 +1,12 @@
 import { directOutfitInput, renderDirectOutfit, DIRECT_IDENTITIES } from '@/lib/direct-outfit';
 import { isPantsReference, pantsReferences } from "@/lib/pants-references";
-import { simpleReferenceShot, simpleFaceMask, isReviewedContour, SIMPLE_IMAGE_SIZE } from '@/lib/simple-reference-shot';
+import { simpleReferenceShot, simpleFaceMask, isReviewedContour, faceProtectionOf, SIMPLE_IMAGE_SIZE } from '@/lib/simple-reference-shot';
 import sharp from 'sharp';
 import { referencePixels, validateEdit, editMask, compositeGarment, providerMask, donutsFaceMask } from '@/lib/garment-only';
-import { uploadToFal, groundPhrase } from '@/lib/fal';
+import { uploadToFal, groundPhrase, readGarmentDetails } from '@/lib/fal';
+import { chooseSetPose, type PosePickDeps } from '@/lib/pose-pick';
+import { readPoseUsage, recordPoseUse, readCachedGarmentRead, writeCachedGarmentRead } from '@/lib/pose-usage';
+import { slotPoses, type UserPose } from '@/lib/user-poses';
 import { detectAutoContour } from '@/lib/draft-contour';
 import { isFullBodyBase } from '@/lib/full-body-base';
 import type { AutoContour } from '@/lib/model-admin-core';
@@ -27,6 +30,12 @@ import { isGptModel } from "@/lib/models";
 
 export const runtime = "nodejs";
 export const maxDuration = 800;
+
+const posePickDeps: PosePickDeps = {
+  readUsage: readPoseUsage, recordUse: recordPoseUse,
+  readCachedGarment: readCachedGarmentRead, writeCachedGarment: writeCachedGarmentRead,
+  visionRead: readGarmentDetails,
+};
 
 /**
  * POST /api/model-shots — one view of the four-view photoshoot, for callers
@@ -144,6 +153,8 @@ export async function GET(req: Request) {
         ...(m.expression ? { expression: m.expression } : {}),
         ...(m.poseKey ? { poseKey: m.poseKey } : {}),
         ...(m.pose ? { pose: m.pose } : {}),
+        // A recast set's live poses per view (GET /api/user-models/<id>/poses?view= lists them for Other pose)
+        ...(m.userPoses?.length ? { poseCounts: Object.fromEntries(MULTI_MODEL_VIEWS.map((v) => [v, slotPoses(m.userPoses!, v as PresetView).length])) } : {}),
         autoPool: m.autoPool !== false,
         poses: m.poses.map((p) => {
           const references = referenceCoverage(models, m.id, p.id);
@@ -349,6 +360,9 @@ async function renderShot(req: Request, body: any): Promise<Response> {
     poseId = choice.poseId;
     assigned = `${humanModelId} · ${poseId}`;
   }
+  // A recast set (lib/user-poses.ts) may be asked for without a pose: Studio picks one per view.
+  const poseSet = catalogue.find((m) => m.id === humanModelId && m.userPoses?.length);
+  if (poseSet && !poseId) poseId = poseSet.poses[0]?.id || "";
   if (!humanModelId || !poseId) return json({ ok: false, error: "humanModelId and poseId are required" }, 400);
 
   if (bottoms && !isPantsReference(humanModelId))
@@ -358,12 +372,26 @@ async function renderShot(req: Request, body: any): Promise<Response> {
   if (body.engine !== "tryon" && !nanoReference && !isGptModel(modelId))
     return json({ ok: false, error: `Unsupported image model: ${modelId}` }, 400);
 
+  // A recast set's pose for this view: the one asked for (Other pose), else the best fit for the garment, then the
+  // least recently used, and the same one for every colour of the style. Its outline was checked at upload.
+  let setPose: { pose: UserPose; reason: string } | undefined;
+  if (poseSet && !fullBase) {
+    const chosen = await chooseSetPose(poseSet, { requestedPoseId: poseId, view, framing, known, garmentImageUrls }, posePickDeps);
+    if (chosen && !chosen.ok) return json({ ok: false, view, error: chosen.error }, chosen.status);
+    if (chosen?.ok) {
+      setPose = chosen;
+      poseId = poseSet.poses[0]?.id || poseId;
+    }
+  }
+
   // Exact view selection happens before any paid request. Never fall back to front.
   let reference;
   try {
     reference = fullBase
       ? { humanModelId, poseId, view, publicPath: fullBase, framing, protection: undefined, autoContour: undefined as AutoContour | undefined, reframed: false, synthesized: false }
-      : viewReference(catalogue, humanModelId, poseId, view, framing);
+      : setPose
+        ? { humanModelId, poseId, view, publicPath: setPose.pose.url, framing, protection: undefined, autoContour: setPose.pose.contour, reframed: false, synthesized: false }
+        : viewReference(catalogue, humanModelId, poseId, view, framing);
   }
   catch (err: any) {
     return json({ ok: false, view, error: bottoms && view === "full"
@@ -465,8 +493,11 @@ async function renderShot(req: Request, body: any): Promise<Response> {
     return json({ ok: true, view, url, prompt: input.prompt,
       modelId: body.engine === "tryon" ? undefined : modelId,
       engine: body.engine === "tryon" ? "tryon" : nanoReference ? "nano" : modelId === "gpt-image-25" ? "gpt25" : "gpt2",
-      faceProtection: simple ? (reference.autoContour && !isReviewedContour(reference.publicPath) ? (simplePrepared ? 'auto-draft-contour-v1' : 'auto-draft-no-head-v1') : simplePrepared ? 'reviewed-contour-v1' : 'reviewed-no-head-v1') : undefined,
-      resolution: outputResolution, editMode: simple ? "simple" : faceLocked ? "face-locked" : locked ? "garment-only" : "native", preservation, humanModelId, poseId, assigned, category, hem, framing,
+      faceProtection: simple ? faceProtectionOf(reference.publicPath, reference.autoContour, Boolean(simplePrepared)) : undefined,
+      resolution: outputResolution, editMode: simple ? "simple" : faceLocked ? "face-locked" : locked ? "garment-only" : "native", preservation, humanModelId,
+      // A recast set reports the pose it shot on and why; the catalogue pose id stays on `reference`.
+      poseId: setPose ? setPose.pose.id : poseId, assigned, category, hem, framing,
+      ...(setPose ? { poseReason: setPose.reason, pose: { id: setPose.pose.id, view: setPose.pose.view, framing: setPose.pose.framing, stance: setPose.pose.stance, arms: setPose.pose.arms, thumbUrl: setPose.pose.thumbUrl } } : {}),
       reference: { ...reference, url: referenceUrl },
       garmentBackInferred: view === "back" && garmentImageUrls.length < 2,
       anchored: Boolean(simpleInput?.anchored), fitSource: simpleInput?.fitSource, garmentSideUsed: simpleInput ? simpleInput.garmentSideUsed : undefined, restore: { applied: false }, photoFinish: { method: protectedInput ? "original-face-pixels" : "native", applied: !!protectedInput }, corrections: [] });

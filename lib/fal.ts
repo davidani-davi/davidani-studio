@@ -207,6 +207,29 @@ export async function readReferenceView(imageUrl: string): Promise<import("./vie
   }
 }
 
+const GARMENT_READ_PROMPT =
+  'This is a product photo of one garment. Reply with one line of JSON and nothing else: ' +
+  '{"frontPockets":true|false,"frontDetail":true|false,"statementSleeves":true|false,"waistDetail":true|false,"hemMatters":true|false,"backDetail":true|false}. ' +
+  'frontPockets = pockets on the front or at the hips that a hand in a pocket would cover. ' +
+  'frontDetail = a feature on the front that a hand would hide: buttons down the front, a front tie, twist, knot, keyhole, cutout, lace-up or a wrap. ' +
+  'statementSleeves = bell, puff, balloon, flutter, bishop or lantern sleeves, or big ruffled sleeves. ' +
+  'waistDetail = a belt, a waist tie or sash, smocking, a drawstring or a corset at the waist. ' +
+  'hemMatters = the hem is part of the design: a midi or maxi length, ruffles or tiers at the hem, a slit, or an asymmetric or high-low hem. ' +
+  'backDetail = an open back, a back bow or tie, a back cutout or lace-up. Answer false for anything you cannot see.';
+
+/** What a pose must not hide on this garment (lib/user-poses.ts pickPose). Null on any failure: the title read still applies. */
+export async function readGarmentDetails(imageUrl: string): Promise<import("./user-poses").GarmentRead | null> {
+  try {
+    const result: any = await subscribeVisionWithRetry({ model: VISION_MODEL, prompt: GARMENT_READ_PROMPT, image_url: imageUrl }, "garment read");
+    const data = result?.data ?? result;
+    const { parseGarmentRead } = await import("./user-poses");
+    return parseGarmentRead(String(data?.output ?? data?.response ?? data?.text ?? ""));
+  } catch (err: any) {
+    console.warn("[garment read] failed:", err?.message || err);
+    return null;
+  }
+}
+
 /** Florence-2 phrase grounding: pixel boxes for `text` in the image (draft face outlines). */
 export async function groundPhrase(imageUrl: string, text: string): Promise<{ x: number; y: number; w: number; h: number }[]> {
   ensureConfigured();
