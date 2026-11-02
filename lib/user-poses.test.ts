@@ -122,3 +122,39 @@ describe('picking a pose (best fit, then least recently used)', () => {
     expect(pickPose({ poses: [pose('a', 'front', 'crop')], slot: 'side', framing: 'crop', garment: plain, usage: emptyPoseUsage() })).toBeNull();
   });
 });
+
+describe('the full shot is not a second front (DCJ67197, 2026-11-02)', () => {
+  // Celine · DT60007N's fronts, as tagged
+  const set = [
+    pose('front-01', 'front', 'full', 'hand-in-pocket'), pose('front-02', 'front', 'full', 'away-from-body'), pose('front-03', 'front', 'full'),
+    pose('front-04', 'front', 'crop', 'hand-in-pocket'), pose('front-05', 'front', 'crop', 'raised'), pose('front-08', 'front', 'crop', 'hand-on-front', 'turned'),
+  ];
+  const full = (front?: UserPose, u = usage()) => pickPose({ poses: set, slot: 'full', framing: 'full', garment: plain, usage: u, styleCode: 'DCJ67197', front });
+  it("never takes the front's photo when the set has another head-to-toe front", () => {
+    for (const f of set.slice(0, 3)) expect(full(f)?.pose.id).not.toBe(f.id);
+    expect(full(set[0])?.reason).toContain("front's photo (front-01) skipped");
+  });
+  it('prefers a styled pose: arms away from the body or raised, a turned or walking stance', () => {
+    expect(full(set[0])?.pose.id).toBe('front-02');
+    expect(full(set[3])?.pose.id).toBe('front-02');
+    const walk = [...set, pose('front-20', 'front', 'full', 'at-sides', 'walking')];
+    expect(pickPose({ poses: walk, slot: 'full', framing: 'full', garment: plain, usage: usage(), front: set[1] })?.pose.id).toBe('front-20');
+  });
+  it("does not reuse a style's earlier full pick that is its front's photo", () => {
+    expect(full(set[1], usage({}, { DCJ67197: 'front-02' }))?.pose.id).not.toBe('front-02');
+    expect(full(set[0], usage({}, { DCJ67197: 'front-03' }))?.pose.id).toBe('front-03');
+  });
+  it("uses the front's photo only when it is the set's one head-to-toe front", () => {
+    const one = [pose('front-01', 'front', 'full', 'hand-in-pocket'), pose('front-04', 'front', 'crop')];
+    const out = pickPose({ poses: one, slot: 'full', framing: 'full', garment: plain, usage: usage(), front: one[0] });
+    expect(out?.pose.id).toBe('front-01');
+    expect(out?.reason).toContain("only the front's photo fits");
+  });
+  it('the front itself still prefers a plain standing pose', () => {
+    expect(pickPose({ poses: set, slot: 'front', framing: 'crop', garment: plain, usage: usage() })?.pose.id).toBe('front-04');
+  });
+  it('the front prefers relaxed arms over a raised hand, even when the raised one comes first (Celine · DCT78115)', () => {
+    const dct = [pose('front-03', 'front', 'crop', 'raised'), pose('front-04', 'front', 'crop', 'away-from-body'), pose('front-05', 'front', 'crop', 'hands-in-pockets'), pose('front-06', 'front', 'crop')];
+    expect(pickPose({ poses: dct, slot: 'front', framing: 'crop', garment: plain, usage: usage() })?.pose.id).toBe('front-05');
+  });
+});

@@ -131,6 +131,15 @@ export function simpleReferenceShot(o: SimpleShot) {
   // whose real photo disagrees (a longer coat, an exception cut) still reads
   // correctly, and an operator note asking for a different length is never
   // fighting a hard "do not extend" rule.
+  // A top's front, side and back are framed head to thigh (or knee) even when it is longer (David, 2026-11-02:
+  // a longline cardigan's front is a thigh-up shot like every top's; the full shot shows the whole length). The
+  // generator must not shorten the garment to end inside that frame, the DJ67094 failure that once put every long
+  // layer on the full-length plate.
+  // Only for a garment its title calls long (not "long sleeve"), so every other top's prompt stays as it was.
+  const longish = /long-?line|\btunic\b|\blong\b(?![- ]sleeve)/i.test(name);
+  const layerLength = scope === 'top' && longish && (o.framing === 'crop' || o.framing === 'knee')
+    ? ` LAYER LENGTH: This photograph is framed from the head to ${o.framing === 'crop' ? 'mid-thigh' : 'the knee'}. Judge where the product's hem falls on the body from image 2. If it falls below the bottom of this frame, the garment's body continues out of the bottom of the frame: do not shorten it, and do not draw a hem, hem band, ribbing or edge trim inside the frame to make it fit. If it ends inside the frame, keep that hem where image 2 shows it.`
+    : '';
   const length = name ? lengthFor({ title: o.garmentName }) : null;
   // A note is the operator overriding a specific run; don't have the default
   // length checkpoint argue with an explicit correction they just typed.
@@ -151,7 +160,7 @@ export function simpleReferenceShot(o: SimpleShot) {
   const sideNote = !side ? '' : sideView
     ? ` SIDE PHOTO: Image 2 is the product photographed from the side, the same angle as this view: it decides the side silhouette, body depth and drape, side seams, slits and pockets, the sleeve profile and the hem line seen from the side. Image ${extraN} is the same product photographed from the front: use it only for print, colour and front construction that turns into view, never to change image 2's side shape.`
     : ` SIDE PHOTO: Image ${extraN} is the same product photographed from the side. Use it only to confirm body depth and drape, garment length, side seams, slits and pockets${inferred ? ', and how the hem, any slit or vent and the length fall at the back, since no back photo is supplied' : ''}. Image 2 stays the authority for this view; never move a detail that only shows from the side onto the ${o.view === 'back' ? 'back' : 'front'}.`;
-  const prompt = `Edit image 1 as the exact base photograph. Replace only the ${scope} with the garment in image 2. Match its fabric, cut, length, print and construction.${fitFromStyle ? poseOnly(o, scope) : ''}${inner} ${details}${fit}${sleeves}${setScope}${legs}${cut} ${colour}${sideNote} Allow natural fold shadows and highlights, but do not tint the garment to match image 1’s clothing or background. ${keep} Preserve the face, expression, head position and hairstyle unchanged. No sharpening, retouching or enhancement. One clean photograph of one person.${inferred ? ' No back garment photo is supplied; use a plain continuation of the fabric without invented rear graphics.' : ''}${o.note ? ` Requested change: ${o.note}` : ''}`;
+  const prompt = `Edit image 1 as the exact base photograph. Replace only the ${scope} with the garment in image 2. Match its fabric, cut, length, print and construction.${fitFromStyle ? poseOnly(o, scope) : ''}${inner} ${details}${fit}${sleeves}${setScope}${legs}${cut}${layerLength} ${colour}${sideNote} Allow natural fold shadows and highlights, but do not tint the garment to match image 1’s clothing or background. ${keep} Preserve the face, expression, head position and hairstyle unchanged. No sharpening, retouching or enhancement. One clean photograph of one person.${inferred ? ' No back garment photo is supplied; use a plain continuation of the fabric without invented rear graphics.' : ''}${o.note ? ` Requested change: ${o.note}` : ''}`;
   const secondary = [garment, anchor, extra].filter(Boolean);
   const image_urls = [o.referenceUrl, ...secondary];
   return {prompt, openFront, garmentImageUrls: secondary, image_urls, garmentBackInferred:inferred, anchored: Boolean(anchor), garmentSideUsed: Boolean(side), fitSource: (fitFromStyle ? 'style' : 'reference') as FitSource};

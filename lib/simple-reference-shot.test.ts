@@ -215,3 +215,21 @@ describe('open-front inner layer (DWJ50270, 2026-09-24)',()=>{
   expect(simpleReferenceShot({...base,view:'front',category:'pants',garmentName:'Jacket Print Wide Leg Pants'}).prompt).not.toContain('INNER LAYER:');
  });
 });
+describe('layer length on a thigh-up frame (DCJ67197, 2026-11-02)',()=>{
+ const name='Granny Square Crochet Patchwork Longline Cardigan';
+ it('a longline top framed head to thigh keeps its length past the frame edge',()=>{
+  for(const view of ['front','side','back'] as const){
+   const p=simpleReferenceShot({...base,view,anchorImageUrl:'https://generated/front.png',garmentName:name}).prompt;
+   expect(p).toContain('LAYER LENGTH: This photograph is framed from the head to mid-thigh.');
+   expect(p).toContain('continues out of the bottom of the frame: do not shorten it');
+  }
+  expect(simpleReferenceShot({...base,view:'front',framing:'knee',garmentName:name}).prompt).toContain('framed from the head to the knee');
+ });
+ it('the full shot, other tops, long sleeves and bottoms are unchanged',()=>{
+  expect(simpleReferenceShot({...base,view:'full',framing:'full',anchorImageUrl:'https://generated/front.png',garmentName:name}).prompt).not.toContain('LAYER LENGTH');
+  expect(simpleReferenceShot({...base,view:'front',garmentName:'Floral Embroidered Hooded Balloon Sleeve Cardigan'}).prompt).not.toContain('LAYER LENGTH');
+  expect(simpleReferenceShot({...base,view:'front',garmentName:'Ribbed Long Sleeve Top'}).prompt).not.toContain('LAYER LENGTH');
+  expect(simpleReferenceShot({...base,view:'front',category:'pants',framing:'low',garmentName:'Longline Wide Leg Pants'}).prompt).not.toContain('LAYER LENGTH');
+  expect(simpleReferenceShot({...base,view:'front',garmentName:'Long-Line Ribbed Tunic'}).prompt).toContain('LAYER LENGTH');
+ });
+});
