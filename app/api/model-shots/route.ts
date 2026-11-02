@@ -9,6 +9,7 @@ import { readPoseUsage, recordPoseUse, readCachedGarmentRead, writeCachedGarment
 import { slotPoses, type UserPose } from '@/lib/user-poses';
 import { detectAutoContour } from '@/lib/draft-contour';
 import { isFullBodyBase } from '@/lib/full-body-base';
+import { parseHeal, rawFrameCandidates, matchRawFrame, frameAtReference, type HealInput } from '@/lib/heal';
 import type { AutoContour } from '@/lib/model-admin-core';
 import { buildReferenceShot, runReferenceShot, NANO_REFERENCE_MODEL } from '@/lib/nano-reference-shots';
 import { viewReference, referenceCoverage } from '@/lib/view-reference';
@@ -193,7 +194,8 @@ export async function POST(req: Request) {
    * cut there whatever maxDuration says; the render itself may take the
    * whole 800 s inside after().
    */
-  if (body.async === true) {
+  // Heal re-composites an existing render (lib/heal.ts) in a few seconds: never queued as a task.
+  if (body.async === true && body.heal == null) {
     if (body.requestId != null && (typeof body.requestId !== "string" || !isSafeTaskId(body.requestId)))
       return json({ ok: false, error: "invalid requestId" }, 400);
     const id = body.requestId || crypto.randomUUID();
@@ -245,6 +247,13 @@ async function renderShot(req: Request, body: any): Promise<Response> {
   }
   if (body.editMode && !['simple','native','garment-only','face-locked'].includes(body.editMode)) return json({ok:false,error:'Choose a valid editing mode.'},400);
   const simple = body.editMode === 'simple';
+  let heal: HealInput | undefined;
+  if (body.heal != null) {
+    if (!simple) return json({ok:false,error:'Heal works on Simple garment swap renders.'},400);
+    try { heal = parseHeal(body.heal); } catch (error: any) { return json({ok:false,error:error.message},400); }
+    // Heal never pays for anything: the render's model and pose are sent back, so nothing is picked again.
+    if (!body.humanModelId || body.humanModelId === 'auto' || !body.poseId) return json({ok:false,error:'Heal needs the model and pose the render used.'},400);
+  }
   if (simple && (body.engine === 'tryon' || body.reference || String(body.humanModelId || '').startsWith('face:'))) return json({ok:false,error:'Simple garment swap needs a matching model reference and GPT or Nano.'},400);
   const faceLocked = body.editMode === 'face-locked';
   const locked = body.editMode === 'garment-only' || faceLocked;
@@ -400,7 +409,12 @@ async function renderShot(req: Request, body: any): Promise<Response> {
   // A full-body base without a reviewed face outline (an ERP pick, an upload, Donuts' archived
   // full) gets the outline found automatically, as a Listing Team draft set does; when the head
   // cannot be found at all Simple refuses it rather than repaint the face (another photo can be picked).
-  if (simple && bottoms && view === "full" && !reference.autoContour && !isReviewedContour(reference.publicPath)) {
+  if (heal && bottoms && view === "full" && !reference.autoContour && !isReviewedContour(reference.publicPath)) {
+    const c = heal.autoContour as AutoContour | undefined;
+    if (!c || c.source !== 'auto-draft-v1' || c.kind !== 'contour' || !Array.isArray(c.points)) return json({ ok: false, view, error: 'Heal needs the face outline this render reported. Render it again instead.' }, 400);
+    reference = { ...reference, autoContour: c };
+  }
+  if (simple && !heal && bottoms && view === "full" && !reference.autoContour && !isReviewedContour(reference.publicPath)) {
     const found = await detectAutoContour(new URL(reference.publicPath, req.url).toString(), "full", { referencePixels, ground: groundPhrase }).catch(() => null);
     if (!found || found.fit === "none-found") return json({ ok: false, view, error: "Model Studio could not outline the face in this full-body photo. Choose another one (head fully in frame)." }, 400);
     reference = { ...reference, autoContour: found };
@@ -454,8 +468,23 @@ async function renderShot(req: Request, body: any): Promise<Response> {
       input.prompt=`Edit the original reference photograph. Replace ONLY the ${category === 'pants' || category === 'skirt' ? 'bottoms' : 'garment'} with the garment from the other image. Keep the original pose, arm and hand positions, other clothing, shoes, background and framing. Do not add hands at the waistband or pockets. One person, two arms, two hands. Keep the head unchanged. No sharpening. ${known.color ? 'Garment color: '+known.color+'.' : ''} ${note || ''}`;
     }
     let url: string;
+    let healed: Record<string, unknown> | undefined, healedFrame: Buffer | undefined;
     let outputResolution = simple || nanoReference ? "1K" : "4K";
-    if (body.engine === "tryon") {
+    if (heal) {
+      if (!simplePrepared) throw Error('This reference has no face outline, so there is nothing to heal.');
+      const render = await fetch(heal.url, { cache: 'no-store' });
+      if (!render.ok) throw Error('The render could not be loaded.');
+      const bytes = Buffer.from(await render.arrayBuffer()), meta = await sharp(bytes).metadata();
+      if (meta.width !== simplePrepared.ref.width || meta.height !== simplePrepared.ref.height) throw Error('This render was made on another reference photo.');
+      const px = await frameAtReference(bytes, meta.width, meta.height);
+      const candidates = await rawFrameCandidates(referenceUrl, { renderedAt: heal.renderedAt });
+      const found = await matchRawFrame(px, simplePrepared.ref, simplePrepared.mask, candidates);
+      if (!found.matched || !found.bytes || !found.frame) throw Error(candidates.length
+        ? 'Could not find the original frame of this render (already healed, or older than 14 days). Render it again instead.'
+        : 'No generation on this reference photo was found in the last 14 days. Render it again instead.');
+      url = found.frame.url; healedFrame = found.bytes;
+      healed = { requestId: found.frame.requestId, generatedAt: found.frame.endedAt, difference: +found.difference!.toFixed(3), checked: found.checked, from: heal.url };
+    } else if (body.engine === "tryon") {
       // This engine has no prompt/framing control; do not silently substitute it
       // for a selected GPT engine or claim an unavailable pants-only crop.
       if (reference.reframed) return json({ ok: false, error: "Try-on needs a reference with this framing. Choose GPT 2.5 for this view." }, 400);
@@ -480,9 +509,12 @@ async function renderShot(req: Request, body: any): Promise<Response> {
     if (!url) throw new Error("Image model returned no image");
     const protectedInput = simplePrepared || prepared;
     if(protectedInput) {
-      const response=await fetch(url);
+      let generated=healedFrame;
+      if(!generated){const response=await fetch(url);
       if(!response.ok)throw Error('Generated garment could not be loaded.');
-      const composed=await compositeGarment(protectedInput.ref,Buffer.from(await response.arrayBuffer()),protectedInput.mask,{matchSeam:!simplePrepared});
+      generated=Buffer.from(await response.arrayBuffer());}
+      // Simple renders come back shifted/scaled a little: line the head up before the face goes back.
+      const composed=await compositeGarment(protectedInput.ref,generated,protectedInput.mask,{matchSeam:!simplePrepared,align:Boolean(simplePrepared)});
       url=await uploadToFal(new Blob([Uint8Array.from(composed.png)],{type:'image/png'}),'garment-only.png');
       // Verify the hosted delivery too. Never expose the unverified generated frame.
       const hosted=await fetch(url,{cache:'no-store'});
@@ -490,7 +522,7 @@ async function renderShot(req: Request, body: any): Promise<Response> {
       preservation=composed.report;outputResolution=`${protectedInput.ref.width}×${protectedInput.ref.height}`;
     }
     // Existing mode keeps its native-output behavior. Protected mode returns lossless composition.
-    return json({ ok: true, view, url, prompt: input.prompt,
+    return json({ ok: true, view, url, prompt: input.prompt, ...(healed ? { healed } : {}),
       modelId: body.engine === "tryon" ? undefined : modelId,
       engine: body.engine === "tryon" ? "tryon" : nanoReference ? "nano" : modelId === "gpt-image-25" ? "gpt25" : "gpt2",
       faceProtection: simple ? faceProtectionOf(reference.publicPath, reference.autoContour, Boolean(simplePrepared)) : undefined,

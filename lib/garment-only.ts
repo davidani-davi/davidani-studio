@@ -1,5 +1,6 @@
 import sharp from 'sharp';
 import { createHash } from 'node:crypto';
+import { findAlignment, warpGenerated, type Alignment } from './face-align';
 
 export type Point = [number, number];
 export interface GarmentEdit {
@@ -118,13 +119,22 @@ export function seamMatch(ref: ReferencePixels, candidate: Buffer, mask: Buffer,
   }
 }
 
-export async function compositeGarment(ref: ReferencePixels, generated: Buffer, mask: Buffer, options: { matchSeam?: boolean } = {}) {
+export async function compositeGarment(ref: ReferencePixels, generated: Buffer, mask: Buffer, options: { matchSeam?: boolean; align?: boolean } = {}) {
   if (mask.length !== ref.width * ref.height) throw Error('Mask dimensions do not match the reference.');
   const meta = await sharp(generated).metadata();
   if (!meta.width || !meta.height || Math.abs(meta.width/meta.height - ref.width/ref.height) > 0.005)
     throw Error('Generated framing differs from the reference. No protected-pixel result was produced.');
-  const candidate = await sharp(generated).rotate().resize(ref.width,ref.height,{fit:'fill'})
+  let candidate = await sharp(generated).rotate().resize(ref.width,ref.height,{fit:'fill'})
     .toColourspace('srgb').ensureAlpha().raw().toBuffer();
+  let alignment: Alignment | undefined;
+  if (options.align) {
+    // Put the generated head back where the original face is before restoring it (lib/face-align.ts).
+    const found = findAlignment(ref, candidate, mask); alignment = found.alignment;
+    if (alignment.applied) {
+      const native = await sharp(generated).rotate().toColourspace('srgb').ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+      candidate = warpGenerated(native.data, native.info.width, native.info.height, ref.width, ref.height, alignment, found.cx, found.cy);
+    }
+  }
   // Face-only restoration must not derive garment colours from the old shirt.
   if (options.matchSeam !== false) seamMatch(ref, candidate, mask);
   const pixels = Buffer.from(ref.data);
@@ -147,7 +157,8 @@ export async function compositeGarment(ref: ReferencePixels, generated: Buffer, 
   return { png, report: { method:'garment-only' as const, verified:true, width:ref.width, height:ref.height,
     protectedPixels, changedProtectedPixels:changed, referenceSha256:ref.sha256,
     protectedSourceSha256:digest(originalProtected), protectedOutputSha256:digest(resultProtected),
-    outputSha256:digest(png), maskSha256:digest(mask), generatedWidth:meta.width, generatedHeight:meta.height } };
+    outputSha256:digest(png), maskSha256:digest(mask), generatedWidth:meta.width, generatedHeight:meta.height,
+    ...(alignment ? { alignment } : {}) } };
 }
 
 /** fal edit mask: white = editable, black = protected. */

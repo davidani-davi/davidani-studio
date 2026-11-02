@@ -122,3 +122,46 @@ describe('protected model-shot route',()=>{
   expect(await(await get('/models/studio 98/full.png')).json()).toMatchObject({ok:true,width:1024,height:1536,sha256:edit.referenceSha256});
  });
 });
+describe('Heal (re-composite an existing Simple render, no generation)',()=>{
+ const body={view:'full',editMode:'simple',humanModelId:'studio 100',poseId:'studio 100',known:{category:'top'},garmentImageUrls:['https://erp/front.png']};
+ const base='https://studio.test/models/studio%20100/full.png';
+ let other:Buffer,history:any[];
+ beforeEach(async()=>{
+  vi.stubEnv('FAL_KEY','k');
+  original=fs.readFileSync('public/models/studio 100/full.png');
+  other=await sharp({create:{width:1024,height:1536,channels:4,background:'#33aa55'}}).png().toBuffer();
+  history=[
+   {request_id:'other',status_code:200,ended_at:'2026-11-02T17:02:00Z',json_input:{image_urls:[base]},json_output:{images:[{url:'https://v3.fal.media/other.png'}]}},
+   {request_id:'mine',status_code:200,ended_at:'2026-11-02T17:01:00Z',json_input:{image_urls:[base]},json_output:{images:[{url:'https://v3.fal.media/mine.png'}]}},
+  ];
+  vi.stubGlobal('fetch',vi.fn(async(input:string|URL|Request)=>{const u=String(input);
+   if(u.startsWith('https://api.fal.ai/v1/models/requests/by-endpoint'))return Response.json({items:u.includes('sunburst')?history:[],has_more:false});
+   if(u==='https://v3.fal.media/mine.png')return new Response(new Uint8Array(generated));
+   if(u==='https://v3.fal.media/other.png')return new Response(new Uint8Array(other));
+   return new Response(new Uint8Array(hosted.get(u)||(u.startsWith('https://generated/')?generated:original)));}));
+ });
+ it('finds the render\'s own frame in fal history and composites it again without generating',async()=>{
+  const first=await(await POST(request(body))).json();expect(first.ok).toBe(true);
+  hosted.set('https://v3.fal.media/render.png',hosted.get(first.url)!);
+  mocks.generate.mockClear();
+  // async is ignored: Heal answers in one request instead of queuing a task.
+  const r=await POST(request({...body,async:true,requestId:'heal-1',heal:{url:'https://v3.fal.media/render.png',renderedAt:'2026-11-02T17:01:30Z'}}));
+  const data=await r.json();expect(r.status).toBe(200);
+  expect(mocks.generate).not.toHaveBeenCalled();expect(mocks.ground).not.toHaveBeenCalled();
+  expect(data.healed).toMatchObject({requestId:'mine',difference:0,from:'https://v3.fal.media/render.png'});
+  expect(data.url).toBe('https://host/garment-only.png');expect(data.url).not.toContain('fal.media');
+  expect(data.preservation).toMatchObject({verified:true,changedProtectedPixels:0});
+  expect(data.faceProtection).toBe('reviewed-contour-v1');
+ },30000); // two real composites: ~7 s on the CI runner
+ it('refuses before reading anything when the render cannot be healed for free',async()=>{
+  for(const extra of [{heal:{url:'https://evil.test/x.png'}},{heal:{url:'https://v3.fal.media/x.png'},humanModelId:'auto'},{heal:{url:'https://v3.fal.media/x.png'},poseId:''},{heal:{url:'https://v3.fal.media/x.png'},editMode:'garment-only'}]){
+   const r=await POST(request({...body,...extra}));expect(r.status,JSON.stringify(extra)).toBe(400);
+  }
+  expect(mocks.generate).not.toHaveBeenCalled();
+ });
+ it('says so when the frame is no longer in the history',async()=>{
+  history=[];hosted.set('https://v3.fal.media/render.png',generated);
+  const data=await(await POST(request({...body,heal:{url:'https://v3.fal.media/render.png'}}))).json();
+  expect(data.ok).toBe(false);expect(data.error).toMatch(/Render it again/);expect(mocks.generate).not.toHaveBeenCalled();
+ });
+});
