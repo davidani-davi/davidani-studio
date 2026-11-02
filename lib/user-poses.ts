@@ -181,6 +181,8 @@ function score(p: UserPose, slot: PoseSlot, framing: PlateFraming, g: GarmentRea
   let s = (rank < 0 ? 0 : order.length - rank) * 10;
   if (g.statementSleeves && p.arms === 'away-from-body') s += 2;
   if (slot === 'front' && p.stance === 'standing') s += 1;
+  // The front is the calm listing crop, facing camera with relaxed arms; raised or posed arms go to the full shot.
+  if (slot === 'front' && !STYLED_ARMS.includes(p.arms)) s += 1;
   // The full shot is the styled head-to-toe picture, not a second front (David, 2026-11-02, DCJ67197): a turned or
   // walking stance, a raised hand or a hand on the hip, and a stance or arms unlike the front's photo.
   if (slot === 'full') {

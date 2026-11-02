@@ -153,4 +153,8 @@ describe('the full shot is not a second front (DCJ67197, 2026-11-02)', () => {
   it('the front itself still prefers a plain standing pose', () => {
     expect(pickPose({ poses: set, slot: 'front', framing: 'crop', garment: plain, usage: usage() })?.pose.id).toBe('front-04');
   });
+  it('the front prefers relaxed arms over a raised hand, even when the raised one comes first (Celine · DCT78115)', () => {
+    const dct = [pose('front-03', 'front', 'crop', 'raised'), pose('front-04', 'front', 'crop', 'away-from-body'), pose('front-05', 'front', 'crop', 'hands-in-pockets'), pose('front-06', 'front', 'crop')];
+    expect(pickPose({ poses: dct, slot: 'front', framing: 'crop', garment: plain, usage: usage() })?.pose.id).toBe('front-05');
+  });
 });
