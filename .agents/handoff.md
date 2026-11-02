@@ -1,7 +1,7 @@
-# Handoff — 2026-11-02 ~10:40 PT, Claude Code (Mac mini)
+# Handoff — 2026-11-02, Claude Code (Mac mini)
 
-Branch `claude/model-library-download` off origin/main 2daa531 (#51). PR open, NOT merged
-(production deploys from main: merging needs David's OK).
+main 2aa4613 = PR #52 (`claude/model-library-download`) merged with David's OK; Vercel production deploy
+READY; live `GET /api/user-models/upload` answers `{"cloud":true}` with the token, 401 without.
 
 ## Just done
 - Model library (`/admin/models`, `app/admin/models/ModelAdmin.tsx`): every view card has a **Download**
@@ -23,11 +23,11 @@ Branch `claude/model-library-download` off origin/main 2daa531 (#51). PR open, N
 - Add model, local dev + Playwright: four 1536x2304 RGBA PNGs (20.5 MB) saved byte-identical, incoming emptied;
   with the upload route blocked the old "15.4 MB after compression" error returns (the cause). vitest 1378/1378.
   The Blob (production) half is not tested locally: no Blob token on the mini.
-  Not checked: production (after merge) or real Chrome on the MacBook Pro.
+  Not checked: a real upload in production, or real Chrome on the MacBook Pro.
 
 ## Next steps
-1. David's OK → merge; Vercel deploys main. Try Download on one set, and Add model with full-size PNGs,
-   in Chrome on the MacBook Pro (Choma can retry her set then).
+1. Try Download on one set, and Add model with full-size PNGs, in Chrome on the MacBook Pro
+   (Choma can retry her set now). If a direct upload fails, the browser console names the Blob error.
 2. Still open from #50: client buttons for recast sets in the extension (Other pose, pose list, remove).
 
 ## Gotchas
