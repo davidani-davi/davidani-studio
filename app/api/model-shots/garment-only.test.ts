@@ -152,7 +152,7 @@ describe('Heal (re-composite an existing Simple render, no generation)',()=>{
   expect(data.url).toBe('https://host/garment-only.png');expect(data.url).not.toContain('fal.media');
   expect(data.preservation).toMatchObject({verified:true,changedProtectedPixels:0});
   expect(data.faceProtection).toBe('reviewed-contour-v1');
- });
+ },30000); // two real composites: ~7 s on the CI runner
  it('refuses before reading anything when the render cannot be healed for free',async()=>{
   for(const extra of [{heal:{url:'https://evil.test/x.png'}},{heal:{url:'https://v3.fal.media/x.png'},humanModelId:'auto'},{heal:{url:'https://v3.fal.media/x.png'},poseId:''},{heal:{url:'https://v3.fal.media/x.png'},editMode:'garment-only'}]){
    const r=await POST(request({...body,...extra}));expect(r.status,JSON.stringify(extra)).toBe(400);
