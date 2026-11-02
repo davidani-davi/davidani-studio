@@ -1,6 +1,7 @@
 # Handoff — 2026-11-02, Claude Code (Mac mini)
 
-Branch `claude/align-before-face-composite` (PR open, NOT merged: needs David's OK). main ad7e78d (#53 jaw outlines, live).
+main **4a82237** = #54 merged, Vercel production READY (David: "Yes, merge both"). #53 jaw outlines live since ad7e78d.
+faire-management #239 (Heal button, ext 2.190.0 / team add-on 1.33.0) merged + deployed (a403aec8).
 
 ## Just done
 - Root cause of Jeonga's DT70115 doubled hair / second jaw edge / neck seams: GPT Image 2.5 edits return the person
@@ -19,8 +20,10 @@ Branch `claude/align-before-face-composite` (PR open, NOT merged: needs David's 
 - vitest 1413/1413; tsc only the 10 pre-existing test-file errors.
 
 ## Next steps
-1. David OKs -> merge -> confirm Vercel production READY. Every Simple render then reports `preservation.alignment`.
-2. faire-management: Heal button on Jeonga's Listing Team add-on (team gateway -> this endpoint), separate PR.
+1. Watch the first real Simple renders after 4a82237 (a draft set and a bottoms full shot too): each should report
+   `preservation.alignment`; `.reason` set = alignment refused. A set that still shows a neck line needs a hand-reviewed
+   outline. Don't render to test: image generation is Codex-only (no paid fal calls).
+2. Heal Jeonga's 5 DT70115 renders through faire-management (`listing-jobs` kind `heal-shot`), or let her press Heal.
 3. Proposed, not approved: automatic seam check before ERP upload; draft-contour outlines that follow the jaw.
 
 ## Gotchas
