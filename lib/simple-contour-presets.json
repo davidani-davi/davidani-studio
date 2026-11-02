@@ -6733,5 +6733,2009 @@
     ],
     "featherPixels": 8,
     "garmentBoundaryY": 290
+  },
+  "https://cdr9xgexrrfthz5f.public.blob.vercel-storage.com/user-models/draft-jeonga-celine-1-mvvixsfu/front.jpg": {
+    "width": 1365,
+    "height": 2048,
+    "sha256": "1503c0379fe6e4fbf0cb853bd5d5c9a6d868b9cdf6c07425707a877b5d2cec08",
+    "reviewedAt": "2026-11-02",
+    "sourcePath": "https://cdr9xgexrrfthz5f.public.blob.vercel-storage.com/user-models/draft-jeonga-celine-1-mvvixsfu/front.jpg",
+    "kind": "contour",
+    "points": [
+      [
+        825.3,
+        88.1
+      ],
+      [
+        892.5,
+        150.3
+      ],
+      [
+        900.0,
+        295.6
+      ],
+      [
+        885.3,
+        378.6
+      ],
+      [
+        863.2,
+        420.1
+      ],
+      [
+        832.5,
+        440.8
+      ],
+      [
+        780.2,
+        461.6
+      ],
+      [
+        733.4,
+        492.7
+      ],
+      [
+        700.1,
+        502.1
+      ],
+      [
+        666.9,
+        492.7
+      ],
+      [
+        627.7,
+        461.6
+      ],
+      [
+        570.2,
+        440.8
+      ],
+      [
+        542.9,
+        420.1
+      ],
+      [
+        523.0,
+        316.3
+      ],
+      [
+        521.5,
+        295.6
+      ],
+      [
+        528.1,
+        171.1
+      ],
+      [
+        539.7,
+        150.3
+      ],
+      [
+        595.9,
+        88.1
+      ]
+    ],
+    "featherPixels": 32,
+    "garmentBoundaryY": 539
+  },
+  "https://cdr9xgexrrfthz5f.public.blob.vercel-storage.com/user-models/draft-jeonga-celine-1-mvvixsfu/side.jpg": {
+    "width": 1365,
+    "height": 2048,
+    "sha256": "7a8a0427f51e44fbc92fe6a70a211ed926e3f9a9f3a8e6ea00b17b36bb2b613d",
+    "reviewedAt": "2026-11-02",
+    "sourcePath": "https://cdr9xgexrrfthz5f.public.blob.vercel-storage.com/user-models/draft-jeonga-celine-1-mvvixsfu/side.jpg",
+    "kind": "contour",
+    "points": [
+      [
+        781.4,
+        65.6
+      ],
+      [
+        848.0,
+        127.6
+      ],
+      [
+        852.5,
+        148.2
+      ],
+      [
+        858.3,
+        292.8
+      ],
+      [
+        842.7,
+        375.4
+      ],
+      [
+        823.9,
+        396.0
+      ],
+      [
+        695.2,
+        437.3
+      ],
+      [
+        662.1,
+        458.0
+      ],
+      [
+        638.5,
+        468.3
+      ],
+      [
+        600.8,
+        477.6
+      ],
+      [
+        563.0,
+        468.3
+      ],
+      [
+        552.8,
+        458.0
+      ],
+      [
+        539.5,
+        437.3
+      ],
+      [
+        501.5,
+        416.7
+      ],
+      [
+        474.7,
+        396.0
+      ],
+      [
+        463.2,
+        292.8
+      ],
+      [
+        470.8,
+        148.2
+      ],
+      [
+        486.0,
+        127.6
+      ],
+      [
+        541.5,
+        65.6
+      ]
+    ],
+    "featherPixels": 34,
+    "garmentBoundaryY": 543
+  },
+  "https://cdr9xgexrrfthz5f.public.blob.vercel-storage.com/user-models/draft-jeonga-celine-1-mvvixsfu/back.jpg": {
+    "width": 1365,
+    "height": 2048,
+    "sha256": "e4bfe6a6415f1f3fa706abcd57ae9e9cde49d65252447e3564f6b0dad5cd8217",
+    "reviewedAt": "2026-11-02",
+    "sourcePath": "https://cdr9xgexrrfthz5f.public.blob.vercel-storage.com/user-models/draft-jeonga-celine-1-mvvixsfu/back.jpg",
+    "kind": "contour",
+    "points": [
+      [
+        421.3,
+        109.8
+      ],
+      [
+        506.4,
+        30.7
+      ],
+      [
+        790.3,
+        30.7
+      ],
+      [
+        875.5,
+        96.6
+      ],
+      [
+        884.9,
+        250.4
+      ],
+      [
+        878,
+        340
+      ],
+      [
+        862,
+        420
+      ],
+      [
+        852,
+        488
+      ],
+      [
+        800,
+        500
+      ],
+      [
+        720,
+        488
+      ],
+      [
+        640,
+        470
+      ],
+      [
+        605,
+        452
+      ],
+      [
+        575,
+        478
+      ],
+      [
+        545,
+        500
+      ],
+      [
+        510,
+        514
+      ],
+      [
+        485,
+        503
+      ],
+      [
+        462,
+        470
+      ],
+      [
+        440,
+        440
+      ],
+      [
+        412,
+        400
+      ],
+      [
+        400,
+        350
+      ],
+      [
+        405,
+        300
+      ],
+      [
+        411.8,
+        259.2
+      ]
+    ],
+    "featherPixels": 30,
+    "garmentBoundaryY": 544
+  },
+  "https://cdr9xgexrrfthz5f.public.blob.vercel-storage.com/user-models/draft-jeonga-celine-1-mvvixsfu/full.jpg": {
+    "width": 1365,
+    "height": 2048,
+    "sha256": "5002440642302b0b623b9b35cfcb32820863e3f39906de0cf685501d53a2f4b5",
+    "reviewedAt": "2026-11-02",
+    "sourcePath": "https://cdr9xgexrrfthz5f.public.blob.vercel-storage.com/user-models/draft-jeonga-celine-1-mvvixsfu/full.jpg",
+    "kind": "contour",
+    "points": [
+      [
+        784.8,
+        59.1
+      ],
+      [
+        828.4,
+        101.4
+      ],
+      [
+        833.4,
+        200.0
+      ],
+      [
+        824.4,
+        256.4
+      ],
+      [
+        810.3,
+        284.6
+      ],
+      [
+        789.2,
+        298.7
+      ],
+      [
+        755.4,
+        312.8
+      ],
+      [
+        725.1,
+        333.9
+      ],
+      [
+        703.8,
+        339.9
+      ],
+      [
+        682.6,
+        333.9
+      ],
+      [
+        657.7,
+        312.8
+      ],
+      [
+        619.1,
+        298.7
+      ],
+      [
+        599.7,
+        284.6
+      ],
+      [
+        585.7,
+        214.1
+      ],
+      [
+        589.4,
+        115.5
+      ],
+      [
+        597.3,
+        101.4
+      ],
+      [
+        633.6,
+        59.1
+      ]
+    ],
+    "featherPixels": 34,
+    "garmentBoundaryY": 381
+  },
+  "https://cdr9xgexrrfthz5f.public.blob.vercel-storage.com/user-models/draft-jeonga-vision-3-mvvj5i91/front.jpg": {
+    "width": 1365,
+    "height": 2048,
+    "sha256": "38441eb311b40c1b772ba21360653cd7f795f412e24a783162dd61fc310caeeb",
+    "reviewedAt": "2026-11-02",
+    "sourcePath": "https://cdr9xgexrrfthz5f.public.blob.vercel-storage.com/user-models/draft-jeonga-vision-3-mvvj5i91/front.jpg",
+    "kind": "contour",
+    "points": [
+      [
+        764.3,
+        59.7
+      ],
+      [
+        825.4,
+        120.1
+      ],
+      [
+        831.6,
+        261.0
+      ],
+      [
+        817.0,
+        341.6
+      ],
+      [
+        794.6,
+        402.0
+      ],
+      [
+        756.9,
+        422.1
+      ],
+      [
+        711.1,
+        452.3
+      ],
+      [
+        675.9,
+        461.4
+      ],
+      [
+        640.8,
+        452.3
+      ],
+      [
+        580.8,
+        422.1
+      ],
+      [
+        515.2,
+        402.0
+      ],
+      [
+        507.1,
+        381.9
+      ],
+      [
+        488.0,
+        261.0
+      ],
+      [
+        494.2,
+        140.2
+      ],
+      [
+        503.6,
+        120.1
+      ],
+      [
+        555.8,
+        59.7
+      ]
+    ],
+    "featherPixels": 22,
+    "garmentBoundaryY": 484
+  },
+  "https://cdr9xgexrrfthz5f.public.blob.vercel-storage.com/user-models/draft-jeonga-vision-3-mvvj5i91/side.jpg": {
+    "width": 1365,
+    "height": 2048,
+    "sha256": "7dd6d81545cad7d5d9b25459a6581f8bb721fa80443894178b622c49c3c62508",
+    "reviewedAt": "2026-11-02",
+    "sourcePath": "https://cdr9xgexrrfthz5f.public.blob.vercel-storage.com/user-models/draft-jeonga-vision-3-mvvj5i91/side.jpg",
+    "kind": "contour",
+    "points": [
+      [
+        781.1,
+        41.7
+      ],
+      [
+        850.0,
+        100.1
+      ],
+      [
+        857.9,
+        236.3
+      ],
+      [
+        843.3,
+        314.2
+      ],
+      [
+        808.7,
+        353.1
+      ],
+      [
+        756.1,
+        372.6
+      ],
+      [
+        692.6,
+        392.1
+      ],
+      [
+        660.4,
+        411.5
+      ],
+      [
+        637.3,
+        421.3
+      ],
+      [
+        605.8,
+        430.0
+      ],
+      [
+        574.3,
+        421.3
+      ],
+      [
+        548.1,
+        392.1
+      ],
+      [
+        506.4,
+        372.6
+      ],
+      [
+        480.6,
+        353.1
+      ],
+      [
+        468.4,
+        255.8
+      ],
+      [
+        474.8,
+        119.5
+      ],
+      [
+        487.1,
+        100.1
+      ],
+      [
+        544.5,
+        41.7
+      ]
+    ],
+    "featherPixels": 22,
+    "garmentBoundaryY": 453
+  },
+  "https://cdr9xgexrrfthz5f.public.blob.vercel-storage.com/user-models/draft-jeonga-vision-3-mvvj5i91/full.jpg": {
+    "width": 1365,
+    "height": 2048,
+    "sha256": "4e21f1f7b78eac8ae8d47f72b4ca483b2c8e1e07821ab0fe00c5fe0e104bc155",
+    "reviewedAt": "2026-11-02",
+    "sourcePath": "https://cdr9xgexrrfthz5f.public.blob.vercel-storage.com/user-models/draft-jeonga-vision-3-mvvj5i91/full.jpg",
+    "kind": "contour",
+    "points": [
+      [
+        779.2,
+        37.7
+      ],
+      [
+        821.8,
+        74.2
+      ],
+      [
+        827.8,
+        159.4
+      ],
+      [
+        816.3,
+        220.2
+      ],
+      [
+        806.7,
+        232.3
+      ],
+      [
+        758.9,
+        256.7
+      ],
+      [
+        741.3,
+        268.8
+      ],
+      [
+        725.5,
+        274.9
+      ],
+      [
+        696.6,
+        280.0
+      ],
+      [
+        667.7,
+        274.9
+      ],
+      [
+        653.5,
+        268.8
+      ],
+      [
+        638.4,
+        256.7
+      ],
+      [
+        597.3,
+        232.3
+      ],
+      [
+        591.5,
+        220.2
+      ],
+      [
+        578.1,
+        171.5
+      ],
+      [
+        582.6,
+        86.4
+      ],
+      [
+        591.4,
+        74.2
+      ],
+      [
+        626.9,
+        37.7
+      ]
+    ],
+    "featherPixels": 34,
+    "garmentBoundaryY": 330
+  },
+  "https://cdr9xgexrrfthz5f.public.blob.vercel-storage.com/user-models/draft-jeonga-celine-3-mvvj6mr8/front.jpg": {
+    "width": 1365,
+    "height": 2048,
+    "sha256": "31a15d6de6edaa472fde0d8878285490b3b41c111d8256f8d2ab739f676615b9",
+    "reviewedAt": "2026-11-02",
+    "sourcePath": "https://cdr9xgexrrfthz5f.public.blob.vercel-storage.com/user-models/draft-jeonga-celine-3-mvvj6mr8/front.jpg",
+    "kind": "contour",
+    "points": [
+      [
+        776.1,
+        36.1
+      ],
+      [
+        847.9,
+        106.0
+      ],
+      [
+        857.0,
+        269.1
+      ],
+      [
+        842.3,
+        362.4
+      ],
+      [
+        832.4,
+        385.7
+      ],
+      [
+        819.0,
+        409.0
+      ],
+      [
+        784.2,
+        432.3
+      ],
+      [
+        717.1,
+        455.6
+      ],
+      [
+        667.6,
+        490.5
+      ],
+      [
+        631.5,
+        501.2
+      ],
+      [
+        595.5,
+        490.5
+      ],
+      [
+        548.8,
+        455.6
+      ],
+      [
+        482.0,
+        432.3
+      ],
+      [
+        458.0,
+        409.0
+      ],
+      [
+        447.1,
+        292.4
+      ],
+      [
+        454.2,
+        129.3
+      ],
+      [
+        467.8,
+        106.0
+      ],
+      [
+        527.7,
+        36.1
+      ]
+    ],
+    "featherPixels": 22,
+    "garmentBoundaryY": 524
+  },
+  "https://cdr9xgexrrfthz5f.public.blob.vercel-storage.com/user-models/draft-jeonga-celine-3-mvvj6mr8/side.jpg": {
+    "width": 1365,
+    "height": 2048,
+    "sha256": "0a83d3e367510ceae80b8fbd9da62987e0461d4432f887eb42f8c1bf23ee8ad0",
+    "reviewedAt": "2026-11-02",
+    "sourcePath": "https://cdr9xgexrrfthz5f.public.blob.vercel-storage.com/user-models/draft-jeonga-celine-3-mvvj6mr8/side.jpg",
+    "kind": "contour",
+    "points": [
+      [
+        776.2,
+        39.5
+      ],
+      [
+        862.0,
+        109.6
+      ],
+      [
+        871.0,
+        273.2
+      ],
+      [
+        856.4,
+        343.3
+      ],
+      [
+        848.4,
+        366.6
+      ],
+      [
+        799.7,
+        413.4
+      ],
+      [
+        771.0,
+        436.7
+      ],
+      [
+        683.0,
+        460.1
+      ],
+      [
+        618.8,
+        495.2
+      ],
+      [
+        589.3,
+        505.8
+      ],
+      [
+        559.8,
+        495.2
+      ],
+      [
+        546.2,
+        483.5
+      ],
+      [
+        494.3,
+        460.1
+      ],
+      [
+        406.4,
+        436.7
+      ],
+      [
+        399.8,
+        413.4
+      ],
+      [
+        388.7,
+        273.2
+      ],
+      [
+        397.3,
+        132.9
+      ],
+      [
+        410.8,
+        109.6
+      ],
+      [
+        483.9,
+        39.5
+      ]
+    ],
+    "featherPixels": 22,
+    "garmentBoundaryY": 528
+  },
+  "https://cdr9xgexrrfthz5f.public.blob.vercel-storage.com/user-models/draft-jeonga-celine-3-mvvj6mr8/back.jpg": {
+    "width": 1365,
+    "height": 2048,
+    "sha256": "b14453f4b2400dbba64c22ce77c0134a86bedb7b00c91fbf75e705085f4b2b9e",
+    "reviewedAt": "2026-11-02",
+    "sourcePath": "https://cdr9xgexrrfthz5f.public.blob.vercel-storage.com/user-models/draft-jeonga-celine-3-mvvj6mr8/back.jpg",
+    "kind": "contour",
+    "points": [
+      [
+        461.8,
+        104.2
+      ],
+      [
+        555.6,
+        29.4
+      ],
+      [
+        868.1,
+        29.4
+      ],
+      [
+        961.9,
+        91.8
+      ],
+      [
+        972.3,
+        237.2
+      ],
+      [
+        951.5,
+        320.3
+      ],
+      [
+        868.1,
+        386.8
+      ],
+      [
+        800,
+        412
+      ],
+      [
+        740,
+        404
+      ],
+      [
+        690,
+        392
+      ],
+      [
+        655,
+        365
+      ],
+      [
+        630,
+        385
+      ],
+      [
+        590,
+        410
+      ],
+      [
+        545,
+        432
+      ],
+      [
+        515,
+        440
+      ],
+      [
+        490,
+        428
+      ],
+      [
+        470,
+        405
+      ],
+      [
+        455,
+        370
+      ],
+      [
+        450,
+        320
+      ],
+      [
+        451.4,
+        245.5
+      ]
+    ],
+    "featherPixels": 30,
+    "garmentBoundaryY": 520
+  },
+  "https://cdr9xgexrrfthz5f.public.blob.vercel-storage.com/user-models/draft-jeonga-celine-3-mvvj6mr8/full.jpg": {
+    "width": 1365,
+    "height": 2048,
+    "sha256": "ca1a78255232b4aa9dbcebbd5de206a89f644c664fce69a049676925e4924c6e",
+    "reviewedAt": "2026-11-02",
+    "sourcePath": "https://cdr9xgexrrfthz5f.public.blob.vercel-storage.com/user-models/draft-jeonga-celine-3-mvvj6mr8/full.jpg",
+    "kind": "contour",
+    "points": [
+      [
+        707.6,
+        45.5
+      ],
+      [
+        747.9,
+        82.9
+      ],
+      [
+        752.4,
+        170.0
+      ],
+      [
+        746.9,
+        244.6
+      ],
+      [
+        738.8,
+        257.1
+      ],
+      [
+        716.3,
+        269.5
+      ],
+      [
+        697.2,
+        288.2
+      ],
+      [
+        674.4,
+        293.4
+      ],
+      [
+        651.6,
+        288.2
+      ],
+      [
+        619.8,
+        269.5
+      ],
+      [
+        578.5,
+        257.1
+      ],
+      [
+        553.4,
+        244.6
+      ],
+      [
+        544.4,
+        232.2
+      ],
+      [
+        522.6,
+        170.0
+      ],
+      [
+        526.7,
+        95.3
+      ],
+      [
+        532.8,
+        82.9
+      ],
+      [
+        567.5,
+        45.5
+      ]
+    ],
+    "featherPixels": 22,
+    "garmentBoundaryY": 316
+  },
+  "https://cdr9xgexrrfthz5f.public.blob.vercel-storage.com/user-models/celine-dct78115-mvy5e2r2/poses/front-01.png": {
+    "width": 2000,
+    "height": 3000,
+    "sha256": "6726a3d1c8b414e314a41cd7dbe24ef9faacc0a37998a9a4bac68a3ed35cb81f",
+    "reviewedAt": "2026-11-02",
+    "sourcePath": "https://cdr9xgexrrfthz5f.public.blob.vercel-storage.com/user-models/celine-dct78115-mvy5e2r2/poses/front-01.png",
+    "kind": "contour",
+    "points": [
+      [
+        1014.8,
+        117
+      ],
+      [
+        1067.4,
+        135.6
+      ],
+      [
+        1092.9,
+        154.1
+      ],
+      [
+        1125.6,
+        191.2
+      ],
+      [
+        1152.8,
+        246.9
+      ],
+      [
+        1168.3,
+        302.6
+      ],
+      [
+        1172.4,
+        321.2
+      ],
+      [
+        1180.4,
+        414.0
+      ],
+      [
+        1151.9,
+        432.5
+      ],
+      [
+        1085.9,
+        451.1
+      ],
+      [
+        1042.2,
+        478.9
+      ],
+      [
+        1010.0,
+        487.2
+      ],
+      [
+        977.8,
+        478.9
+      ],
+      [
+        935.6,
+        451.1
+      ],
+      [
+        853.3,
+        432.5
+      ],
+      [
+        808.1,
+        414.0
+      ],
+      [
+        866.6,
+        228.4
+      ],
+      [
+        878.3,
+        209.8
+      ],
+      [
+        918.5,
+        154.1
+      ],
+      [
+        947.4,
+        135.6
+      ],
+      [
+        1007.7,
+        117
+      ]
+    ],
+    "featherPixels": 50,
+    "garmentBoundaryY": 569
+  },
+  "https://cdr9xgexrrfthz5f.public.blob.vercel-storage.com/user-models/celine-dct78115-mvy5e2r2/poses/front-02.png": {
+    "width": 2000,
+    "height": 3000,
+    "sha256": "d604716254d439e1639c6639de3121a467700fb88d0a64a6754f537d40442e47",
+    "reviewedAt": "2026-11-02",
+    "sourcePath": "https://cdr9xgexrrfthz5f.public.blob.vercel-storage.com/user-models/celine-dct78115-mvy5e2r2/poses/front-02.png",
+    "kind": "contour",
+    "points": [
+      [
+        1061.9,
+        101
+      ],
+      [
+        1096.9,
+        119.8
+      ],
+      [
+        1121.6,
+        138.7
+      ],
+      [
+        1152.5,
+        176.4
+      ],
+      [
+        1172.8,
+        214.1
+      ],
+      [
+        1192.9,
+        270.6
+      ],
+      [
+        1197.0,
+        289.5
+      ],
+      [
+        1207.1,
+        383.7
+      ],
+      [
+        1211.8,
+        402.5
+      ],
+      [
+        1188.6,
+        421.4
+      ],
+      [
+        1115.8,
+        440.2
+      ],
+      [
+        1072.1,
+        468.5
+      ],
+      [
+        1040.6,
+        476.9
+      ],
+      [
+        1009.1,
+        468.5
+      ],
+      [
+        962.6,
+        440.2
+      ],
+      [
+        872.5,
+        421.4
+      ],
+      [
+        832.2,
+        402.5
+      ],
+      [
+        868.1,
+        251.8
+      ],
+      [
+        890.7,
+        195.2
+      ],
+      [
+        904.5,
+        176.4
+      ],
+      [
+        934.6,
+        138.7
+      ],
+      [
+        959.4,
+        119.8
+      ],
+      [
+        1019.7,
+        101
+      ]
+    ],
+    "featherPixels": 50,
+    "garmentBoundaryY": 595
+  },
+  "https://cdr9xgexrrfthz5f.public.blob.vercel-storage.com/user-models/celine-dct78115-mvy5e2r2/poses/front-03.png": {
+    "width": 2000,
+    "height": 3000,
+    "sha256": "3ee4e9b9c2822eaa755ac2d772bb17ebb457f3f4194f9f9ba1dd95f992ece3e9",
+    "reviewedAt": "2026-11-02",
+    "sourcePath": "https://cdr9xgexrrfthz5f.public.blob.vercel-storage.com/user-models/celine-dct78115-mvy5e2r2/poses/front-03.png",
+    "kind": "contour",
+    "points": [
+      [
+        982.2,
+        109
+      ],
+      [
+        1054.1,
+        141.9
+      ],
+      [
+        1089.4,
+        174.9
+      ],
+      [
+        1118.7,
+        207.8
+      ],
+      [
+        1155.9,
+        273.7
+      ],
+      [
+        1169.1,
+        306.7
+      ],
+      [
+        1187.1,
+        372.6
+      ],
+      [
+        1163.9,
+        405.5
+      ],
+      [
+        1167.8,
+        438.5
+      ],
+      [
+        1196.1,
+        471.4
+      ],
+      [
+        1212.6,
+        504.3
+      ],
+      [
+        1218.5,
+        537.3
+      ],
+      [
+        1201.8,
+        570.2
+      ],
+      [
+        1189.1,
+        603.2
+      ],
+      [
+        1200.1,
+        636.1
+      ],
+      [
+        1175.0,
+        669.1
+      ],
+      [
+        1061.9,
+        702.0
+      ],
+      [
+        989.0,
+        751.4
+      ],
+      [
+        933.3,
+        766.9
+      ],
+      [
+        877.7,
+        751.4
+      ],
+      [
+        805.1,
+        702.0
+      ],
+      [
+        658.4,
+        669.1
+      ],
+      [
+        601.7,
+        636.1
+      ],
+      [
+        631.9,
+        537.3
+      ],
+      [
+        662.5,
+        372.6
+      ],
+      [
+        672.6,
+        339.6
+      ],
+      [
+        684.2,
+        306.7
+      ],
+      [
+        735.8,
+        207.8
+      ],
+      [
+        765.1,
+        174.9
+      ],
+      [
+        808.1,
+        141.9
+      ],
+      [
+        918.0,
+        109
+      ]
+    ],
+    "featherPixels": 32,
+    "garmentBoundaryY": 802
+  },
+  "https://cdr9xgexrrfthz5f.public.blob.vercel-storage.com/user-models/celine-dct78115-mvy5e2r2/poses/front-04.png": {
+    "width": 2000,
+    "height": 3000,
+    "sha256": "07a6bc4e927ac2591be203c6725f6a66511808e01b7cd77ba4185f04e0b08cc9",
+    "reviewedAt": "2026-11-02",
+    "sourcePath": "https://cdr9xgexrrfthz5f.public.blob.vercel-storage.com/user-models/celine-dct78115-mvy5e2r2/poses/front-04.png",
+    "kind": "contour",
+    "points": [
+      [
+        1205.0,
+        101
+      ],
+      [
+        1315.4,
+        133.7
+      ],
+      [
+        1347.8,
+        166.4
+      ],
+      [
+        1372.4,
+        199.1
+      ],
+      [
+        1408.7,
+        264.4
+      ],
+      [
+        1425.4,
+        297.1
+      ],
+      [
+        1470.6,
+        460.5
+      ],
+      [
+        1476.8,
+        493.2
+      ],
+      [
+        1485.2,
+        624.0
+      ],
+      [
+        1420.9,
+        656.6
+      ],
+      [
+        1308.5,
+        689.3
+      ],
+      [
+        1237.2,
+        738.3
+      ],
+      [
+        1179.8,
+        753.7
+      ],
+      [
+        1122.4,
+        738.3
+      ],
+      [
+        1095.8,
+        722.0
+      ],
+      [
+        1053.3,
+        689.3
+      ],
+      [
+        913.1,
+        656.6
+      ],
+      [
+        822.8,
+        624.0
+      ],
+      [
+        935.4,
+        297.1
+      ],
+      [
+        948.7,
+        264.4
+      ],
+      [
+        989.2,
+        199.1
+      ],
+      [
+        1020.7,
+        166.4
+      ],
+      [
+        1058.1,
+        133.7
+      ],
+      [
+        1181.7,
+        101
+      ]
+    ],
+    "featherPixels": 50,
+    "garmentBoundaryY": 980
+  },
+  "https://cdr9xgexrrfthz5f.public.blob.vercel-storage.com/user-models/celine-dct78115-mvy5e2r2/poses/front-05.png": {
+    "width": 2000,
+    "height": 3000,
+    "sha256": "d24b9d6a43f99c7fa848dd58e7f6c77509febabc2a8f91e66de9576e627c582e",
+    "reviewedAt": "2026-11-02",
+    "sourcePath": "https://cdr9xgexrrfthz5f.public.blob.vercel-storage.com/user-models/celine-dct78115-mvy5e2r2/poses/front-05.png",
+    "kind": "contour",
+    "points": [
+      [
+        1035.5,
+        97
+      ],
+      [
+        1130.6,
+        129.6
+      ],
+      [
+        1165.0,
+        162.2
+      ],
+      [
+        1239.9,
+        259.9
+      ],
+      [
+        1284.6,
+        390.2
+      ],
+      [
+        1293.0,
+        422.8
+      ],
+      [
+        1311.1,
+        618.3
+      ],
+      [
+        1262.7,
+        650.9
+      ],
+      [
+        1148.0,
+        683.5
+      ],
+      [
+        1076.0,
+        732.4
+      ],
+      [
+        1018.5,
+        747.7
+      ],
+      [
+        960.9,
+        732.4
+      ],
+      [
+        888.7,
+        683.5
+      ],
+      [
+        746.1,
+        650.9
+      ],
+      [
+        671.2,
+        618.3
+      ],
+      [
+        678.7,
+        585.7
+      ],
+      [
+        706.4,
+        520.6
+      ],
+      [
+        717.1,
+        488.0
+      ],
+      [
+        758.6,
+        325.1
+      ],
+      [
+        770.9,
+        292.5
+      ],
+      [
+        810.0,
+        227.3
+      ],
+      [
+        832.7,
+        194.7
+      ],
+      [
+        863.2,
+        162.2
+      ],
+      [
+        903.3,
+        129.6
+      ],
+      [
+        1022.2,
+        97
+      ]
+    ],
+    "featherPixels": 50,
+    "garmentBoundaryY": 867
+  },
+  "https://cdr9xgexrrfthz5f.public.blob.vercel-storage.com/user-models/celine-dct78115-mvy5e2r2/poses/front-06.png": {
+    "width": 2000,
+    "height": 3000,
+    "sha256": "c0772356cd75ac8875bbf24c9b281a0e0ad254f026f5d421d571d7ba7e220c2c",
+    "reviewedAt": "2026-11-02",
+    "sourcePath": "https://cdr9xgexrrfthz5f.public.blob.vercel-storage.com/user-models/celine-dct78115-mvy5e2r2/poses/front-06.png",
+    "kind": "contour",
+    "points": [
+      [
+        1109.0,
+        109
+      ],
+      [
+        1201.2,
+        138.6
+      ],
+      [
+        1236.2,
+        168.2
+      ],
+      [
+        1263.8,
+        197.9
+      ],
+      [
+        1302.3,
+        257.1
+      ],
+      [
+        1316.4,
+        286.7
+      ],
+      [
+        1368.5,
+        464.4
+      ],
+      [
+        1381.7,
+        582.9
+      ],
+      [
+        1337.1,
+        612.5
+      ],
+      [
+        1228.5,
+        642.1
+      ],
+      [
+        1162.7,
+        686.5
+      ],
+      [
+        1109.6,
+        700.3
+      ],
+      [
+        1056.6,
+        686.5
+      ],
+      [
+        987.5,
+        642.1
+      ],
+      [
+        853.9,
+        612.5
+      ],
+      [
+        791.3,
+        582.9
+      ],
+      [
+        799.9,
+        553.3
+      ],
+      [
+        824.4,
+        494.0
+      ],
+      [
+        851.6,
+        345.9
+      ],
+      [
+        885.8,
+        257.1
+      ],
+      [
+        923.3,
+        197.9
+      ],
+      [
+        949.3,
+        168.2
+      ],
+      [
+        985.7,
+        138.6
+      ],
+      [
+        1090.8,
+        109
+      ]
+    ],
+    "featherPixels": 50,
+    "garmentBoundaryY": 915
+  },
+  "https://cdr9xgexrrfthz5f.public.blob.vercel-storage.com/user-models/celine-dct78115-mvy5e2r2/poses/front-07.png": {
+    "width": 2000,
+    "height": 3000,
+    "sha256": "c891190568139cc4b87ac7d71fef76407d10bc77d81f7fa566046f7f03fdb706",
+    "reviewedAt": "2026-11-02",
+    "sourcePath": "https://cdr9xgexrrfthz5f.public.blob.vercel-storage.com/user-models/celine-dct78115-mvy5e2r2/poses/front-07.png",
+    "kind": "contour",
+    "points": [
+      [
+        957.0,
+        89
+      ],
+      [
+        1021.3,
+        109.0
+      ],
+      [
+        1042.9,
+        128.9
+      ],
+      [
+        1078.2,
+        168.9
+      ],
+      [
+        1091.5,
+        188.8
+      ],
+      [
+        1123.5,
+        268.7
+      ],
+      [
+        1129.2,
+        288.6
+      ],
+      [
+        1142.5,
+        388.5
+      ],
+      [
+        1147.5,
+        408.4
+      ],
+      [
+        1118.5,
+        428.4
+      ],
+      [
+        1025.4,
+        448.4
+      ],
+      [
+        972.6,
+        478.3
+      ],
+      [
+        939.5,
+        487.3
+      ],
+      [
+        906.5,
+        478.3
+      ],
+      [
+        862.0,
+        448.4
+      ],
+      [
+        773.9,
+        428.4
+      ],
+      [
+        736.9,
+        408.4
+      ],
+      [
+        789.7,
+        208.8
+      ],
+      [
+        807.6,
+        168.9
+      ],
+      [
+        823.1,
+        148.9
+      ],
+      [
+        843.1,
+        128.9
+      ],
+      [
+        875.1,
+        109.0
+      ],
+      [
+        944.0,
+        89
+      ]
+    ],
+    "featherPixels": 50,
+    "garmentBoundaryY": 579
+  },
+  "https://cdr9xgexrrfthz5f.public.blob.vercel-storage.com/user-models/celine-dct78115-mvy5e2r2/poses/side-08.png": {
+    "width": 2000,
+    "height": 3000,
+    "sha256": "e8277928e2103a00df3f997887081694820f119c8d7bf786bd41d67c5fcf5834",
+    "reviewedAt": "2026-11-02",
+    "sourcePath": "https://cdr9xgexrrfthz5f.public.blob.vercel-storage.com/user-models/celine-dct78115-mvy5e2r2/poses/side-08.png",
+    "kind": "contour",
+    "points": [
+      [
+        1020.0,
+        85
+      ],
+      [
+        1071.3,
+        103.3
+      ],
+      [
+        1108.0,
+        140.0
+      ],
+      [
+        1120.0,
+        158.3
+      ],
+      [
+        1120.0,
+        359.8
+      ],
+      [
+        1115.1,
+        378.2
+      ],
+      [
+        941.9,
+        414.8
+      ],
+      [
+        910.5,
+        433.1
+      ],
+      [
+        859.7,
+        450.5
+      ],
+      [
+        831.1,
+        442.3
+      ],
+      [
+        826.6,
+        433.1
+      ],
+      [
+        820.0,
+        378.2
+      ],
+      [
+        797.0,
+        341.5
+      ],
+      [
+        812.0,
+        304.9
+      ],
+      [
+        816.3,
+        286.5
+      ],
+      [
+        819.5,
+        176.6
+      ],
+      [
+        822.4,
+        158.3
+      ],
+      [
+        902.4,
+        103.3
+      ],
+      [
+        995.0,
+        85
+      ]
+    ],
+    "featherPixels": 50,
+    "garmentBoundaryY": 532
+  },
+  "https://cdr9xgexrrfthz5f.public.blob.vercel-storage.com/user-models/celine-dct78115-mvy5e2r2/poses/front-09.png": {
+    "width": 2000,
+    "height": 3000,
+    "sha256": "73d86155ad5ba9c5c8cb6561a7ffa912d13f082d37f13dcfd887c04b59cd5e50",
+    "reviewedAt": "2026-11-02",
+    "sourcePath": "https://cdr9xgexrrfthz5f.public.blob.vercel-storage.com/user-models/celine-dct78115-mvy5e2r2/poses/front-09.png",
+    "kind": "contour",
+    "points": [
+      [
+        984.7,
+        9
+      ],
+      [
+        1043.0,
+        98.9
+      ],
+      [
+        1081.4,
+        188.8
+      ],
+      [
+        1169.3,
+        488.4
+      ],
+      [
+        1081.7,
+        518.3
+      ],
+      [
+        958.6,
+        548.3
+      ],
+      [
+        922.3,
+        578.2
+      ],
+      [
+        896.9,
+        593.2
+      ],
+      [
+        842.2,
+        607.2
+      ],
+      [
+        787.5,
+        593.2
+      ],
+      [
+        758.6,
+        578.2
+      ],
+      [
+        712.9,
+        548.3
+      ],
+      [
+        564.6,
+        518.3
+      ],
+      [
+        449.8,
+        488.4
+      ],
+      [
+        455.0,
+        458.4
+      ],
+      [
+        467.0,
+        428.4
+      ],
+      [
+        475.3,
+        398.5
+      ],
+      [
+        515.1,
+        188.8
+      ],
+      [
+        550.0,
+        98.9
+      ],
+      [
+        565.5,
+        68.9
+      ],
+      [
+        603.4,
+        9
+      ]
+    ],
+    "featherPixels": 50,
+    "garmentBoundaryY": 699
+  },
+  "https://cdr9xgexrrfthz5f.public.blob.vercel-storage.com/user-models/celine-dct78115-mvy5e2r2/poses/front-10.png": {
+    "width": 2000,
+    "height": 3000,
+    "sha256": "d435f58aa23ecd36c9bb0d811126f623589f4d02d62b985f90dbe422d5c79089",
+    "reviewedAt": "2026-11-02",
+    "sourcePath": "https://cdr9xgexrrfthz5f.public.blob.vercel-storage.com/user-models/celine-dct78115-mvy5e2r2/poses/front-10.png",
+    "kind": "contour",
+    "points": [
+      [
+        1000.2,
+        93
+      ],
+      [
+        1093.3,
+        124.0
+      ],
+      [
+        1129.3,
+        155.0
+      ],
+      [
+        1158.1,
+        186.0
+      ],
+      [
+        1210.9,
+        278.9
+      ],
+      [
+        1222.0,
+        309.9
+      ],
+      [
+        1247.7,
+        402.8
+      ],
+      [
+        1273.8,
+        588.7
+      ],
+      [
+        1199.7,
+        619.7
+      ],
+      [
+        1074.0,
+        650.7
+      ],
+      [
+        1027.5,
+        681.7
+      ],
+      [
+        998.5,
+        697.2
+      ],
+      [
+        944.7,
+        711.7
+      ],
+      [
+        890.9,
+        697.2
+      ],
+      [
+        833.0,
+        650.7
+      ],
+      [
+        724.6,
+        619.7
+      ],
+      [
+        655.3,
+        588.7
+      ],
+      [
+        691.8,
+        464.8
+      ],
+      [
+        715.8,
+        340.9
+      ],
+      [
+        738.9,
+        278.9
+      ],
+      [
+        775.4,
+        216.9
+      ],
+      [
+        798.6,
+        186.0
+      ],
+      [
+        831.4,
+        155.0
+      ],
+      [
+        870.4,
+        124.0
+      ],
+      [
+        990.8,
+        93
+      ]
+    ],
+    "featherPixels": 50,
+    "garmentBoundaryY": 880
   }
 }
