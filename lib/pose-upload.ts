@@ -135,7 +135,7 @@ export function normalizeChecks(raw: Record<string, unknown>): Omit<PoseChecks, 
   return out;
 }
 
-const makeThumb = (bytes: Buffer) => sharp(bytes).rotate().resize({ width: THUMB_WIDTH, withoutEnlargement: true }).jpeg({ quality: 78 }).toBuffer();
+export const makeThumb = (bytes: Buffer) => sharp(bytes).rotate().resize({ width: THUMB_WIDTH, withoutEnlargement: true }).jpeg({ quality: 78 }).toBuffer();
 
 async function prepareOne(p: PoseInput, deps: PoseUploadDeps): Promise<PreparedPose> {
   const f = deps.fetch || fetch;

@@ -43,6 +43,19 @@ export interface UserPose {
   checks: PoseChecks;
   source?: { shoot: string; style: string; photo: string };
   removed?: { by: string; at: string };
+  /** Set when a person replaced the photo (Replace photo in Model Studio). */
+  replaced?: { by: string; at: string };
+  /** The photos it replaced, oldest first, so Undo can put the last one back (at most 10). */
+  history?: PoseVersion[];
+}
+
+/** A pose photo as it was before a Replace photo. */
+export interface PoseVersion {
+  url: string;
+  thumbUrl?: string;
+  contour?: AutoContour;
+  checks: PoseChecks;
+  replaced?: { by: string; at: string };
 }
 
 /** Passed its checks, has an outline and was not removed. Only live poses are ever picked. */

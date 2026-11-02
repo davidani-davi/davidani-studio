@@ -1,4 +1,5 @@
 "use client";
+import SetPhotos from "./SetPhotos";
 import { isPantsStyle, isPantsReference, pantsReferences } from "@/lib/pants-references";
 
 import { useRef, useState } from "react";
@@ -48,6 +49,8 @@ interface Props {
      onModelAdded resolves true once the new model is visible in the list
      (and selected), false if the post-save refresh polls exhausted first. */
   onModelAdded: (id: string) => Promise<boolean>;
+  /** A recast set's photo was replaced or put back (Photos in this set). */
+  onSetPhotosChanged?: (id: string) => void;
   onModelDeleted: (id: string) => void;
 
   /* Text overlay (same as Image Studio) */
@@ -946,6 +949,14 @@ export default function ModelSidebar(p: Props) {
                 <p className="mt-2 text-[11px] leading-relaxed text-neutral-500">
                   Choose the model reference angle used for the next generation.
                 </p>
+                {selectedModel?.userPoses?.length ? (
+                  <SetPhotos
+                    modelId={selectedModel.id}
+                    setName={selectedModel.name}
+                    view={p.selectedView}
+                    onChanged={() => p.onSetPhotosChanged?.(selectedModel.id)}
+                  />
+                ) : null}
               </>
             )}
           </>

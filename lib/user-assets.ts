@@ -396,6 +396,24 @@ export async function setUserModelPoses(model: UserModel, poses: UserPose[]): Pr
   return entry;
 }
 
+/** Stores a replacement pose photo (and its thumbnail) under a new name, so the photo it replaces stays for Undo. */
+export async function storePosePhoto(modelId: string, poseId: string, bytes: Buffer, ext: PreparedPose["ext"], thumb?: Buffer): Promise<{ url: string; thumbUrl?: string }> {
+  const base = `user-models/${modelId}/poses/${poseId}-r${Date.now().toString(36)}`;
+  const url = await storeBytes(`${base}.${ext}`, bytes, POSE_CONTENT_TYPES[ext]);
+  try {
+    const thumbUrl = thumb ? await storeBytes(`${base}-thumb.jpg`, thumb, "image/jpeg") : undefined;
+    return { url, ...(thumbUrl ? { thumbUrl } : {}) };
+  } catch (err) {
+    await removeImage(url);
+    throw err;
+  }
+}
+
+/** Removes a stored pose photo that was never saved on a set (a replace that failed after the upload). */
+export async function removePosePhoto(url: string): Promise<void> {
+  await removeImage(url);
+}
+
 export async function deleteUserModel(id: string): Promise<void> {
   const target = (await listUserModels()).find((model) => model.id === id);
   await writeAssetRecord(MODEL_RECORD_PREFIX, LOCAL_MODEL_RECORDS, id, {

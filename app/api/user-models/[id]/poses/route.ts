@@ -27,6 +27,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     const row = (p: UserPose) => ({
       id: p.id, view: p.view, framing: p.framing, stance: p.stance, arms: p.arms, url: p.url, thumbUrl: p.thumbUrl,
       default: SLOTS.filter((s) => defaults[s] === p),
+      ...(p.replaced ? { replaced: p.replaced } : {}), canUndo: Boolean(p.history?.length),
       ...(view ? {} : { live: isLivePose(p), checks: { pass: p.checks?.pass === true, outline: p.checks?.outline }, removed: p.removed, source: p.source }),
     });
     const list = view ? slotPoses(poses, view as PoseSlot) : poses;
