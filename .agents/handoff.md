@@ -1,29 +1,26 @@
-# Handoff — 2026-10-31 ~18:05 PT, Claude Code (Mac mini)
+# Handoff — 2026-11-02 ~10:40 PT, Claude Code (Mac mini)
 
-Branch `claude/recast-poses` off origin/main a6cf7c9 (#49). PR #50 open, NOT merged (production deploys
-from main: merging needs David's OK). Paired with faire-management #228 (`chloe_recast/upload.mjs`).
+Branch `claude/model-library-download` off origin/main 2daa531 (#51). PR open, NOT merged
+(production deploys from main: merging needs David's OK).
 
 ## Just done
-- Chloe recast reference sets (faire-management design 2026-10-30 §6, §8): a set holds tagged poses
-  (`UserModel.poses`, lib/user-poses.ts), each with a `recast-mask-v1` outline bound to its photo.
-- JSON `POST /api/user-models {name, poses[]}` (lib/pose-upload.ts): photos as fal/Blob URLs, outline kept
-  only on a size + decoded-RGBA sha256 match; any other sent outline fails the pose (never an auto one).
-- `/api/model-shots` picks the pose when no `poseId` / `<id>-pose` is sent (lib/pose-pick.ts): best fit
-  (never-pick table), then least recently used; same pose for every colour of a style (lib/pose-usage.ts,
-  Blob `pose-usage/`). Answers `poseId`, `poseReason`, `pose`; face protection order reviewed preset →
-  recast contour → draft outline → refuse (`faceProtection: recast-mask-contour-v1`).
-- `GET /api/user-models/{id}/poses?view=`, `PATCH .../poses/{poseId} {removed}`.
-- vitest 1359/1359; tsc only the 10 old errors; `next build --webpack` ok. Local end to end: DD70049
-  uploaded (12/12 poses per face), DJ67178 rendered on Vision + Celine, front-06, 0 protected pixels changed.
+- Model library (`/admin/models`, `app/admin/models/ModelAdmin.tsx`): every view card has a **Download**
+  button next to Replace photo. It fetches the stored original (byte for byte, no resizing) and saves it as
+  `<model>-<pose>-<framing>-<view>.<ext>` (e.g. `Celine-DET70085-front.jpg`; the pose is left out when it
+  matches the model name, framing only for crop/low framed views). Shows "Downloading…" while it runs; if
+  the fetch fails it opens the file, with `?download=1` on Blob URLs so Blob answers as an attachment.
+- The flow David asked for: Download → edit → Replace photo (existing upload + review dialog).
+- Checked: vitest 1367/1367 (3 new in ModelAdmin.test.tsx); tsc only the 10 old errors; local
+  `next dev --webpack` + Playwright at 1440 and 430: download saved, identical to `public/models/crop 97/front.png`,
+  no horizontal scroll. Blob host answers `access-control-allow-origin: *`, so the fetch works in production.
+  Not checked: production (after merge) or real Chrome on the MacBook Pro.
 
 ## Next steps
-1. David's OK → merge #50; then upload the pilot to production (`node upload.mjs $R pilot.json --check`,
-   then without `--check`; README "Upload to Model Studio" in faire-management) and render one view per face.
-2. Follow-up PR: client buttons (Other pose, pose list, remove) in the extension / Studio UI.
+1. David's OK → merge; Vercel deploys main. Try Download on one set in Chrome on the MacBook Pro.
+2. Still open from #50: client buttons for recast sets in the extension (Other pose, pose list, remove).
 
 ## Gotchas
 - Worktree with symlinked node_modules breaks Turbopack: `next dev --webpack` / `next build --webpack`.
+- Local dev must be opened on `localhost`, not `127.0.0.1` (Next blocks dev scripts cross-origin; page never hydrates).
 - Local `next dev` without `BLOB_READ_WRITE_TOKEN` stores sets under `.data/` + `public/user-assets/`;
   route.test.ts lists every local set, so delete those after a local test or 3 tests fail.
-- Production token for upload.mjs: `MODEL_SHOTS_TOKEN`, else marketing-agent `DAVIDANI_STUDIO_PASSWORD`
-  (unverified against production).

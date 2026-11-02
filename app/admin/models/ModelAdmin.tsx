@@ -7,6 +7,16 @@ import type {ModelPose,PresetView} from '@/lib/models-registry';
 const VIEWS: PresetView[]=['front','side','back','full'];
 const title=(s:string)=>s.charAt(0).toUpperCase()+s.slice(1);
 const api='/api/admin/models';
+const extOf=(url:string)=>(url.split('?')[0].match(/\.(png|jpe?g|webp)$/i)?.[1]||'jpg').toLowerCase();
+export const photoFilename=(parts:(string|false|undefined)[],url:string)=>`${parts.filter(Boolean).join(' ').replace(/[^\w-]+/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'')||'reference'}.${extOf(url)}`;
+/** Saves the stored original under a readable name; if the fetch fails, opens the file (Blob answers ?download=1 as an attachment). */
+async function downloadPhoto(url:string,filename:string){
+ try{
+  const res=await fetch(url,{cache:'no-store'});if(!res.ok)throw new Error(String(res.status));
+  const href=URL.createObjectURL(await res.blob());const a=document.createElement('a');a.href=href;a.download=filename;document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(href),10_000);
+ }catch{window.open(/\.blob\.vercel-storage\.com\//.test(url)?`${url}${url.includes('?')?'&':'?'}download=1`:url,'_blank','noopener');}
+}
 
 type PhotoEdit={model:ManagedModel;pose:ModelPose;view:PresetView;file?:File;preview:string;url?:string};
 export default function ModelAdmin(){
@@ -15,7 +25,7 @@ export default function ModelAdmin(){
  const [section,setSection]=useState<LibrarySection>('tops');
  const [search,setSearch]=useState(''),[trash,setTrash]=useState(false),[busy,setBusy]=useState(false),[message,setMessage]=useState(''),[error,setError]=useState('');
  const [undo,setUndo]=useState<ManagedModel|null>(null);
- const [edit,setEdit]=useState<PhotoEdit|null>(null),[progress,setProgress]=useState(0);
+ const [edit,setEdit]=useState<PhotoEdit|null>(null),[progress,setProgress]=useState(0),[downloading,setDownloading]=useState('');
  const [create,setCreate]=useState<'model'|'pose'|null>(null),[newName,setNewName]=useState(''),[newGroup,setNewGroup]=useState(''),[newFrame,setNewFrame]=useState('crop');
  const [name,setName]=useState(''),[group,setGroup]=useState(''),[description,setDescription]=useState(''),[poseName,setPoseName]=useState('');
  async function refresh(){
@@ -124,7 +134,7 @@ export default function ModelAdmin(){
         return <article className="ra-photo" key={view}><h3>{title(view)}</h3><div className="ra-photo-preview">{photo?<img src={photo.publicPath} alt={`${model.name} ${view} reference`}/>:<span>Missing {view} photo</span>}</div>
          <p className={photo?'':'ra-warning'}>{photo?'Reference available':'Add this view before generating it.'}</p>
          {target&&targetPose?<div className="ra-actions"><label className={`ra-file ${busy?'disabled':''}`}>{photo?'Replace photo':'Upload photo'}<input aria-label={`${photo?'Replace':'Upload'} ${view} photo`} type="file" accept="image/png,image/jpeg,image/webp" disabled={busy} onChange={e=>{const f=e.target.files?.[0];if(f)choosePhoto(target,targetPose,view,f);e.target.value='';}}/></label>
-          {photo&&<><a href={photo.publicPath} target="_blank" rel="noreferrer">Original ↗</a><button disabled={busy} className="ra-danger" onClick={()=>{if(window.confirm(`Remove the ${view} reference? This view will be unavailable until you upload another photo.`))action({action:'removePhoto',modelId:target.id,poseId:targetPose.id,view,expectedUrl:photo.publicPath});}}>Remove</button></>}
+          {photo&&<><button disabled={downloading===photo.publicPath} aria-label={`Download ${view} photo`} onClick={async()=>{setDownloading(photo.publicPath);try{await downloadPhoto(photo.publicPath,photoFilename([model.name,pose.label!==model.name&&pose.label,hasFrames&&view!=='full'&&frame!=='full'&&frame,view],photo.publicPath));}finally{setDownloading('');}}}>{downloading===photo.publicPath?'Downloading…':'Download'}</button><a href={photo.publicPath} target="_blank" rel="noreferrer">Original ↗</a><button disabled={busy} className="ra-danger" onClick={()=>{if(window.confirm(`Remove the ${view} reference? This view will be unavailable until you upload another photo.`))action({action:'removePhoto',modelId:target.id,poseId:targetPose.id,view,expectedUrl:photo.publicPath});}}>Remove</button></>}
          </div>:<p>No separate framing installed. Choose Full body to edit the source reference.</p>}
         </article>;
        })}</div>

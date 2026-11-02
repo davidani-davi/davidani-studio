@@ -1,6 +1,6 @@
 import {describe,it,expect,vi,beforeEach,afterEach} from 'vitest';
 import {render,screen,fireEvent,within,waitFor} from '@testing-library/react';
-import ModelAdmin from './ModelAdmin';
+import ModelAdmin,{photoFilename} from './ModelAdmin';
 import type {ManagedModel} from '@/lib/model-admin-core';
 const pose=(framing:'crop'|'low')=>({id:framing,label:framing==='low'?'Pants pose':'Top pose',framing,publicPath:'/front.png',filename:'front.png',subdir:'',views:{front:{publicPath:'/front.png',filename:'front.png'}}});
 const models:ManagedModel[]=[{id:'top',name:'Celine 1',character:'celine',poses:[pose('crop')]},{id:'studio 103',name:'DP52083 · Donuts',poses:[pose('low')]},{id:'mixed',name:'Shared reference',poses:[pose('crop'),pose('low')]},{id:'crop 97',name:'Hidden crop',poses:[pose('crop')]},{id:'deleted-bottom',name:'Retired pants',deleted:true,poses:[pose('low')]}];
@@ -89,4 +89,33 @@ it('does not offer legacy row protection as approval for Simple garment swap',as
  expect(screen.getByRole('dialog')).toHaveTextContent('New or replaced photos need a face/hair contour review');
  expect(screen.queryByRole('slider')).toBeNull();
  expect(screen.getByRole('button',{name:'Save photo'})).toBeEnabled();
+});
+describe('download a reference photo',()=>{
+ it('saves the stored original under the model, pose and view name',async()=>{
+  const fetchMock=vi.fn(async(url:string)=>url==='/front.png'?new Response(new Blob(['png'],{type:'image/png'})):new Response(JSON.stringify({models,cloudUploads:false})));
+  vi.stubGlobal('fetch',fetchMock);
+  const create=vi.spyOn(URL,'createObjectURL').mockReturnValue('blob:front');const revoke=vi.spyOn(URL,'revokeObjectURL').mockImplementation(()=>{});
+  const clicks:{href:string;download:string}[]=[];
+  const click=vi.spyOn(HTMLAnchorElement.prototype,'click').mockImplementation(function(this:HTMLAnchorElement){clicks.push({href:this.href,download:this.download});});
+  render(<ModelAdmin/>);await screen.findByRole('heading',{name:'Celine 1'});
+  fireEvent.click(screen.getByRole('button',{name:'Download front photo'}));
+  await waitFor(()=>expect(clicks).toEqual([{href:'blob:front',download:'Celine-1-Top-pose-front.png'}]));
+  expect(fetchMock).toHaveBeenCalledWith('/front.png',{cache:'no-store'});
+  await waitFor(()=>expect(screen.getByRole('button',{name:'Download front photo'})).toHaveTextContent(/^Download$/));
+  click.mockRestore();create.mockRestore();revoke.mockRestore();
+ });
+ it('opens the file when the fetch fails, asking Blob for an attachment',async()=>{
+  const url='https://x.public.blob.vercel-storage.com/a/front.jpg';
+  const m=[{id:'top',name:'Celine 1',poses:[{...pose('crop'),views:{front:{publicPath:url,filename:'front.jpg'}}}]}];
+  vi.stubGlobal('fetch',vi.fn(async(u:string)=>u===url?new Response('',{status:500}):new Response(JSON.stringify({models:m,cloudUploads:false}))));
+  const open=vi.spyOn(window,'open').mockReturnValue(null);
+  render(<ModelAdmin/>);await screen.findByRole('heading',{name:'Celine 1'});
+  fireEvent.click(screen.getByRole('button',{name:'Download front photo'}));
+  await waitFor(()=>expect(open).toHaveBeenCalledWith(`${url}?download=1`,'_blank','noopener'));
+  open.mockRestore();
+ });
+ it('names files readably and keeps the stored extension',()=>{
+  expect(photoFilename(['Celine · DET70085',false,'front'],'https://x.public.blob.vercel-storage.com/a/b.JPG?v=2')).toBe('Celine-DET70085-front.jpg');
+  expect(photoFilename(['',undefined],'/models/x')).toBe('reference.jpg');
+ });
 });
