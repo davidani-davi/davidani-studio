@@ -1,19 +1,21 @@
+// @vitest-environment node
 import sharp from "sharp";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { referencePixels } from "@/lib/garment-only";
 import type { UserModel } from "@/lib/user-assets";
 import type { UserPose } from "@/lib/user-poses";
 
-const mocks = vi.hoisted(() => ({ list: vi.fn(), savePoses: vi.fn(), setPoses: vi.fn(), detect: vi.fn() }));
+const mocks = vi.hoisted(() => ({ list: vi.fn(), savePoses: vi.fn(), setPoses: vi.fn(), detect: vi.fn(), store: vi.fn(), unstore: vi.fn() }));
 vi.mock("@/lib/user-assets", async (original) => ({
   ...(await original<typeof import("@/lib/user-assets")>()),
   listUserModels: mocks.list, saveUserModelPoses: mocks.savePoses, setUserModelPoses: mocks.setPoses,
+  storePosePhoto: mocks.store, removePosePhoto: mocks.unstore,
 }));
 vi.mock("@/lib/draft-contour", () => ({ detectAutoContour: mocks.detect }));
 
 import { POST } from "./route";
 import { GET as listPoses } from "./[id]/poses/route";
-import { PATCH as changePose } from "./[id]/poses/[poseId]/route";
+import { PATCH as changePose, POST as replacePose } from "./[id]/poses/[poseId]/route";
 
 const TOKEN = { "x-ddto-token": "user-models-test" };
 const png = () => sharp({ create: { width: 40, height: 60, channels: 4, background: "#c8b4a0" } }).png().toBuffer();
@@ -140,5 +142,85 @@ describe("PATCH /api/user-models/<id>/poses/<poseId>", () => {
     const res = await patch("front-03", { removed: true });
     expect(res.status).toBe(409);
     expect((await res.json()).error).toContain("last live front");
+  });
+});
+
+describe("Replace photo and Undo on a recast pose", () => {
+  const outlined = async (bytes: Buffer, extra: Partial<UserPose> = {}) => {
+    const ref = await referencePixels(bytes);
+    const model = set();
+    model.poses![0] = { ...model.poses![0], contour: { kind: "contour", width: 40, height: 60, sha256: ref.sha256, featherPixels: 4,
+      source: "recast-mask-v1", detectedAt: "", points: [[10, 4], [30, 4], [30, 22], [10, 22]] }, ...extra };
+    return model;
+  };
+  const send = (bytes: Buffer, extra: Record<string, string> = {}) => {
+    const form = new FormData();
+    form.append("file", new File([new Uint8Array(bytes)], "edit.png", { type: "image/png" }));
+    for (const [k, v] of Object.entries(extra)) form.append(k, v);
+    return replacePose(new Request("https://studio/api/user-models/vision-dd70049/poses/front-03", { method: "POST", body: form, headers: TOKEN }),
+      { params: Promise.resolve({ id: "vision-dd70049", poseId: "front-03" }) });
+  };
+  const edited = (w: number, h: number) => sharp({ create: { width: w, height: h, channels: 4, background: "#b8a490" } }).png().toBuffer();
+
+  beforeEach(() => {
+    mocks.store.mockResolvedValue({ url: "/user-assets/user-models/vision-dd70049/poses/front-03-rnew.png", thumbUrl: "/user-assets/t.jpg" });
+    mocks.setPoses.mockImplementation(async (model: UserModel, poses: UserPose[]) => ({ ...model, poses }));
+  });
+
+  it("keeps the face outline, scaled and bound to the new pixels, when the edit keeps the photo's shape", async () => {
+    mocks.list.mockResolvedValue([await outlined(await png())]);
+    const bytes = await edited(80, 120);
+    const res = await send(bytes);
+    const body = await res.json();
+    expect(res.status).toBe(200);
+    const ref = await referencePixels(bytes);
+    expect(body.pose.contour).toMatchObject({ width: 80, height: 120, sha256: ref.sha256, featherPixels: 8, points: [[20, 8], [60, 8], [60, 44], [20, 44]] });
+    expect(body.pose.url).toContain("front-03-rnew");
+    expect(body.pose.checks).toMatchObject({ pass: true, outline: { ok: true, reason: "kept from the photo it replaced" } });
+    expect(body.pose.history).toHaveLength(1);
+    expect(body.pose.history[0].url).toContain("/front-03.png");
+    expect(mocks.detect).not.toHaveBeenCalled();
+  });
+
+  it("asks before the paid automatic outline when the shape changed, and saves nothing", async () => {
+    mocks.list.mockResolvedValue([await outlined(await png())]);
+    const res = await send(await edited(60, 60));
+    const body = await res.json();
+    expect(res.status).toBe(409);
+    expect(body).toMatchObject({ ok: false, needsAutoOutline: true });
+    expect(body.reason).toContain("shape changed");
+    expect(mocks.store).not.toHaveBeenCalled();
+    expect(mocks.detect).not.toHaveBeenCalled();
+    expect(mocks.setPoses).not.toHaveBeenCalled();
+  });
+
+  it("finds a new outline only when asked, and drops the upload when none is found", async () => {
+    mocks.list.mockResolvedValue([await outlined(await png())]);
+    mocks.detect.mockResolvedValue(null);
+    const res = await send(await edited(60, 60), { autoOutline: "1" });
+    expect(res.status).toBe(422);
+    expect(mocks.detect).toHaveBeenCalledOnce();
+    expect(mocks.unstore).toHaveBeenCalledWith("/user-assets/user-models/vision-dd70049/poses/front-03-rnew.png");
+    expect(mocks.setPoses).not.toHaveBeenCalled();
+  });
+
+  it("Undo puts the replaced photo and its outline back", async () => {
+    const model = await outlined(await png());
+    const original = model.poses![0];
+    mocks.list.mockResolvedValue([model]);
+    const replaced = (await (await send(await edited(80, 120))).json()).pose as UserPose;
+    mocks.list.mockResolvedValue([{ ...model, poses: model.poses!.map((p) => (p.id === "front-03" ? replaced : p)) }]);
+    const res = await changePose(new Request("https://studio/api/user-models/vision-dd70049/poses/front-03", { method: "PATCH", body: JSON.stringify({ undo: true }), headers: TOKEN }),
+      { params: Promise.resolve({ id: "vision-dd70049", poseId: "front-03" }) });
+    const body = await res.json();
+    expect(res.status).toBe(200);
+    expect(body.pose).toEqual(original);
+  });
+
+  it("refuses Undo on a photo that was never replaced", async () => {
+    mocks.list.mockResolvedValue([set()]);
+    const res = await changePose(new Request("https://studio/api/user-models/vision-dd70049/poses/side-05", { method: "PATCH", body: JSON.stringify({ undo: true }), headers: TOKEN }),
+      { params: Promise.resolve({ id: "vision-dd70049", poseId: "side-05" }) });
+    expect(res.status).toBe(409);
   });
 });

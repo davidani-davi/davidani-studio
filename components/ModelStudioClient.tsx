@@ -432,6 +432,11 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
     return true;
   }
 
+  // A recast set's photo was replaced or put back: reload the sets so its default views follow, keeping the selection.
+  function handleSetPhotosChanged(id: string) {
+    void refreshUntilModelPresent(id);
+  }
+
   // Optimistic local removal — instant, and avoids the read-after-write lag
   // re-introducing a just-deleted model into the picker. A later natural
   // refresh (e.g. the next add) reconciles against the blob index once it
@@ -3094,6 +3099,7 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
           selectedHumanModelId={selectedHumanModelId}
           onHumanModelChange={handleHumanModelChange}
           onModelAdded={handleModelAdded}
+          onSetPhotosChanged={handleSetPhotosChanged}
           onModelDeleted={handleModelDeleted}
           selectedPoseId={selectedPoseId}
           onPoseChange={handlePoseChange}
