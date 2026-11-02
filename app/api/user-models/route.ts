@@ -6,6 +6,7 @@ import { referencePixels } from "@/lib/garment-only";
 import { groundPhrase, readReferenceView } from "@/lib/fal";
 import { authorized, unauthorized } from "@/lib/request-auth";
 import { defaultPoses } from "@/lib/user-poses";
+import { readIncomingPhoto, removeIncoming } from "@/lib/user-model-upload";
 import { poseSummary, preparePoses, PoseUploadError, validatePoseInputs } from "@/lib/pose-upload";
 
 export const runtime = "nodejs";
@@ -66,14 +67,29 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   if (!(await authorized(req))) return unauthorized();
+  const incoming: string[] = [];
   try {
     if ((req.headers.get("content-type") || "").includes("application/json")) return await savePoseSet(req);
     const form = await req.formData();
     const name = String(form.get("name") ?? "").trim();
-    const front = asImage(form.get("front"));
     if (!name) {
       return NextResponse.json({ ok: false, error: "A model name is required." }, { status: 400 });
     }
+    // A view arrives as a file (Listing Team drafts, small photos) or as `<view>Url`, an original the Add model
+    // form uploaded straight to storage (lib/user-model-upload.ts), so full-size photos skip the 4.5 MB cap.
+    const photo = async (view: "front" | "side" | "back" | "full") => {
+      const file = asImage(form.get(view));
+      if (file) return file;
+      const url = form.get(`${view}Url`);
+      if (typeof url !== "string" || !url) return undefined;
+      incoming.push(url);
+      try {
+        return await readIncomingPhoto(url, view);
+      } catch (err: any) {
+        throw new PhotoError(`${view[0].toUpperCase()}${view.slice(1)} photo: ${err?.message || "could not be read."}`);
+      }
+    };
+    const front = await photo("front");
     if (!front) {
       return NextResponse.json(
         { ok: false, error: "A front photo is required." },
@@ -82,9 +98,9 @@ export async function POST(req: Request) {
     }
     const model = await saveUserModel(name, {
       front,
-      side: asImage(form.get("side")),
-      back: asImage(form.get("back")),
-      full: asImage(form.get("full")),
+      side: await photo("side"),
+      back: await photo("back"),
+      full: await photo("full"),
     });
     // Listing Team drafts ("Draft · <author> · <name>") get automatic face outlines so Simple garment
     // swap can test them before David approves the set; a view without one is refused at render time.
@@ -98,10 +114,14 @@ export async function POST(req: Request) {
   } catch (err: any) {
     return NextResponse.json(
       { ok: false, error: err?.message ?? "Failed to save model" },
-      { status: 500 }
+      { status: err instanceof PhotoError ? 400 : 500 }
     );
+  } finally {
+    await removeIncoming(incoming);
   }
 }
+
+class PhotoError extends Error {}
 
 /**
  * Re-detects the face outline of every view of a saved set that has none (`{ id }`), after the outline rule

@@ -8,6 +8,7 @@ import type { OverlayPlacement } from "@/lib/fal";
 import type { UploadedImage } from "./types";
 import { ProgressBar } from "@/components/RunProgress";
 import { resizeIfNeeded } from "@/lib/image-resize";
+import { canSendOriginal, originalUploadMode, uploadOriginal } from "@/lib/original-upload";
 // NOTE: `import type` is required — models-registry imports node:fs, which
 // must never end up in the client bundle. Type-only imports are erased at
 // compile time.
@@ -200,6 +201,7 @@ export default function ModelSidebar(p: Props) {
   }>({});
   const [addModelBusy, setAddModelBusy] = useState(false);
   const [addModelError, setAddModelError] = useState<string | null>(null);
+  const [addModelStatus, setAddModelStatus] = useState("");
   // Synchronous re-entrancy guards. The buttons' `disabled` attribute lags a
   // render, so a fast double-click could otherwise fire two POSTs/DELETEs.
   const submitInFlight = useRef(false);
@@ -215,12 +217,24 @@ export default function ModelSidebar(p: Props) {
       const form = new FormData();
       form.append("name", newModelName.trim());
       const resized: File[] = [];
-      for (const view of ["front", "side", "back", "full"] as const) {
-        const file = newModelFiles[view];
-        if (!file) continue;
-        // Up to 4 photos ride in one multipart body, which must stay under
-        // Vercel's 4.5 MB request-body cap, so each is held to 1 MB before
-        // it is left untouched (the default today, kept explicit here).
+      const views = (["front", "side", "back", "full"] as const).filter((view) => newModelFiles[view]);
+      // Originals go straight to storage, untouched (up to 20 MB each), and only their links ride in the
+      // request, so full-size photos no longer meet Vercel's 4.5 MB request cap (lib/original-upload.ts).
+      const mode = await originalUploadMode();
+      let directError = mode ? "" : "the upload service could not be reached";
+      for (const [i, view] of views.entries()) {
+        const file = newModelFiles[view]!;
+        if (mode && canSendOriginal(file)) {
+          setAddModelStatus(`Uploading ${i + 1} of ${views.length}…`);
+          try {
+            form.append(`${view}Url`, await uploadOriginal(file, mode, (pct) => setAddModelStatus(`Uploading ${i + 1} of ${views.length} · ${Math.round(pct)}%`)));
+            continue;
+          } catch (err: any) {
+            directError = err?.message || "upload failed";
+          }
+        }
+        // HEIC, over 20 MB, or the direct upload failed: shrink and send it inside the request as before,
+        // which must stay under the 4.5 MB cap, so each is held to 1 MB before it is left untouched.
         const out = await resizeIfNeeded(file, { skipIfBytesUnder: 1024 * 1024 });
         resized.push(out);
         form.append(view, out);
@@ -228,10 +242,14 @@ export default function ModelSidebar(p: Props) {
       const totalBytes = resized.reduce((sum, f) => sum + f.size, 0);
       const MAX_AGGREGATE_BYTES = 4 * 1024 * 1024; // headroom under Vercel's 4.5 MB cap
       if (totalBytes > MAX_AGGREGATE_BYTES) {
+        const mb = (totalBytes / (1024 * 1024)).toFixed(1);
         throw new Error(
-          `These photos total ${(totalBytes / (1024 * 1024)).toFixed(1)} MB after compression, which is too large to upload. Try fewer or smaller photos.`
+          directError
+            ? `The full-size upload failed (${directError}), and the shrunk copies total ${mb} MB, over the 4 MB limit. Try again, or save the photos as JPEG.`
+            : `These photos total ${mb} MB after compression, which is too large to upload. Save them as PNG, JPEG or WebP under 20 MB each.`
         );
       }
+      setAddModelStatus("Saving…");
       const res = await fetch("/api/user-models", { method: "POST", body: form });
       const data = await res.json();
       if (!data?.ok) throw new Error(data?.error || "Failed to add model");
@@ -258,6 +276,7 @@ export default function ModelSidebar(p: Props) {
     } finally {
       submitInFlight.current = false;
       setAddModelBusy(false);
+      setAddModelStatus("");
     }
   }
 
@@ -787,7 +806,7 @@ export default function ModelSidebar(p: Props) {
                 disabled={addModelBusy || !newModelName.trim() || !newModelFiles.front}
                 className="flex-1 rounded-md border border-brand-300 bg-brand-50 px-2 py-1.5 text-[11px] font-medium text-brand-700 hover:bg-brand-100 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {addModelBusy ? "Saving…" : "Save model"}
+                {addModelBusy ? addModelStatus || "Saving…" : "Save model"}
               </button>
               <button
                 type="button"
