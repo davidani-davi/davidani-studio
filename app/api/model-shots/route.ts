@@ -385,7 +385,7 @@ async function renderShot(req: Request, body: any): Promise<Response> {
   // least recently used, and the same one for every colour of the style. Its outline was checked at upload.
   let setPose: { pose: UserPose; reason: string } | undefined;
   if (poseSet && !fullBase) {
-    const chosen = await chooseSetPose(poseSet, { requestedPoseId: poseId, view, framing, known, garmentImageUrls }, posePickDeps);
+    const chosen = await chooseSetPose(poseSet, { requestedPoseId: poseId, view, framing, known, garmentImageUrls, frontFraming: framingFor(category, "front", hem) }, posePickDeps);
     if (chosen && !chosen.ok) return json({ ok: false, view, error: chosen.error }, chosen.status);
     if (chosen?.ok) {
       setPose = chosen;

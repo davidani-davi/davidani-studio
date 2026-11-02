@@ -85,7 +85,7 @@ describe("plateForFraming", () => {
 });
 
 describe("hemFor — where the garment ends, from our own copy", () => {
-  it("a coat of any kind, a longline or duster piece, a knee, midi or maxi length is long", () => {
+  it("a coat of any kind, a duster piece, a maxi or ankle length is long", () => {
     expect(hemFor({ type: "Coat - Women's", title: "Plaid Double Breasted Longline Trench Coat" })).toBe("long");
     expect(hemFor({ type: "Coat - Women's", title: "Wool Blend Coat" })).toBe("long");
     expect(hemFor({ title: "Belted Trench" })).toBe("long");
@@ -105,6 +105,15 @@ describe("hemFor — where the garment ends, from our own copy", () => {
     const cat = [{ id: "studio 104", poses: [{ id: "studio-104" }] }, { id: "knee 104", poses: [{ id: "knee-104" }] }];
     expect(plateForFraming("studio 104", "studio-104", "knee", cat)).toEqual({ humanModelId: "knee 104", poseId: "knee-104", derived: true });
     expect(plateForFraming("studio 97", "studio-97", "knee", cat)).toEqual({ humanModelId: "studio 97", poseId: "studio-97", derived: false });
+  });
+  it("a longline top is not long: head-to-thigh front, side and back like any top, the full shot shows the length (2026-11-02)", () => {
+    const known = { type: "Cardigan - Women's", title: "Granny Square Crochet Patchwork Longline Cardigan" };
+    expect(hemFor(known)).toBe("");
+    expect(shotPlan("top", hemFor(known)).map((s) => s.framing)).toEqual(["crop", "crop", "crop", "full"]);
+    expect(hemFor({ title: "Long-Line Ribbed Tunic Top" })).toBe("");
+    // a longline coat is still a coat
+    expect(hemFor({ title: "Longline Wool Coat" })).toBe("long");
+    expect(hemFor({ type: "Cardigan - Women's", title: "Longline Duster Cardigan" })).toBe("long");
   });
   it("cropped wins over everything; a jacket, a long sleeve top and a waistcoat are not long", () => {
     expect(hemFor({ type: "Coat - Women's", title: "Cropped Plaid Coat" })).toBe("short");

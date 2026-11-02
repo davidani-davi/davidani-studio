@@ -172,12 +172,22 @@ const FRAMING_ORDER: Record<PlateFraming, PoseFraming[]> = {
   low: ['full', 'knee', 'crop'],
 };
 
-function score(p: UserPose, slot: PoseSlot, framing: PlateFraming, g: GarmentRead): number {
+/** Arms that make a head-to-toe shot look styled rather than a second front (your full shot images, 2026-11-02). */
+const STYLED_ARMS: PoseArms[] = ['raised', 'hand-on-hip', 'away-from-body'];
+
+function score(p: UserPose, slot: PoseSlot, framing: PlateFraming, g: GarmentRead, front?: UserPose): number {
   const order = FRAMING_ORDER[framing] || FRAMING_ORDER.full;
   const rank = order.indexOf(p.framing);
   let s = (rank < 0 ? 0 : order.length - rank) * 10;
   if (g.statementSleeves && p.arms === 'away-from-body') s += 2;
-  if ((slot === 'front' || slot === 'full') && p.stance === 'standing') s += 1;
+  if (slot === 'front' && p.stance === 'standing') s += 1;
+  // The full shot is the styled head-to-toe picture, not a second front (David, 2026-11-02, DCJ67197): a turned or
+  // walking stance, a raised hand or a hand on the hip, and a stance or arms unlike the front's photo.
+  if (slot === 'full') {
+    if (p.stance !== 'standing') s += 1;
+    if (STYLED_ARMS.includes(p.arms)) s += 1;
+    if (front && (p.stance !== front.stance || p.arms !== front.arms)) s += 1;
+  }
   return s;
 }
 
@@ -189,12 +199,16 @@ const styleKey = (code: unknown) => String(code || '').trim().toUpperCase();
  * of the view hides something, the best of them is still used and the reason says so (a refused view is worse than a
  * hand over a pocket, and Other pose can swap it). Null when the view has no live pose.
  */
-export function pickPose(o: { poses: UserPose[]; slot: PoseSlot; framing: PlateFraming; garment: GarmentRead; usage: PoseUsage; styleCode?: unknown }): PosePick | null {
+export function pickPose(o: { poses: UserPose[]; slot: PoseSlot; framing: PlateFraming; garment: GarmentRead; usage: PoseUsage; styleCode?: unknown; front?: UserPose }): PosePick | null {
   const candidates = slotPoses(o.poses, o.slot);
   if (!candidates.length) return null;
   const style = styleKey(o.styleCode);
+  // The full shot never reuses the style's front photo when the set has another (DCJ67197: front-01 and front-02 were
+  // the same stance, so Front and Full came back the same picture).
+  const front = o.slot === 'full' ? o.front : undefined;
+  const notFront = (p: UserPose) => !front || p.id !== front.id;
   const earlier = style ? o.usage.choices?.[style] : undefined;
-  const reused = earlier ? candidates.find((p) => p.id === earlier) : undefined;
+  const reused = earlier ? candidates.find((p) => p.id === earlier && notFront(p)) : undefined;
   if (reused) return { pose: reused, reason: "same pose as this style's other colours" };
 
   const rules = NEVER_PICK.filter((r) => o.garment[r.when] && !(r.notBack && o.slot === 'back') && !(r.fullFramingOnly && o.framing !== 'full'));
@@ -212,10 +226,13 @@ export function pickPose(o: { poses: UserPose[]; slot: PoseSlot; framing: PlateF
   const byReasons = new Map<string, string[]>();
   for (const [what, labels] of why) byReasons.set(labels.join(', '), [...(byReasons.get(labels.join(', ')) || []), what]);
   const notes = [...byReasons].map(([labels, whats]) => `${whats.join(', ')} skipped: ${labels}`);
-  const pool = allowed.length ? allowed : candidates;
+  const fits = allowed.length ? allowed : candidates;
   if (!allowed.length) notes.splice(0, notes.length, `every ${o.slot} pose hides ${rules.map((r) => r.label).join(' or ')}; using the best of them`);
+  const others = fits.filter(notFront);
+  const pool = others.length ? others : fits;
+  if (front && others.length < fits.length) notes.push(others.length ? `front's photo (${front.id}) skipped` : `only the front's photo fits; using it`);
 
-  const scored = pool.map((p) => ({ p, s: score(p, o.slot, o.framing, o.garment) }));
+  const scored = pool.map((p) => ({ p, s: score(p, o.slot, o.framing, o.garment, front) }));
   const top = Math.max(...scored.map((x) => x.s));
   const order = new Map(o.poses.map((p, i) => [p.id, i]));
   const last = (p: UserPose) => o.usage.uses?.[p.id]?.lastUsed || '';

@@ -24,8 +24,15 @@ import { MULTI_MODEL_VIEWS } from "./multi-model-prompt";
  * stretched figure on the front and back, because the generator either obeys
  * the crop and shortens the coat or breaks it and extends the body. So the
  * hem is a second planning dimension (hemFor): a top or outerwear piece whose
- * copy says it is long — longline, duster, knee-length, midi, maxi, or simply
- * a coat — is shot on the full-length plate in every view, like a dress.
+ * copy says it is long — a duster, a maxi or ankle length, or simply a coat —
+ * is shot on the full-length plate in every view, like a dress.
+ *
+ * "Longline" on its own is not long (David, 2026-11-02): a longline cardigan
+ * ends past the hip, and on the full-length plate its front came back the same
+ * head-to-toe photo as the full shot (DCJ67197). Its front, side and back are
+ * head-to-thigh like any top; the Simple prompt lets a hem that falls below
+ * that frame continue out of it (simple-reference-shot.ts LAYER LENGTH), and
+ * the full shot shows the whole length.
  *
  * The extension plans the run with the same category and hem rules
  * (model_shots_core.js categoryFor / hemFor) so the views it queues and the
@@ -48,11 +55,11 @@ export interface ShotStep {
 /**
  * Length words in a title or taxonomy name that put the hem below the crop
  * plate's mid-thigh edge. A coat of any kind counts: a coat that ends above
- * the thigh is the exception and its title says "cropped". "Long sleeve"
- * deliberately does not match. Mirrored in model_shots_core.js LONG_HEM.
+ * the thigh is the exception and its title says "cropped". "Long sleeve" and
+ * "longline" deliberately do not match. Mirrored in model_shots_core.js LONG_HEM.
  */
 const LONG_HEM_RE =
-  /\b(pea|over|top|rain|trench|duster|long)?coat\b|\btrench\b|\bduster\b|long-?line|\bmaxi\b|mid-?calf|calf-?length|ankle-?length|floor-?length|full-?length/i;
+  /\b(pea|over|top|rain|trench|duster|long)?coat\b|\btrench\b|\bduster\b|\bmaxi\b|mid-?calf|calf-?length|ankle-?length|floor-?length|full-?length/i;
 /** A hem that ends at the knee: the knee plate frames it with room to spare
  *  and no wasted shoes. Mirrored in model_shots_core.js MID_HEM. */
 const MID_HEM_RE = /knee-?length|\bmidi\b|below[- ]the[- ]knee|below-?knee|at[- ]the[- ]knee|\bknee\b/i;

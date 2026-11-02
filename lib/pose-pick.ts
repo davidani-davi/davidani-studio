@@ -43,10 +43,18 @@ export async function garmentReadFor(known: KnownGarment, garmentImageUrls: stri
   return mergeGarmentReads(title, seen);
 }
 
+/** The style's front photo in this set: the one it rendered on, else the one its front would get now. */
+async function frontPoseFor(set: HumanModel, style: string, framing: PlateFraming, garment: GarmentRead, deps: PosePickDeps): Promise<UserPose | undefined> {
+  const poses = set.userPoses || [];
+  const usage = await deps.readUsage(set.id, 'front').catch(() => emptyPoseUsage());
+  const chosen = style ? poses.find((p) => p.id === usage.choices?.[style]) : undefined;
+  return chosen || pickPose({ poses, slot: 'front', framing, garment, usage, styleCode: style })?.pose;
+}
+
 /** Null when the set has no poses (an older set: its single photo per view is used as before). */
 export async function chooseSetPose(
   set: HumanModel,
-  o: { requestedPoseId: string; view: PoseSlot; framing: PlateFraming; known: KnownGarment; garmentImageUrls: string[] },
+  o: { requestedPoseId: string; view: PoseSlot; framing: PlateFraming; known: KnownGarment; garmentImageUrls: string[]; frontFraming?: PlateFraming },
   deps: PosePickDeps,
 ): Promise<SetPoseChoice | null> {
   const poses = set.userPoses;
@@ -77,7 +85,8 @@ export async function chooseSetPose(
   const garment = prior && candidates.some((p) => p.id === prior)
     ? titleGarmentRead((o.known as { title?: unknown }).title)
     : await garmentReadFor(o.known, o.garmentImageUrls, deps);
-  const pick = pickPose({ poses, slot: o.view, framing: o.framing, garment, usage, styleCode: style });
+  const front = o.view === 'full' ? await frontPoseFor(set, style, o.frontFraming || 'full', garment, deps) : undefined;
+  const pick = pickPose({ poses, slot: o.view, framing: o.framing, garment, usage, styleCode: style, front });
   if (!pick) return { ok: false, status: 400, error: `${set.name} has no ${o.view} pose that passed its checks.` };
   await record(pick.pose);
   return { ok: true, pose: pick.pose, reason: pick.reason, requested: false };

@@ -87,3 +87,25 @@ describe('garmentReadFor', () => {
     expect(d.writeCachedGarment.mock.calls[0][0]).toMatch(/^img-[0-9a-f]{16}$/);
   });
 });
+
+describe('the full view avoids the front photo (DCJ67197, 2026-11-02)', () => {
+  const poses = [pose('front-01', 'front', 'full', 'hand-in-pocket'), pose('front-02', 'front', 'full', 'away-from-body'), pose('front-03', 'front', 'full'),
+    pose('front-04', 'front', 'crop', 'hand-in-pocket')];
+  const bySlot = (front: PoseUsage) => ({ ...deps(), readUsage: vi.fn(async (_id: string, slot: string) => (slot === 'front' ? front : emptyPoseUsage())) });
+  const full = { view: 'full' as const, framing: 'full' as const, known: { styleCode: 'DCJ67197', title: 'Longline Cardigan' } as never };
+  it("skips the photo the style's front rendered on", async () => {
+    const d = bySlot({ uses: {}, choices: { DCJ67197: 'front-02' } });
+    const out = await chooseSetPose(set(poses), ask('', { ...full, frontFraming: 'full' }), d);
+    expect(out?.ok && out.pose.id).not.toBe('front-02');
+    expect(d.readUsage).toHaveBeenCalledWith('vision-dd70049', 'front');
+  });
+  it('before the front has rendered, skips the photo the front would get', async () => {
+    const out = await chooseSetPose(set(poses), ask('', { ...full, frontFraming: 'full' }), bySlot(emptyPoseUsage()));
+    // the front would get front-01 (full framing, standing, first in shoot order); the full shot takes the styled front-02
+    expect(out?.ok && out.pose.id).toBe('front-02');
+  });
+  it('a pose chosen by hand is used as asked, even the front one', async () => {
+    const out = await chooseSetPose(set(poses), ask('front-02', { ...full }), bySlot({ uses: {}, choices: { DCJ67197: 'front-02' } }));
+    expect(out?.ok && out.pose.id).toBe('front-02');
+  });
+});
