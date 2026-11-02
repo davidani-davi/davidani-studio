@@ -1,32 +1,31 @@
 # Handoff — 2026-11-02, Claude Code (Mac mini)
 
-Branch `claude/jaw-outlines-jeonga-sets` = PR #53 (open, NOT merged: needs David's OK). main fadfc2c (#52, live).
+Branch `claude/align-before-face-composite` (PR open, NOT merged: needs David's OK). main ad7e78d (#53 jaw outlines, live).
 
 ## Just done
-- Jeonga's DT70115 renders showed a line across the neck. Cause: the auto face outlines (`auto-draft-v1` /
-  `recast-mask-v1`) end in a flat bottom under the chin, so the neck below it is regenerated and relit by the
-  new garment.
-- #53 adds 21 reviewed contours to `lib/simple-contour-presets.json` (Blob URL keys) for draft CELINE 1,
-  draft VISION 3, draft CELINE 3 and Celine · DCT78115. Each keeps the auto hull around the hair and swaps
-  only the flat bottom for the jaw (Apple Vision landmarks). CELINE 1 back and CELINE 3 back are hand-drawn
-  profiles (the old CELINE 1 back outline left nose + chin unprotected). VISION 3 back, DCT78115 back-11 and
-  back-12 stay on auto. sha256/size reused from each photo's stored autoContour.
-- garmentBoundaryY raised to ceil(maxY + feather) where needed (the catalog test requires an open mask below
-  it; same rule as `draft-contour.ts`). It is informational only, not used in the mask.
-- Checked: vitest 1399/1399; overlays + magenta stress blend of all 21; re-composites of the 4 seamed renders
-  from raw fal frames (neck lines gone). Work files: session 9c38fcaf scratchpad (`final.json`, `gen.py`, `zc.jpg`).
-- Not checked: 17 of the 21 photos have no real render with the new outline. The first renders should report
-  faceProtection `reviewed-contour-v1`. Small pale patch left of CELINE 3's jaw comes from the raw frame.
+- Root cause of Jeonga's DT70115 doubled hair / second jaw edge / neck seams: GPT Image 2.5 edits return the person
+  1-3% smaller and 10-20 px off (up to ~2 deg rotated). The Simple composite assumed pixel alignment, so every outline
+  edge blended two heads. #53's jaw outlines alone could not fix that.
+- `lib/face-align.ts`: similarity fit (scale, rotation, shift) by NCC of luminance inside the outline + blend band,
+  coarse to fine; the generated frame is resampled (bicubic, native size) into the reference frame before the face goes
+  back. Original pixels never move. Guards: |s-1|<=8%, rot<=4 deg, shift<=6% width, must beat the unmoved frame; else
+  nothing is warped and `preservation.alignment.reason` says why. Simple only. Real frames: NCC 0.69-0.83 -> 0.985-0.997.
+- Heal (`lib/heal.ts`, `heal` field on POST /api/model-shots): re-composites an existing Simple render with NO
+  generation. Finds the render's raw frame in fal request history (free read, FAL_KEY), by base photo + an exact
+  pixel match below the face, then composites it with today's outline + alignment and returns the verified image
+  (`healed: {requestId, difference, ...}`). Needs the render's humanModelId + poseId (result.poseId for recast sets);
+  bottoms full bases need `heal.autoContour` (never runs paid outline detection). Sync even if `async:true`.
+  Checked on Jeonga's 5 real DT70115 renders: all matched (difference 0.000), 7-15 s each.
+- vitest 1413/1413; tsc only the 10 pre-existing test-file errors.
 
 ## Next steps
-1. David OKs → merge #53 → confirm Vercel production READY → first renders on these sets (Jeonga's, or a
-   paid render only with David's OK) should show `reviewed-contour-v1` and no neck line.
-2. Proposed, not approved: automatic seam check before ERP upload; make `lib/draft-contour.ts` / recast
-   outlines follow the jaw so new sets don't seam.
-3. Still open from #52: try Download + full-size Add model in Chrome on the MacBook Pro; recast-set buttons (#50).
+1. David OKs -> merge -> confirm Vercel production READY. Every Simple render then reports `preservation.alignment`.
+2. faire-management: Heal button on Jeonga's Listing Team add-on (team gateway -> this endpoint), separate PR.
+3. Proposed, not approved: automatic seam check before ERP upload; draft-contour outlines that follow the jaw.
 
 ## Gotchas
+- A render made AFTER alignment no longer matches its raw frame pixel for pixel, so Heal says "already healed".
+- fal history window: renderedAt -45/+20 min, else last 14 days. Raw frames older than fal's retention cannot heal.
 - Never copy auto outlines into presets without visual review; never restore the horizontal row cutoff (SOP §8).
-- Generated hair silhouettes don't line up with the base: never cut an outline through hair-to-backdrop edges.
 - Worktree with symlinked node_modules breaks Turbopack: `next dev --webpack` / `next build --webpack`.
 - `~/Code/davidani-studio` (main checkout) is on `codex/garment-only-pixel-lock` with uncommitted edits: leave it.
