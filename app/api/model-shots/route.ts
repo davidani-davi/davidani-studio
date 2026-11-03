@@ -1,6 +1,6 @@
 import { directOutfitInput, renderDirectOutfit, DIRECT_IDENTITIES } from '@/lib/direct-outfit';
 import { isPantsReference, pantsReferences } from "@/lib/pants-references";
-import { simpleReferenceShot, simpleFaceMask, isReviewedContour, faceProtectionOf, simpleImageSize } from '@/lib/simple-reference-shot';
+import { simpleReferenceShot, simpleFaceMask, isReviewedContour, faceProtectionOf, simpleImageSize, parseGarmentBorrowed, borrowRefusal } from '@/lib/simple-reference-shot';
 import sharp from 'sharp';
 import { referencePixels, validateEdit, editMask, compositeGarment, providerMask, donutsFaceMask } from '@/lib/garment-only';
 import { uploadToFal, groundPhrase, readGarmentDetails } from '@/lib/fal';
@@ -189,6 +189,12 @@ export async function POST(req: Request) {
     return json({ ok: false, error: "Keep original face is retired. Use Simple garment swap." }, 400);
   if (body.fullReferenceUrl != null && body.fullReferenceUrl !== "" && !isFullBodyBase(body.fullReferenceUrl))
     return json({ ok: false, error: "Use a full-body photo from the ERP or one you uploaded." }, 400);
+  // Borrowed colourway photos (2026-11-03): refused before anything is queued or paid for.
+  const borrowError = borrowRefusal({ borrowed: parseGarmentBorrowed(body.garmentBorrowed), editMode: body.editMode,
+    modelId: body.modelId || (body.engine && body.engine !== "gpt25" ? String(body.engine) : "gpt-image-25"),
+    view: String(body.view || "front"), hasBackPhoto: Array.isArray(body.garmentImageUrls) && Boolean(body.garmentImageUrls[1]),
+    anchorImageUrl: typeof body.anchorImageUrl === "string" ? body.anchorImageUrl : "" });
+  if (borrowError) return json({ ok: false, error: borrowError }, 400);
 
   /**
    * `async: true` — answer with a task id now, render after the response and
@@ -453,7 +459,7 @@ async function renderShot(req: Request, body: any): Promise<Response> {
       fitSource, styleNotes, garmentDescription: typeof known.description === 'string' ? known.description : undefined,
       // A real side photo of the garment (2026-10-30): the side view's garment photo, a check image elsewhere.
       garmentSideUrl: typeof body.garmentSideImageUrl === 'string' && /^https:\/\//.test(body.garmentSideImageUrl) ? body.garmentSideImageUrl : undefined,
-      garmentFacts: cleanFacts(body.garmentFacts) }) : undefined;
+      garmentFacts: cleanFacts(body.garmentFacts), garmentBorrowed: parseGarmentBorrowed(body.garmentBorrowed) }) : undefined;
     if (simpleInput) { input.prompt = simpleInput.prompt; input.image_urls = simpleInput.image_urls; }
     let simplePrepared: { ref: Awaited<ReturnType<typeof referencePixels>>; mask: Buffer } | undefined;
     let simpleRef: Awaited<ReturnType<typeof referencePixels>> | undefined;
@@ -559,7 +565,7 @@ async function renderShot(req: Request, body: any): Promise<Response> {
       ...(cropped ? { referenceCrop: { from: uncroppedUrl, box: cropped.box, scale: cropped.scale, width: cropped.ref.width, height: cropped.ref.height } }
         : cropError ? { referenceCrop: { from: uncroppedUrl, error: cropError } } : {}),
       garmentBackInferred: view === "back" && garmentImageUrls.length < 2,
-      anchored: Boolean(simpleInput?.anchored), fitSource: simpleInput?.fitSource, garmentSideUsed: simpleInput ? simpleInput.garmentSideUsed : undefined, garmentFactsUsed: simpleInput ? simpleInput.garmentFactsUsed : undefined, restore: { applied: false }, photoFinish: { method: protectedInput ? "original-face-pixels" : "native", applied: !!protectedInput }, corrections: [] });
+      anchored: Boolean(simpleInput?.anchored), fitSource: simpleInput?.fitSource, garmentSideUsed: simpleInput ? simpleInput.garmentSideUsed : undefined, garmentBorrowedUsed: simpleInput?.garmentBorrowedUsed, garmentFactsUsed: simpleInput ? simpleInput.garmentFactsUsed : undefined, restore: { applied: false }, photoFinish: { method: protectedInput ? "original-face-pixels" : "native", applied: !!protectedInput }, corrections: [] });
   } catch (err: any) {
     return json({ ok: false, view, error: String(err?.message || err) }, 502);
   }
