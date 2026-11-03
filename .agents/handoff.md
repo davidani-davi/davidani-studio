@@ -6,7 +6,7 @@ Branch `claude/closure-rule` → PR "FRONT CLOSURE rule". Before it on main: #59
 ## Just done
 - **FRONT CLOSURE rule** in `lib/simple-reference-shot.ts` (tops, dresses, sets; every view but back; never bottoms).
   DT70144 Pink (snap shacket photographed closed, on the open-jacket reference Vision DJ78149, Pose only) came back worn open
-  with ~20 silver snaps on BOTH front edges at uneven heights, against 9 evenly spaced pearl snaps on one edge. The prompt
+  with ~20 silver snaps on BOTH front edges at uneven heights, against 9 evenly spaced matte metal snaps on one edge. The prompt
   only said "visible button count" inside the knit sentence. Now: copy kind, count, spacing, size, colour and finish from
   image 2; caps in one column on one edge; worn open, the other edge is a plain placket with flat sockets/buttonholes.
   Phrased positively (naming the wrong layout tends to draw it). **The finish comes from the photo only**: DT70144's

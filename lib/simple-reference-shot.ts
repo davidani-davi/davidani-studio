@@ -222,7 +222,7 @@ export function simpleReferenceShot(o: SimpleShot) {
     + (side && !anchor ? '' : " If image 3 omits a product detail visible in image 2, restore the detail from image 2 instead of copying that omission.");
   // Front closure (2026-11-03, DT70144 Pink): a western snap shacket photographed closed, swapped onto a
   // reference wearing an open jacket, came back open with silver snaps on BOTH front edges at uneven heights,
-  // about 20 in all, against 9 evenly spaced pearl snaps on one edge. The prompt only said "visible button
+  // about 20 in all, against 9 evenly spaced matte metal snaps on one edge. The prompt only said "visible button
   // count" inside the knit sentence, so the open placket was invented. Stated positively: naming the wrong
   // layout tends to draw it. The back shows no front closure. The finish comes from the photo only: DT70144's
   // listing copy says "pearl snap placket" but the snaps are matte metal caps (David), and a first draft that
