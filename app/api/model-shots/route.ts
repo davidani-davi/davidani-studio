@@ -1,6 +1,6 @@
 import { directOutfitInput, renderDirectOutfit, DIRECT_IDENTITIES } from '@/lib/direct-outfit';
 import { isPantsReference, pantsReferences } from "@/lib/pants-references";
-import { simpleReferenceShot, simpleFaceMask, isReviewedContour, faceProtectionOf, SIMPLE_IMAGE_SIZE } from '@/lib/simple-reference-shot';
+import { simpleReferenceShot, simpleFaceMask, isReviewedContour, faceProtectionOf, simpleImageSize } from '@/lib/simple-reference-shot';
 import sharp from 'sharp';
 import { referencePixels, validateEdit, editMask, compositeGarment, providerMask, donutsFaceMask } from '@/lib/garment-only';
 import { uploadToFal, groundPhrase, readGarmentDetails } from '@/lib/fal';
@@ -454,6 +454,7 @@ async function renderShot(req: Request, body: any): Promise<Response> {
       garmentSideUrl: typeof body.garmentSideImageUrl === 'string' && /^https:\/\//.test(body.garmentSideImageUrl) ? body.garmentSideImageUrl : undefined }) : undefined;
     if (simpleInput) { input.prompt = simpleInput.prompt; input.image_urls = simpleInput.image_urls; }
     let simplePrepared: { ref: Awaited<ReturnType<typeof referencePixels>>; mask: Buffer } | undefined;
+    let simpleRef: Awaited<ReturnType<typeof referencePixels>> | undefined;
     if (simple) {
       if (reference.reframed) throw Error('Simple garment swap needs an exact view reference. Choose a complete reference set.');
       let ref = cropped?.ref;
@@ -462,6 +463,7 @@ async function renderShot(req: Request, body: any): Promise<Response> {
         if (!response.ok) throw Error('Reference could not be loaded.');
         ref = await referencePixels(Buffer.from(await response.arrayBuffer()));
       }
+      simpleRef = ref;
       const mask = simpleFaceMask(ref, reference.publicPath, view, framing, reference.protection, reference.autoContour);
       if (mask) simplePrepared = {ref,mask};
     }
@@ -489,7 +491,8 @@ async function renderShot(req: Request, body: any): Promise<Response> {
     }
     let url: string;
     let healed: Record<string, unknown> | undefined, healedFrame: Buffer | undefined;
-    let outputResolution = simple || nanoReference ? "1K" : "4K";
+    // Simple GPT renders at medium quality ("2K"); Nano keeps its own 1K path.
+    let outputResolution = nanoReference ? "1K" : simple ? "2K" : "4K";
     if (heal) {
       if (!simplePrepared) throw Error('This reference has no face outline, so there is nothing to heal.');
       const render = await fetch(heal.url, { cache: 'no-store' });
@@ -520,7 +523,7 @@ async function renderShot(req: Request, body: any): Promise<Response> {
         body: JSON.stringify({ modelId, humanModelId, poseId, view,
           canvasImageUrl: prepared?.canvasUrl || referenceUrl, garmentImageUrls: simpleInput?.garmentImageUrls || garmentImageUrls,
           preserveSecondaryReferences: true, rawPrompt: true, prompt: input.prompt,
-          imageSize: simple ? SIMPLE_IMAGE_SIZE : prepared ? {width:prepared.ref.width,height:prepared.ref.height} : GPT_NATIVE_SIZE, maskUrl: prepared?.maskUrl, aspectRatio: "2:3", resolution: simple ? "1K" : "4K", format: "png", numImages: 1 }),
+          imageSize: simple ? simpleImageSize(simpleRef) : prepared ? {width:prepared.ref.width,height:prepared.ref.height} : GPT_NATIVE_SIZE, maskUrl: prepared?.maskUrl, aspectRatio: "2:3", resolution: simple ? "2K" : "4K", format: "png", numImages: 1 }),
       }));
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || "Image generation failed");
