@@ -7,7 +7,10 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { del, list, put } from "@vercel/blob";
 import {
+  latestRecordFiles,
   mergeAssetRecords,
+  olderRecordFiles,
+  recordVersion,
   type AssetRecord,
 } from "./user-asset-records";
 import { defaultPoses, type UserPose } from "./user-poses";
@@ -87,9 +90,10 @@ async function readLocalJson<T>(store: string, fallback: T): Promise<T> {
 // Blob public URLs are served through Vercel's CDN with a long max-age, and
 // overwrite invalidation is not reliable across regions — a serverless
 // function's regional edge can keep serving a stale index for hours. A
-// unique query param changes the CDN cache key, forcing an origin read.
-// Required for correctness: mutations union-merge against this read, so a
-// stale index here can drop or resurrect entries.
+// unique query param was meant to change the CDN cache key and force an
+// origin read, but on 2026-11-03 an overwritten record still read stale for
+// 4-60 s with it (same HIT, same age). Record files are therefore written
+// once each (writeAssetRecord); the param stays for the legacy index.
 function cacheBusted(url: string): string {
   return `${url}${url.includes("?") ? "&" : "?"}nocache=${Date.now().toString(36)}`;
 }
@@ -136,23 +140,15 @@ async function listAssetRecords<T>(
     }
   }
 
-  const blobs: Awaited<ReturnType<typeof list>>["blobs"] = [];
-  let cursor: string | undefined;
-  do {
-    const page = await list({ prefix, cursor, limit: 1000 });
-    blobs.push(...page.blobs);
-    cursor = page.hasMore ? page.cursor : undefined;
-  } while (cursor);
-
+  // Only the newest file of each set is read (lib/user-asset-records.ts, versioned record files).
+  const latest = latestRecordFiles(prefix, await listBlobs(prefix));
   const records = await Promise.all(
-    blobs
-      .filter((blob) => blob.pathname.endsWith(".json"))
-      .map(async (blob) => {
+    [...latest].map(async ([id, blob]) => {
         try {
           const response = await fetch(cacheBusted(blob.url), { cache: "no-store" });
           if (!response.ok) return null;
           return {
-            id: path.basename(blob.pathname, ".json"),
+            id,
             record: (await response.json()) as AssetRecord<T>,
           };
         } catch (err) {
@@ -178,12 +174,36 @@ async function writeAssetRecord<T>(
     await fs.writeFile(path.join(localDir, `${id}.json`), body);
     return;
   }
-  await put(`${prefix}${id}.json`, body, {
+  // A new file per save, so the next read cannot get a stale copy from the CDN (lib/user-asset-records.ts).
+  const pathname = `${prefix}${id}/${recordVersion()}.json`;
+  await put(pathname, body, {
     access: "public",
     contentType: "application/json",
-    allowOverwrite: true,
-    cacheControlMaxAge: 60,
+    addRandomSuffix: false,
+    allowOverwrite: false,
   });
+  // Tidy up: delete this set's older files. A newer save by someone else is kept. Failing here leaves extra
+  // files, which reads skip and the next save removes.
+  try {
+    const legacy = `${prefix}${id}.json`;
+    const files = [...(await listBlobs(`${prefix}${id}/`)), ...(await listBlobs(legacy)).filter((blob) => blob.pathname === legacy)];
+    const mine = files.find((blob) => blob.pathname === pathname);
+    const older = mine ? olderRecordFiles(files, mine) : [];
+    if (older.length) await del(older.map((blob) => blob.url));
+  } catch (err) {
+    console.warn(`[user-assets] old record files kept for ${id}:`, err);
+  }
+}
+
+async function listBlobs(prefix: string): Promise<Awaited<ReturnType<typeof list>>["blobs"]> {
+  const blobs: Awaited<ReturnType<typeof list>>["blobs"] = [];
+  let cursor: string | undefined;
+  do {
+    const page = await list({ prefix, cursor, limit: 1000 });
+    blobs.push(...page.blobs);
+    cursor = page.hasMore ? page.cursor : undefined;
+  } while (cursor);
+  return blobs;
 }
 
 // ---------- image byte storage ----------
