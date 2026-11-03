@@ -13,6 +13,7 @@ import { isFullBodyBase } from '@/lib/full-body-base';
 import { thighUpReference, type ViewCrop } from '@/lib/view-crop';
 import { list, put } from '@vercel/blob';
 import { parseHeal, rawFrameCandidates, matchRawFrame, frameAtReference, type HealInput } from '@/lib/heal';
+import { parseTouchUp, runTouchUp, type TouchUpInput } from '@/lib/touch-up';
 import type { AutoContour } from '@/lib/model-admin-core';
 import { buildReferenceShot, runReferenceShot, NANO_REFERENCE_MODEL } from '@/lib/nano-reference-shots';
 import { viewReference, referenceCoverage } from '@/lib/view-reference';
@@ -239,6 +240,19 @@ export async function POST(req: Request) {
 
 /** One view, start to finish: the synchronous POST body. */
 async function renderShot(req: Request, body: any): Promise<Response> {
+  // Touch up (2026-11-03): edit a finished render inside the operator's red-pen circles only (lib/touch-up.ts).
+  // Checked first: it works on any render, whatever mode made it, and never runs the render pipeline.
+  if (body.touchUp != null) {
+    const view = String(MULTI_MODEL_VIEWS.includes(body.view) ? body.view : "front");
+    let t: TouchUpInput;
+    try { t = parseTouchUp(body.touchUp); } catch (error: any) { return json({ ok: false, view, error: error.message }, 400); }
+    try {
+      const out = await runTouchUp(t);
+      return json({ ok: true, view, url: out.url, touchUp: { from: t.url, note: t.note, area: out.area, attempts: out.attempts } });
+    } catch (error: any) {
+      return json({ ok: false, view, error: 'Touch-up did not work: ' + String(error?.message || error) + '. Your photo is unchanged.' }, 502);
+    }
+  }
   const started = Date.now();
   if (['direct','real-shoot'].includes(body.editMode)) {
     let input;
