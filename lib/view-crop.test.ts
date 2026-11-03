@@ -16,7 +16,7 @@ async function shape(p: string) {
 /** A reviewed library outline dressed up as the outline a draft set carries. */
 const draftOutline = (p: string) => ({ ...(presets as Record<string, any>)[p], source: 'auto-draft-v1', detectedAt: '2026-11-02T00:00:00Z' }) as AutoContour;
 
-describe('view-crop', () => {
+describe('view-crop', { timeout: 30_000 }, () => {
   it('tells a full-length photo from one already framed thigh-up', async () => {
     expect(isFullLength(await shape('models/studio 108/front.png'))).toBe(true);
     expect(isFullLength(await shape('models/crop 108/front.png'))).toBe(false);

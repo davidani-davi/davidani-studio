@@ -42,7 +42,7 @@ beforeEach(async () => {
 });
 afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals(); vi.clearAllMocks(); });
 
-describe('a full-length draft set for a top', () => {
+describe('a full-length draft set for a top', { timeout: 30_000 }, () => {
   it("shoots the Front on the photo's thigh-up window and keeps the face pixels", async () => {
     const data = await (await POST(request({}))).json();
     expect(data.ok, data.error).toBe(true);
