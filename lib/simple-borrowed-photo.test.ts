@@ -25,6 +25,7 @@ describe('borrowed colourway photos',()=>{
   expect(r.prompt).toContain('same ink colour as the print on image 3');
   expect(r.prompt).toContain("if image 3 shows no print, keep image 2's ink colour.");
   expect(r.prompt).toContain('No deep blue on the garment.');
+  expect(r.prompt).toContain('its dye finish and colour exactly as image 3 shows');
   expect(r.garmentBorrowedUsed).toEqual({back:true});
  });
  it('a borrowed back and side from one colour share one block',()=>{
