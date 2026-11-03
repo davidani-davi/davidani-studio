@@ -1092,5 +1092,87 @@ export const STATIC_HUMAN_MODELS = [
     "outfitAbove": "red short-sleeve tee",
     "outfitBelow": "red relaxed pants",
     "autoPool": false
+  },
+  {
+    "id": "studio 114",
+    "name": "Vision 6 · Cloud Cream",
+    "poses": [
+      {
+        "id": "studio 114",
+        "label": "Studio 114",
+        "publicPath": "/models/studio 114/front.png",
+        "filename": "front.png",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.png",
+            "publicPath": "/models/studio 114/back.png"
+          },
+          "front": {
+            "filename": "front.png",
+            "publicPath": "/models/studio 114/front.png"
+          },
+          "full": {
+            "filename": "full.png",
+            "publicPath": "/models/studio 114/full.png"
+          },
+          "side": {
+            "filename": "side.png",
+            "publicPath": "/models/studio 114/side.png"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": false,
+    "pose": "Vision 6",
+    "character": "vision",
+    "expression": "soft smile",
+    "slug": "dtp50065a-cloudcream-vision-recast",
+    "poseKey": "dtp50065a-cloudcream-vision",
+    "outfitAbove": "cream short-sleeve tee",
+    "outfitBelow": "cream relaxed pants",
+    "autoPool": false
+  },
+  {
+    "id": "studio 115",
+    "name": "Celine 8 · Cloud Cream",
+    "poses": [
+      {
+        "id": "studio 115",
+        "label": "Studio 115",
+        "publicPath": "/models/studio 115/front.png",
+        "filename": "front.png",
+        "subdir": "",
+        "views": {
+          "back": {
+            "filename": "back.png",
+            "publicPath": "/models/studio 115/back.png"
+          },
+          "front": {
+            "filename": "front.png",
+            "publicPath": "/models/studio 115/front.png"
+          },
+          "full": {
+            "filename": "full.png",
+            "publicPath": "/models/studio 115/full.png"
+          },
+          "side": {
+            "filename": "side.png",
+            "publicPath": "/models/studio 115/side.png"
+          }
+        }
+      }
+    ],
+    "wears": "pants",
+    "lowOk": false,
+    "pose": "Celine 8",
+    "character": "celine",
+    "expression": "soft smile",
+    "slug": "dtp50065a-cloudcream-celine-recast",
+    "poseKey": "dtp50065a-cloudcream-celine",
+    "outfitAbove": "cream short-sleeve tee",
+    "outfitBelow": "cream relaxed pants",
+    "autoPool": false
   }
 ] as unknown as HumanModel[];
