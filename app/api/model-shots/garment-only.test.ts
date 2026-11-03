@@ -54,7 +54,8 @@ describe('protected model-shot route',()=>{
    expect(output.subarray(preset.garmentBoundaryY*preset.width*4).equals(clean.subarray(preset.garmentBoundaryY*preset.width*4))).toBe(true);
   }
   expect(data.faceProtection).toBe('reviewed-contour-v1');
- });
+ // The fake render is a flat colour, so the face check fails and the route renders once more: two composites per view.
+ },20_000);
  it('skirts use the shared bottoms collection: bare-legged auto base, three views, skirt construction',async()=>{
   // each reference URL serves its own installed file, so the reviewed-contour hash check runs for real
   vi.stubGlobal('fetch',vi.fn(async(input:string|URL|Request)=>{const u=String(input);const path=decodeURIComponent(new URL(u).pathname);
