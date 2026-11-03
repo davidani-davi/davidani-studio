@@ -31,6 +31,7 @@ import { buildTryOnInput, garmentForView, runTryOn, tryOnSeed } from "@/lib/tryo
 import { GPT_NATIVE_SIZE } from "@/lib/gpt-variants";
 import { houseFaceOf, noPlateQualityOf, noPlateVariantOf, shootNoPlate, shootReference } from "@/lib/no-plate";
 import { isGptModel } from "@/lib/models";
+import { cleanFacts } from "@/lib/garment-facts";
 
 export const runtime = "nodejs";
 export const maxDuration = 800;
@@ -453,7 +454,8 @@ async function renderShot(req: Request, body: any): Promise<Response> {
     const simpleInput = simple ? simpleReferenceShot({ view, referenceUrl, garmentImageUrls, category, framing, color: typeof known.color === 'string' ? known.color : undefined, note, anchorImageUrl, garmentName: typeof known.title === 'string' ? known.title : undefined,
       fitSource, styleNotes, garmentDescription: typeof known.description === 'string' ? known.description : undefined,
       // A real side photo of the garment (2026-10-30): the side view's garment photo, a check image elsewhere.
-      garmentSideUrl: typeof body.garmentSideImageUrl === 'string' && /^https:\/\//.test(body.garmentSideImageUrl) ? body.garmentSideImageUrl : undefined }) : undefined;
+      garmentSideUrl: typeof body.garmentSideImageUrl === 'string' && /^https:\/\//.test(body.garmentSideImageUrl) ? body.garmentSideImageUrl : undefined,
+      garmentFacts: cleanFacts(body.garmentFacts) }) : undefined;
     if (simpleInput) { input.prompt = simpleInput.prompt; input.image_urls = simpleInput.image_urls; }
     let simplePrepared: { ref: Awaited<ReturnType<typeof referencePixels>>; mask: Buffer } | undefined;
     let simpleRef: Awaited<ReturnType<typeof referencePixels>> | undefined;
@@ -582,7 +584,7 @@ async function renderShot(req: Request, body: any): Promise<Response> {
       ...(cropped ? { referenceCrop: { from: uncroppedUrl, box: cropped.box, scale: cropped.scale, width: cropped.ref.width, height: cropped.ref.height } }
         : cropError ? { referenceCrop: { from: uncroppedUrl, error: cropError } } : {}),
       garmentBackInferred: view === "back" && garmentImageUrls.length < 2,
-      anchored: Boolean(simpleInput?.anchored), fitSource: simpleInput?.fitSource, garmentSideUsed: simpleInput ? simpleInput.garmentSideUsed : undefined, restore: { applied: false }, photoFinish: { method: protectedInput ? "original-face-pixels" : "native", applied: !!protectedInput }, corrections: [] });
+      anchored: Boolean(simpleInput?.anchored), fitSource: simpleInput?.fitSource, garmentSideUsed: simpleInput ? simpleInput.garmentSideUsed : undefined, garmentFactsUsed: simpleInput ? simpleInput.garmentFactsUsed : undefined, restore: { applied: false }, photoFinish: { method: protectedInput ? "original-face-pixels" : "native", applied: !!protectedInput }, corrections: [] });
   } catch (err: any) {
     return json({ ok: false, view, error: String(err?.message || err) }, 502);
   }

@@ -230,6 +230,24 @@ export async function readGarmentDetails(imageUrl: string): Promise<import("./us
   }
 }
 
+/**
+ * The facts card pre-fill (lib/garment-facts.ts). Sonnet 4.5, not the Haiku used for the reads above: on DP62259's
+ * three colours Haiku called the same hanger pants ankle once and cropped twice, Sonnet 4.5 called all three
+ * cropped + wide with the measured ratio (2026-11-03). Throws on failure: the card then starts empty.
+ */
+const FACTS_MODEL = "anthropic/claude-sonnet-4.5";
+export async function readGarmentFacts(
+  imageUrl: string,
+  known: { title?: string; category?: string; description?: string }
+): Promise<import("./garment-facts").FactsRead & { model: string }> {
+  const { FACTS_READ_PROMPT, parseFactsRead } = await import("./garment-facts");
+  const result: any = await subscribeVisionWithRetry({ model: FACTS_MODEL, prompt: FACTS_READ_PROMPT(known), image_url: imageUrl }, "garment facts read");
+  const data = result?.data ?? result;
+  const read = parseFactsRead(String(data?.output ?? data?.response ?? data?.text ?? ""));
+  if (!read) throw new Error("garment facts read: no JSON in the reply");
+  return { ...read, model: FACTS_MODEL };
+}
+
 /** Florence-2 phrase grounding: pixel boxes for `text` in the image (draft face outlines). */
 export async function groundPhrase(imageUrl: string, text: string): Promise<{ x: number; y: number; w: number; h: number }[]> {
   ensureConfigured();
