@@ -9,6 +9,8 @@ import { readPoseUsage, recordPoseUse, readCachedGarmentRead, writeCachedGarment
 import { slotPoses, type UserPose } from '@/lib/user-poses';
 import { detectAutoContour } from '@/lib/draft-contour';
 import { isFullBodyBase } from '@/lib/full-body-base';
+import { thighUpReference, type ViewCrop } from '@/lib/view-crop';
+import { list, put } from '@vercel/blob';
 import { parseHeal, rawFrameCandidates, matchRawFrame, frameAtReference, type HealInput } from '@/lib/heal';
 import type { AutoContour } from '@/lib/model-admin-core';
 import { buildReferenceShot, runReferenceShot, NANO_REFERENCE_MODEL } from '@/lib/nano-reference-shots';
@@ -422,9 +424,24 @@ async function renderShot(req: Request, body: any): Promise<Response> {
   humanModelId = reference.humanModelId;
   poseId = reference.poseId;
   try {
-    const referenceUrl = process.env.VERCEL || /^https?:|^\/user-assets\//.test(reference.publicPath) || catalogue.find(m => m.id === humanModelId)?.userAdded
+    let referenceUrl = process.env.VERCEL || /^https?:|^\/user-assets\//.test(reference.publicPath) || catalogue.find(m => m.id === humanModelId)?.userAdded
       ? new URL(reference.publicPath, req.url).toString()
       : await getPoseUrl(humanModelId, poseId, view, 0);
+    // A full-length set photo (a recast or draft set built for pants) for a thigh-up or knee view: shoot on its
+    // thigh-up window, or a top's Front comes out head to toe (DCJ67197, 2026-11-02). lib/view-crop.ts.
+    let cropped: ViewCrop | null = null, cropError: string | undefined;
+    const uncroppedUrl = referenceUrl, contour = reference.autoContour;
+    if (simple && !reference.reframed && view !== 'full' && (framing === 'crop' || framing === 'knee')
+      && contour?.kind === 'contour' && !isReviewedContour(reference.publicPath)) {
+      try {
+        const response = await fetch(referenceUrl, { cache: 'no-store' });
+        if (!response.ok) throw Error('Reference could not be loaded.');
+        const source = await referencePixels(Buffer.from(await response.arrayBuffer()));
+        if (source.width === contour.width && source.height === contour.height && source.sha256 === contour.sha256)
+          cropped = await thighUpReference(source, contour, framing, storeViewCrop);
+      } catch (err: any) { cropError = String(err?.message || err); console.warn('[model-shots] thigh-up crop failed:', cropError); }
+      if (cropped) { referenceUrl = cropped.url; reference = { ...reference, autoContour: cropped.contour }; }
+    }
     const input = buildReferenceShot({ view, referenceUrl, garmentImageUrls, category, framing,
       color: typeof known.color === "string" ? known.color : undefined, note });
     // Pose only (2026-10-30): the reference lends its pose alone; fit comes from the style and the notes
@@ -439,9 +456,12 @@ async function renderShot(req: Request, body: any): Promise<Response> {
     let simplePrepared: { ref: Awaited<ReturnType<typeof referencePixels>>; mask: Buffer } | undefined;
     if (simple) {
       if (reference.reframed) throw Error('Simple garment swap needs an exact view reference. Choose a complete reference set.');
-      const response = await fetch(referenceUrl, {cache:'no-store'});
-      if (!response.ok) throw Error('Reference could not be loaded.');
-      const ref = await referencePixels(Buffer.from(await response.arrayBuffer()));
+      let ref = cropped?.ref;
+      if (!ref) {
+        const response = await fetch(referenceUrl, {cache:'no-store'});
+        if (!response.ok) throw Error('Reference could not be loaded.');
+        ref = await referencePixels(Buffer.from(await response.arrayBuffer()));
+      }
       const mask = simpleFaceMask(ref, reference.publicPath, view, framing, reference.protection, reference.autoContour);
       if (mask) simplePrepared = {ref,mask};
     }
@@ -531,9 +551,20 @@ async function renderShot(req: Request, body: any): Promise<Response> {
       poseId: setPose ? setPose.pose.id : poseId, assigned, category, hem, framing,
       ...(setPose ? { poseReason: setPose.reason, pose: { id: setPose.pose.id, view: setPose.pose.view, framing: setPose.pose.framing, stance: setPose.pose.stance, arms: setPose.pose.arms, thumbUrl: setPose.pose.thumbUrl } } : {}),
       reference: { ...reference, url: referenceUrl },
+      ...(cropped ? { referenceCrop: { from: uncroppedUrl, box: cropped.box, scale: cropped.scale, width: cropped.ref.width, height: cropped.ref.height } }
+        : cropError ? { referenceCrop: { from: uncroppedUrl, error: cropError } } : {}),
       garmentBackInferred: view === "back" && garmentImageUrls.length < 2,
       anchored: Boolean(simpleInput?.anchored), fitSource: simpleInput?.fitSource, garmentSideUsed: simpleInput ? simpleInput.garmentSideUsed : undefined, restore: { applied: false }, photoFinish: { method: protectedInput ? "original-face-pixels" : "native", applied: !!protectedInput }, corrections: [] });
   } catch (err: any) {
     return json({ ok: false, view, error: String(err?.message || err) }, 502);
   }
+}
+
+/** Saves a thigh-up reference once under its fixed name, so a render, its retries and Heal share one URL. */
+async function storeViewCrop(key: string, png: Buffer): Promise<string> {
+  if (!process.env.BLOB_READ_WRITE_TOKEN) return uploadToFal(new Blob([Uint8Array.from(png)], { type: 'image/png' }), 'view-crop.png');
+  const found = await list({ prefix: key, limit: 1 });
+  const hit = found.blobs.find(b => b.pathname === key);
+  if (hit) return hit.url;
+  return (await put(key, png, { access: 'public', contentType: 'image/png', addRandomSuffix: false, allowOverwrite: true })).url;
 }
