@@ -168,3 +168,36 @@ describe('Heal (re-composite an existing Simple render, no generation)',()=>{
   expect(data.ok).toBe(false);expect(data.error).toMatch(/Render it again/);expect(mocks.generate).not.toHaveBeenCalled();
  });
 });
+describe('Simple face check (2026-11-03)',()=>{
+ const front=()=>request({view:'front',editMode:'simple',humanModelId:'studio 100',poseId:'studio 100',known:{category:'top'},garmentImageUrls:['https://erp/front.png']});
+ beforeEach(()=>{original=fs.readFileSync('public/models/crop 100/front.png');});
+ it('a clean render is checked once and not re-rendered',async()=>{
+  mocks.generate.mockImplementation(async()=>Response.json({images:[{url:'https://same/clean.png'}]}));
+  const data=await (await POST(front())).json();
+  expect(data.ok).toBe(true);expect(mocks.generate).toHaveBeenCalledTimes(1);
+  expect(data.faceCheck).toMatchObject({ok:true,reasons:[],attempts:1,version:'face-check-v1'});
+  expect(data.faceCheck.firstAttempt).toBeUndefined();
+ });
+ it('a failed check renders once more and keeps the better render',async()=>{
+  mocks.generate.mockImplementationOnce(async()=>Response.json({images:[{url:'https://generated/broken.png'}]}))
+   .mockImplementationOnce(async()=>Response.json({images:[{url:'https://same/clean.png'}]}));
+  const data=await (await POST(front())).json();
+  expect(data.ok).toBe(true);expect(mocks.generate).toHaveBeenCalledTimes(2);
+  expect(data.faceCheck).toMatchObject({ok:true,attempts:2,firstAttempt:{ok:false}});
+  // The released image is the second render with the real face pasted back, not the broken one.
+  const out=await sharp(hosted.get(data.url)!).ensureAlpha().raw().toBuffer();
+  expect(out.equals((await referencePixels(original)).data)).toBe(true);
+ });
+ it('two failed renders return the better one, flagged with reasons',async()=>{
+  const data=await (await POST(front())).json();
+  expect(data.ok).toBe(true);expect(mocks.generate).toHaveBeenCalledTimes(2);
+  expect(data.faceCheck.ok).toBe(false);expect(data.faceCheck.attempts).toBe(2);
+  expect(data.faceCheck.reasons.length).toBeGreaterThan(0);
+ });
+ it('a failed retry keeps the first render and still reports the check',async()=>{
+  mocks.generate.mockImplementationOnce(async()=>Response.json({images:[{url:'https://generated/broken.png'}]}))
+   .mockImplementationOnce(async()=>Response.json({error:'fal down'},{status:502}));
+  const data=await (await POST(front())).json();
+  expect(data.ok).toBe(true);expect(data.faceCheck).toMatchObject({ok:false,attempts:1});
+ });
+});

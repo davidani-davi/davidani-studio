@@ -81,25 +81,20 @@ export function warpGenerated(gen: Buffer, gw: number, gh: number, width: number
   return out;
 }
 
-/**
- * Finds where the generated frame put the protected head. `candidate` is the generated frame
- * already resized to the reference size (RGBA); `mask` is the face mask (0 = keep original).
- * Only pixels inside the outline and its blend band are compared, so the new garment never
- * steers the fit.
- */
-export function findAlignment(ref: ReferencePixels, candidate: Buffer, mask: Buffer): { alignment: Alignment; cx: number; cy: number } {
-  const { width: w, height: h } = ref;
+interface Region { cx: number; cy: number; radius: number; x0: number; x1: number; y0: number; y1: number; m: number; flag: Float32Array }
+
+function regionOf(mask: Buffer, w: number, h: number): Region {
   let x0 = w, x1 = 0, y0 = h, y1 = 0, sx = 0, sy = 0, m = 0;
   const flag = new Float32Array(w * h);
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (mask[y * w + x] < 255) {
     flag[y * w + x] = 1; m++; sx += x; sy += y;
     if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
   }
-  const none: Alignment = { applied: false, scale: 1, rotationDeg: 0, dx: 0, dy: 0, scoreBefore: 0, scoreAfter: 0, maxShiftPx: 0 };
-  if (m < 4096) return { alignment: { ...none, reason: 'no-region' }, cx: w / 2, cy: h / 2 };
-  const cx = sx / m, cy = sy / m, radius = Math.max(x1 - x0, y1 - y0) / 2;
-  // Coarsest level: region about 56 px across.
-  const top = Math.max(0, Math.ceil(Math.log2(Math.max(x1 - x0, 1) / 56)));
+  return { cx: m ? sx / m : w / 2, cy: m ? sy / m : h / 2, radius: Math.max(x1 - x0, y1 - y0) / 2, x0, x1, y0, y1, m, flag };
+}
+
+function pyramid(ref: ReferencePixels, candidate: Buffer, flag: Float32Array, top: number) {
+  const { width: w, height: h } = ref;
   const levels: Level[] = [];
   let r = luma(ref.data, w, h), g = luma(candidate, w, h), f = flag, lw = w, lh = h;
   for (let l = 0; l <= top; l++) {
@@ -108,17 +103,13 @@ export function findAlignment(ref: ReferencePixels, candidate: Buffer, mask: Buf
     levels.push({ w: lw, h: lh, ref: r, gen: g, region });
     if (l < top) { r = half(r, lw, lh); g = half(g, lw, lh); f = half(f, lw, lh); lw >>= 1; lh >>= 1; }
   }
-  const at = (l: number, p: Params) => score(levels[l], p, cx, cy, 2 ** l);
-  // Exhaustive scale + shift search on the coarsest level (no rotation yet).
-  const k = 2 ** top, reach = Math.max(k, Math.round(LIMITS.shift * w / k) * k);
-  let best: Params = { s: 1, th: 0, tx: 0, ty: 0 }, bestScore = at(top, best);
-  for (let s = 1 - LIMITS.scale + 0.02; s <= 1 + LIMITS.scale - 0.02 + 1e-9; s += 0.01)
-    for (let ty = -reach; ty <= reach; ty += k) for (let tx = -reach; tx <= reach; tx += k) {
-      const p = { s, th: 0, tx, ty }, v = at(top, p);
-      if (v > bestScore) { bestScore = v; best = p; }
-    }
-  // Pattern search, coarse to fine, including rotation.
-  for (let l = top; l >= 0; l--) {
+  return levels;
+}
+
+/** Pattern search, coarse to fine, including rotation, from level `from` down to full size. */
+function refine(at: (l: number, p: Params) => number, start: Params, radius: number, from: number) {
+  let best = start;
+  for (let l = from; l >= 0; l--) {
     const kk = 2 ** l;
     let step = { s: kk / radius, th: kk / radius, t: kk }, cur = at(l, best);
     for (let it = 0; it < 80 && step.t >= kk / 4; it++) {
@@ -131,6 +122,33 @@ export function findAlignment(ref: ReferencePixels, candidate: Buffer, mask: Buf
       if (!moved) step = { s: step.s / 2, th: step.th / 2, t: step.t / 2 };
     }
   }
+  return best;
+}
+
+/**
+ * Finds where the generated frame put the protected head. `candidate` is the generated frame
+ * already resized to the reference size (RGBA); `mask` is the face mask (0 = keep original).
+ * Only pixels inside the outline and its blend band are compared, so the new garment never
+ * steers the fit.
+ */
+export function findAlignment(ref: ReferencePixels, candidate: Buffer, mask: Buffer): { alignment: Alignment; cx: number; cy: number } {
+  const { width: w, height: h } = ref;
+  const { cx, cy, radius, x0, x1, y0, y1, m, flag } = regionOf(mask, w, h);
+  const none: Alignment = { applied: false, scale: 1, rotationDeg: 0, dx: 0, dy: 0, scoreBefore: 0, scoreAfter: 0, maxShiftPx: 0 };
+  if (m < 4096) return { alignment: { ...none, reason: 'no-region' }, cx: w / 2, cy: h / 2 };
+  // Coarsest level: region about 56 px across.
+  const top = Math.max(0, Math.ceil(Math.log2(Math.max(x1 - x0, 1) / 56)));
+  const levels = pyramid(ref, candidate, flag, top);
+  const at = (l: number, p: Params) => score(levels[l], p, cx, cy, 2 ** l);
+  // Exhaustive scale + shift search on the coarsest level (no rotation yet).
+  const k = 2 ** top, reach = Math.max(k, Math.round(LIMITS.shift * w / k) * k);
+  let best: Params = { s: 1, th: 0, tx: 0, ty: 0 }, bestScore = at(top, best);
+  for (let s = 1 - LIMITS.scale + 0.02; s <= 1 + LIMITS.scale - 0.02 + 1e-9; s += 0.01)
+    for (let ty = -reach; ty <= reach; ty += k) for (let tx = -reach; tx <= reach; tx += k) {
+      const p = { s, th: 0, tx, ty }, v = at(top, p);
+      if (v > bestScore) { bestScore = v; best = p; }
+    }
+  best = refine(at, best, radius, top);
   const before = at(0, { s: 1, th: 0, tx: 0, ty: 0 }), after = at(0, best);
   const corners = [[x0, y0], [x1, y0], [x0, y1], [x1, y1]].map(([x, y]) => {
     const X = x - cx, Y = y - cy, c = Math.cos(best.th) * best.s, n = Math.sin(best.th) * best.s;
@@ -144,4 +162,50 @@ export function findAlignment(ref: ReferencePixels, candidate: Buffer, mask: Buf
   if (after < 0.5 || after < before + 0.005) return { alignment: { ...alignment, reason: alignment.maxShiftPx < 1 ? 'already-aligned' : 'no-match' }, cx, cy };
   if (alignment.maxShiftPx < 1) return { alignment: { ...alignment, reason: 'already-aligned' }, cx, cy };
   return { alignment: { ...alignment, applied: true }, cx, cy };
+}
+
+export interface FaceLocation { scale: number; rotationDeg: number; dx: number; dy: number; cx: number; cy: number; score: number; scoreInPlace: number }
+
+/**
+ * Where the face inside `mask` on `ref` is in `candidate` (same size), anywhere in the frame and at 0.55x to 1.8x its
+ * size. Used when a pose photo is replaced (lib/pose-replace.ts) so the face outline can follow the face. A point
+ * (x, y) on `ref` lands at `mapPoint(location, x, y)` on `candidate`. Null when the outline has too little area.
+ */
+export function locateFace(ref: ReferencePixels, candidate: Buffer, mask: Buffer, options: { enough?: number } = {}): FaceLocation | null {
+  const { width: w, height: h } = ref;
+  const { cx, cy, radius, x0, x1, m, flag } = regionOf(mask, w, h);
+  if (m < 4096) return null;
+  // Whole-frame search where the region is about 20 px across, then refine the best few down to full size.
+  const top = Math.max(0, Math.ceil(Math.log2(Math.max(x1 - x0, 1) / 20)));
+  const levels = pyramid(ref, candidate, flag, top);
+  const at = (l: number, p: Params) => score(levels[l], p, cx, cy, 2 ** l);
+  const inPlace = at(0, { s: 1, th: 0, tx: 0, ty: 0 });
+  // An edit of the same shot: no search needed.
+  if (options.enough !== undefined && inPlace >= options.enough)
+    return { scale: 1, rotationDeg: 0, dx: 0, dy: 0, cx, cy, score: +inPlace.toFixed(4), scoreInPlace: +inPlace.toFixed(4) };
+  const k = 2 ** top, found: { v: number; p: Params }[] = [];
+  for (let s = 0.55; s <= 1.8; s *= 1.04)
+    for (let ty = -Math.floor(cy / k) * k; ty <= h - cy; ty += k) for (let tx = -Math.floor(cx / k) * k; tx <= w - cx; tx += k) {
+      const p = { s, th: 0, tx, ty }, v = at(top, p);
+      if (v > 0.3) found.push({ v, p });
+    }
+  found.sort((a, b) => b.v - a.v);
+  const starts: Params[] = [];
+  for (const f of found) {
+    if (starts.length >= 4) break;
+    if (starts.every(q => Math.hypot(q.tx - f.p.tx, q.ty - f.p.ty) > 2 * k || Math.abs(Math.log(q.s / f.p.s)) > 0.1)) starts.push(f.p);
+  }
+  let best: Params = { s: 1, th: 0, tx: 0, ty: 0 }, bestScore = inPlace;
+  for (const st of starts) {
+    const p = refine(at, st, radius, top), v = at(0, p);
+    if (v > bestScore) { bestScore = v; best = p; }
+  }
+  return { scale: +best.s.toFixed(4), rotationDeg: +(best.th * 180 / Math.PI).toFixed(3), dx: +best.tx.toFixed(2), dy: +best.ty.toFixed(2),
+    cx, cy, score: +bestScore.toFixed(4), scoreInPlace: +inPlace.toFixed(4) };
+}
+
+/** Where a point on the photo `locateFace` searched from lands on the photo it searched. */
+export function mapPoint(l: Pick<FaceLocation, 'scale' | 'rotationDeg' | 'dx' | 'dy' | 'cx' | 'cy'>, x: number, y: number): [number, number] {
+  const th = l.rotationDeg * Math.PI / 180, c = Math.cos(th) * l.scale, n = Math.sin(th) * l.scale, X = x - l.cx, Y = y - l.cy;
+  return [c * X - n * Y + l.cx + l.dx, n * X + c * Y + l.cy + l.dy];
 }

@@ -146,13 +146,29 @@ describe("PATCH /api/user-models/<id>/poses/<poseId>", () => {
 });
 
 describe("Replace photo and Undo on a recast pose", () => {
+  // A textured "photo": smooth random blobs, so a resize or shift keeps it recognisable and another seed does not.
+  const photo = async (seed: number, w = 400, h = 600) => {
+    const px = Buffer.alloc(50 * 75 * 3);
+    let r = seed;
+    for (let i = 0; i < px.length; i++) { r = (r * 1103515245 + 12345) & 0x7fffffff; px[i] = 40 + (r % 180); }
+    return sharp(px, { raw: { width: 50, height: 75, channels: 3 } }).resize(w, h, { kernel: "cubic" }).png().toBuffer();
+  };
+  const shifted = async (bytes: Buffer, dx: number) =>
+    sharp(await sharp(bytes).extend({ left: dx, background: "#808080" }).png().toBuffer()).extract({ left: 0, top: 0, width: 400, height: 600 }).png().toBuffer();
+  const BOX: [number, number][] = [[120, 80], [280, 80], [280, 300], [120, 300]];
   const outlined = async (bytes: Buffer, extra: Partial<UserPose> = {}) => {
     const ref = await referencePixels(bytes);
     const model = set();
-    model.poses![0] = { ...model.poses![0], contour: { kind: "contour", width: 40, height: 60, sha256: ref.sha256, featherPixels: 4,
-      source: "recast-mask-v1", detectedAt: "", points: [[10, 4], [30, 4], [30, 22], [10, 22]] }, ...extra };
+    model.poses![0] = { ...model.poses![0], contour: { kind: "contour", width: ref.width, height: ref.height, sha256: ref.sha256, featherPixels: 8,
+      source: "recast-mask-v1", detectedAt: "", points: BOX }, ...extra };
     return model;
   };
+  /** Serves the given photos by path, like the blob store. */
+  const serve = (photos: Record<string, Buffer>) => vi.stubGlobal("fetch", vi.fn(async (u: URL | string) => {
+    const path = new URL(String(u)).pathname;
+    return photos[path] ? new Response(new Uint8Array(photos[path])) : new Response("missing", { status: 404 });
+  }));
+  const CURRENT = "/user-assets/user-models/vision-dd70049/poses/front-03.png";
   const send = (bytes: Buffer, extra: Record<string, string> = {}) => {
     const form = new FormData();
     form.append("file", new File([new Uint8Array(bytes)], "edit.png", { type: "image/png" }));
@@ -160,6 +176,8 @@ describe("Replace photo and Undo on a recast pose", () => {
     return replacePose(new Request("https://studio/api/user-models/vision-dd70049/poses/front-03", { method: "POST", body: form, headers: TOKEN }),
       { params: Promise.resolve({ id: "vision-dd70049", poseId: "front-03" }) });
   };
+  const patch = (body: unknown, poseId = "front-03") => changePose(new Request(`https://studio/api/user-models/vision-dd70049/poses/${poseId}`,
+    { method: "PATCH", body: JSON.stringify(body), headers: TOKEN }), { params: Promise.resolve({ id: "vision-dd70049", poseId }) });
   const edited = (w: number, h: number) => sharp({ create: { width: w, height: h, channels: 4, background: "#b8a490" } }).png().toBuffer();
 
   beforeEach(() => {
@@ -167,23 +185,73 @@ describe("Replace photo and Undo on a recast pose", () => {
     mocks.setPoses.mockImplementation(async (model: UserModel, poses: UserPose[]) => ({ ...model, poses }));
   });
 
-  it("keeps the face outline, scaled and bound to the new pixels, when the edit keeps the photo's shape", async () => {
-    mocks.list.mockResolvedValue([await outlined(await png())]);
-    const bytes = await edited(80, 120);
+  it("keeps the face outline, scaled and bound to the new pixels, when the edit is the same shot at another size", async () => {
+    const old = await photo(1);
+    serve({ [CURRENT]: old });
+    mocks.list.mockResolvedValue([await outlined(old)]);
+    const bytes = await sharp(old).resize(800, 1200).png().toBuffer();
     const res = await send(bytes);
     const body = await res.json();
     expect(res.status).toBe(200);
     const ref = await referencePixels(bytes);
-    expect(body.pose.contour).toMatchObject({ width: 80, height: 120, sha256: ref.sha256, featherPixels: 8, points: [[20, 8], [60, 8], [60, 44], [20, 44]] });
+    expect(body.pose.contour).toMatchObject({ width: 800, height: 1200, sha256: ref.sha256, featherPixels: 16, points: [[240, 160], [560, 160], [560, 600], [240, 600]] });
     expect(body.pose.url).toContain("front-03-rnew");
-    expect(body.pose.checks).toMatchObject({ pass: true, outline: { ok: true, reason: "kept from the photo it replaced" } });
+    expect(body.pose.checks).toMatchObject({ pass: true, outline: { ok: true, reason: "kept from the photo it replaced", carried: { from: CURRENT, moved: false } } });
+    expect(body.pose.checks.outline.carried.score).toBeGreaterThan(0.95);
     expect(body.pose.history).toHaveLength(1);
     expect(body.pose.history[0].url).toContain("/front-03.png");
     expect(mocks.detect).not.toHaveBeenCalled();
   });
 
+  it("moves the outline with the face when the same shot was shifted", async () => {
+    const old = await photo(1);
+    serve({ [CURRENT]: old });
+    mocks.list.mockResolvedValue([await outlined(old)]);
+    const res = await send(await shifted(old, 24));
+    const body = await res.json();
+    expect(res.status).toBe(200);
+    expect(body.pose.checks.outline).toMatchObject({ reason: "moved with the face from the photo it was drawn on", carried: { moved: true } });
+    for (const [i, [x, y]] of body.pose.contour.points.entries()) {
+      expect(Math.abs(x - (BOX[i][0] + 24))).toBeLessThan(2);
+      expect(Math.abs(y - BOX[i][1])).toBeLessThan(2);
+    }
+  });
+
+  it("asks before the paid automatic outline when the new photo is a different shot, and saves nothing", async () => {
+    const old = await photo(1);
+    serve({ [CURRENT]: old });
+    mocks.list.mockResolvedValue([await outlined(old)]);
+    const res = await send(await photo(2));
+    const body = await res.json();
+    expect(res.status).toBe(409);
+    expect(body).toMatchObject({ ok: false, needsAutoOutline: true });
+    expect(body.reason).toContain("different shot");
+    expect(mocks.store).not.toHaveBeenCalled();
+    expect(mocks.setPoses).not.toHaveBeenCalled();
+  });
+
+  it("checks against the photo the outline was drawn on, not one it was carried to", async () => {
+    // The pose's outline was carried from front-03.png onto a different photo by the old rule; the same photo sent again
+    // must still be refused, because the outline never fitted it.
+    const first = await photo(1), wrong = await photo(3);
+    const wrongRef = await referencePixels(wrong);
+    const model = await outlined(first);
+    const original = model.poses![0];
+    model.poses![0] = { ...original, url: "/user-assets/user-models/vision-dd70049/poses/front-03-r1.png",
+      contour: { ...original.contour!, sha256: wrongRef.sha256 },
+      checks: { pass: true, outline: { ok: true, reason: "kept from the photo it replaced" } },
+      history: [{ url: original.url, contour: original.contour, checks: original.checks }] };
+    serve({ [CURRENT]: first, "/user-assets/user-models/vision-dd70049/poses/front-03-r1.png": wrong });
+    mocks.list.mockResolvedValue([model]);
+    const res = await send(wrong);
+    expect(res.status).toBe(409);
+    expect((await res.json()).reason).toContain("different shot");
+  });
+
   it("asks before the paid automatic outline when the shape changed, and saves nothing", async () => {
-    mocks.list.mockResolvedValue([await outlined(await png())]);
+    const old = await photo(1);
+    serve({ [CURRENT]: old });
+    mocks.list.mockResolvedValue([await outlined(old)]);
     const res = await send(await edited(60, 60));
     const body = await res.json();
     expect(res.status).toBe(409);
@@ -194,8 +262,18 @@ describe("Replace photo and Undo on a recast pose", () => {
     expect(mocks.setPoses).not.toHaveBeenCalled();
   });
 
+  it("saves nothing when the photo the outline was drawn on cannot be read", async () => {
+    serve({});
+    mocks.list.mockResolvedValue([await outlined(await photo(1))]);
+    const res = await send(await photo(1));
+    expect(res.status).toBe(502);
+    expect(mocks.store).not.toHaveBeenCalled();
+  });
+
   it("finds a new outline only when asked, and drops the upload when none is found", async () => {
-    mocks.list.mockResolvedValue([await outlined(await png())]);
+    const old = await photo(1);
+    serve({ [CURRENT]: old });
+    mocks.list.mockResolvedValue([await outlined(old)]);
     mocks.detect.mockResolvedValue(null);
     const res = await send(await edited(60, 60), { autoOutline: "1" });
     expect(res.status).toBe(422);
@@ -204,14 +282,41 @@ describe("Replace photo and Undo on a recast pose", () => {
     expect(mocks.setPoses).not.toHaveBeenCalled();
   });
 
+  it("refit: asks before the paid outline when the current photo's outline does not fit, then saves the found one", async () => {
+    const first = await photo(1), wrong = await photo(3);
+    const wrongRef = await referencePixels(wrong);
+    const model = await outlined(first);
+    const original = model.poses![0];
+    const NOW = "/user-assets/user-models/vision-dd70049/poses/front-03-r1.png";
+    model.poses![0] = { ...original, url: NOW, contour: { ...original.contour!, sha256: wrongRef.sha256 },
+      checks: { pass: true, outline: { ok: true, reason: "kept from the photo it replaced" } },
+      history: [{ url: original.url, contour: original.contour, checks: original.checks }] };
+    serve({ [CURRENT]: first, [NOW]: wrong });
+    mocks.list.mockResolvedValue([model]);
+    const asked = await patch({ outline: "refit" });
+    expect(asked.status).toBe(409);
+    expect((await asked.json()).needsAutoOutline).toBe(true);
+    expect(mocks.detect).not.toHaveBeenCalled();
+    const found = { kind: "contour", width: 400, height: 600, sha256: wrongRef.sha256, points: [[100, 60], [260, 60], [260, 280]], featherPixels: 8, source: "auto-draft-v1", detectedAt: "now" };
+    mocks.detect.mockResolvedValue(found);
+    const res = await patch({ outline: "refit", autoOutline: true });
+    const body = await res.json();
+    expect(res.status).toBe(200);
+    expect(body.pose.contour).toEqual(found);
+    expect(body.pose.url).toBe(NOW);
+    expect(body.pose.history).toHaveLength(1);
+    expect(body.pose.checks.outline).toMatchObject({ ok: true, reason: "found automatically" });
+  });
+
   it("Undo puts the replaced photo and its outline back", async () => {
-    const model = await outlined(await png());
+    const old = await photo(1);
+    serve({ [CURRENT]: old });
+    const model = await outlined(old);
     const original = model.poses![0];
     mocks.list.mockResolvedValue([model]);
-    const replaced = (await (await send(await edited(80, 120))).json()).pose as UserPose;
+    const replaced = (await (await send(await sharp(old).resize(800, 1200).png().toBuffer())).json()).pose as UserPose;
     mocks.list.mockResolvedValue([{ ...model, poses: model.poses!.map((p) => (p.id === "front-03" ? replaced : p)) }]);
-    const res = await changePose(new Request("https://studio/api/user-models/vision-dd70049/poses/front-03", { method: "PATCH", body: JSON.stringify({ undo: true }), headers: TOKEN }),
-      { params: Promise.resolve({ id: "vision-dd70049", poseId: "front-03" }) });
+    const res = await patch({ undo: true });
     const body = await res.json();
     expect(res.status).toBe(200);
     expect(body.pose).toEqual(original);
@@ -219,8 +324,7 @@ describe("Replace photo and Undo on a recast pose", () => {
 
   it("refuses Undo on a photo that was never replaced", async () => {
     mocks.list.mockResolvedValue([set()]);
-    const res = await changePose(new Request("https://studio/api/user-models/vision-dd70049/poses/side-05", { method: "PATCH", body: JSON.stringify({ undo: true }), headers: TOKEN }),
-      { params: Promise.resolve({ id: "vision-dd70049", poseId: "side-05" }) });
+    const res = await patch({ undo: true }, "side-05");
     expect(res.status).toBe(409);
   });
 });
