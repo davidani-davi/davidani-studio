@@ -3,6 +3,7 @@ import { isPantsReference, pantsReferences } from "@/lib/pants-references";
 import { simpleReferenceShot, simpleFaceMask, isReviewedContour, faceProtectionOf, simpleImageSize } from '@/lib/simple-reference-shot';
 import sharp from 'sharp';
 import { referencePixels, validateEdit, editMask, compositeGarment, providerMask, donutsFaceMask } from '@/lib/garment-only';
+import { checkFace, faceBadness, type FaceCheck } from '@/lib/face-check';
 import { uploadToFal, groundPhrase, readGarmentDetails } from '@/lib/fal';
 import { chooseSetPose, type PosePickDeps } from '@/lib/pose-pick';
 import { readPoseUsage, recordPoseUse, readCachedGarmentRead, writeCachedGarmentRead } from '@/lib/pose-usage';
@@ -232,6 +233,7 @@ export async function POST(req: Request) {
 
 /** One view, start to finish: the synchronous POST body. */
 async function renderShot(req: Request, body: any): Promise<Response> {
+  const started = Date.now();
   if (['direct','real-shoot'].includes(body.editMode)) {
     let input;
     try {
@@ -491,8 +493,22 @@ async function renderShot(req: Request, body: any): Promise<Response> {
       prepared={ref,mask,canvasUrl,maskUrl};
       input.prompt=`Edit the original reference photograph. Replace ONLY the ${category === 'pants' || category === 'skirt' ? 'bottoms' : 'garment'} with the garment from the other image. Keep the original pose, arm and hand positions, other clothing, shoes, background and framing. Do not add hands at the waistband or pockets. One person, two arms, two hands. Keep the head unchanged. No sharpening. ${known.color ? 'Garment color: '+known.color+'.' : ''} ${note || ''}`;
     }
-    let url: string;
+    let url: string | undefined;
     let healed: Record<string, unknown> | undefined, healedFrame: Buffer | undefined;
+    // One fresh render on GPT or Nano. Simple calls it a second time when the face check fails.
+    const generateOnce = async (): Promise<string | undefined> => {
+      if (nanoReference) return (await runReferenceShot(input)).url;
+      const res = await generateModel(new Request(new URL("/api/generate-model", req.url), {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ modelId, humanModelId, poseId, view,
+          canvasImageUrl: prepared?.canvasUrl || referenceUrl, garmentImageUrls: simpleInput?.garmentImageUrls || garmentImageUrls,
+          preserveSecondaryReferences: true, rawPrompt: true, prompt: input.prompt,
+          imageSize: simple ? simpleImageSize(simpleRef) : prepared ? {width:prepared.ref.width,height:prepared.ref.height} : GPT_NATIVE_SIZE, maskUrl: prepared?.maskUrl, aspectRatio: "2:3", resolution: simple ? "2K" : "4K", format: "png", numImages: 1 }),
+      }));
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Image generation failed");
+      return result.images?.[0]?.url;
+    };
     // Simple GPT renders at medium quality ("2K"); Nano keeps its own 1K path.
     let outputResolution = nanoReference ? "1K" : simple ? "2K" : "4K";
     if (heal) {
@@ -517,29 +533,38 @@ async function renderShot(req: Request, body: any): Promise<Response> {
         garmentUrl: garmentForView(view, garmentImageUrls), category,
         seed: tryOnSeed(String(known.styleCode || ""), view, note), samples: 1 }));
       url = out.urls[0]; outputResolution = "native";
-    } else if (nanoReference) {
-      url = (await runReferenceShot(input)).url;
     } else {
-      const res = await generateModel(new Request(new URL("/api/generate-model", req.url), {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ modelId, humanModelId, poseId, view,
-          canvasImageUrl: prepared?.canvasUrl || referenceUrl, garmentImageUrls: simpleInput?.garmentImageUrls || garmentImageUrls,
-          preserveSecondaryReferences: true, rawPrompt: true, prompt: input.prompt,
-          imageSize: simple ? simpleImageSize(simpleRef) : prepared ? {width:prepared.ref.width,height:prepared.ref.height} : GPT_NATIVE_SIZE, maskUrl: prepared?.maskUrl, aspectRatio: "2:3", resolution: simple ? "2K" : "4K", format: "png", numImages: 1 }),
-      }));
-      const result = await res.json();
-      if (!res.ok) throw new Error(result.error || "Image generation failed");
-      url = result.images?.[0]?.url;
+      url = await generateOnce();
     }
     if (!url) throw new Error("Image model returned no image");
     const protectedInput = simplePrepared || prepared;
+    let faceCheck: (FaceCheck & { attempts: number; firstAttempt?: Pick<FaceCheck, 'ok' | 'headMatch' | 'worstEdge' | 'worstAt'> }) | undefined;
     if(protectedInput) {
-      let generated=healedFrame;
-      if(!generated){const response=await fetch(url);
-      if(!response.ok)throw Error('Generated garment could not be loaded.');
-      generated=Buffer.from(await response.arrayBuffer());}
+      const load=async(u:string)=>{const response=await fetch(u);
+        if(!response.ok)throw Error('Generated garment could not be loaded.');
+        return Buffer.from(await response.arrayBuffer());};
       // Simple renders come back shifted/scaled a little: line the head up before the face goes back.
-      const composed=await compositeGarment(protectedInput.ref,generated,protectedInput.mask,{matchSeam:!simplePrepared,align:Boolean(simplePrepared)});
+      const compose=(generated:Buffer)=>compositeGarment(protectedInput.ref,generated,protectedInput.mask,{matchSeam:!simplePrepared,align:Boolean(simplePrepared)});
+      let composed=await compose(healedFrame||await load(url));
+      if(simplePrepared){
+        // Face check (lib/face-check.ts, 2026-11-03): did the real face join the AI frame cleanly?
+        // A failed check renders once more and keeps the better of the two. Heal and try-on only report it.
+        let check=checkFace(simplePrepared.ref,composed.candidate,simplePrepared.mask,composed.report.alignment);
+        const first=check;let attempts=1;
+        if(!check.ok&&!heal&&body.engine!=='tryon'&&Date.now()-started<(body.async===true?480_000:150_000)){
+          try{
+            const again=await generateOnce();
+            if(again){
+              const next=await compose(await load(again));
+              const nextCheck=checkFace(simplePrepared.ref,next.candidate,simplePrepared.mask,next.report.alignment);
+              attempts=2;
+              if(faceBadness(nextCheck)<faceBadness(check)){url=again;composed=next;check=nextCheck;}
+            }
+          }catch(err:any){console.warn('[model-shots] face-check retry failed:',String(err?.message||err));}
+        }
+        faceCheck={...check,attempts,...(attempts>1?{firstAttempt:{ok:first.ok,headMatch:first.headMatch,worstEdge:first.worstEdge,worstAt:first.worstAt}}:{})};
+        if(!check.ok)console.warn('[model-shots] face needs a look',JSON.stringify({style:known.styleCode,view,reference:reference.publicPath,...faceCheck}));
+      }
       url=await uploadToFal(new Blob([Uint8Array.from(composed.png)],{type:'image/png'}),'garment-only.png');
       // Verify the hosted delivery too. Never expose the unverified generated frame.
       const hosted=await fetch(url,{cache:'no-store'});
@@ -551,7 +576,7 @@ async function renderShot(req: Request, body: any): Promise<Response> {
       modelId: body.engine === "tryon" ? undefined : modelId,
       engine: body.engine === "tryon" ? "tryon" : nanoReference ? "nano" : modelId === "gpt-image-25" ? "gpt25" : "gpt2",
       faceProtection: simple ? faceProtectionOf(reference.publicPath, reference.autoContour, Boolean(simplePrepared)) : undefined,
-      resolution: outputResolution, editMode: simple ? "simple" : faceLocked ? "face-locked" : locked ? "garment-only" : "native", preservation, humanModelId,
+      resolution: outputResolution, editMode: simple ? "simple" : faceLocked ? "face-locked" : locked ? "garment-only" : "native", preservation, ...(faceCheck ? { faceCheck } : {}), humanModelId,
       // A recast set reports the pose it shot on and why; the catalogue pose id stays on `reference`.
       poseId: setPose ? setPose.pose.id : poseId, assigned, category, hem, framing,
       ...(setPose ? { poseReason: setPose.reason, pose: { id: setPose.pose.id, view: setPose.pose.view, framing: setPose.pose.framing, stance: setPose.pose.stance, arms: setPose.pose.arms, thumbUrl: setPose.pose.thumbUrl } } : {}),

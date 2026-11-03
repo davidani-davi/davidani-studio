@@ -27,7 +27,9 @@ export interface PoseChecks {
   tattoo?: unknown;
   hairBlend?: unknown;
   /** What Studio found when the photo was saved: the sent outline matched the pixels, or one was found for it. */
-  outline?: { ok: boolean; source?: AutoContour['source']; reason?: string };
+  outline?: { ok: boolean; source?: AutoContour['source']; reason?: string;
+    /** Set when Replace photo carried the outline over: the photo it was drawn on, the face match, and whether it moved. */
+    carried?: { from: string; score: number; moved: boolean } };
 }
 
 export interface UserPose {

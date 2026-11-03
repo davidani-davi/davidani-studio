@@ -154,7 +154,8 @@ export async function compositeGarment(ref: ReferencePixels, generated: Buffer, 
     if(different)changed++;
   }
   if(changed) throw Error('Protected-pixel verification failed. Output withheld.');
-  return { png, report: { method:'garment-only' as const, verified:true, width:ref.width, height:ref.height,
+  // `candidate` (the AI frame at reference size, after alignment) is for lib/face-check.ts.
+  return { png, candidate, report: { method:'garment-only' as const, verified:true, width:ref.width, height:ref.height,
     protectedPixels, changedProtectedPixels:changed, referenceSha256:ref.sha256,
     protectedSourceSha256:digest(originalProtected), protectedOutputSha256:digest(resultProtected),
     outputSha256:digest(png), maskSha256:digest(mask), generatedWidth:meta.width, generatedHeight:meta.height,
