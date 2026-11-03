@@ -23,7 +23,35 @@ export interface SimpleShot extends ReferenceShot {
   garmentSideUrl?: string;
   /** Length, fit and photo type the operator checked for this style (lib/garment-facts.ts). */
   garmentFacts?: GarmentFacts | null;
+  /** The donor colour per slot when the back or side photo is another colourway's (David, 2026-11-03: DET60372
+   *  Pink from Deep Blue's photos). Those photos lend shape and print placement only, never colour. */
+  garmentBorrowed?: GarmentBorrowed;
 }
+export type GarmentBorrowed = { back?: string; side?: string };
+
+const BORROW_ENGINE = 'Borrowed photos need GPT Image 2.5 in Simple mode.';
+const BORROW_FRONT_FIRST = 'Make the front first: a borrowed back photo takes its colours from the front render.';
+
+/** The request's `garmentBorrowed`: only `back` / `side` colour names, trimmed, 1-40 characters. */
+export function parseGarmentBorrowed(raw: unknown): GarmentBorrowed | undefined {
+  if (!raw || typeof raw !== 'object') return undefined;
+  const out: GarmentBorrowed = {};
+  for (const k of ['back', 'side'] as const) {
+    const v = (raw as Record<string, unknown>)[k];
+    if (typeof v === 'string' && v.trim() && v.trim().length <= 40) out[k] = v.trim();
+  }
+  return out.back || out.side ? out : undefined;
+}
+
+/** Why a request with borrowed photos is refused, or '' (GPT Image 2.5 only: GPT 2 leaked colour in the test). */
+export function borrowRefusal(o: { borrowed?: GarmentBorrowed; editMode?: string; modelId: string; view: string; hasBackPhoto: boolean; anchorImageUrl?: string }): string {
+  if (!o.borrowed || !(o.borrowed.back || o.borrowed.side)) return '';
+  if (o.editMode !== 'simple' || o.modelId !== 'gpt-image-25') return BORROW_ENGINE;
+  if (o.view === 'back' && o.borrowed.back && o.hasBackPhoto && !o.anchorImageUrl) return BORROW_FRONT_FIRST;
+  return '';
+}
+
+const listOf = (xs: string[]) => xs.length <= 2 ? xs.join(' and ') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`;
 
 // Leg and skirt shapes a bottoms, dress or set title names; pose only states them as the style's fit.
 const SHAPES: Array<[RegExp, string]> = [
@@ -94,7 +122,32 @@ export function simpleReferenceShot(o: SimpleShot) {
     ? ` INNER LAYER: She wears a plain white fitted tank top under the open garment, clearly visible in the open front and covering her chest from a scoop neckline down to the waist; if image 2 shows a coloured inner top, use that colour instead. No print, logo or text on it. ${layer}`
     : ` INNER LAYER: If this garment is worn open or unbuttoned so the chest or neckline shows, she wears a plain white fitted tank top under it (or the inner top image 2 shows, same colour and neckline, no print, logo or text). ${layer}`;
   const anchor = o.view !== 'front' && o.anchorImageUrl ? o.anchorImageUrl : '';
-  const colour = anchor
+  // The side photo rides after the anchor: on the side view the product front takes that place instead.
+  const extra = side ? (sideView ? o.garmentImageUrls[0] : side) : '';
+  const extraN = anchor ? 4 : 3;
+  // Borrowed colourway photos (2026-11-03): only a borrowed photo this view actually sends counts.
+  const lent = o.garmentBorrowed;
+  const backLent = o.view === 'back' && Boolean(o.garmentImageUrls[1]) && Boolean(lent?.back);
+  const sideLent = Boolean(side) && Boolean(lent?.side);
+  const sent = [
+    { n: 2, kind: sideView ? 'side' : o.view === 'back' && o.garmentImageUrls[1] ? 'back' : 'front' },
+    ...(anchor ? [{ n: 3, kind: 'anchor' }] : []),
+    ...(extra ? [{ n: extraN, kind: sideView ? 'front' : 'side' }] : []),
+  ].map(s => ({ ...s, donor: s.kind === 'back' && backLent ? lent!.back! : s.kind === 'side' && sideLent ? lent!.side! : '' }));
+  const own = sent.filter(s => !s.donor);
+  const lentImage2 = Boolean(sent[0].donor);
+  if ((backLent || sideLent) && !own.length) throw Error(BORROW_FRONT_FIRST);
+  const target = String(o.color || '').trim();
+  const ownName = (s: { n: number; kind: string }) => s.kind === 'anchor' ? `image ${s.n} (this garment already rendered on the front view)` : `image ${s.n} (${target ? `the ${target}` : "this colourway's"} product photograph)`;
+  const inkN = (own.find(s => s.kind === 'front') || own.find(s => s.kind === 'anchor') || own[0])?.n;
+  const borrowNote = [...new Set(sent.filter(s => s.donor).map(s => s.donor))].map(donor => {
+    const ns = sent.filter(s => s.donor === donor).map(s => String(s.n));
+    const one = ns.length === 1;
+    const which = one ? `Image ${ns[0]} shows` : `Images ${listOf(ns)} show`;
+    const its = one ? 'its' : 'their';
+    return ` BORROWED PHOTO: ${which} this same garment in another colourway (${donor}). Copy only ${its} shape, seams, construction, and the placement, size and lettering of any print or text. Never copy ${its} colours. Every colour (body, ribbing, trims, patches and print ink) comes from ${listOf(own.map(ownName))}. A print or text that only ${one ? `image ${ns[0]} shows` : `images ${listOf(ns)} show`} uses the same ink colour as the print on image ${inkN}; if image ${inkN} shows no print, ${one ? `keep image ${ns[0]}'s ink colour` : 'keep their ink colour'}. No ${donor.toLowerCase()} on the garment.`;
+  }).join('');
+  const colour = !anchor && lentImage2 ? `Image ${own[0].n} is the sole garment-color reference: match its hue, saturation and midtone brightness exactly.` : anchor
     ? 'Image 3 is this same garment already rendered on the front view of this set: use it for consistent garment body colour and lighting, but image 2 remains the authority for construction and small details. Match image 3’s garment hue, saturation and midtone brightness exactly, overriding the lighting of image 2. Keep the garment one single layer with one hem, as shown in the product photograph; do not add an under-layer or a second hemline' + (openFront ? ' to the garment itself; the plain inner top described under INNER LAYER stays, matching image 3.' : '.')
     : 'Image 2 is the sole garment-color reference: match its hue, saturation and midtone brightness exactly.';
   // A top is worn alone: the plate's own tee must not peek out at the
@@ -168,16 +221,13 @@ export function simpleReferenceShot(o: SimpleShot) {
     // Image 3 is the front render when there is one; on a front with a side photo it is the side photo instead.
     + (side && !anchor ? '' : " If image 3 omits a product detail visible in image 2, restore the detail from image 2 instead of copying that omission.");
   const fitFromStyle = o.fitSource === 'style';
-  // The side photo rides after the anchor: on the side view the product front takes that place instead.
-  const extra = side ? (sideView ? o.garmentImageUrls[0] : side) : '';
-  const extraN = anchor ? 4 : 3;
   const sideNote = !side ? '' : sideView
     ? ` SIDE PHOTO: Image 2 is the product photographed from the side, the same angle as this view: it decides the side silhouette, body depth and drape, side seams, slits and pockets, the sleeve profile and the hem line seen from the side. Image ${extraN} is the same product photographed from the front: use it only for print, colour and front construction that turns into view, never to change image 2's side shape.`
     : ` SIDE PHOTO: Image ${extraN} is the same product photographed from the side. Use it only to confirm body depth and drape, garment length, side seams, slits and pockets${inferred ? ', and how the hem, any slit or vent and the length fall at the back, since no back photo is supplied' : ''}. Image 2 stays the authority for this view; never move a detail that only shows from the side onto the ${o.view === 'back' ? 'back' : 'front'}.`;
-  const prompt = `Edit image 1 as the exact base photograph. Replace only the ${scope} with the garment in image 2. Match its fabric, cut, length, print and construction.${fitFromStyle ? poseOnly(o, scope) : ''}${factsText}${inner} ${details}${fit}${sleeves}${setScope}${legs}${cut}${layerLength} ${colour}${sideNote} Allow natural fold shadows and highlights, but do not tint the garment to match image 1’s clothing or background. ${keep} Preserve the face, expression, head position and hairstyle unchanged. No sharpening, retouching or enhancement. One clean photograph of one person.${inferred ? ' No back garment photo is supplied; use a plain continuation of the fabric without invented rear graphics.' : ''}${o.note ? ` Requested change: ${o.note}` : ''}`;
+  const prompt = `Edit image 1 as the exact base photograph. Replace only the ${scope} with the garment in image 2. ${lentImage2 ? 'Match its cut, length, construction and print placement; take its colours only from the images named in BORROWED PHOTO below.' : 'Match its fabric, cut, length, print and construction.'}${fitFromStyle ? poseOnly(o, scope) : ''}${factsText}${inner} ${details}${fit}${sleeves}${setScope}${legs}${cut}${layerLength} ${colour}${sideNote}${borrowNote} Allow natural fold shadows and highlights, but do not tint the garment to match image 1’s clothing or background. ${keep} Preserve the face, expression, head position and hairstyle unchanged. No sharpening, retouching or enhancement. One clean photograph of one person.${inferred ? ' No back garment photo is supplied; use a plain continuation of the fabric without invented rear graphics.' : ''}${o.note ? ` Requested change: ${o.note}` : ''}`;
   const secondary = [garment, anchor, extra].filter(Boolean);
   const image_urls = [o.referenceUrl, ...secondary];
-  return {prompt, openFront, garmentImageUrls: secondary, image_urls, garmentBackInferred:inferred, anchored: Boolean(anchor), garmentSideUsed: Boolean(side), garmentFactsUsed: Boolean(factsText), fitSource: (fitFromStyle ? 'style' : 'reference') as FitSource};
+  return {prompt, openFront, garmentImageUrls: secondary, image_urls, garmentBackInferred:inferred, anchored: Boolean(anchor), garmentSideUsed: Boolean(side), garmentBorrowedUsed: lent ? { ...(backLent ? { back: true as const } : {}), ...(sideLent ? { side: true as const } : {}) } : undefined, garmentFactsUsed: Boolean(factsText), fitSource: (fitFromStyle ? 'style' : 'reference') as FitSource};
 }
 
 /** Exact source-bound review. Never fall back to horizontal head restoration. */
