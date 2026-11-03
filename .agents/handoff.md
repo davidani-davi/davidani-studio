@@ -1,29 +1,26 @@
-# Handoff — 2026-11-02, Claude Code (Mac mini)
+# Handoff — 2026-11-03, Claude Code (Mac mini)
 
-main **0a849e1** = #55 merged, Vercel production READY (David: "Merge and deploy"). faire-management #242
-(ext 2.192.0 / team add-on 1.35.0) merged + deployed (a64a6f32). #54 (face alignment + Heal) live since 4a82237.
+main **1a29763** = #33 merged (David: "Yes, rebase #33"), Vercel production READY. Before it: #56 (crop-full-refs), #55.
 
 ## Just done
-- **Front vs Full** (David, DCJ67197 longline cardigan: Front and Full came out the same). Front = head to mid-thigh,
-  facing camera, relaxed arms; Full = head to toe in a different, styled pose (turned/walking, hand raised, shoes).
-- `lib/plate-framing.ts` `LONG_HEM_RE` drops `long-?line`: a longline top frames like any top (crop); coats, dusters,
-  maxis stay long. `lib/simple-reference-shot.ts` adds a LAYER LENGTH rule for long-titled tops on a crop/knee frame
-  (the hem runs past the frame edge, never drawn inside it).
-- `lib/user-poses.ts` `pickPose`: the Full slot skips the Front's photo (unless it is the only head-to-toe front) and
-  scores styled poses (raised / hand-on-hip / away-from-body) up; the Front prefers calm arms. `lib/pose-pick.ts`
-  `frontPoseFor`; the route passes `frontFraming`. Free check on real Celine DT60007N / DCT78115: different photos.
-- vitest 1425/1425.
+- **#33 Simple swap at medium quality.** It was opened 2026-10-02 and never merged, while the SOP said it was live. Every
+  Simple render until today was low quality at 1024 × 1536 and upscaled onto the full-size base (found while auditing Jeonga's
+  DET60372 Deep Blue front on VISION 3). Rebased onto d51ce88: `resolution: "2K"` (medium) for Simple GPT; a base wider than
+  1024 px renders at 2048 × 3072 (`simpleImageSize` in `lib/simple-reference-shot.ts`); the thigh-up crop (`cropped.ref`) still
+  sets the size. Heal and garment-only resize the frame to the base with `fit:'fill'`, so they don't depend on frame size.
+- vitest 1433/1433. No paid live render (Codex-only rule); `scripts/verify-simple-resolution.mts` is the paid check, not run.
+- faire-management SOP §7 step 6 now says "live 2026-11-03" (faire-management PR #247).
 
 ## Next steps
-1. Look at the next real longline / recast-set renders: Front thigh-up with no hem drawn in frame; Full a different pose.
-   Don't render to test: image generation is Codex-only (no paid fal calls).
-2. From #54, still open: watch Simple renders for `preservation.alignment` (`.reason` set = alignment refused); heal
-   Jeonga's 5 DT70115 renders (`listing-jobs` kind `heal-shot`) or let her press Heal.
+1. Check the next real Simple render: the PNG should be 2048 × 3072 on a full-size base, and fal should log
+   gpt-image-2.5 at quality medium. Renders take longer and cost more per call than before (medium vs low).
+2. Carried over from #54/#55: watch `preservation.alignment`; the next longline render (Front thigh-up, Full a different pose).
 3. Proposed, not approved: automatic seam check before ERP upload; draft-contour outlines that follow the jaw.
 
 ## Gotchas
+- `npx tsc --noEmit` reports ~10 old errors in test files (garment-only.test.ts:54, ModelAdmin.test.tsx, ...): on main
+  before #33; CI runs `npm test` + `npm run build`, which pass.
 - A render made AFTER alignment no longer matches its raw frame pixel for pixel, so Heal says "already healed".
-- fal history window: renderedAt -45/+20 min, else last 14 days. Raw frames older than fal's retention cannot heal.
 - Never copy auto outlines into presets without visual review; never restore the horizontal row cutoff (SOP §8).
 - Worktree with symlinked node_modules breaks Turbopack: `next dev --webpack` / `next build --webpack`.
 - `~/Code/davidani-studio` (main checkout) is on `codex/garment-only-pixel-lock` with uncommitted edits: leave it.
