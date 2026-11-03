@@ -241,16 +241,15 @@ describe('front closure (DT70144 Pink, 2026-11-03)',()=>{
   expect(p).toContain('the same number from neckline to hem');
   expect(p).toContain('one straight, evenly spaced column down a single front edge');
   expect(p).toContain('small flat snap sockets or buttonholes');
-  expect(p).toContain('this style has pearl snaps');
+  expect(p).toContain('surface exactly as photographed in image 2');
  });
  it('the back view and bottoms get no front closure rule',()=>{
   expect(simpleReferenceShot({...shacket,view:'back'}).prompt).not.toContain('FRONT CLOSURE');
   expect(simpleReferenceShot({...base,view:'front',category:'pants',framing:'low',garmentName:'Pearl Button Wide Leg Pants'}).prompt).not.toContain('FRONT CLOSURE');
  });
- it('names a finish only when the listing does',()=>{
-  const p=simpleReferenceShot({...base,view:'front',garmentName:'Ribbed Cardigan',garmentDescription:'Soft rib knit with a button front.'}).prompt;
-  expect(p).toContain('FRONT CLOSURE');
-  expect(p).not.toContain('this style has');
-  expect(simpleReferenceShot({...base,view:'front',garmentName:'Tortoiseshell Button Blouse'}).prompt).toContain('this style has tortoiseshell buttons');
+ it('takes the finish from the photo, never from listing copy (DT70144 copy says pearl, snaps are matte metal)',()=>{
+  const p=simpleReferenceShot({...shacket,view:'front'}).prompt;
+  expect(p).not.toMatch(/pearl/i);
+  expect(simpleReferenceShot({...base,view:'front',garmentName:'Ribbed Cardigan',garmentDescription:'Soft rib knit with a button front.'}).prompt).toContain('FRONT CLOSURE');
  });
 });

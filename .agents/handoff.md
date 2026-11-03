@@ -9,11 +9,12 @@ Branch `claude/closure-rule` → PR "FRONT CLOSURE rule". Before it on main: #59
   with ~20 silver snaps on BOTH front edges at uneven heights, against 9 evenly spaced pearl snaps on one edge. The prompt
   only said "visible button count" inside the knit sentence. Now: copy kind, count, spacing, size, colour and finish from
   image 2; caps in one column on one edge; worn open, the other edge is a plain placket with flat sockets/buttonholes.
-  A finish named in the title/description ("pearl snap", "tortoiseshell button") is stated. Phrased positively (naming the
-  wrong layout tends to draw it).
+  Phrased positively (naming the wrong layout tends to draw it). **The finish comes from the photo only**: DT70144's
+  listing copy says "pearl snap placket" but the snaps are matte metal caps (David). A first draft quoted the copy and
+  Codex drew glossy pearls, so listing text never names the finish.
 - Evidence (free Codex, GPT Image 2, same reference + garment, jacket forced open by note): old prompt reproduced the bug
-  (snaps on both edges, doubled); new prompt gave one even column of pearl snaps and a plain opposite edge. Without the
-  note Codex kept the jacket closed with either prompt, so it did not reproduce the open case on its own.
+  (snaps on both edges, doubled); the rule gave one even column and a plain opposite edge. Without the note Codex kept the
+  jacket closed with either prompt, so it did not reproduce the open case on its own.
 - vitest 1516/1516 (24 `simple-borrowed-photo` snapshots updated: the only change is the added rule); `next build --webpack` passes.
 
 ## Next steps
