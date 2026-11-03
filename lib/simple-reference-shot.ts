@@ -1,6 +1,7 @@
 import type { ReferenceShot } from './nano-reference-shots';
 import type { ReferencePixels } from './garment-only';
 import { lengthFor, fitFor } from './garment-contract';
+import { cleanFacts, factsBlock, factsSetLength, type GarmentFacts } from './garment-facts';
 import contourPresets from './simple-contour-presets.json';
 import {contourFaceMask, type ReviewedFaceContour} from './contour-face-mask';
 
@@ -20,6 +21,8 @@ export interface SimpleShot extends ReferenceShot {
   /** A real side photo of the garment (David, 2026-10-30). The side view is built from it; front, back and
    *  full read it only to check depth, length and side details. */
   garmentSideUrl?: string;
+  /** Length, fit and photo type the operator checked for this style (lib/garment-facts.ts). */
+  garmentFacts?: GarmentFacts | null;
 }
 
 // Leg and skirt shapes a bottoms, dress or set title names; pose only states them as the style's fit.
@@ -63,6 +66,10 @@ export function simpleReferenceShot(o: SimpleShot) {
   if (!o.referenceUrl || !garment) throw Error('Choose a model reference and garment photo.');
   const scope = o.category === 'pants' || o.category === 'skirt' ? 'bottoms' : o.category === 'dress' || o.category === 'set' ? 'outfit' : 'top';
   const inferred = o.view === 'back' && !o.garmentImageUrls[1];
+  // Checked facts decide length and fit; without them every sentence below is unchanged.
+  const checked = cleanFacts(o.garmentFacts);
+  const factsText = factsBlock(checked, scope, o.category);
+  const factsLength = factsSetLength(checked, scope);
   // The set's approved FRONT render (2026-09-11, DET60277): side, back and
   // full each re-read the garment colour from the warehouse photo and landed
   // on three different browns, and the inferred back grew a second hem tier.
@@ -143,16 +150,18 @@ export function simpleReferenceShot(o: SimpleShot) {
   // Only for a garment its title calls long (not "long sleeve"), so every other top's prompt stays as it was.
   const longish = /long-?line|\btunic\b|\blong\b(?![- ]sleeve)/i.test(name);
   const layerLength = scope === 'top' && longish && (o.framing === 'crop' || o.framing === 'knee')
-    ? ` LAYER LENGTH: This photograph is framed from the head to ${o.framing === 'crop' ? 'mid-thigh' : 'the knee'}. Judge where the product's hem falls on the body from image 2. If it falls below the bottom of this frame, the garment's body continues out of the bottom of the frame: do not shorten it, and do not draw a hem, hem band, ribbing or edge trim inside the frame to make it fit. If it ends inside the frame, keep that hem where image 2 shows it.`
+    ? ` LAYER LENGTH: This photograph is framed from the head to ${o.framing === 'crop' ? 'mid-thigh' : 'the knee'}. Judge where the product's hem falls on the body from ${factsLength ? 'the GARMENT FACTS' : 'image 2'}. If it falls below the bottom of this frame, the garment's body continues out of the bottom of the frame: do not shorten it, and do not draw a hem, hem band, ribbing or edge trim inside the frame to make it fit. If it ends inside the frame, keep that hem where ${factsLength ? 'the GARMENT FACTS put it' : 'image 2 shows it'}.`
     : '';
   const length = name ? lengthFor({ title: o.garmentName }) : null;
   // A note is the operator overriding a specific run; don't have the default
   // length checkpoint argue with an explicit correction they just typed.
   const noteOverridesLength = /\b(hem|length|longer|shorter|crop|cropped|knee|thigh|calf|ankle|floor|waist)\b/i.test(o.note || '');
-  const hem = length && !noteOverridesLength
+  const hem = length && !noteOverridesLength && !factsLength
     ? ` As a checkpoint, a "${name}" like this is typically ${length.adj} (${length.hem}) — but image 2's own proportions decide the actual hem, not this checkpoint and not image 1.`
     : '';
-  const cut = name ? ` The garment is a "${name}": reproduce that cut, silhouette, sleeve length and hem exactly as shown in image 2, the actual garment photograph — image 2 alone decides where the hem falls, never the shape, length or proportions of the ${scope} image 1 wears.${hem}` : '';
+  const cut = !name ? '' : factsLength
+    ? ` The garment is a "${name}": reproduce its fabric, seams, pockets and trims exactly as shown in image 2, the actual garment photograph, with the length and shape the GARMENT FACTS state — never the shape, length or proportions of the ${scope} image 1 wears.`
+    : ` The garment is a "${name}": reproduce that cut, silhouette, sleeve length and hem exactly as shown in image 2, the actual garment photograph — image 2 alone decides where the hem falls, never the shape, length or proportions of the ${scope} image 1 wears.${hem}`;
   const sleeves = scope === 'bottoms' ? '' : " SLEEVE CONSTRUCTION: Image 1 supplies only the wearer and pose, never the replacement garment's sleeve shape or exposed-arm coverage. Determine sleeve length from the product photograph in image 2 even when no garment title is supplied. If it shows long sleeves, render full-length sleeves down to the wrists in every view, with cuffs at the wrists; do not shorten them to elbow or three-quarter length, push them up, or retain image 1's bare forearms. Preserve the source sleeve volume, drop shoulder and cuff construction. If the source is short-sleeved or sleeveless, preserve that instead. Replacing a sleeve may cover skin that was exposed in image 1; keep the underlying arm and hand pose. An inferred back keeps the same sleeve length and cuffs as the supplied front.";
   const fit = scope === 'bottoms' ? '' : " GARMENT EASE: Transfer the product photograph's chest width, body ease, shoulder placement, armhole depth, sleeve fullness and hem width relative to its wearer. The outline of image 1's old top is not an edit boundary: let the new garment extend beyond it into the background when needed. A relaxed or boxy product hangs away from the waist; do not taper it to match a fitted reference top. Preserve fitted products as fitted, without adding volume. Cropped describes length, not a tight fit. Keep the underlying body and hand pose, allowing fabric to drape naturally around the arms rather than pulling the body panel tight. Preserve the size and spacing of cable and pointelle motifs and visible button count; do not compress or stretch the knit pattern to fit the old top's outline.";
   const details = "Preserve every visible contrast stitch, thread color, seam row, trim and binding from image 2, especially around the neckline, shoulders, cuffs and hem. Keep their placement, width and contrast against the fabric; never replace contrasting thread with fabric-colored stitching. Removing styling layers or jewelry must not remove garment stitching."
@@ -165,10 +174,10 @@ export function simpleReferenceShot(o: SimpleShot) {
   const sideNote = !side ? '' : sideView
     ? ` SIDE PHOTO: Image 2 is the product photographed from the side, the same angle as this view: it decides the side silhouette, body depth and drape, side seams, slits and pockets, the sleeve profile and the hem line seen from the side. Image ${extraN} is the same product photographed from the front: use it only for print, colour and front construction that turns into view, never to change image 2's side shape.`
     : ` SIDE PHOTO: Image ${extraN} is the same product photographed from the side. Use it only to confirm body depth and drape, garment length, side seams, slits and pockets${inferred ? ', and how the hem, any slit or vent and the length fall at the back, since no back photo is supplied' : ''}. Image 2 stays the authority for this view; never move a detail that only shows from the side onto the ${o.view === 'back' ? 'back' : 'front'}.`;
-  const prompt = `Edit image 1 as the exact base photograph. Replace only the ${scope} with the garment in image 2. Match its fabric, cut, length, print and construction.${fitFromStyle ? poseOnly(o, scope) : ''}${inner} ${details}${fit}${sleeves}${setScope}${legs}${cut}${layerLength} ${colour}${sideNote} Allow natural fold shadows and highlights, but do not tint the garment to match image 1’s clothing or background. ${keep} Preserve the face, expression, head position and hairstyle unchanged. No sharpening, retouching or enhancement. One clean photograph of one person.${inferred ? ' No back garment photo is supplied; use a plain continuation of the fabric without invented rear graphics.' : ''}${o.note ? ` Requested change: ${o.note}` : ''}`;
+  const prompt = `Edit image 1 as the exact base photograph. Replace only the ${scope} with the garment in image 2. Match its fabric, cut, length, print and construction.${fitFromStyle ? poseOnly(o, scope) : ''}${factsText}${inner} ${details}${fit}${sleeves}${setScope}${legs}${cut}${layerLength} ${colour}${sideNote} Allow natural fold shadows and highlights, but do not tint the garment to match image 1’s clothing or background. ${keep} Preserve the face, expression, head position and hairstyle unchanged. No sharpening, retouching or enhancement. One clean photograph of one person.${inferred ? ' No back garment photo is supplied; use a plain continuation of the fabric without invented rear graphics.' : ''}${o.note ? ` Requested change: ${o.note}` : ''}`;
   const secondary = [garment, anchor, extra].filter(Boolean);
   const image_urls = [o.referenceUrl, ...secondary];
-  return {prompt, openFront, garmentImageUrls: secondary, image_urls, garmentBackInferred:inferred, anchored: Boolean(anchor), garmentSideUsed: Boolean(side), fitSource: (fitFromStyle ? 'style' : 'reference') as FitSource};
+  return {prompt, openFront, garmentImageUrls: secondary, image_urls, garmentBackInferred:inferred, anchored: Boolean(anchor), garmentSideUsed: Boolean(side), garmentFactsUsed: Boolean(factsText), fitSource: (fitFromStyle ? 'style' : 'reference') as FitSource};
 }
 
 /** Exact source-bound review. Never fall back to horizontal head restoration. */
