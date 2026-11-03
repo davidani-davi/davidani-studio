@@ -368,6 +368,56 @@
     ]
    },
    "built_by": "Codex built-in imagegen; approved by David: good good"
+  },
+  {
+   "name": "studio 114",
+   "display_name": "Vision 6 · Cloud Cream",
+   "source_style": "DTP50065A",
+   "face": "vision",
+   "expression": "soft smile",
+   "slug": "dtp50065a-cloudcream-vision-recast",
+   "pose": "Vision 6",
+   "auto": false,
+   "views": [
+    "front",
+    "side",
+    "back",
+    "full"
+   ],
+   "wears": "pants",
+   "low_ok": false,
+   "legs_separated": false,
+   "outfit_above": "cream short-sleeve tee",
+   "outfit_below": "cream relaxed pants",
+   "front_is": "DTP50065A Cloud Cream _3 original photograph (Chloe) with the head and hair recast; face finished at 2x/3x and pasted back on the real photo",
+   "others_are": "independent original photographs of the same shoot (_7 side, _8 full, _13 back with the hair over one shoulder), head and hair recast from the approved front plus a David-approved head sheet; archive ~/Library/Archive/chloe-recast-2026-10-30/dtp50065a-2026-11-03",
+   "families": {},
+   "built_by": "gpt-image-2.5 sunburst recast of real Chloe photos; approved by David 2026-11-03 (fit spec shared with DETP50065 / DETP70147)"
+  },
+  {
+   "name": "studio 115",
+   "display_name": "Celine 8 · Cloud Cream",
+   "source_style": "DTP50065A",
+   "face": "celine",
+   "expression": "soft smile",
+   "slug": "dtp50065a-cloudcream-celine-recast",
+   "pose": "Celine 8",
+   "auto": false,
+   "views": [
+    "front",
+    "side",
+    "back",
+    "full"
+   ],
+   "wears": "pants",
+   "low_ok": false,
+   "legs_separated": false,
+   "outfit_above": "cream short-sleeve tee",
+   "outfit_below": "cream relaxed pants",
+   "front_is": "DTP50065A Cloud Cream _3 original photograph (Chloe) with the head and hair recast; face finished at 2x/3x and pasted back on the real photo",
+   "others_are": "independent original photographs of the same shoot (_7 side, _8 full, _13 back with the hair over one shoulder), head and hair recast from the approved front plus a David-approved head sheet; archive ~/Library/Archive/chloe-recast-2026-10-30/dtp50065a-2026-11-03",
+   "families": {},
+   "built_by": "gpt-image-2.5 sunburst recast of real Chloe photos; approved by David 2026-11-03 (fit spec shared with DETP50065 / DETP70147)"
   }
  ],
  "families": {
