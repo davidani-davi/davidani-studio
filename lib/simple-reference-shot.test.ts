@@ -233,3 +233,24 @@ describe('layer length on a thigh-up frame (DCJ67197, 2026-11-02)',()=>{
   expect(simpleReferenceShot({...base,view:'front',garmentName:'Long-Line Ribbed Tunic'}).prompt).toContain('LAYER LENGTH');
  });
 });
+describe('front closure (DT70144 Pink, 2026-11-03)',()=>{
+ const shacket={...base,garmentName:'Studded Floral Western Snap Shirt Jacket',garmentDescription:'Dropped shoulders, pearl snap placket and dual flap chest pockets.'};
+ it.each(['front','side','full'] as const)('%s copies the closure from image 2: one column, matching sockets, same finish',view=>{
+  const p=simpleReferenceShot({...shacket,view,anchorImageUrl:view==='front'?undefined:'https://generated/front.png'}).prompt;
+  expect(p).toContain('FRONT CLOSURE');
+  expect(p).toContain('the same number from neckline to hem');
+  expect(p).toContain('one straight, evenly spaced column down a single front edge');
+  expect(p).toContain('small flat snap sockets or buttonholes');
+  expect(p).toContain('this style has pearl snaps');
+ });
+ it('the back view and bottoms get no front closure rule',()=>{
+  expect(simpleReferenceShot({...shacket,view:'back'}).prompt).not.toContain('FRONT CLOSURE');
+  expect(simpleReferenceShot({...base,view:'front',category:'pants',framing:'low',garmentName:'Pearl Button Wide Leg Pants'}).prompt).not.toContain('FRONT CLOSURE');
+ });
+ it('names a finish only when the listing does',()=>{
+  const p=simpleReferenceShot({...base,view:'front',garmentName:'Ribbed Cardigan',garmentDescription:'Soft rib knit with a button front.'}).prompt;
+  expect(p).toContain('FRONT CLOSURE');
+  expect(p).not.toContain('this style has');
+  expect(simpleReferenceShot({...base,view:'front',garmentName:'Tortoiseshell Button Blouse'}).prompt).toContain('this style has tortoiseshell buttons');
+ });
+});
