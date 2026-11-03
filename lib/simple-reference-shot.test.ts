@@ -253,3 +253,27 @@ describe('front closure (DT70144 Pink, 2026-11-03)',()=>{
   expect(simpleReferenceShot({...base,view:'front',garmentName:'Ribbed Cardigan',garmentDescription:'Soft rib knit with a button front.'}).prompt).toContain('FRONT CLOSURE');
  });
 });
+
+// DET60450 Brown/Pink (2026-11-03): an evenly dyed dot fleece on a reference wearing an acid-wash graphic sweatshirt
+// came back mottled with bleach patches and smeared dots. The surface must come from the product photo only.
+describe('fabric surface',()=>{
+ const dots={...base,view:'front' as const,garmentName:'Polka Dot Contrast Stitch Drop Shoulder Sweatshirt'};
+ it('takes dye finish, texture and print from image 2 and replaces the base garment surface',()=>{
+  const p=simpleReferenceShot(dots).prompt;
+  expect(p).toContain('FABRIC SURFACE: The surface of the new top comes only from the product photograph');
+  expect(p).toContain('The top image 1 wears is not a reference for the surface');
+  expect(p).toContain('stays one flat, even colour edge to edge');
+  expect(p).toContain("A print repeats at image 2's motif size, shape and spacing, in the same arrangement");
+  expect(p).toContain('clean, plain ground fabric between the motifs');
+  expect(p).not.toMatch(/washed|faded as/);
+ });
+ it('applies to every view and to bottoms and outfits',()=>{
+  expect(simpleReferenceShot({...dots,view:'back'}).prompt).toContain('FABRIC SURFACE');
+  expect(simpleReferenceShot({...base,view:'front',category:'pants',framing:'low',garmentName:'Wide Leg Pants'}).prompt).toContain('The bottoms image 1 wears is not a reference for the surface');
+  expect(simpleReferenceShot({...base,view:'front',category:'dress',framing:'full',garmentName:'Floral Midi Dress'}).prompt).toContain('The outfit image 1 wears is not a reference for the surface');
+ });
+ it('comes before the operator note so a note still has the last word',()=>{
+  const p=simpleReferenceShot({...dots,note:'keep the dots crisp'}).prompt;
+  expect(p.indexOf('FABRIC SURFACE')).toBeLessThan(p.indexOf('Requested change: keep the dots crisp'));
+ });
+});
