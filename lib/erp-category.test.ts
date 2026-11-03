@@ -201,3 +201,60 @@ describe("every ERP request looks like Chrome", () => {
     expect(ERP_USER_AGENT).not.toBe("Mozilla/5.0");
   });
 });
+
+describe("login discipline (ERP operator, 2026-10-22)", () => {
+  // A fake ERP: logins hand out a new cookie; /data replies come from `reply`.
+  function fakeErp(reply: (url: string, n: number) => { ok?: boolean; text: string }) {
+    let logins = 0;
+    let data = 0;
+    const spy = vi.fn().mockImplementation(async (url: string) => {
+      const u = String(url);
+      if (u.includes("xt.login.asp")) logins++;
+      const r = u.includes("/data/") ? reply(u, data++) : { text: "<html>dashboard</html>" };
+      return {
+        ok: r.ok ?? true,
+        url: u.includes("xt.login.asp") ? u : "https://system.davidani.com/main.asp",
+        headers: { getSetCookie: () => (u.includes("xt.login.asp") ? [`ASPSESSIONIDX=s${logins}`] : []), get: () => "" },
+        text: async () => r.text,
+      };
+    });
+    vi.stubGlobal("fetch", spy);
+    return { logins: () => logins };
+  }
+  beforeEach(() => {
+    process.env.ERP_USER_ID = "u";
+    process.env.ERP_PASSWORD = "p";
+  });
+
+  it("concurrent callers share one login", async () => {
+    const erp = fakeErp(() => ({ text: "{ok}" }));
+    await Promise.all([erpFetch("/data/a.asp"), erpFetch("/data/b.asp"), erpPost("/data/c.asp", {})]);
+    expect(erp.logins()).toBe(1);
+  });
+
+  it("re-logs once when the reply is the expired-session script", async () => {
+    const erp = fakeErp((_, n) => ({ text: n === 1 ? '<script>//top.window.location = "/login.asp";</script>' : "{ok}" }));
+    expect(await erpFetch("/data/a.asp")).toBe("{ok}");
+    expect(await erpFetch("/data/b.asp")).toBe("{ok}");
+    expect(erp.logins()).toBe(2);
+  });
+
+  it("never logs in again on a 403 or error page", async () => {
+    const erp = fakeErp((_, n) => (n === 0 ? { text: "{ok}" } : { ok: false, text: "403 Forbidden" }));
+    await erpFetch("/data/a.asp");
+    expect(await erpFetch("/data/b.asp")).toBeNull();
+    expect(await erpFetch("/data/c.asp")).toBeNull();
+    expect(erp.logins()).toBe(1);
+  });
+
+  it("backs off after a refused login", async () => {
+    let logins = 0;
+    vi.stubGlobal("fetch", vi.fn().mockImplementation(async (url: string) => {
+      if (String(url).includes("xt.login.asp")) logins++;
+      return { ok: true, url: "https://system.davidani.com/login.asp", headers: { getSetCookie: () => ["A=1"] }, text: async () => 'name="userPass"' };
+    }));
+    expect(await erpFetch("/data/a.asp")).toBeNull();
+    expect(await erpFetch("/data/b.asp")).toBeNull();
+    expect(logins).toBe(1);
+  });
+});
