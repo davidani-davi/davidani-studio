@@ -279,7 +279,9 @@
    "outfit_below": "plain black straight trousers (neutralised)",
    "front_is": "DETP60364%20SEA%20BLUE_1.jpg original photograph with one identity edit to the head/hair",
    "others_are": "independent original photographs of the same shoot, one identity edit each; crop/knee families are pixel cuts of the originals edited at native size",
-   "families": {},
+   "families": {
+    "crop": []
+   },
    "built_by": "reference_set.py"
   },
   {
@@ -304,7 +306,9 @@
    "outfit_below": "plain black straight trousers (neutralised)",
    "front_is": "DETP60364%20SEA%20BLUE_1.jpg original photograph with one identity edit to the head/hair",
    "others_are": "independent original photographs of the same shoot, one identity edit each; crop/knee families are pixel cuts of the originals edited at native size",
-   "families": {},
+   "families": {
+    "crop": []
+   },
    "built_by": "reference_set.py"
   }
  ],
