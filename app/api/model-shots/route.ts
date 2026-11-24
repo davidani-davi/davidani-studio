@@ -198,7 +198,7 @@ export async function POST(req: Request) {
   const borrowError = borrowRefusal({ borrowed: parseGarmentBorrowed(body.garmentBorrowed), editMode: body.editMode,
     modelId: body.modelId || (body.engine && body.engine !== "gpt25" ? String(body.engine) : "gpt-image-25"),
     view: String(body.view || "front"), hasBackPhoto: Array.isArray(body.garmentImageUrls) && Boolean(body.garmentImageUrls[1]),
-    anchorImageUrl: typeof body.anchorImageUrl === "string" ? body.anchorImageUrl : "" });
+    anchorImageUrl: typeof body.anchorImageUrl === "string" && body.anchorImageUrl ? body.anchorImageUrl : typeof body.anchorSheetUrl === "string" ? body.anchorSheetUrl : "" });
   if (borrowError) return json({ ok: false, error: borrowError }, 400);
 
   /**
@@ -303,6 +303,10 @@ async function renderShot(req: Request, body: any): Promise<Response> {
     typeof body.anchorImageUrl === "string" && /^https?:\/\//.test(body.anchorImageUrl) && view !== "front"
       ? body.anchorImageUrl
       : "";
+  // Look sheet anchor (2026-11-24, opt-in): a front/back/side sheet made from the approved front. Simple only;
+  // when sent it takes image 3's place instead of the front render.
+  const anchorSheetUrl: string =
+    typeof body.anchorSheetUrl === "string" && /^https?:\/\//.test(body.anchorSheetUrl) && view !== "front" ? body.anchorSheetUrl : "";
   // House reference set (lib/no-plate.ts shootReference): the model herself in
   // the house outfit, no garment photo. `engine: "gpt25", reference: true`.
   if (body.engine === "gpt25" && body.reference === true) {
@@ -461,7 +465,7 @@ async function renderShot(req: Request, body: any): Promise<Response> {
     // typed for its other colours. Anything else is Fit + pose, the prompt every earlier run used.
     const fitSource = simple && body.fitSource === 'style' ? 'style' as const : 'reference' as const;
     const styleNotes = fitSource === 'style' && Array.isArray(body.styleNotes) ? body.styleNotes.map(sanitizeOperatorNote).filter(Boolean).slice(0, 6) : [];
-    const simpleInput = simple ? simpleReferenceShot({ view, referenceUrl, garmentImageUrls, category, framing, color: typeof known.color === 'string' ? known.color : undefined, note, anchorImageUrl, garmentName: typeof known.title === 'string' ? known.title : undefined,
+    const simpleInput = simple ? simpleReferenceShot({ view, referenceUrl, garmentImageUrls, category, framing, color: typeof known.color === 'string' ? known.color : undefined, note, anchorImageUrl: anchorSheetUrl || anchorImageUrl, anchorKind: anchorSheetUrl ? 'look-sheet' : undefined, garmentName: typeof known.title === 'string' ? known.title : undefined,
       fitSource, styleNotes, garmentDescription: typeof known.description === 'string' ? known.description : undefined,
       // A real side photo of the garment (2026-10-30): the side view's garment photo, a check image elsewhere.
       garmentSideUrl: typeof body.garmentSideImageUrl === 'string' && /^https:\/\//.test(body.garmentSideImageUrl) ? body.garmentSideImageUrl : undefined,
@@ -594,7 +598,7 @@ async function renderShot(req: Request, body: any): Promise<Response> {
       ...(cropped ? { referenceCrop: { from: uncroppedUrl, box: cropped.box, scale: cropped.scale, width: cropped.ref.width, height: cropped.ref.height } }
         : cropError ? { referenceCrop: { from: uncroppedUrl, error: cropError } } : {}),
       garmentBackInferred: view === "back" && garmentImageUrls.length < 2,
-      anchored: Boolean(simpleInput?.anchored), fitSource: simpleInput?.fitSource, garmentSideUsed: simpleInput ? simpleInput.garmentSideUsed : undefined, garmentBorrowedUsed: simpleInput?.garmentBorrowedUsed, garmentFactsUsed: simpleInput ? simpleInput.garmentFactsUsed : undefined, promptRules: simpleInput?.promptRules, restore: { applied: false }, photoFinish: { method: protectedInput ? "original-face-pixels" : "native", applied: !!protectedInput }, corrections: [] });
+      anchored: Boolean(simpleInput?.anchored), anchorKind: simpleInput?.anchorKind, fitSource: simpleInput?.fitSource, garmentSideUsed: simpleInput ? simpleInput.garmentSideUsed : undefined, garmentBorrowedUsed: simpleInput?.garmentBorrowedUsed, garmentFactsUsed: simpleInput ? simpleInput.garmentFactsUsed : undefined, promptRules: simpleInput?.promptRules, restore: { applied: false }, photoFinish: { method: protectedInput ? "original-face-pixels" : "native", applied: !!protectedInput }, corrections: [] });
   } catch (err: any) {
     return json({ ok: false, view, error: String(err?.message || err) }, 502);
   }
