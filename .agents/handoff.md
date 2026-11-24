@@ -1,20 +1,36 @@
-# Handoff — Studio redesign Phase 1: Kobra foundation (2026-11-24, Claude Code)
+# Handoff: Model Studio upgrade (2026-11-24, Claude Code Opus 5.5)
 
-Branch `claude/kobra-foundation` (off main 85c1b1d); PR open, see `gh pr list`. Previous handoff (Wording Studio, live ops notes) is in git history: `git show 85c1b1d:.agents/handoff.md`.
+- **Branch:** `claude/model-studio-upgrade-plan`, stacked on `claude/kobra-foundation` (PR #69).
+- **Earlier handoff:** the Kobra foundation one is in git history: `git show origin/claude/kobra-foundation:.agents/handoff.md`.
+- **Worktree:** `/Volumes/T5/Archive/worktrees/davidani-studio-ms-plan`.
 
-## Done
-- David picked look **B · Kobra**. Plan: `docs/superpowers/plans/2026-11-24-studio-redesign.md`.
-- Kobra registry in `components.json` (needs `KOBRA_TOKEN` in `.env.local`; value in `~/.claude.json` mcpServers.kobra). Components in `components/ui/`.
-- Opt-in scope: wrap a screen's root in `.kobra`. Paper rules in `app/paper.css` sit in `@scope (html) to (.kobra, popups)`; the 3px `.rounded-*` rule in `app/globals.css` skips Kobra areas; `.kobra` sets its own radii and `--muted`.
-- `lib/render-status.ts` (+ tests) and `components/kit/RenderStatus.tsx`: the one render card (steps, elapsed vs usual time, slow warning, failure + Retry, photo fade-in), driven by `studio-job-store` statuses.
-- `/ui-kit` gallery page (login-gated, not linked).
-- Checked: 1,595 tests, `next build`, `@scope` survives minify, screenshots 1280/440/430 clean, Image studio unchanged.
+## Done (David picked "0 to 5 in order")
+- **Plan:** `docs/superpowers/plans/2026-11-24-model-studio-upgrade-plan.md` (Higgsfield research plus a ranked list).
+- **#0 New /model-studio page** (Kobra), running on `/api/model-shots`.
+  - The old client now lives at `/model-studio-legacy`.
+  - CORE is copied from the Faire extension into `lib/model-shots-core/`. Re-copy it with `scripts/sync-model-shots-core.sh`, and never edit the extension.
+  - The per-style workspace is `app/api/model-studio/workspace` (Blob, 409 on a stale revision).
+- **#1 Opt-in prompt roles:** `promptRules:"roles-v1"` in `lib/simple-reference-shot.ts`. It is off by default, so prompts are byte-identical.
+- **#2 People:** `public/models/people.json` and `lib/people.ts` (Vision, Celine). The GET catalogue now lists `people` and gives each plate a `person`.
+- **#3 Look sheet:**
+  - `POST /api/model-studio/look-sheet` makes one paid render and requires `confirmSpend:true`.
+  - `/api/model-shots` takes `anchorSheetUrl`, which becomes image 3 for the views after the front.
+- **#4 Front takes** (1-3, cost shown) and **#5 intake card** (Catalog preset, up to 3 questions, one-line recipe): `lib/model-studio/{variants,intake}.ts`.
+- **Checks:**
+  - vitest: 1721 pass.
+  - `npm run build`: passes.
+  - tsc: only the 10 errors already in old test files.
+  - Screenshots at 1440/430/440, with mocked renders.
 
 ## Next
-- Phase 2: one PR per screen in order of use (plan doc). Wrap the screen in `.kobra`, swap controls for `components/ui`, use `RenderStatus` for every job.
-- Not checked: dark mode, real iPhone, every existing screen.
+1. **Paid A/B, needs David's OK first:** roles-v1 and the look sheet against today's prompts, on a fixed 10-style set. Review the real images. No live render has been made yet.
+2. Once David approves the new page, retire `/model-studio-legacy` and point the Library and JobCenter links back at it.
+3. Upload to ERP stays disabled until ERP-load PR #43 lands.
 
 ## Gotchas
-- A `node_modules` symlink is tracked in git; `npm ci` replaces it. Never stage its deletion.
-- Kobra ships React 19 types; `components/ui/image-gallery.tsx` has a local fix for React 18.
-- Kobra's tokens (`--muted`, `--radius-*`, `--color-foreground`) collide with Paper names; keep overrides inside `.kobra`.
+- **Workspace race:** two PUTs at the same moment can both pass the revision check. It needs compare-and-swap or a lock.
+- **Search has no thumbnails:** the search endpoint returns no photos, so results show none.
+- **Long phone page:** on a phone the results sit below the long model list.
+- **Dev server:** open it on `localhost`, not 127.0.0.1, or it never hydrates (allowedDevOrigins).
+- **node_modules:** the tracked `node_modules` symlink is set to skip-worktree here. Never stage its deletion.
+- **Flaky test:** one test failed once under full-suite load and passed on rerun.
