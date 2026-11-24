@@ -1,5 +1,7 @@
 /* Tailwind v4 puts its utilities in a CSS layer. Studio CSS lives in that same layer, after them, so specificity and order decide exactly as they did on v3 (unlayered CSS would beat every utility, hover states included). */
 @layer utilities {
+/* Kobra screens (and Kobra popups, which portal to <body>) opt out of Paper: the scope stops at them.
+   Everything else matches exactly as before; @scope adds no specificity. */
 /* Paper 1.2 — source of truth: ~/Code/DESIGN.md. This sheet lays Paper over
    the studio's Tailwind markup: the theme (tailwind.config.ts) maps fonts,
    radii, weights and the old brown to Paper, and the rules below catch what a
@@ -24,6 +26,7 @@
 }
 html, body.paper-app { background:var(--page); color:var(--fg); font-family:var(--font); font-size:14px; line-height:1.55; }
 body.paper-app { padding-bottom:0; }
+@scope (html) to (.kobra, [data-slot$='-content'], [data-slot$='-popup'], [data-slot='dialog-overlay']) {
 .paper-app :is(h1,h2,h3,h4,strong,b) { font-weight:500; letter-spacing:-.01em; }
 .paper-app :is(.font-mono,.font-serif,.prompt-mono,[class*="tracking-wide"]) { font-family:var(--font); }
 .paper-app :is(.uppercase,[class*="tracking-wid"]) { text-transform:none; letter-spacing:0; }
@@ -230,5 +233,6 @@ body.paper-app { padding-bottom:0; }
   .paper-app .prompt-action-bar > div { grid-template-columns:none; grid-auto-flow:column; grid-auto-columns:minmax(0,1fr); }
   .paper-app .prompt-action-bar > div > button { min-height:44px; }
   .paper-app .prompt-action-bar > label { justify-content:flex-start; }
+}
 }
 }
