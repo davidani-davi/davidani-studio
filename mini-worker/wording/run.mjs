@@ -10,6 +10,8 @@ import { ideasPrompt } from './prompt.mjs';
 
 const SKILL = join(homedir(), '.claude/skills/davidani-flatlay/scripts');
 export const FLATLAY = join(SKILL, 'flatlay.py');
+// flatlay.py needs numpy + Pillow, which only the system python has on the mini (Homebrew's python3 comes first on launchd's PATH).
+export const PYTHON = process.env.WORDING_PYTHON || '/usr/bin/python3';
 export const GUARD = join(SKILL, 'codex_guard.py');
 const ORD = ['first', 'second', 'third'];
 
@@ -33,7 +35,7 @@ export function guardResult(r) {
 }
 
 export async function realGuard() {
-  return guardResult(await realExec('python3', [GUARD], { timeout: 30_000 }));
+  return guardResult(await realExec(PYTHON, [GUARD], { timeout: 30_000 }));
 }
 
 async function guarded(deps) {
@@ -48,10 +50,11 @@ const straighten = (s) => String(s ?? '').replace(/[‘’]/g, "'").replace(/[�
 
 export function sanitizeIdeas(raw, allowed) {
   const list = Array.isArray(raw?.ideas) ? raw.ideas : Array.isArray(raw) ? raw : [];
-  const out = [];
+  const out = [], seen = new Set();
   for (const r of list) {
     const main = (Array.isArray(r?.main) ? r.main : [r?.main]).map(straighten).filter(Boolean);
     if (!main.length || main.length > 3 || main.some(l => l.length > 24 || !ascii(l))) continue;
+    const k = main.join(' ').toUpperCase(); if (seen.has(k)) continue; seen.add(k);
     const small = (v) => { const s = straighten(v); return s && ascii(s) && s.length <= 40 ? s : undefined; };
     const evidence = straighten(r?.evidence);
     out.push({ id: randomUUID().slice(0, 8), main, small_top: small(r?.small_top), small_bottom: small(r?.small_bottom),
@@ -116,7 +119,7 @@ export async function runMockups(job, deps, onEach = async () => {}) {
     for (const [i, wording] of job.chosen.slice(0, 3).entries()) {
       if (i) await guarded(deps);
       const title = `${job.style ? job.style + ' ' : ''}${job.category === 'top' ? 'graphic top' : job.category}`;
-      const r = await deps.exec('python3', [FLATLAY, src, '--category', job.category, '--title', title, '--change', changeSentence(wording, job.note), '--variants', '1', '--out', dir, '--name', 'm' + (i + 1)], { cwd: dir, timeout: 15 * 60_000 });
+      const r = await deps.exec(PYTHON, [FLATLAY, src, '--category', job.category, '--title', title, '--change', changeSentence(wording, job.note), '--variants', '1', '--out', dir, '--name', 'm' + (i + 1)], { cwd: dir, timeout: 15 * 60_000 });
       if (r.code === 3) throw new Error('Codex free allowance used up — resets next week');
       const png = r.stdout.trim().split('\n').filter(Boolean).pop();
       if (r.code !== 0 || !png || png === 'FAILED') throw new Error(`Mockup ${i + 1} failed: ` + (r.stderr || r.stdout).slice(-300));
