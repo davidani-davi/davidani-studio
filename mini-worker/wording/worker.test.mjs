@@ -5,7 +5,7 @@ import { runOne } from './worker.mjs';
 const JPEG = Buffer.concat([Buffer.from('ffd8ffe0', 'hex'), Buffer.alloc(64)]);
 const deps = (over = {}) => ({
   fetch: vi.fn(async () => new Response(JPEG)), guard: vi.fn(async () => ({ ok: true })), evidence: vi.fn(async () => ({ ours: [], rivals: [] })),
-  exec: vi.fn(async (cmd) => ({ code: 0, stdout: cmd === 'python3' ? '/tmp/m.png\n' : '', stderr: '' })), readFile: vi.fn(async () => JPEG), ...over,
+  exec: vi.fn(async (cmd) => ({ code: 0, stdout: cmd === '/usr/bin/python3' ? '/tmp/m.png\n' : '', stderr: '' })), readFile: vi.fn(async () => JPEG), ...over,
 });
 
 it('uploads each mockup on its own call, then completes with their URLs', async () => {

@@ -50,7 +50,7 @@ it('sanitizeIdeas drops non-English lines', () => {
 it('custom wording with quotes, & and $ reaches flatlay as one argv item', async () => {
   const d = deps({ exec: vi.fn(async () => ({ code: 0, stdout: '/tmp/x/m1.png\n', stderr: '' })) });
   await runMockups(job({ chosen: [['WALK BY "FAITH" & $LOVE']] }), d);
-  const flat = d.exec.mock.calls.find(c => c[0] === 'python3');
+  const flat = d.exec.mock.calls.find(c => c[0] === '/usr/bin/python3');
   const args = flat[1];
   const change = args[args.indexOf('--change') + 1];
   expect(change).toContain('WALK BY "FAITH" & $LOVE');
@@ -60,7 +60,7 @@ it('custom wording with quotes, & and $ reaches flatlay as one argv item', async
 it('runMockups renders sequentially', async () => {
   let live = 0, peak = 0;
   const exec = vi.fn(async (cmd) => {
-    if (cmd !== 'python3') return { code: 0, stdout: '', stderr: '' };
+    if (cmd !== '/usr/bin/python3') return { code: 0, stdout: '', stderr: '' };
     live++; peak = Math.max(peak, live);
     await new Promise(r => setTimeout(r, 20));
     live--; return { code: 0, stdout: '/tmp/x/m.png\n', stderr: '' };
@@ -111,4 +111,19 @@ it('guard counts only exit 0 as OK', () => {
   expect(guardResult({ code: 0, stdout: '', stderr: '' }).ok).toBe(true);
   expect(guardResult({ code: 3, stdout: 'used up; it resets Mon Nov 30, 4:49 PM PT.', stderr: '' })).toEqual({ ok: false, resets: 'Mon Nov 30, 4:49 PM PT' });
   expect(guardResult({ code: 1, stdout: '', stderr: 'Traceback' }).ok).toBe(false);
+});
+
+it('sanitizeIdeas keeps the first of two ideas with the same main wording', () => {
+  const out = sanitizeIdeas({ ideas: [
+    { main: ['LOVE'], evidence: 'untested', why: 'a' },
+    { main: ['Love'], evidence: 'untested', why: 'b' },
+    { main: ['JOY'], evidence: 'untested', why: 'c' },
+  ] }, new Set());
+  expect(out.map(i => i.why)).toEqual(['a', 'c']);
+});
+
+it('runs flatlay with the system python that has numpy, not whatever python3 is on PATH', async () => {
+  const d = deps({ exec: vi.fn(async () => ({ code: 0, stdout: '/tmp/x/m1.png\n', stderr: '' })) });
+  await runMockups(job({ chosen: [['JOY']] }), d);
+  expect(d.exec.mock.calls.some(c => c[0] === '/usr/bin/python3' && String(c[1][0]).endsWith('flatlay.py'))).toBe(true);
 });
