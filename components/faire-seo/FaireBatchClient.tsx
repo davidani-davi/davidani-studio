@@ -413,7 +413,7 @@ export default function FaireBatchClient() {
   }
 
   return (
-    <main className="min-h-screen bg-[var(--page)] pb-12">
+    <main className="min-h-screen bg-(--page) pb-12">
       <StudioHeader
         active="faire-seo"
         title="Faire SEO batch"
@@ -429,7 +429,7 @@ export default function FaireBatchClient() {
 
       <div className="mx-auto grid max-w-[1380px] gap-5 px-4 py-5 xl:grid-cols-[440px_minmax(0,1fr)]">
         <section className="space-y-4">
-          <div className="rounded-lg border border-neutral-300 bg-white p-5 shadow-sm">
+          <div className="rounded-lg border border-neutral-300 bg-white p-5 shadow-xs">
             <p className="text-xs font-bold uppercase text-neutral-500">Batch Faire optimizer</p>
             <h2 className="mt-3 text-xl font-semibold text-neutral-950">Paste Faire URLs</h2>
             <p className="mt-2 text-sm leading-relaxed text-neutral-500">
@@ -465,7 +465,7 @@ export default function FaireBatchClient() {
                               ? "Forced plus — click to remove"
                               : "Click to force plus copy for this listing"
                           }
-                          className={`group relative block aspect-[2/3] w-full overflow-hidden rounded border-2 bg-neutral-100 transition-all disabled:opacity-40 ${
+                          className={`group relative block aspect-2/3 w-full overflow-hidden rounded border-2 bg-neutral-100 transition-all disabled:opacity-40 ${
                             forced
                               ? "border-emerald-500 ring-2 ring-emerald-200"
                               : "border-neutral-200 hover:border-neutral-400"
@@ -555,7 +555,7 @@ export default function FaireBatchClient() {
             ) : null}
           </div>
 
-          <div className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
+          <div className="rounded-lg border border-neutral-200 bg-white p-4 shadow-xs">
             <p className="text-xs font-semibold text-neutral-500">
               Schema and trending keywords are loaded from your single-mode settings.
             </p>
@@ -570,7 +570,7 @@ export default function FaireBatchClient() {
 
         <section className="space-y-3">
           {rows.length === 0 ? (
-            <div className="grid min-h-[420px] place-items-center rounded-lg border border-neutral-200 bg-white p-8 text-center shadow-sm">
+            <div className="grid min-h-[420px] place-items-center rounded-lg border border-neutral-200 bg-white p-8 text-center shadow-xs">
               <div className="max-w-md">
                 <p className="text-xs font-bold uppercase text-neutral-500">Output</p>
                 <h2 className="mt-3 text-xl font-semibold text-neutral-950">
@@ -640,12 +640,12 @@ function BatchRowCard({
   const remainingMs = perListingMs - elapsedMs;
   const totalMs = row.startedAt && row.finishedAt ? row.finishedAt - row.startedAt : 0;
   return (
-    <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-sm">
+    <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-xs">
       <button
         onClick={onToggle}
         className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-neutral-50"
       >
-        <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded border border-neutral-200 bg-neutral-100">
+        <div className="h-12 w-12 shrink-0 overflow-hidden rounded border border-neutral-200 bg-neutral-100">
           {row.thumbnail ? (
             <img src={row.thumbnail} alt="" className="h-full w-full object-cover" />
           ) : null}

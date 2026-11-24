@@ -41,7 +41,7 @@ export default function StudioLoading({
           ))}
         </aside>
         <section className="image-studio-stage flex h-full min-h-[320px] flex-col items-center justify-center gap-3 bg-neutral-50 p-8">
-          <div className="studio-skeleton aspect-[4/5] w-full max-w-[360px]" />
+          <div className="studio-skeleton aspect-4/5 w-full max-w-[360px]" />
           <p className="text-xs text-neutral-500" role="status">
             Loading {title}…
           </p>

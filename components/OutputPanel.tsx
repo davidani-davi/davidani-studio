@@ -862,7 +862,7 @@ export default function OutputPanel({
                       });
                     }}
                     title={`Redo ${current.viewLabels[i]} view`}
-                    className="absolute bottom-1 left-1 rounded bg-white/90 px-1.5 py-0.5 text-[9px] font-semibold text-neutral-800 opacity-0 shadow-sm transition hover:bg-white group-hover:opacity-100"
+                    className="absolute bottom-1 left-1 rounded bg-white/90 px-1.5 py-0.5 text-[9px] font-semibold text-neutral-800 opacity-0 shadow-xs transition hover:bg-white group-hover:opacity-100"
                   >
                     Redo
                   </button>
@@ -907,7 +907,7 @@ export default function OutputPanel({
                 <div
                   key={url}
                   onDoubleClick={() => selectMultiOption(slotIndex as 0 | 1 | 2, "front")}
-                  className={`group relative flex min-h-0 flex-col overflow-hidden rounded-xl border bg-white p-3 text-left shadow-sm transition hover:shadow-md ${
+                  className={`group relative flex min-h-0 flex-col overflow-hidden rounded-xl border bg-white p-3 text-left shadow-xs transition hover:shadow-md ${
                     selected ? "border-brand-500 ring-2 ring-brand-100" : "border-neutral-200"
                   }`}
                 >
@@ -946,7 +946,7 @@ export default function OutputPanel({
                       className="max-h-full max-w-full cursor-zoom-in object-contain"
                       fallback={
                         // Holds the render's 4:5 shape instead of filling the card.
-                        <span className="flex aspect-[4/5] max-h-full w-full items-center justify-center rounded-md border border-neutral-200 bg-white px-4 text-center text-[13px] leading-snug text-neutral-500">
+                        <span className="flex aspect-4/5 max-h-full w-full items-center justify-center rounded-md border border-neutral-200 bg-white px-4 text-center text-[13px] leading-snug text-neutral-500">
                           This image could not be loaded. On an older run, the host it was saved on may have deleted it.
                         </span>
                       }
@@ -1029,7 +1029,7 @@ export default function OutputPanel({
                     <div
                       key={slot.url}
                       onDoubleClick={() => selectMultiOption(slotIndex as 0 | 1 | 2, activeView)}
-                      className={`group relative flex min-h-0 flex-col overflow-hidden rounded-xl border bg-white p-2 text-left shadow-sm transition hover:shadow-md ${
+                      className={`group relative flex min-h-0 flex-col overflow-hidden rounded-xl border bg-white p-2 text-left shadow-xs transition hover:shadow-md ${
                         selected ? "border-amber-500 ring-2 ring-amber-100" : "border-neutral-200"
                       }`}
                     >
@@ -1138,7 +1138,7 @@ export default function OutputPanel({
                     setIndex(imageIndex);
                     setPreviewSrc(url);
                   }}
-                  className={`group relative flex min-h-0 flex-col overflow-hidden rounded-xl border bg-white p-2 text-left shadow-sm transition hover:shadow-md ${
+                  className={`group relative flex min-h-0 flex-col overflow-hidden rounded-xl border bg-white p-2 text-left shadow-xs transition hover:shadow-md ${
                     selected ? "border-brand-500 ring-2 ring-brand-100" : "border-neutral-200"
                   }`}
                 >
@@ -1205,7 +1205,7 @@ export default function OutputPanel({
                     setIndex(imageIndex);
                     setPreviewSrc(url);
                   }}
-                  className={`group flex min-h-0 flex-col overflow-hidden rounded-xl border bg-white p-2 text-left shadow-sm transition ${
+                  className={`group flex min-h-0 flex-col overflow-hidden rounded-xl border bg-white p-2 text-left shadow-xs transition ${
                     url
                       ? "border-neutral-200 hover:shadow-md"
                       : failed
@@ -1287,7 +1287,7 @@ export default function OutputPanel({
             <Thumb size={1920} upgrade loading="eager"
               src={active}
               alt="Generated output"
-              className="max-h-full max-w-full cursor-zoom-in rounded-lg object-contain shadow-sm transition group-hover:shadow-md"
+              className="max-h-full max-w-full cursor-zoom-in rounded-lg object-contain shadow-xs transition group-hover:shadow-md"
             />
             <span className="pointer-events-none absolute bottom-2 right-2 flex items-center gap-1 rounded-full bg-black/60 px-2 py-1 text-[10px] font-medium text-white opacity-0 transition group-hover:opacity-100">
               <svg viewBox="0 0 20 20" fill="currentColor" className="h-3 w-3">
@@ -1435,7 +1435,7 @@ export default function OutputPanel({
                     onChange={(event) => setFeedbackText(event.target.value)}
                     rows={3}
                     placeholder="Tell AI what is wrong: collar became too small, stripe colors changed, silhouette is too cropped..."
-                    className="w-full resize-none rounded-xl border border-neutral-200 bg-white px-3 py-2 text-[11px] leading-relaxed text-neutral-700 outline-none transition placeholder:text-neutral-400 focus:border-neutral-900"
+                    className="w-full resize-none rounded-xl border border-neutral-200 bg-white px-3 py-2 text-[11px] leading-relaxed text-neutral-700 outline-hidden transition placeholder:text-neutral-400 focus:border-neutral-900"
                   />
                   <div>
                     <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
@@ -1597,7 +1597,7 @@ export default function OutputPanel({
                     onChange={(event) => setRepairNote(event.target.value)}
                     rows={2}
                     placeholder="Optional note: keep snake patch, make sleeves roomier..."
-                    className="w-full resize-none rounded-xl border border-neutral-200 bg-white px-3 py-2 text-[11px] leading-relaxed text-neutral-700 outline-none transition placeholder:text-neutral-400 focus:border-neutral-900"
+                    className="w-full resize-none rounded-xl border border-neutral-200 bg-white px-3 py-2 text-[11px] leading-relaxed text-neutral-700 outline-hidden transition placeholder:text-neutral-400 focus:border-neutral-900"
                   />
 
                   <div className="grid grid-cols-2 gap-1.5">
@@ -1744,7 +1744,7 @@ export default function OutputPanel({
                         }}
                         className="block w-full text-left"
                       >
-                        <div className="relative aspect-[3/4] bg-neutral-50">
+                        <div className="relative aspect-3/4 bg-neutral-50">
                           {slot ? (
                             <>
                               <Thumb size={384}
@@ -1752,7 +1752,7 @@ export default function OutputPanel({
                                 alt={`${photoshootViewLabel[view]} generated view`}
                                 className="h-full w-full object-cover opacity-70"
                               />
-                              <span className="absolute right-2 top-2 rounded-full bg-white/90 px-2 py-0.5 text-[9px] font-semibold text-neutral-500 shadow-sm">
+                              <span className="absolute right-2 top-2 rounded-full bg-white/90 px-2 py-0.5 text-[9px] font-semibold text-neutral-500 shadow-xs">
                                 Generated
                               </span>
                             </>
@@ -1821,18 +1821,18 @@ export default function OutputPanel({
                   value={libraryStyleNumber}
                   onChange={(event) => setLibraryStyleNumber(event.target.value)}
                   placeholder="Style number, e.g. DJ52056"
-                  className="rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs outline-none focus:border-neutral-900"
+                  className="rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs outline-hidden focus:border-neutral-900"
                 />
                 <input
                   value={libraryColor}
                   onChange={(event) => setLibraryColor(event.target.value)}
                   placeholder="Color, e.g. Black"
-                  className="rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs outline-none focus:border-neutral-900"
+                  className="rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs outline-hidden focus:border-neutral-900"
                 />
                 <select
                   value={libraryViewLabel}
                   onChange={(event) => setLibraryViewLabel(event.target.value)}
-                  className="rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs outline-none focus:border-neutral-900"
+                  className="rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs outline-hidden focus:border-neutral-900"
                 >
                   <option value="front">Front</option>
                   <option value="side">Side</option>

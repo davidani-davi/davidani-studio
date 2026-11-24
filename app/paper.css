@@ -1,3 +1,5 @@
+/* Tailwind v4 puts its utilities in a CSS layer. Studio CSS lives in that same layer, after them, so specificity and order decide exactly as they did on v3 (unlayered CSS would beat every utility, hover states included). */
+@layer utilities {
 /* Paper 1.2 — source of truth: ~/Code/DESIGN.md. This sheet lays Paper over
    the studio's Tailwind markup: the theme (tailwind.config.ts) maps fonts,
    radii, weights and the old brown to Paper, and the rules below catch what a
@@ -36,8 +38,8 @@ body.paper-app { padding-bottom:0; }
 .paper-app .rounded-full[class*="px-"] { border-radius:var(--r) !important; }
 .paper-app :is([class*="ring-1"],[class*="ring-2"],[class*="ring-4"]):not(:focus-visible) { box-shadow:none !important; }
 .paper-app :is(.border-2,.border-b-2,.border-t-2):not(.animate-spin) { border-width:1px; }
-.paper-app :is(.bg-gradient-to-b,.bg-gradient-to-r,.bg-gradient-to-br) { background-image:none; }
-.paper-app button.bg-gradient-to-b { background-color:var(--fg); }
+.paper-app :is(.bg-linear-to-b,.bg-linear-to-r,.bg-linear-to-br) { background-image:none; }
+.paper-app button.bg-linear-to-b { background-color:var(--fg); }
 /* Selected = the 1px border turns --fg (DESIGN.md rule 10). Every border-brand-500 in the studio is a
    selected, active or drag state; globals.css had mapped it to the hairline. */
 .paper-app [class~="border-brand-500"] { border-color:var(--fg); }
@@ -89,7 +91,7 @@ body.paper-app { padding-bottom:0; }
 .paper-app button:disabled:is([class~="bg-white"],[class*="disabled:opacity-"]) { opacity:1; color:var(--muted); }
 .paper-app button:disabled:is([class*="disabled:opacity-"]):not([class~="bg-white"]) { border-color:var(--line); }
 /* A disabled primary reads as unavailable: hairline and muted, not faded ink. */
-.paper-app button:disabled:is([class~="bg-neutral-900"],[class~="bg-neutral-950"],[class~="bg-black"],[class~="bg-primary"],[class~="bg-brand-500"],[class~="bg-neutral-300"],.bg-gradient-to-b),
+.paper-app button:disabled:is([class~="bg-neutral-900"],[class~="bg-neutral-950"],[class~="bg-black"],[class~="bg-primary"],[class~="bg-brand-500"],[class~="bg-neutral-300"],.bg-linear-to-b),
 .paper-app :is(.reference-admin .ra-primary,.identity-studio .ri-primary):disabled { background-color:var(--sheet); color:var(--muted); border:1px solid var(--line); opacity:1; }
 
 /* Shared shell, after the Paper phone shell: a title bar (15/500 title, muted
@@ -228,4 +230,5 @@ body.paper-app { padding-bottom:0; }
   .paper-app .prompt-action-bar > div { grid-template-columns:none; grid-auto-flow:column; grid-auto-columns:minmax(0,1fr); }
   .paper-app .prompt-action-bar > div > button { min-height:44px; }
   .paper-app .prompt-action-bar > label { justify-content:flex-start; }
+}
 }

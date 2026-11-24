@@ -109,7 +109,7 @@ export default function CadExportPanel({ imageUrl, scale, spec }: Props) {
         type="button"
         onClick={exportFiles}
         disabled={busy}
-        className="w-full rounded-xl bg-gradient-to-b from-neutral-800 to-neutral-950 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:from-neutral-700 hover:to-neutral-900 disabled:opacity-60"
+        className="w-full rounded-xl bg-linear-to-b from-neutral-800 to-neutral-950 px-4 py-2.5 text-sm font-semibold text-white shadow-xs hover:from-neutral-700 hover:to-neutral-900 disabled:opacity-60"
       >
         {busy ? "Preparing…" : "Export print file + spec"}
       </button>

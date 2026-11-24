@@ -126,7 +126,7 @@ export default function CadScaleMeasure({ imageUrl, onChange }: Props) {
             value={refCm}
             onChange={(e) => setRefCm(e.target.value)}
             placeholder="cm"
-            className="w-20 rounded border border-neutral-300 px-2 py-1 text-xs outline-none focus:border-brand-500"
+            className="w-20 rounded border border-neutral-300 px-2 py-1 text-xs outline-hidden focus:border-brand-500"
           />
           cm
         </label>

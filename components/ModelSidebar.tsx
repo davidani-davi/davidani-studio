@@ -367,7 +367,7 @@ export default function ModelSidebar(p: Props) {
                     <span>{required ? "Required" : "Optional"}</span>
                   </div>
                   {upload ? (
-                    <div className="group relative aspect-[4/3] overflow-hidden rounded-lg border border-brand-200 bg-white">
+                    <div className="group relative aspect-4/3 overflow-hidden rounded-lg border border-brand-200 bg-white">
                       <Thumb src={upload.url} size={640} alt={upload.name} className="h-full w-full object-cover" />
                       <button
                         onClick={() => p.onRemoveUpload(upload.url)}
@@ -453,7 +453,7 @@ export default function ModelSidebar(p: Props) {
             return (
               <div
                 key={u.url}
-                className={`group relative aspect-[2/3] overflow-hidden rounded-lg border ${
+                className={`group relative aspect-2/3 overflow-hidden rounded-lg border ${
                   selected
                     ? "border-brand-500 ring-2 ring-brand-200"
                     : "border-neutral-200"
@@ -527,7 +527,7 @@ export default function ModelSidebar(p: Props) {
             {pantsReferences(p.humanModels).map(m => <button type="button" key={m.id}
               onClick={() => p.onHumanModelChange(m.id)} aria-pressed={m.id === p.selectedHumanModelId}
               className={`overflow-hidden rounded border text-left ${m.id === p.selectedHumanModelId ? 'border-neutral-900 bg-neutral-900 text-white' : 'border-neutral-200 bg-white'}`}>
-              <Thumb src={m.poses[0]?.views.front?.publicPath} size={384} alt="" className="aspect-[2/3] w-full object-contain" />
+              <Thumb src={m.poses[0]?.views.front?.publicPath} size={384} alt="" className="aspect-2/3 w-full object-contain" />
               <span className="block p-2 text-xs">{m.name}</span>
             </button>)}
           </div>}
@@ -621,7 +621,7 @@ export default function ModelSidebar(p: Props) {
                         }}
                         className={`group flex min-h-[60px] cursor-pointer items-center gap-2 rounded-lg border p-2 text-left transition ${
                           active
-                            ? "border-brand-500 bg-brand-50 text-brand-700 shadow-sm"
+                            ? "border-brand-500 bg-brand-50 text-brand-700 shadow-xs"
                             : "border-neutral-200 bg-white text-neutral-700 hover:border-neutral-400 hover:bg-neutral-50"
                         }`}
                       >
@@ -719,7 +719,7 @@ export default function ModelSidebar(p: Props) {
                           }}
                           className={`group relative flex min-h-[60px] cursor-pointer items-center gap-2 rounded-lg border p-2 text-left transition ${
                             active
-                              ? "border-brand-500 bg-brand-50 text-brand-700 shadow-sm"
+                              ? "border-brand-500 bg-brand-50 text-brand-700 shadow-xs"
                               : "border-neutral-200 bg-white text-neutral-700 hover:border-neutral-400 hover:bg-neutral-50"
                           }`}
                         >
@@ -779,7 +779,7 @@ export default function ModelSidebar(p: Props) {
               value={newModelName}
               onChange={(e) => setNewModelName(e.target.value)}
               placeholder="Model name"
-              className="w-full rounded-md border border-neutral-200 bg-white px-2 py-1.5 text-[11px] focus:border-brand-400 focus:outline-none"
+              className="w-full rounded-md border border-neutral-200 bg-white px-2 py-1.5 text-[11px] focus:border-brand-400 focus:outline-hidden"
             />
             {(["front", "side", "back", "full"] as const).map((view) => (
               <label key={view} className="flex items-center gap-2 text-[11px] text-neutral-600">
@@ -850,9 +850,9 @@ export default function ModelSidebar(p: Props) {
                           setPreviewSrc(typeof thumb === "string" ? thumb : thumb.publicPath);
                         }}
                         disabled={!available}
-                        className={`group relative aspect-[3/4] overflow-hidden rounded-xl border bg-neutral-50 text-left transition ${
+                        className={`group relative aspect-3/4 overflow-hidden rounded-xl border bg-neutral-50 text-left transition ${
                           available
-                            ? "border-neutral-200 hover:border-neutral-400 hover:shadow-sm"
+                            ? "border-neutral-200 hover:border-neutral-400 hover:shadow-xs"
                             : "cursor-not-allowed border-neutral-100 text-neutral-300"
                         }`}
                         title={
@@ -897,7 +897,7 @@ export default function ModelSidebar(p: Props) {
                     return (
                       <div
                         key={pose.id}
-                        className={`group relative aspect-[4/5] overflow-hidden rounded-lg border transition ${
+                        className={`group relative aspect-4/5 overflow-hidden rounded-lg border transition ${
                           active
                             ? "border-brand-500 ring-2 ring-brand-200"
                             : "border-neutral-200 hover:border-neutral-400"
@@ -998,7 +998,7 @@ export default function ModelSidebar(p: Props) {
             value={p.colorName}
             onChange={(e) => p.onColorNameChange(e.target.value)}
             placeholder="Color name"
-            className="w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+            className="w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm outline-hidden focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
           />
         </label>
 
@@ -1014,7 +1014,7 @@ export default function ModelSidebar(p: Props) {
             value={p.styleNumber}
             onChange={(e) => p.onStyleNumberChange(e.target.value)}
             placeholder="Style number"
-            className="w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+            className="w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm outline-hidden focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
           />
         </label>
 
@@ -1044,7 +1044,7 @@ export default function ModelSidebar(p: Props) {
                 const n = parseInt(e.target.value, 10);
                 if (Number.isFinite(n)) p.onFontSizeChange(n);
               }}
-              className="w-12 bg-transparent px-2 py-2 text-right text-sm outline-none"
+              className="w-12 bg-transparent px-2 py-2 text-right text-sm outline-hidden"
             />
             <span className="pr-2 text-xs text-neutral-400">pt</span>
           </div>

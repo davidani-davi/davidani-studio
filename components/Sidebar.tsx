@@ -230,7 +230,7 @@ export default function Sidebar(p: Props) {
                     e.preventDefault();
                   }}
                   onDrop={(e) => handleIntakeDrop(e, slot.key)}
-                  className="group relative aspect-[4/3] overflow-hidden rounded-lg border border-brand-200 bg-white"
+                  className="group relative aspect-4/3 overflow-hidden rounded-lg border border-brand-200 bg-white"
                 >
                   <button
                     type="button"
@@ -407,7 +407,7 @@ export default function Sidebar(p: Props) {
           placeholder="e.g. DWTS67099"
           spellCheck={false}
           autoCapitalize="characters"
-          className="w-full rounded-md border border-neutral-200 bg-white px-3 py-2 font-mono text-sm uppercase tracking-wide outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+          className="w-full rounded-md border border-neutral-200 bg-white px-3 py-2 font-mono text-sm uppercase tracking-wide outline-hidden focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
         />
         <p className="mt-2 text-[10px] leading-snug text-neutral-500">
           Optional. Without it the garment is read from your photo alone.

@@ -158,7 +158,7 @@ export function TabsTrigger({
         aria-selected={active}
         onClick={() => setValue(value)}
         className={cn(
-          "relative z-10 inline-flex items-center justify-center whitespace-nowrap bg-transparent px-3.5 py-1.5 text-sm font-medium outline-none",
+          "relative z-10 inline-flex items-center justify-center whitespace-nowrap bg-transparent px-3.5 py-1.5 text-sm font-medium outline-hidden",
           "transition-colors",
           active ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground",
           radius,

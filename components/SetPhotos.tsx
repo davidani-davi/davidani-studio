@@ -183,7 +183,7 @@ export default function SetPhotos({ modelId, setName, view, onChanged }: {
       ) : !rows ? (
         <div className="grid grid-cols-2 gap-2" aria-busy="true" aria-label="Loading photos">
           {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="aspect-[2/3] animate-pulse rounded-lg bg-neutral-100" />
+            <div key={i} className="aspect-2/3 animate-pulse rounded-lg bg-neutral-100" />
           ))}
         </div>
       ) : shown.length === 0 ? (
@@ -196,7 +196,7 @@ export default function SetPhotos({ modelId, setName, view, onChanged }: {
             const asking = confirm?.poseId === row.id ? confirm : null;
             return (
               <div key={row.id} className={`overflow-hidden rounded-lg border border-neutral-200 bg-white ${row.live && !row.removed ? "" : "opacity-70"}`}>
-                <div className="relative aspect-[2/3] bg-neutral-100">
+                <div className="relative aspect-2/3 bg-neutral-100">
                   {!loaded[row.id] && <div className="absolute inset-0 animate-pulse bg-neutral-100" />}
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
