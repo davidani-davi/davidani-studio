@@ -18,3 +18,6 @@ export interface JobStore {
   /** Newest first. */
   list(limit: number): Promise<Job[]>;
 }
+
+/** A write built on a copy that is no longer the newest version (someone else wrote first). */
+export class StaleWriteError extends Error { constructor(m = 'This job changed meanwhile; try again') { super(m); this.name = 'StaleWriteError'; } }

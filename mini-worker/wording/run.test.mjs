@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { it, expect, vi } from 'vitest';
-import { runIdeas, runMockups, sanitizeIdeas, changeSentence } from './run.mjs';
+import { runIdeas, runMockups, sanitizeIdeas, changeSentence, guardResult } from './run.mjs';
 import { ideasPrompt } from './prompt.mjs';
 
 const JPEG = Buffer.concat([Buffer.from('ffd8ffe0', 'hex'), Buffer.alloc(64)]);
@@ -96,4 +96,19 @@ it('ideasPrompt keeps the avatar and the anti-goals', () => {
   expect(p).toMatch(/English only/i);
   expect(p).toMatch(/Return JSON only/);
   expect(p).toContain('Competitor Bestseller (Rival Shop)');
+});
+
+it('sanitizeIdeas drops a why that makes a sales claim', () => {
+  const out = sanitizeIdeas({ ideas: [
+    { main: ['JOY'], evidence: 'untested', why: 'Sold 900 units on Faire last month' },
+    { main: ['HOPE'], evidence: 'untested', why: 'A top bestseller for rivals' },
+    { main: ['LOVE'], evidence: 'untested', why: 'Short, warm and easy to read' },
+  ] }, new Set());
+  expect(out.map(i => i.why)).toEqual(['', '', 'Short, warm and easy to read']);
+});
+
+it('guard counts only exit 0 as OK', () => {
+  expect(guardResult({ code: 0, stdout: '', stderr: '' }).ok).toBe(true);
+  expect(guardResult({ code: 3, stdout: 'used up; it resets Mon Nov 30, 4:49 PM PT.', stderr: '' })).toEqual({ ok: false, resets: 'Mon Nov 30, 4:49 PM PT' });
+  expect(guardResult({ code: 1, stdout: '', stderr: 'Traceback' }).ok).toBe(false);
 });

@@ -2,6 +2,7 @@ import { randomUUID, timingSafeEqual } from 'node:crypto';
 import { put } from '@vercel/blob';
 import { NextResponse } from 'next/server';
 import { wordingPrefix, wordingStore } from '@/lib/wording-studio/store';
+import { StaleWriteError } from '@/lib/wording-studio/types';
 import { claimNext, completeIdeas, completeMockups, failJob, heartbeat, leased, LeaseError } from '@/lib/wording-studio/jobs';
 import type { Idea, Mockup } from '@/lib/wording-studio/types';
 
@@ -82,7 +83,7 @@ export async function POST(req: Request) {
       default: return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
     }
   } catch (e) {
-    if (e instanceof LeaseError) return NextResponse.json({ error: e.message }, { status: 409 });
+    if (e instanceof LeaseError || e instanceof StaleWriteError) return NextResponse.json({ error: e.message }, { status: 409 });
     if (e instanceof InputError) return NextResponse.json({ error: e.message }, { status: 400 });
     throw e;
   }

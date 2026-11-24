@@ -49,3 +49,13 @@ it('PATCH with 4 choices → 400', async () => {
   expect(ok.status).toBe(200);
   expect((await ok.json()).job.status).toBe('queued_mockups');
 });
+it('a choice racing another write answers 409, not 500', async () => {
+  const { StaleWriteError } = await import('@/lib/wording-studio/types');
+  const a = await createJob(store, { photoUrl: good }, 0);
+  const c = await claimNext(store, 10);
+  await completeIdeas(store, a.id, c!.lease!.token, [{ id: '1', main: ['JOY'], evidence: 'untested', why: '' }], 20);
+  const write = store.write; store.write = async () => { throw new StaleWriteError(); };
+  const r = await PATCH(req('PATCH', { id: a.id, chosen: [['JOY']] }));
+  store.write = write;
+  expect(r.status).toBe(409);
+});

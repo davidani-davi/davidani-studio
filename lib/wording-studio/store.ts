@@ -1,6 +1,7 @@
 import { createCipheriv, createDecipheriv, createHmac, randomBytes } from 'node:crypto';
-import { list, put } from '@vercel/blob';
+import { del, list, put } from '@vercel/blob';
 import type { Job, JobStore } from './types';
+import { StaleWriteError } from './types';
 
 const ID = /^[0-9a-f-]{36}$/;
 export const validJobId = (id: string) => ID.test(id);
@@ -18,9 +19,10 @@ export function memoryStore(): JobStore & { keys(): string[] } {
     keys: () => [...map.keys()],
     async read(id) { const j = latest(id); return j ? structuredClone(j) : null; },
     async write(job) {
-      const cur = latest(job.id); const next = { ...structuredClone(job), seq: (cur?.seq ?? 0) + 1 };
+      // Optimistic: the next version is the one after the copy the caller read, so a stale copy collides.
+      const next = { ...structuredClone(job), seq: job.seq + 1 };
       const key = `${job.id}/${next.seq}.json`;
-      if (map.has(key)) throw Error('pathname reused');
+      if (map.has(key)) throw new StaleWriteError();
       map.set(key, next); return structuredClone(next);
     },
     async list(limit) {
@@ -70,8 +72,17 @@ export function wordingStore(): JobStore {
     async read(id) { if (!validJobId(id)) return null; const b = await newest(id); return b ? fetchJob(b.url) : null; },
     async write(job) {
       if (!validJobId(job.id)) throw Error('Invalid job id');
-      const cur = await newest(job.id); const next = { ...job, seq: cur ? seqOf(cur.pathname) + 1 : 1 };
-      await put(`${prefix}${job.id}/${next.seq}.json`, encode(next), { access: 'public', addRandomSuffix: false, allowOverwrite: false, contentType: 'application/json' });
+      // Optimistic: version = the read copy's seq + 1 and never overwritten, so a write built on a stale copy fails.
+      const next = { ...job, seq: job.seq + 1 };
+      try {
+        await put(`${prefix}${job.id}/${next.seq}.json`, encode(next), { access: 'public', addRandomSuffix: false, allowOverwrite: false, contentType: 'application/json' });
+      } catch (e) {
+        const cur = await newest(job.id).catch(() => null);
+        if (cur && seqOf(cur.pathname) >= next.seq) throw new StaleWriteError();
+        throw e;
+      }
+      // Keep the two newest versions only, so listing stays small (best effort).
+      if (next.seq > 2) await del(`${prefix}${job.id}/${next.seq - 2}.json`).catch(() => {});
       return next;
     },
     async list(limit) {

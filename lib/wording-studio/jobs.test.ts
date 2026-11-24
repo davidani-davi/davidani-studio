@@ -3,6 +3,7 @@ import { describe, it, expect } from 'vitest';
 import { memoryStore } from './store';
 import { createJob, claimNext, heartbeat, completeIdeas, completeMockups, failJob, chooseIdeas, LeaseError, LEASE_MS } from './jobs';
 import type { Idea } from './types';
+import { StaleWriteError } from './types';
 
 const photo = 'https://x.public.blob.vercel-storage.com/wording-studio-uploads/a.jpg';
 const idea = (id: string): Idea => ({ id, main: ['DREAM', 'FREE'], evidence: 'untested', why: 'short and positive' });
@@ -74,5 +75,15 @@ describe('wording studio jobs', () => {
     expect(keys.length).toBe(3);
     expect(new Set(keys).size).toBe(3);
     expect((await s.read(a.id))?.seq).toBe(3);
+  });
+
+  it('a heartbeat built on a copy read before complete cannot undo it', async () => {
+    const s = memoryStore();
+    const a = await createJob(s, { photoUrl: photo }, 0);
+    const c = await claimNext(s, 10);
+    const stale = await s.read(a.id);
+    await completeIdeas(s, a.id, c!.lease!.token, [idea('1')], 20);
+    await expect(s.write({ ...stale!, lease: { token: c!.lease!.token, until: 99_999 } })).rejects.toBeInstanceOf(StaleWriteError);
+    expect((await s.read(a.id))?.status).toBe('ideas_ready');
   });
 });

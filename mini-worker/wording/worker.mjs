@@ -27,10 +27,14 @@ async function deliver(api, action, body) {
 
 export async function runOne(job, { api, deps }) {
   const lease = job.lease.token;
-  const beat = setInterval(() => api('heartbeat', { id: job.id, lease }).catch(e => log('heartbeat failed', e.status || e.message)), 15_000);
+  let inFlight = Promise.resolve();
+  const beat = setInterval(() => { inFlight = api('heartbeat', { id: job.id, lease }).catch(e => log('heartbeat failed', e.status || e.message)); }, 15_000);
+  // Stop beating and let any heartbeat already sent land before a final write, so it cannot race the completion.
+  const settle = async () => { clearInterval(beat); await inFlight; };
   try {
     if (job.status === 'ideas_running') {
       const ideas = await runIdeas(job, deps);
+      await settle();
       await deliver(api, 'complete', { id: job.id, lease, ideas });
     } else if (job.status === 'mockups_running') {
       const mockups = [];
@@ -38,9 +42,11 @@ export async function runOne(job, { api, deps }) {
         const { url } = await deliver(api, 'mockup', { id: job.id, lease, n, image_base64: m.image_base64 });
         mockups.push({ wording: m.wording, url });
       });
+      await settle();
       await deliver(api, 'complete', { id: job.id, lease, mockups });
     } else throw new Error('Unknown job state ' + job.status);
   } catch (e) {
+    await settle();
     const msg = /^Codex free allowance/.test(e.message) ? e.message : 'The studio computer could not finish this: ' + String(e.message).slice(0, 200);
     await api('fail', { id: job.id, lease, error: msg }).catch(() => {});
     throw e;

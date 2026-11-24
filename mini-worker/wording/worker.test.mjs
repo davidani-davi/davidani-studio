@@ -21,3 +21,31 @@ it('fails the job with the allowance message when Codex is used up', async () =>
   await expect(runOne({ id: 'j', status: 'ideas_running', lease: { token: 't' }, photoUrl: 'https://b/p.jpg', category: 'top', chosen: [] }, { api, deps: deps({ guard: vi.fn(async () => ({ ok: false, resets: 'Mon' })) }) })).rejects.toThrow();
   expect(api).toHaveBeenCalledWith('fail', { id: 'j', lease: 't', error: 'Codex free allowance used up — resets Mon' });
 });
+
+it('waits for a heartbeat in flight and stops beating before it completes', async () => {
+  vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
+  const tick = () => new Promise(r => setTimeout(r, 50));
+  try {
+    const order = []; let release;
+    const api = vi.fn(async (action) => {
+      order.push(action);
+      if (action === 'heartbeat') { await new Promise(r => { release = r; }); order.push('heartbeat-done'); }
+      return { ok: true };
+    });
+    let finishIdeas;
+    const d = deps({ evidence: vi.fn(() => new Promise(r => { finishIdeas = () => r({ ours: [], rivals: [] }); })), exec: vi.fn(async (cmd, args) => {
+      if (cmd === 'codex') { const o = args[args.indexOf('-o') + 1]; await import('node:fs/promises').then(f => f.writeFile(o, '{"ideas":[{"main":["JOY"],"evidence":"untested","why":""}]}')); }
+      return { code: 0, stdout: '', stderr: '' };
+    }), readFile: undefined });
+    const run = runOne({ id: 'j', status: 'ideas_running', lease: { token: 't' }, photoUrl: 'https://b/p.jpg', category: 'top', chosen: [] }, { api, deps: d });
+    await tick(); vi.advanceTimersByTime(15_000);
+    expect(order).toEqual(['heartbeat']);
+    finishIdeas();
+    await tick(); await tick();
+    expect(order).not.toContain('complete');
+    release();
+    vi.advanceTimersByTime(30_000);
+    await run;
+    expect(order).toEqual(['heartbeat', 'heartbeat-done', 'complete']);
+  } finally { vi.useRealTimers(); }
+});

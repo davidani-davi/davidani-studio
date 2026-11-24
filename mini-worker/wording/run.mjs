@@ -26,10 +26,14 @@ export function realExec(cmd, args, { input, cwd, timeout = 15 * 60_000 } = {}) 
   });
 }
 
-export async function realGuard() {
-  const r = await realExec('python3', [GUARD], { timeout: 30_000 });
+export function guardResult(r) {
+  if (r.code === 0) return { ok: true };
   if (r.code === 3) return { ok: false, resets: (r.stdout + r.stderr).match(/resets ([^.]+)\./)?.[1] || 'next week' };
-  return { ok: true };
+  return { ok: false, resets: 'unknown (the allowance check itself failed)' };
+}
+
+export async function realGuard() {
+  return guardResult(await realExec('python3', [GUARD], { timeout: 30_000 }));
 }
 
 async function guarded(deps) {
@@ -38,6 +42,8 @@ async function guarded(deps) {
 }
 
 const ascii = (s) => !/[^\x20-\x7E]/.test(s);
+// "why" is shown as plain text, so it must not carry sales claims; numbers belong in the checked evidence field.
+const claimy = (s) => /\d|\b(units?|stores?|bestsell\w*|best[- ]sell\w*|sold|sales|orders?|reorder\w*)\b/i.test(s);
 const straighten = (s) => String(s ?? '').replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/\s+/g, ' ').trim();
 
 export function sanitizeIdeas(raw, allowed) {
@@ -49,7 +55,7 @@ export function sanitizeIdeas(raw, allowed) {
     const small = (v) => { const s = straighten(v); return s && ascii(s) && s.length <= 40 ? s : undefined; };
     const evidence = straighten(r?.evidence);
     out.push({ id: randomUUID().slice(0, 8), main, small_top: small(r?.small_top), small_bottom: small(r?.small_bottom),
-      evidence: allowed.has(evidence) ? evidence : 'untested', why: ascii(straighten(r?.why)) ? straighten(r?.why).slice(0, 200) : '' });
+      evidence: allowed.has(evidence) ? evidence : 'untested', why: ascii(straighten(r?.why)) && !claimy(straighten(r?.why)) ? straighten(r?.why).slice(0, 200) : '' });
     if (out.length === 8) break;
   }
   return out;
