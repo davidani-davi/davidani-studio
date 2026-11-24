@@ -35,7 +35,7 @@ const state = (o: Partial<StudioState> = {}): StudioState => ({ style: "DP1", ti
 
 describe("guided intake (#5)", () => {
   it("the preset fills only blanks", () => {
-    expect(applyPreset(setup())).toMatchObject({ engine: "gpt25", fitSource: "reference", humanModelId: "auto" });
+    expect(applyPreset(setup())).toMatchObject({ engine: "gpt25", humanModelId: "auto" });
     expect(applyPreset(setup({ engine: "nano", fitSource: "style", humanModelId: "studio 98" }))).toMatchObject({ engine: "nano", fitSource: "style", humanModelId: "studio 98" });
   });
   it("asks at most three questions, only for what is missing", () => {

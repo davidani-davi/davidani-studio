@@ -7,14 +7,14 @@ import type { ColorSetup, StudioState } from "./types";
  */
 export interface Question { id: "front" | "person" | "back"; ask: string; why: string }
 
-export const CATALOG_PRESET = { id: "catalog", label: "Catalog (cream set)", engine: "gpt25" as const, fitSource: "reference" as const };
+/** Fit is not part of the preset: the Fit control (Pose only by default, as in the extension) stays the one place it is set. */
+export const CATALOG_PRESET = { id: "catalog", label: "Catalog (cream set)", engine: "gpt25" as const };
 
 /** Fill only blank fields, so a hand-made choice always wins. */
 export function applyPreset(setup: ColorSetup): ColorSetup {
   return {
     ...setup,
     engine: setup.engine || CATALOG_PRESET.engine,
-    fitSource: setup.fitSource || CATALOG_PRESET.fitSource,
     humanModelId: setup.humanModelId || "auto",
   };
 }

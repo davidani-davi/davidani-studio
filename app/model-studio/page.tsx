@@ -1,14 +1,9 @@
-import ModelStudioClient from "@/components/ModelStudioClient";
-import { listAllHumanModelsForPage } from "@/lib/human-models-cached";
-import { isDerivedPlate } from "@/lib/plate-framing";
+import ModelStudio from "@/components/model-studio/ModelStudio";
 
-// Rendered per request from a 5-minute copy of the catalogue
-// (lib/human-models-cached.ts); the client re-reads /api/models on mount, so
-// a newly added or deleted reference still shows up within a second.
+// The web Model Studio (Simple garment swap). The client reads the catalogue, ERP photos and the style's
+// workspace itself, so the page renders at once with skeletons. The old page lives at /model-studio-legacy.
 export const dynamic = "force-dynamic";
-export const revalidate = 0;
 
-export default async function ModelStudioPage() {
-  const humanModels = await listAllHumanModelsForPage();
-  return <ModelStudioClient initialHumanModels={humanModels.filter(m => !isDerivedPlate(m.id))} />;
+export default function ModelStudioPage() {
+  return <ModelStudio />;
 }

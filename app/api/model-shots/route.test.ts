@@ -103,7 +103,7 @@ describe("/api/model-shots auth", () => {
   });
 
   it("initializes both Studio pages with complete model sets rather than a cropped internal default", async () => {
-    const pages = [await import("../../model-studio/page"), await import("../../model-studio-beta/page")];
+    const pages = [await import("../../model-studio-legacy/page"), await import("../../model-studio-beta/page")];
     for (const page of pages) {
       const rendered = await page.default();
       const models = rendered.props.initialHumanModels;
