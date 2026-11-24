@@ -80,4 +80,6 @@ export async function chooseIdeas(store: JobStore, id: string, chosen: unknown, 
   return store.write({ ...j, status: 'queued_mockups', chosen: lines, queuedAt: now, attempts: 0 });
 }
 
-export function publicJob(j: Job): Omit<Job, 'lease'> { const { lease: _l, ...rest } = j; return rest; }
+export type PublicJob = Omit<Job, 'lease'> & { leaseUntil?: number };
+/** What the browser sees: no lease token, only when the lease runs out. */
+export function publicJob(j: Job): PublicJob { const { lease, ...rest } = j; return lease ? { ...rest, leaseUntil: lease.until } : rest; }
