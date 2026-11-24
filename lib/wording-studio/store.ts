@@ -30,12 +30,18 @@ export function memoryStore(): JobStore & { keys(): string[] } {
   };
 }
 
+/** Blob prefix for this deployment's Wording Studio files (HMAC namespace keeps it unguessable). */
+export function wordingPrefix(): string {
+  const secret = process.env.AUTH_SECRET || process.env.APP_PASSWORD;
+  if (!secret) throw Error('Wording Studio storage is not configured.');
+  return `wording-studio-v1/${createHmac('sha256', secret).update('wording-studio-v1').digest('hex')}/`;
+}
+
 export function wordingStore(): JobStore {
   const secret = process.env.AUTH_SECRET || process.env.APP_PASSWORD;
   if (!secret || !process.env.BLOB_READ_WRITE_TOKEN) throw Error('Wording Studio storage is not configured.');
   const key = createHmac('sha256', secret).update('wording-studio-encryption-v1').digest();
-  const ns = createHmac('sha256', secret).update('wording-studio-v1').digest('hex');
-  const prefix = `wording-studio-v1/${ns}/`;
+  const prefix = wordingPrefix();
   const encode = (v: unknown) => {
     const n = randomBytes(12), c = createCipheriv('aes-256-gcm', key, n);
     const d = Buffer.concat([c.update(JSON.stringify(v), 'utf8'), c.final()]);
