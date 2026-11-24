@@ -1,32 +1,21 @@
-# Handoff — 2026-11-03, Claude Code (Mac mini)
+# Handoff — Wording Studio (2026-11-24, Claude Code)
 
-Branch `claude/closure-rule` → PR "FRONT CLOSURE rule". Before it on main: #59 (borrow colourway), #60 (fresh records),
-#58 (face checks), #33 (Simple at medium quality, 2048 × 3072 on full-size bases).
+Branch `claude/wording-studio` → PR https://github.com/davidani-davi/davidani-studio/pull/66 (not merged yet).
 
-## Just done
-- **FRONT CLOSURE rule** in `lib/simple-reference-shot.ts` (tops, dresses, sets; every view but back; never bottoms).
-  DT70144 Pink (snap shacket photographed closed, on the open-jacket reference Vision DJ78149, Pose only) came back worn open
-  with ~20 silver snaps on BOTH front edges at uneven heights, against 9 evenly spaced matte metal snaps on one edge. The prompt
-  only said "visible button count" inside the knit sentence. Now: copy kind, count, spacing, size, colour and finish from
-  image 2; caps in one column on one edge; worn open, the other edge is a plain placket with flat sockets/buttonholes.
-  Phrased positively (naming the wrong layout tends to draw it). **The finish comes from the photo only**: DT70144's
-  listing copy says "pearl snap placket" but the snaps are matte metal caps (David). A first draft quoted the copy and
-  Codex drew glossy pearls, so listing text never names the finish.
-- Evidence (free Codex, GPT Image 2, same reference + garment, jacket forced open by note): old prompt reproduced the bug
-  (snaps on both edges, doubled); the rule gave one even column and a plain opposite edge. Without the note Codex kept the
-  jacket closed with either prompt, so it did not reproduce the open case on its own.
-- vitest 1516/1516 (24 `simple-borrowed-photo` snapshots updated: the only change is the added rule); `next build --webpack` passes.
+## Done
+- `/wording-studio` page + `/api/wording-studio{,/upload,/worker}`; encrypted Blob jobs (optimistic writes, 2 versions kept).
+- Mini worker code `mini-worker/wording/` (Codex ideas + davidani-flatlay mockups, guard before every Codex call).
+- Final review by a fresh reviewer; critical + important findings fixed with tests. Suite 1587/1587, build passes.
+- Vercel prod env `WORDING_WORKER_TOKEN` set. Mini config `~/.config/davidani/wording-worker.json` (chmod 600).
+- Worker files copied to `~/Services/davidani-wording-worker/`; plist in `~/Library/LaunchAgents/com.davidani.wording-worker.plist` — NOT loaded yet.
 
 ## Next steps
-1. Live check (paid, part of normal work): Redo front on DT70144 Pink in Model Studio and review the placket, then
-   Generate remaining. Not yet done on fal GPT Image 2.5.
-2. Carried over: watch `preservation.alignment`; automatic seam check before ERP upload and jaw-following draft
-   outlines are proposed, not approved.
+1. Merge PR #66 once checks are green; wait for the production deploy READY.
+2. `launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.davidani.wording-worker.plist`; watch `~/Library/Logs/wording-worker.log` for "worker started".
+3. End-to-end on production with the DT78036 photo (recover it from session 382e2059 transcript, first user message). Codex allowance at ~3% (resets Mon Nov 30).
+4. UI ship gate screenshots 1280/430/440 (loading, ideas, mockups states).
+5. When `mini-worker/wording/*.mjs` changes, re-copy to ~/Services/davidani-wording-worker and `launchctl kickstart -k`.
 
-## Gotchas
-- Any prompt wording change trips the `simple-borrowed-photo` snapshots: check the diff is only your text, then `-u`.
-- `npx tsc --noEmit` reports ~10 old errors in test files; CI runs `npm test` + `npm run build`, which pass.
-- Worktree with symlinked node_modules breaks Turbopack: `next dev --webpack` / `next build --webpack`.
-- `~/Code/davidani-studio` (main checkout) is on `codex/garment-only-pixel-lock` with uncommitted edits: leave it.
-- Never copy auto outlines into presets without visual review; never restore the horizontal row cutoff (SOP §8).
-- The extension's `layerFraming` (faire-management `model_shots_core.js`) must agree with `shotPlan`/`framingFor` here.
+## Open
+- David still has to pick DREAM FREE vs GROW IN GRACE for DT78036 (Jessa @ JNS).
+- Deferred minors: Blob host checks (#4/#5), no retry after a mid-mockup allowance stop, WebP saved as .jpg, X-DDTO-TOKEN alone is redirected by proxy.

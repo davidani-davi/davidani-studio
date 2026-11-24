@@ -13,7 +13,7 @@ const PUBLIC_PATHS = ["/login", "/api/auth", "/api/history/cleanup", "/api/model
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  if (["/api/design-concepts", "/api/design-concept-complete"].includes(pathname) || PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
+  if (["/api/design-concepts", "/api/design-concept-complete", "/api/wording-studio/worker"].includes(pathname) || PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
     return NextResponse.next();
   }
 

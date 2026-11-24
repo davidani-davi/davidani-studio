@@ -11,7 +11,8 @@ export type StudioTab =
   | "library"
   | "cad"
   | "references"
-  | "identities";
+  | "identities"
+  | "wording";
 
 type NavItem = { id: StudioTab; label: string; href: string };
 
@@ -31,6 +32,7 @@ export const STUDIO_TOOLS: NavItem[] = [
   { id: "prompt", label: "Prompt studio", href: "/prompt-studio" },
   { id: "techpack", label: "Techpack studio", href: "/techpack-studio" },
   { id: "cad", label: "CAD extractor", href: "/cad-extractor" },
+  { id: "wording", label: "Wording studio", href: "/wording-studio" },
   { id: "faire-seo", label: "Faire SEO", href: "/faire-seo" },
   { id: "references", label: "Model library", href: "/admin/models" },
   { id: "identities", label: "Reference identities", href: "/reference-identity-studio" },

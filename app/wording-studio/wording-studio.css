@@ -1,0 +1,99 @@
+/* Wording Studio (Paper 1.2: 3px radii, hairlines, no shadows). Every class is ws- prefixed. */
+.ws-page { width:100%; max-width:1180px; margin:0 auto; padding:24px 20px 64px; display:flex; flex-direction:column; gap:32px; }
+.ws-h2 { font-size:15px; font-weight:500; margin:0 0 14px; display:flex; flex-wrap:wrap; gap:8px; align-items:baseline; }
+.ws-muted { color:var(--muted); font-size:13px; font-weight:400; }
+.ws-panel { background:var(--sheet); border:1px solid var(--line); border-radius:var(--r); padding:20px; }
+.ws-panel p { margin:6px 0 0; color:var(--muted); }
+.ws-notice { border-color:var(--amber-bg); background:#fffdf8; }
+.ws-error { border-color:var(--red-bg); }
+.ws-error strong { color:var(--red); }
+.ws-error .ws-btn { margin-top:14px; }
+
+.ws-new-grid { display:grid; grid-template-columns:minmax(0,320px) minmax(0,1fr); gap:24px; }
+.ws-drop { aspect-ratio:4/5; width:100%; border:1px dashed var(--faint); border-radius:var(--r); background:var(--page); color:var(--muted); display:grid; place-items:center; text-align:center; padding:16px; cursor:pointer; overflow:hidden; position:relative; }
+.ws-drop:hover { border-color:var(--fg); color:var(--fg); }
+.ws-drop.ws-has { padding:0; border-style:solid; border-color:var(--line); }
+.ws-drop strong { color:var(--fg); }
+.ws-fields { display:flex; flex-direction:column; gap:6px; max-width:440px; }
+.ws-fields input, .ws-fields select, .ws-fields textarea, .ws-own textarea { width:100%; border:1px solid var(--line); background:var(--sheet); padding:0 10px; font-size:14px; }
+.ws-fields input, .ws-fields select { height:36px; }
+.ws-fields textarea, .ws-own textarea { padding:8px 10px; resize:vertical; }
+.ws-label { font-size:13px; font-weight:500; margin-top:10px; }
+.ws-label:first-child { margin-top:0; }
+.ws-fields .ws-btn { margin-top:16px; align-self:flex-start; }
+.ws-field-error { color:var(--red); font-size:13px; margin:4px 0 0; }
+
+.ws-btn { display:inline-flex; align-items:center; justify-content:center; height:36px; padding:0 14px; border:1px solid var(--line); background:var(--sheet); color:var(--fg); font-size:13px; font-weight:500; border-radius:var(--r); cursor:pointer; text-decoration:none; white-space:nowrap; }
+.ws-btn:hover { border-color:var(--fg); }
+.ws-btn.ws-primary { background:var(--fg); border-color:var(--fg); color:var(--sheet); }
+.ws-btn.ws-primary:hover { background:#000; }
+.ws-btn:disabled { opacity:.4; cursor:not-allowed; }
+
+.ws-job { display:grid; grid-template-columns:220px minmax(0,1fr); gap:28px; align-items:start; }
+.ws-job-side { display:flex; flex-direction:column; gap:14px; position:sticky; top:16px; }
+.ws-job-photo { aspect-ratio:4/5; border:1px solid var(--line); }
+.ws-meta { display:grid; grid-template-columns:auto 1fr; gap:4px 12px; font-size:13px; margin:0; }
+.ws-meta dt { color:var(--muted); }
+.ws-meta dd { margin:0; overflow-wrap:anywhere; }
+
+.ws-ideas { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+.ws-card { background:var(--sheet); border:1px solid var(--line); border-radius:var(--r); padding:16px; }
+.ws-idea { display:flex; gap:12px; cursor:pointer; align-items:flex-start; }
+.ws-idea:hover { border-color:var(--faint); }
+.ws-idea.ws-on { border-color:var(--fg); }
+.ws-idea input { margin-top:5px; width:16px; height:16px; flex:none; accent-color:var(--fg); }
+.ws-idea-body { display:flex; flex-direction:column; gap:8px; min-width:0; }
+.ws-wording { display:flex; flex-direction:column; gap:1px; }
+.ws-main { font-size:20px; line-height:1.15; font-weight:500; letter-spacing:.02em; }
+.ws-small { font-size:12px; color:var(--muted); letter-spacing:.04em; }
+.ws-why { margin:0; font-size:13px; color:var(--muted); }
+.ws-chip { align-self:flex-start; display:inline-block; font-size:12px; line-height:20px; padding:0 7px; border-radius:var(--r); background:var(--grey-bg); color:var(--muted); white-space:nowrap; }
+.ws-chip-proven { background:var(--green-bg); color:var(--green); }
+.ws-chip-bad { background:var(--red-bg); color:var(--red); }
+
+.ws-own { margin-top:16px; max-width:440px; display:flex; flex-direction:column; gap:6px; }
+.ws-actions { margin-top:16px; display:flex; flex-wrap:wrap; gap:12px; align-items:center; position:sticky; bottom:0; background:var(--page); padding:12px 0 calc(12px + env(safe-area-inset-bottom)); border-top:1px solid var(--line-soft); }
+
+.ws-tiles { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; margin-bottom:18px; }
+.ws-tile { margin:0; display:flex; flex-direction:column; gap:8px; }
+.ws-tile-img { aspect-ratio:4/5; border:1px solid var(--line); border-radius:var(--r); }
+.ws-tile figcaption { display:flex; justify-content:space-between; align-items:center; gap:8px; font-size:13px; }
+
+.ws-photo { position:relative; overflow:hidden; background:var(--page); border-radius:var(--r); }
+.ws-photo img { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; }
+.ws-fill { position:absolute; inset:0; }
+.ws-photo-fallback { position:absolute; inset:0; display:grid; place-items:center; color:var(--faint); font-size:12px; }
+.ws-fade { opacity:0; transition:opacity 280ms cubic-bezier(.23,1,.32,1); }
+.ws-fade.ws-in { opacity:1; }
+
+.ws-skel { background:linear-gradient(90deg,var(--grey-bg) 0%,#f7f6f2 50%,var(--grey-bg) 100%); background-size:200% 100%; animation:ws-shimmer 1.4s ease-in-out infinite; border-radius:var(--r); }
+.ws-skel-card { display:flex; flex-direction:column; gap:10px; min-height:118px; }
+.ws-skel-line { height:16px; }
+.ws-skel-chip { height:20px; width:140px; }
+.ws-w60 { width:60%; } .ws-w40 { width:40%; }
+@keyframes ws-shimmer { from { background-position:100% 0; } to { background-position:-100% 0; } }
+@media (prefers-reduced-motion:reduce) { .ws-skel { animation:none; } .ws-fade { transition:none; } }
+
+.ws-rows { display:flex; flex-direction:column; border-top:1px solid var(--line); }
+.ws-row { display:flex; align-items:center; gap:12px; padding:10px 4px; border:0; border-bottom:1px solid var(--line); background:none; text-align:left; cursor:pointer; width:100%; }
+.ws-row:hover, .ws-row.ws-on { background:var(--sheet); }
+.ws-thumb { width:44px; height:55px; flex:none; border:1px solid var(--line); }
+.ws-row-text { display:flex; flex-direction:column; flex:1; min-width:0; }
+.ws-row-text strong { font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+@media (max-width:480px) {
+  .ws-page { padding:16px 14px 48px; gap:24px; }
+  .ws-new-grid, .ws-job { grid-template-columns:minmax(0,1fr); }
+  .ws-drop { aspect-ratio:auto; min-height:180px; }
+  .ws-drop.ws-has { aspect-ratio:4/5; }
+  .ws-job-side { position:static; flex-direction:row; flex-wrap:wrap; align-items:flex-start; }
+  .ws-job-photo { width:96px; flex:none; }
+  .ws-meta { flex:1; min-width:0; }
+  .ws-job-side > .ws-btn { width:100%; }
+  .ws-ideas, .ws-tiles { grid-template-columns:minmax(0,1fr); }
+  .ws-btn { height:44px; }
+  .ws-actions .ws-btn { flex:1; }
+  .ws-fields input, .ws-fields select { height:44px; font-size:16px; }
+  .ws-fields textarea, .ws-own textarea { font-size:16px; }
+}
+@media (min-width:481px) and (max-width:900px) { .ws-tiles { grid-template-columns:repeat(2,minmax(0,1fr)); } }
