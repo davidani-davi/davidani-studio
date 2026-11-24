@@ -551,7 +551,7 @@ export default function FaireSeoClient() {
               event.preventDefault();
               addFiles(event.dataTransfer.files);
             }}
-            className={`rounded-lg border border-dashed bg-white p-6 shadow-sm ${
+            className={`rounded-lg border border-dashed bg-white p-6 shadow-xs ${
               dragging ? "border-neutral-950" : "border-neutral-300"
             }`}
           >
@@ -631,7 +631,7 @@ export default function FaireSeoClient() {
           </div>
 
           {assets.length ? (
-            <div className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
+            <div className="rounded-lg border border-neutral-200 bg-white p-4 shadow-xs">
               <div className="mb-3 flex items-center justify-between gap-3">
                 <h3 className="text-sm font-semibold text-neutral-950">Uploaded Images</h3>
                 <button
@@ -664,7 +664,7 @@ export default function FaireSeoClient() {
             </div>
           ) : null}
 
-          <div className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
+          <div className="rounded-lg border border-neutral-200 bg-white p-4 shadow-xs">
             <div className="mb-3 flex items-center justify-between gap-3">
               <div>
                 <h3 className="text-sm font-semibold text-neutral-950">Friday trend keywords</h3>
@@ -691,7 +691,7 @@ export default function FaireSeoClient() {
 
         <section className="space-y-4">
           {!hasResult ? (
-            <div className="grid min-h-[520px] place-items-center rounded-lg border border-neutral-200 bg-white p-8 text-center shadow-sm">
+            <div className="grid min-h-[520px] place-items-center rounded-lg border border-neutral-200 bg-white p-8 text-center shadow-xs">
               <div className="max-w-md">
                 <p className="text-xs font-bold uppercase text-neutral-500">Output</p>
                 <h2 className="mt-3 text-xl font-semibold text-neutral-950">
@@ -867,7 +867,7 @@ function OutputPanel({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
+    <section className="rounded-lg border border-neutral-200 bg-white p-4 shadow-xs">
       <div className="mb-3 flex items-center justify-between gap-3">
         <h2 className="text-sm font-semibold text-neutral-950">{title}</h2>
         {action}

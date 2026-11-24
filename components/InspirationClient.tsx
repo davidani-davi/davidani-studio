@@ -379,7 +379,7 @@ export default function InspirationClient() {
                 type="button"
                 onClick={() => inputRef.current?.click()}
                 disabled={analyzing || saving}
-                className="inline-flex items-center justify-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-neutral-800 shadow-sm ring-1 ring-neutral-200 hover:bg-neutral-50 disabled:opacity-50"
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-neutral-800 shadow-xs ring-1 ring-neutral-200 hover:bg-neutral-50 disabled:opacity-50"
               >
                 {analyzing ? <Spinner /> : IconUpload}
                 Drop or upload image
@@ -404,20 +404,20 @@ export default function InspirationClient() {
               value={draft.url}
               onChange={(e) => setDraft((item) => ({ ...item, url: e.target.value }))}
               placeholder="Paste product page or image URL"
-              className="rounded-lg border border-neutral-200 px-3 py-2 text-sm outline-none focus:border-brand-500"
+              className="rounded-lg border border-neutral-200 px-3 py-2 text-sm outline-hidden focus:border-brand-500"
             />
             <div className="grid grid-cols-2 gap-2">
               <input
                 value={draft.title}
                 onChange={(e) => setDraft((item) => ({ ...item, title: e.target.value }))}
                 placeholder="Title"
-                className="rounded-lg border border-neutral-200 px-3 py-2 text-sm outline-none focus:border-brand-500"
+                className="rounded-lg border border-neutral-200 px-3 py-2 text-sm outline-hidden focus:border-brand-500"
               />
               <input
                 value={draft.tags}
                 onChange={(e) => setDraft((item) => ({ ...item, tags: e.target.value }))}
                 placeholder="AI tags"
-                className="rounded-lg border border-neutral-200 px-3 py-2 text-sm outline-none focus:border-brand-500"
+                className="rounded-lg border border-neutral-200 px-3 py-2 text-sm outline-hidden focus:border-brand-500"
               />
             </div>
             {draft.imageUrl ? (
@@ -444,7 +444,7 @@ export default function InspirationClient() {
               onChange={(e) => setDraft((item) => ({ ...item, note: e.target.value }))}
               rows={3}
               placeholder="AI note or your note: why save this?"
-              className="resize-none rounded-lg border border-neutral-200 px-3 py-2 text-sm outline-none focus:border-brand-500"
+              className="resize-none rounded-lg border border-neutral-200 px-3 py-2 text-sm outline-hidden focus:border-brand-500"
             />
             <div className="grid grid-cols-2 gap-2">
               <button
@@ -481,8 +481,8 @@ export default function InspirationClient() {
               }
             }}
           />
-          <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm">
-            <div className="border-b border-neutral-100 bg-gradient-to-b from-white to-neutral-50 px-4 py-4">
+          <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-xs">
+            <div className="border-b border-neutral-100 bg-linear-to-b from-white to-neutral-50 px-4 py-4">
               <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
@@ -525,7 +525,7 @@ export default function InspirationClient() {
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Search western, barrel jeans, 4th of july..."
-                  className="h-10 rounded-xl border border-neutral-200 bg-white px-3 text-sm outline-none focus:border-brand-500"
+                  className="h-10 rounded-xl border border-neutral-200 bg-white px-3 text-sm outline-hidden focus:border-brand-500"
                 />
                 <div className="flex flex-wrap content-start gap-1.5">
                   {["All", ...tags].map((tag) => (
@@ -559,7 +559,7 @@ export default function InspirationClient() {
               >
                 {Array.from({ length: density === "large" ? 8 : 12 }, (_, index) => (
                   <div key={index} className="overflow-hidden rounded border border-neutral-200 bg-white">
-                    <div className="aspect-[2/3] animate-pulse bg-neutral-100" />
+                    <div className="aspect-2/3 animate-pulse bg-neutral-100" />
                     <div className="space-y-2 p-2.5">
                       <div className="h-3 w-3/4 animate-pulse rounded bg-neutral-100" />
                       <div className="h-3 w-1/2 animate-pulse rounded bg-neutral-100" />
@@ -592,12 +592,12 @@ export default function InspirationClient() {
                   const tasteSignal = tasteSignalForSource(source);
                   const liked = likedKeys.has(tasteSignal.key);
                   return (
-                    <article key={source.id} className="group overflow-hidden rounded-lg border border-neutral-200 bg-white transition-colors hover:border-[color:var(--faint)]">
+                    <article key={source.id} className="group overflow-hidden rounded-lg border border-neutral-200 bg-white transition-colors hover:border-(--faint)">
                       <div className="relative">
                         <button
                           type="button"
                           onClick={() => image && setPreview(image)}
-                          className={`block w-full bg-neutral-100 aspect-[2/3]`}
+                          className={`block w-full bg-neutral-100 aspect-2/3`}
                         >
                           {image ? (
                             <Thumb
@@ -622,14 +622,14 @@ export default function InspirationClient() {
                             <button
                               type="button"
                               onClick={() => setPreview(image)}
-                              className="rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-semibold text-neutral-800 shadow-sm backdrop-blur hover:bg-white"
+                              className="rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-semibold text-neutral-800 shadow-xs backdrop-blur-sm hover:bg-white"
                             >
                               View
                             </button>
                             <button
                               type="button"
                               onClick={() => downloadImage(image, safeFileName(source.title))}
-                              className="rounded-full bg-neutral-950/90 px-2.5 py-1 text-[10px] font-semibold text-white shadow-sm backdrop-blur hover:bg-neutral-950"
+                              className="rounded-full bg-neutral-950/90 px-2.5 py-1 text-[10px] font-semibold text-white shadow-xs backdrop-blur-sm hover:bg-neutral-950"
                             >
                               Download
                             </button>

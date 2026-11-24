@@ -722,7 +722,7 @@ function ImagePlaygroundWorkspace({
                 <select
                   value={modelId}
                   onChange={(e) => setModelId(e.target.value as ModelId)}
-                  className="w-full rounded-lg border border-neutral-200 bg-white px-2.5 py-2 text-xs outline-none focus:border-brand-500"
+                  className="w-full rounded-lg border border-neutral-200 bg-white px-2.5 py-2 text-xs outline-hidden focus:border-brand-500"
                 >
                   {Object.values(MODELS).map((m) => (
                     <option key={m.id} value={m.id}>
@@ -733,7 +733,7 @@ function ImagePlaygroundWorkspace({
               </Field>
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Aspect">
-                  <select value={aspect} onChange={(e) => setAspect(e.target.value)} className="w-full rounded-lg border border-neutral-200 bg-white px-2.5 py-2 text-xs outline-none focus:border-brand-500">
+                  <select value={aspect} onChange={(e) => setAspect(e.target.value)} className="w-full rounded-lg border border-neutral-200 bg-white px-2.5 py-2 text-xs outline-hidden focus:border-brand-500">
                     {ASPECT_RATIOS.map((a) => (
                       <option key={a.value} value={a.value}>
                         {a.label}
@@ -745,7 +745,7 @@ function ImagePlaygroundWorkspace({
                   <select
                     value={resolution}
                     onChange={(e) => setResolution(e.target.value)}
-                    className="w-full rounded-lg border border-neutral-200 bg-white px-2.5 py-2 text-xs outline-none focus:border-brand-500"
+                    className="w-full rounded-lg border border-neutral-200 bg-white px-2.5 py-2 text-xs outline-hidden focus:border-brand-500"
                   >
                     {RESOLUTIONS.map((r) => (
                       <option key={r.value} value={r.value}>
@@ -760,7 +760,7 @@ function ImagePlaygroundWorkspace({
                   <select
                     value={parallel}
                     onChange={(e) => setParallel(Number(e.target.value))}
-                    className="w-full rounded-lg border border-neutral-200 bg-white px-2.5 py-2 text-xs outline-none focus:border-brand-500"
+                    className="w-full rounded-lg border border-neutral-200 bg-white px-2.5 py-2 text-xs outline-hidden focus:border-brand-500"
                   >
                     {[1, 2, 4, 6, 8].map((n) => (
                       <option key={n} value={n}>
@@ -773,7 +773,7 @@ function ImagePlaygroundWorkspace({
                   <select
                     value={numPerPrompt}
                     onChange={(e) => setNumPerPrompt(Number(e.target.value))}
-                    className="w-full rounded-lg border border-neutral-200 bg-white px-2.5 py-2 text-xs outline-none focus:border-brand-500"
+                    className="w-full rounded-lg border border-neutral-200 bg-white px-2.5 py-2 text-xs outline-hidden focus:border-brand-500"
                   >
                     {[1, 2, 3, 4].map((n) => (
                       <option key={n} value={n}>
@@ -826,7 +826,7 @@ function ImagePlaygroundWorkspace({
                 value={pasteUrl}
                 onChange={(e) => setPasteUrl(e.target.value)}
                 placeholder="Paste image URL…"
-                className="flex-1 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs outline-none placeholder:text-neutral-400 focus:border-brand-500"
+                className="flex-1 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs outline-hidden placeholder:text-neutral-400 focus:border-brand-500"
                 onKeyDown={(e) => {
                   if (e.key === "Enter") addPastedUrl();
                 }}
@@ -888,7 +888,7 @@ function ImagePlaygroundWorkspace({
                     return (
                       <div
                         key={u.url}
-                        className={`group relative aspect-[2/3] overflow-hidden rounded-lg border ${
+                        className={`group relative aspect-2/3 overflow-hidden rounded-lg border ${
                           selected
                             ? "border-neutral-900 ring-2 ring-neutral-900/10"
                             : "border-neutral-200"
@@ -903,7 +903,7 @@ function ImagePlaygroundWorkspace({
                           <img src={u.url} alt={u.name} className="h-full w-full object-cover" />
                         </button>
                         <span
-                          className={`pointer-events-none absolute left-1 top-1 rounded px-1.5 py-0.5 text-[9px] font-semibold shadow-sm ${
+                          className={`pointer-events-none absolute left-1 top-1 rounded px-1.5 py-0.5 text-[9px] font-semibold shadow-xs ${
                             selected
                               ? "bg-neutral-900/90 text-white"
                               : "bg-white/90 text-neutral-500"
@@ -918,7 +918,7 @@ function ImagePlaygroundWorkspace({
                         <button
                           type="button"
                           onClick={() => removeRef(u.url)}
-                          className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-white/90 text-xs text-neutral-500 opacity-0 shadow-sm transition hover:text-red-600 group-hover:opacity-100"
+                          className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-white/90 text-xs text-neutral-500 opacity-0 shadow-xs transition hover:text-red-600 group-hover:opacity-100"
                         >
                           ×
                         </button>
@@ -956,7 +956,7 @@ function ImagePlaygroundWorkspace({
               onChange={(e) => setPromptsText(e.target.value)}
               placeholder={`a moody portrait under neon lights\na sunlit linen shirt close-up\na minimalist product hero on cream background`}
               disabled={running}
-              className="prompt-mono min-h-[240px] flex-1 lg:min-h-0 resize-none px-6 py-5 text-[13px] leading-relaxed outline-none placeholder:text-neutral-400 disabled:bg-neutral-50"
+              className="prompt-mono min-h-[240px] flex-1 lg:min-h-0 resize-none px-6 py-5 text-[13px] leading-relaxed outline-hidden placeholder:text-neutral-400 disabled:bg-neutral-50"
             />
           </div>
 
@@ -1017,7 +1017,7 @@ function ImagePlaygroundWorkspace({
                 type="button"
                 onClick={runBatch}
                 disabled={!promptCount || !orderedSelectedRefUrls.length}
-                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-b from-neutral-800 to-neutral-950 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:from-neutral-700 hover:to-neutral-900 hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-neutral-300 disabled:bg-none disabled:text-neutral-500"
+                className="inline-flex items-center gap-2 rounded-xl bg-linear-to-b from-neutral-800 to-neutral-950 px-5 py-2.5 text-sm font-semibold text-white shadow-xs hover:from-neutral-700 hover:to-neutral-900 hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-neutral-300 disabled:bg-none disabled:text-neutral-500"
               >
                 Generate {promptCount || ""}
               </button>
@@ -1026,7 +1026,7 @@ function ImagePlaygroundWorkspace({
         </section>
 
         {/* Results panel */}
-        <aside className="flex w-full shrink-0 flex-col overflow-y-auto bg-neutral-50 lg:w-[28rem]">
+        <aside className="flex w-full shrink-0 flex-col overflow-y-auto bg-neutral-50 lg:w-md">
           <div className="flex items-center justify-between border-b border-neutral-200 bg-white px-5 py-4">
             <div>
               <h2 className="text-sm font-semibold text-neutral-900">Results</h2>

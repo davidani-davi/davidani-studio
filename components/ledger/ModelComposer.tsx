@@ -122,7 +122,7 @@ export default function ModelComposer({
           placeholder="DWTS67099"
           spellCheck={false}
           autoCapitalize="characters"
-          className="h-10 w-full rounded-lg border border-neutral-200 bg-white px-3 font-mono text-[13px] uppercase tracking-wide outline-none transition placeholder:text-neutral-300 focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+          className="h-10 w-full rounded-lg border border-neutral-200 bg-white px-3 font-mono text-[13px] uppercase tracking-wide outline-hidden transition placeholder:text-neutral-300 focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
         />
       </div>
 

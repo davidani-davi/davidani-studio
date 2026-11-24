@@ -36,7 +36,7 @@ function LoginForm() {
   return (
     <form
       onSubmit={onSubmit}
-      className="w-full max-w-sm rounded-2xl border border-neutral-200 bg-white p-8 shadow-sm"
+      className="w-full max-w-sm rounded-2xl border border-neutral-200 bg-white p-8 shadow-xs"
     >
       <div className="mb-6 flex items-center gap-2">
         <h1 className="text-xl font-semibold tracking-tight">Davi &amp; Dani Studio</h1>
@@ -52,7 +52,7 @@ function LoginForm() {
         onChange={(e) => setPassword(e.target.value)}
         placeholder="Team password"
         autoFocus
-        className="mb-3 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+        className="mb-3 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-hidden focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
       />
       {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
       <button

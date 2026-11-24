@@ -84,7 +84,7 @@ export default function ImageLightbox({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-black/85 p-6 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-black/85 p-6 backdrop-blur-xs"
       onClick={onClose}
       role="dialog"
       aria-modal="true"

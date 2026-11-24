@@ -1,3 +1,5 @@
+/* Tailwind v4 puts its utilities in a CSS layer. Studio CSS lives in that same layer, after them, so specificity and order decide exactly as they did on v3 (unlayered CSS would beat every utility, hover states included). */
+@layer utilities {
 .reference-admin{min-height:100vh;background:var(--page);color:var(--fg);padding:28px 32px;font:14px/1.5 var(--font-manrope),sans-serif}
 .reference-admin *{box-sizing:border-box}
 .reference-admin h1{font-size:26px;font-weight:600;letter-spacing:-.04em;margin:8px 0}
@@ -94,3 +96,4 @@
 @media(max-width:700px){.reference-admin{padding:16px}.ra-trash-note{flex-direction:column;align-items:stretch}.ra-layout{grid-template-columns:1fr;gap:16px;margin-top:16px}.ra-library{position:static;max-height:none;overflow:visible}.ra-model-list{overflow:visible}.ra-library-tools{padding:12px;gap:10px}.ra-header{align-items:start;gap:12px;padding-bottom:20px}.ra-header h1{font-size:23px}.ra-header p{font-size:12px}.ra-header>button{padding:8px;font-size:12px}.reference-admin .ra-collections button{padding:10px 12px;gap:6px;font-size:12px}.ra-content{padding:18px}.ra-photos{gap:12px}.ra-photo h3{font-size:14px}.ra-actions{gap:6px}.ra-actions button,.ra-file{font-size:11px}.ra-dialog{padding:18px}.ra-review-image{width:180px}.ra-frame label{width:100%;min-width:0}.ra-posebar label{min-width:0;max-width:none}.ra-collections{overflow:auto}.ra-collections button{white-space:nowrap}}
 
 .ra-model-placeholder{width:44px;height:66px;flex-shrink:0;display:flex!important;align-items:center;justify-content:center;background:var(--grey-bg);border-radius:3px;color:var(--faint);font-size:22px}
+}

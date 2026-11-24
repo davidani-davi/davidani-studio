@@ -87,7 +87,7 @@ export default function RunCard({
       aria-current={active ? "true" : undefined}
       className={`w-full rounded-xl border p-3 text-left transition ${
         active
-          ? "border-neutral-900 bg-white shadow-sm ring-1 ring-neutral-900"
+          ? "border-neutral-900 bg-white shadow-xs ring-1 ring-neutral-900"
           : "border-neutral-200 bg-white hover:border-neutral-400"
       }`}
     >

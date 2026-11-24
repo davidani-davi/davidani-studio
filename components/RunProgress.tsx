@@ -87,7 +87,7 @@ export function ProgressBar({
         className="relative h-full overflow-hidden rounded-full bg-neutral-900 transition-[width] duration-500 ease-out motion-reduce:transition-none"
         style={{ width: `${pct}%` }}
       >
-        <div className="absolute inset-0 -translate-x-full animate-[shimmer_2.4s_ease-out_infinite] bg-gradient-to-r from-transparent via-white/25 to-transparent motion-reduce:hidden" />
+        <div className="absolute inset-0 -translate-x-full animate-[shimmer_2.4s_ease-out_infinite] bg-linear-to-r from-transparent via-white/25 to-transparent motion-reduce:hidden" />
       </div>
     </div>
   );

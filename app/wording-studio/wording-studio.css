@@ -1,3 +1,5 @@
+/* Tailwind v4 puts its utilities in a CSS layer. Studio CSS lives in that same layer, after them, so specificity and order decide exactly as they did on v3 (unlayered CSS would beat every utility, hover states included). */
+@layer utilities {
 /* Wording Studio (Paper 1.2: 3px radii, hairlines, no shadows). Every class is ws- prefixed. */
 .ws-page { width:100%; max-width:1180px; margin:0 auto; padding:24px 20px 64px; display:flex; flex-direction:column; gap:32px; }
 .ws-h2 { font-size:15px; font-weight:500; margin:0 0 14px; display:flex; flex-wrap:wrap; gap:8px; align-items:baseline; }
@@ -97,3 +99,4 @@
   .ws-fields textarea, .ws-own textarea { font-size:16px; }
 }
 @media (min-width:481px) and (max-width:900px) { .ws-tiles { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+}

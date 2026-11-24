@@ -286,7 +286,7 @@ export default function PromptStudioClient() {
               type="button"
               onClick={() => inputRef.current?.click()}
               disabled={uploading || generating}
-              className={`flex aspect-[4/3] w-full items-center justify-center rounded-lg border border-dashed text-sm font-medium transition hover:border-brand-400 hover:bg-brand-50 hover:text-brand-700 disabled:cursor-not-allowed disabled:opacity-60 ${
+              className={`flex aspect-4/3 w-full items-center justify-center rounded-lg border border-dashed text-sm font-medium transition hover:border-brand-400 hover:bg-brand-50 hover:text-brand-700 disabled:cursor-not-allowed disabled:opacity-60 ${
                 draggingUpload
                   ? "border-brand-500 bg-brand-50 text-brand-700"
                   : "border-neutral-300 bg-neutral-50 text-neutral-500"
@@ -346,7 +346,7 @@ export default function PromptStudioClient() {
                       <button
                         type="button"
                         onClick={() => removeUpload(u.url)}
-                        className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-white/90 text-xs text-neutral-500 opacity-0 shadow-sm transition hover:text-red-600 group-hover:opacity-100"
+                        className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-white/90 text-xs text-neutral-500 opacity-0 shadow-xs transition hover:text-red-600 group-hover:opacity-100"
                       >
                         ×
                       </button>
@@ -397,7 +397,7 @@ export default function PromptStudioClient() {
                   disabled={generating}
                   rows={3}
                   placeholder="maroon, black, yellow"
-                  className="mt-2 w-full resize-none rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm outline-none transition placeholder:text-neutral-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 disabled:cursor-not-allowed disabled:bg-neutral-50 disabled:text-neutral-400"
+                  className="mt-2 w-full resize-none rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm outline-hidden transition placeholder:text-neutral-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 disabled:cursor-not-allowed disabled:bg-neutral-50 disabled:text-neutral-400"
                 />
                 <p className="mt-2 text-[11px] leading-relaxed text-neutral-500">
                   Each listed color gets one prompt. Any remaining prompts are chosen by AI.
@@ -435,7 +435,7 @@ export default function PromptStudioClient() {
                             setPhotoshootReferenceId(reference.id);
                             setPrompts("");
                           }}
-                          className={`group relative aspect-[2/3] overflow-hidden rounded-lg border transition ${
+                          className={`group relative aspect-2/3 overflow-hidden rounded-lg border transition ${
                             selected
                               ? "border-neutral-900 ring-2 ring-neutral-900/15"
                               : "border-neutral-200 hover:border-neutral-400"
@@ -466,7 +466,7 @@ export default function PromptStudioClient() {
                     <select
                       value={photoshootCount}
                       onChange={(e) => setPhotoshootCount(Number(e.target.value))}
-                      className="mt-1.5 w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs outline-none focus:border-neutral-500"
+                      className="mt-1.5 w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs outline-hidden focus:border-neutral-500"
                     >
                       {[1, 2, 3, 4, 5, 6].map((count) => (
                         <option key={count} value={count}>{count}</option>
@@ -480,7 +480,7 @@ export default function PromptStudioClient() {
                     <select
                       value={photoshootDirection}
                       onChange={(e) => setPhotoshootDirection(e.target.value)}
-                      className="mt-1.5 w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs outline-none focus:border-neutral-500"
+                      className="mt-1.5 w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs outline-hidden focus:border-neutral-500"
                     >
                       <option value="balanced">Balanced</option>
                       <option value="candid">More candid</option>
@@ -533,9 +533,9 @@ export default function PromptStudioClient() {
               value={prompts}
               onChange={(e) => setPrompts(e.target.value)}
               placeholder={activeCopy.placeholder}
-              className="prompt-mono min-h-[240px] flex-1 lg:min-h-0 resize-none px-4 py-4 text-[13px] leading-relaxed outline-none placeholder:font-sans placeholder:text-[color:var(--muted)] sm:px-6 sm:py-5"
+              className="prompt-mono min-h-[240px] flex-1 lg:min-h-0 resize-none px-4 py-4 text-[13px] leading-relaxed outline-hidden placeholder:font-sans placeholder:text-(--muted) sm:px-6 sm:py-5"
             />
-            <div className="pointer-events-none absolute bottom-3 right-6 rounded-full bg-white/80 px-2 py-0.5 text-[10px] font-mono text-neutral-400 backdrop-blur">
+            <div className="pointer-events-none absolute bottom-3 right-6 rounded-full bg-white/80 px-2 py-0.5 text-[10px] font-mono text-neutral-400 backdrop-blur-sm">
               {promptCount} {activeCopy.metricLabel}
             </div>
           </div>
@@ -566,10 +566,10 @@ export default function PromptStudioClient() {
                 type="button"
                 onClick={generatePrompts}
                 disabled={!selectedUrl || uploading || generating}
-                className={`inline-flex items-center gap-2 whitespace-nowrap rounded-xl px-5 py-2.5 text-sm font-semibold shadow-sm transition disabled:cursor-not-allowed ${
+                className={`inline-flex items-center gap-2 whitespace-nowrap rounded-xl px-5 py-2.5 text-sm font-semibold shadow-xs transition disabled:cursor-not-allowed ${
                   !selectedUrl || uploading || generating
                     ? "bg-neutral-300 text-neutral-500"
-                    : "bg-gradient-to-b from-neutral-800 to-neutral-950 text-white hover:from-neutral-700 hover:to-neutral-900 hover:shadow-md active:scale-[0.98]"
+                    : "bg-linear-to-b from-neutral-800 to-neutral-950 text-white hover:from-neutral-700 hover:to-neutral-900 hover:shadow-md active:scale-[0.98]"
                 }`}
               >
                 {generating ? (
@@ -602,11 +602,11 @@ export default function PromptStudioClient() {
                 <img
                   src={selectedUpload.url}
                   alt={selectedUpload.name}
-                  className="aspect-[2/3] w-full object-cover"
+                  className="aspect-2/3 w-full object-cover"
                 />
               </button>
             ) : (
-              <div className="flex aspect-[2/3] items-center justify-center text-xs text-neutral-400">
+              <div className="flex aspect-2/3 items-center justify-center text-xs text-neutral-400">
                 No garment selected
               </div>
             )}
@@ -628,7 +628,7 @@ export default function PromptStudioClient() {
                       <img
                         src={reference.url}
                         alt={reference.label}
-                        className="aspect-[2/3] w-full object-cover"
+                        className="aspect-2/3 w-full object-cover"
                       />
                     </button>
                   ) : null;

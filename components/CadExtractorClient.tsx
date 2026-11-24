@@ -562,7 +562,7 @@ export default function CadExtractorClient() {
             <select
               value={mode}
               onChange={(e) => setMode(e.target.value as ModeId)}
-              className="w-full rounded-lg border border-neutral-200 bg-white px-2.5 py-2 text-xs outline-none focus:border-brand-500"
+              className="w-full rounded-lg border border-neutral-200 bg-white px-2.5 py-2 text-xs outline-hidden focus:border-brand-500"
             >
               {MODE_OPTIONS.map((m) => (
                 <option key={m.id} value={m.id}>
@@ -586,7 +586,7 @@ export default function CadExtractorClient() {
                   <select
                     value={modelId}
                     onChange={(e) => setModelId(e.target.value as ModelId)}
-                    className="w-full rounded-lg border border-neutral-200 bg-white px-2.5 py-2 text-xs outline-none focus:border-brand-500"
+                    className="w-full rounded-lg border border-neutral-200 bg-white px-2.5 py-2 text-xs outline-hidden focus:border-brand-500"
                   >
                     {Object.values(MODELS).map((m) => (
                       <option key={m.id} value={m.id}>
@@ -602,7 +602,7 @@ export default function CadExtractorClient() {
                   <select
                     value={resolution}
                     onChange={(e) => setResolution(e.target.value)}
-                    className="w-full rounded-lg border border-neutral-200 bg-white px-2.5 py-2 text-xs outline-none focus:border-brand-500"
+                    className="w-full rounded-lg border border-neutral-200 bg-white px-2.5 py-2 text-xs outline-hidden focus:border-brand-500"
                   >
                     {RESOLUTIONS.map((r) => (
                       <option key={r.value} value={r.value}>
@@ -665,7 +665,7 @@ export default function CadExtractorClient() {
                   return (
                     <div
                       key={u.url}
-                      className={`group relative aspect-[2/3] overflow-hidden rounded-lg border ${
+                      className={`group relative aspect-2/3 overflow-hidden rounded-lg border ${
                         selected ? "border-neutral-900 ring-2 ring-neutral-900/10" : "border-neutral-200"
                       }`}
                     >
@@ -676,7 +676,7 @@ export default function CadExtractorClient() {
                       <button
                         type="button"
                         onClick={() => removeRef(u.url)}
-                        className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-white/90 text-xs text-neutral-500 opacity-0 shadow-sm transition hover:text-red-600 group-hover:opacity-100"
+                        className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-white/90 text-xs text-neutral-500 opacity-0 shadow-xs transition hover:text-red-600 group-hover:opacity-100"
                       >
                         ×
                       </button>
@@ -711,7 +711,7 @@ export default function CadExtractorClient() {
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder={`e.g. base cloth is cream\nignore the chest pocket flap\nthe stars are screen-printed and intentionally cracked`}
                   disabled={running}
-                  className="prompt-mono min-h-[240px] flex-1 lg:min-h-0 resize-none rounded-lg border border-neutral-200 px-4 py-3 text-[13px] leading-relaxed outline-none placeholder:text-neutral-400 focus:border-brand-500 disabled:bg-neutral-50"
+                  className="prompt-mono min-h-[240px] flex-1 lg:min-h-0 resize-none rounded-lg border border-neutral-200 px-4 py-3 text-[13px] leading-relaxed outline-hidden placeholder:text-neutral-400 focus:border-brand-500 disabled:bg-neutral-50"
                 />
               </label>
             ) : (
@@ -837,7 +837,7 @@ export default function CadExtractorClient() {
                 type="button"
                 onClick={addToQueue}
                 disabled={!selectedRefUrls.length}
-                className="whitespace-nowrap rounded-xl border border-neutral-300 bg-white px-4 py-2.5 text-sm font-semibold text-neutral-700 shadow-sm transition hover:border-neutral-500 hover:bg-neutral-100 active:scale-[0.98] disabled:cursor-not-allowed disabled:border-neutral-200 disabled:text-neutral-400"
+                className="whitespace-nowrap rounded-xl border border-neutral-300 bg-white px-4 py-2.5 text-sm font-semibold text-neutral-700 shadow-xs transition hover:border-neutral-500 hover:bg-neutral-100 active:scale-[0.98] disabled:cursor-not-allowed disabled:border-neutral-200 disabled:text-neutral-400"
                 title="Snapshot the current photos + settings as a queued run"
               >
                 Add to queue
@@ -847,7 +847,7 @@ export default function CadExtractorClient() {
                   type="button"
                   onClick={runQueue}
                   disabled={running || queueRunning || !pendingCount}
-                  className="inline-flex items-center gap-2 whitespace-nowrap rounded-xl bg-gradient-to-b from-neutral-800 to-neutral-950 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:from-neutral-700 hover:to-neutral-900 hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-neutral-300 disabled:bg-none disabled:text-neutral-500"
+                  className="inline-flex items-center gap-2 whitespace-nowrap rounded-xl bg-linear-to-b from-neutral-800 to-neutral-950 px-5 py-2.5 text-sm font-semibold text-white shadow-xs hover:from-neutral-700 hover:to-neutral-900 hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-neutral-300 disabled:bg-none disabled:text-neutral-500"
                 >
                   {queueRunning ? (
                     <span className="inline-flex items-center gap-2">
@@ -862,7 +862,7 @@ export default function CadExtractorClient() {
                 type="button"
                 onClick={run}
                 disabled={running || queueRunning || !selectedRefUrls.length}
-                className="inline-flex items-center gap-2 whitespace-nowrap rounded-xl bg-gradient-to-b from-neutral-800 to-neutral-950 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:from-neutral-700 hover:to-neutral-900 hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-neutral-300 disabled:bg-none disabled:text-neutral-500"
+                className="inline-flex items-center gap-2 whitespace-nowrap rounded-xl bg-linear-to-b from-neutral-800 to-neutral-950 px-5 py-2.5 text-sm font-semibold text-white shadow-xs hover:from-neutral-700 hover:to-neutral-900 hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-neutral-300 disabled:bg-none disabled:text-neutral-500"
               >
                 {running ? (
                   <span className="inline-flex items-center gap-2">
@@ -879,7 +879,7 @@ export default function CadExtractorClient() {
         </section>
 
         {/* Results */}
-        <aside className="flex w-full shrink-0 flex-col overflow-y-auto bg-neutral-50 lg:w-[28rem]">
+        <aside className="flex w-full shrink-0 flex-col overflow-y-auto bg-neutral-50 lg:w-md">
           <div className="border-b border-neutral-200 bg-white px-5 py-4">
             <h2 className="text-sm font-semibold text-neutral-900">Result</h2>
             <p className="text-[11px] text-neutral-500">

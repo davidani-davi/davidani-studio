@@ -114,7 +114,7 @@ export default function Composer({
           placeholder="DWTS67099"
           spellCheck={false}
           autoCapitalize="characters"
-          className={`h-10 w-full rounded-lg border bg-white px-3 font-mono text-[13px] uppercase tracking-wide outline-none transition placeholder:text-neutral-300 focus:ring-2 focus:ring-brand-100 ${
+          className={`h-10 w-full rounded-lg border bg-white px-3 font-mono text-[13px] uppercase tracking-wide outline-hidden transition placeholder:text-neutral-300 focus:ring-2 focus:ring-brand-100 ${
             canvasNeedsStyleNumber
               ? "border-amber-300 focus:border-amber-400"
               : "border-neutral-200 focus:border-brand-500"

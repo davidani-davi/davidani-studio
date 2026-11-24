@@ -252,7 +252,7 @@ function TechpackTableView({ table }: { table: TechpackTable }) {
 
 function TechpackPageView({ page, techpack }: { page: TechpackPage; techpack: TechpackResult }) {
   return (
-    <article className="mx-auto mb-5 max-w-5xl rounded-xl border border-neutral-200 bg-white p-6 shadow-sm">
+    <article className="mx-auto mb-5 max-w-5xl rounded-xl border border-neutral-200 bg-white p-6 shadow-xs">
       <header className="flex flex-wrap items-start justify-between gap-4 border-b border-neutral-200 pb-4">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-neutral-500">
@@ -489,7 +489,7 @@ export default function TechpackStudioClient() {
               type="button"
               onClick={() => primaryInputRef.current?.click()}
               disabled={!!uploading || generating}
-              className={`flex aspect-[4/3] w-full items-center justify-center rounded-xl border border-dashed text-sm font-semibold transition hover:border-brand-500 hover:bg-brand-50 disabled:cursor-not-allowed disabled:opacity-60 ${
+              className={`flex aspect-4/3 w-full items-center justify-center rounded-xl border border-dashed text-sm font-semibold transition hover:border-brand-500 hover:bg-brand-50 disabled:cursor-not-allowed disabled:opacity-60 ${
                 dragTarget === "primary"
                   ? "border-brand-500 bg-brand-50 text-brand-700"
                   : "border-neutral-300 bg-neutral-50 text-neutral-600"
@@ -540,7 +540,7 @@ export default function TechpackStudioClient() {
                     <button
                       type="button"
                       onClick={() => removePrimary(upload.url)}
-                      className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-white/90 text-xs text-neutral-500 opacity-0 shadow-sm transition hover:text-red-600 group-hover:opacity-100"
+                      className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-white/90 text-xs text-neutral-500 opacity-0 shadow-xs transition hover:text-red-600 group-hover:opacity-100"
                     >
                       x
                     </button>
@@ -612,7 +612,7 @@ export default function TechpackStudioClient() {
                     <button
                       type="button"
                       onClick={() => setSupportUploads((list) => list.filter((item) => item.url !== upload.url))}
-                      className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-white/90 text-xs text-neutral-500 opacity-0 shadow-sm transition hover:text-red-600 group-hover:opacity-100"
+                      className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-white/90 text-xs text-neutral-500 opacity-0 shadow-xs transition hover:text-red-600 group-hover:opacity-100"
                     >
                       x
                     </button>
@@ -645,7 +645,7 @@ export default function TechpackStudioClient() {
                 <input
                   value={meta[field as MetaField]}
                   onChange={(e) => updateMeta(field as MetaField, e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+                  className="mt-1 w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm outline-hidden focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
                   placeholder={label}
                 />
               </label>
@@ -658,7 +658,7 @@ export default function TechpackStudioClient() {
                 value={meta.notes}
                 onChange={(e) => updateMeta("notes", e.target.value)}
                 rows={5}
-                className="mt-1 w-full resize-none rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+                className="mt-1 w-full resize-none rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm outline-hidden focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
                 placeholder="Fabric, trims, packaging, measurements, construction intentions, brand label notes..."
               />
             </label>
@@ -666,10 +666,10 @@ export default function TechpackStudioClient() {
               type="button"
               onClick={generate}
               disabled={!selectedUrl || !!uploading || generating}
-              className={`inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl px-5 py-3 text-sm font-semibold shadow-sm transition disabled:cursor-not-allowed ${
+              className={`inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl px-5 py-3 text-sm font-semibold shadow-xs transition disabled:cursor-not-allowed ${
                 !selectedUrl || uploading || generating
                   ? "bg-neutral-300 text-neutral-500"
-                  : "bg-gradient-to-b from-neutral-800 to-neutral-950 text-white hover:from-neutral-700 hover:to-neutral-900"
+                  : "bg-linear-to-b from-neutral-800 to-neutral-950 text-white hover:from-neutral-700 hover:to-neutral-900"
               }`}
             >
               {generating ? (
@@ -695,7 +695,7 @@ export default function TechpackStudioClient() {
         <section className="min-w-0 flex-1 overflow-y-auto bg-neutral-50 p-5">
           {techpack ? (
             <div>
-              <div className="mb-5 rounded-xl border border-neutral-200 bg-white p-5 shadow-sm">
+              <div className="mb-5 rounded-xl border border-neutral-200 bg-white p-5 shadow-xs">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-neutral-500">
@@ -760,10 +760,10 @@ export default function TechpackStudioClient() {
           <div className="mt-3 overflow-hidden rounded-xl border border-neutral-200 bg-neutral-50">
             {selectedUpload ? (
               <button type="button" onClick={() => setPreviewSrc(selectedUpload.url)} className="block w-full">
-                <img src={selectedUpload.url} alt={selectedUpload.name} className="aspect-[4/5] w-full object-contain" />
+                <img src={selectedUpload.url} alt={selectedUpload.name} className="aspect-4/5 w-full object-contain" />
               </button>
             ) : (
-              <div className="flex aspect-[4/5] items-center justify-center text-xs text-neutral-400">
+              <div className="flex aspect-4/5 items-center justify-center text-xs text-neutral-400">
                 No garment selected
               </div>
             )}

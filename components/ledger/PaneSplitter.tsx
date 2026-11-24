@@ -100,7 +100,7 @@ export default function PaneSplitter({
         e.preventDefault();
       }}
       title="Drag to resize · double-click to reset"
-      className="group relative z-10 hidden w-1.5 shrink-0 cursor-col-resize touch-none bg-neutral-200 transition hover:bg-brand-400 focus-visible:bg-brand-500 focus-visible:outline-none lg:block"
+      className="group relative z-10 hidden w-1.5 shrink-0 cursor-col-resize touch-none bg-neutral-200 transition hover:bg-brand-400 focus-visible:bg-brand-500 focus-visible:outline-hidden lg:block"
     >
       {/* A wider invisible target than the seam is drawn, because a 6px hit
           area is a fiddly thing to grab. */}

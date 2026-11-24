@@ -642,7 +642,7 @@ export default function LibraryClient() {
               if (event.key === "Enter") void load();
             }}
             placeholder="Search style number, e.g. DJ52056"
-            className="rounded-lg border border-neutral-200 px-3 py-2 text-sm outline-none focus:border-neutral-900 md:w-72"
+            className="rounded-lg border border-neutral-200 px-3 py-2 text-sm outline-hidden focus:border-neutral-900 md:w-72"
           />
           <input
             value={q}
@@ -651,7 +651,7 @@ export default function LibraryClient() {
               if (event.key === "Enter") void load();
             }}
             placeholder="Search title, description, color, view..."
-            className="flex-1 rounded-lg border border-neutral-200 px-3 py-2 text-sm outline-none focus:border-neutral-900"
+            className="flex-1 rounded-lg border border-neutral-200 px-3 py-2 text-sm outline-hidden focus:border-neutral-900"
           />
           <div className="flex gap-2">
             <button
@@ -732,8 +732,8 @@ export default function LibraryClient() {
                 <div className="mt-2 h-3 w-56 animate-pulse rounded bg-neutral-100" />
                 <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_320px]">
                   <div className="flex gap-3">
-                    <div className="aspect-[4/5] w-40 animate-pulse rounded bg-neutral-100 sm:w-48" />
-                    <div className="aspect-[4/5] w-40 animate-pulse rounded bg-neutral-100 sm:w-48" />
+                    <div className="aspect-4/5 w-40 animate-pulse rounded bg-neutral-100 sm:w-48" />
+                    <div className="aspect-4/5 w-40 animate-pulse rounded bg-neutral-100 sm:w-48" />
                   </div>
                   <div className="h-48 animate-pulse rounded bg-neutral-100" />
                 </div>
@@ -763,7 +763,7 @@ export default function LibraryClient() {
               return (
                 <article
                   key={style.id}
-                  className="overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm"
+                  className="overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-xs"
                 >
                   <div className="flex flex-col gap-3 border-b border-neutral-100 px-4 py-4 md:flex-row md:items-start md:justify-between">
                     <div className="min-w-0 flex-1">
@@ -774,7 +774,7 @@ export default function LibraryClient() {
                             onChange={(event) =>
                               updateDraft(style.id, { styleNumber: event.target.value })
                             }
-                            className="rounded-lg border border-neutral-200 px-3 py-2 text-sm font-semibold outline-none focus:border-neutral-900"
+                            className="rounded-lg border border-neutral-200 px-3 py-2 text-sm font-semibold outline-hidden focus:border-neutral-900"
                             aria-label="Style number"
                           />
                           <input
@@ -782,7 +782,7 @@ export default function LibraryClient() {
                             onChange={(event) =>
                               updateDraft(style.id, { color: event.target.value })
                             }
-                            className="rounded-lg border border-neutral-200 px-3 py-2 text-sm font-semibold outline-none focus:border-neutral-900"
+                            className="rounded-lg border border-neutral-200 px-3 py-2 text-sm font-semibold outline-hidden focus:border-neutral-900"
                             aria-label="Color"
                           />
                         </div>
@@ -872,7 +872,7 @@ export default function LibraryClient() {
                                   filename,
                                 })
                               }
-                              className="relative block aspect-[4/5] w-full overflow-hidden rounded-lg bg-neutral-100 text-left focus:outline-none focus:ring-2 focus:ring-neutral-900"
+                              className="relative block aspect-4/5 w-full overflow-hidden rounded-lg bg-neutral-100 text-left focus:outline-hidden focus:ring-2 focus:ring-neutral-900"
                             >
                               <Thumb
                                 src={view.imageUrl}
@@ -880,7 +880,7 @@ export default function LibraryClient() {
                                 alt={`${style.styleNumber} ${label}`}
                                 className="h-full w-full object-cover"
                               />
-                              <span className="absolute right-2 top-2 rounded-full bg-white/90 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-neutral-800 opacity-0 shadow-sm transition group-hover:opacity-100">
+                              <span className="absolute right-2 top-2 rounded-full bg-white/90 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-neutral-800 opacity-0 shadow-xs transition group-hover:opacity-100">
                                 View
                               </span>
                             </button>
@@ -891,7 +891,7 @@ export default function LibraryClient() {
                                   onChange={(event) =>
                                     updateDraftView(style.id, view.id, event.target.value)
                                   }
-                                  className="min-w-0 flex-1 rounded-lg border border-neutral-200 px-3 py-2 text-sm font-medium outline-none focus:border-neutral-900"
+                                  className="min-w-0 flex-1 rounded-lg border border-neutral-200 px-3 py-2 text-sm font-medium outline-hidden focus:border-neutral-900"
                                   aria-label="View label"
                                 />
                               ) : (
@@ -927,7 +927,7 @@ export default function LibraryClient() {
                       })}
                     </div>
                     <div className="rounded-lg bg-neutral-50 p-4">
-                      <div className="mb-4 rounded-xl border border-neutral-200 bg-white p-3 shadow-sm">
+                      <div className="mb-4 rounded-xl border border-neutral-200 bg-white p-3 shadow-xs">
                         <div className="flex items-start justify-between gap-3">
                           <div>
                             <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
@@ -1038,7 +1038,7 @@ export default function LibraryClient() {
                           onChange={(event) =>
                             updateDraft(style.id, { seoName: event.target.value })
                           }
-                          className="mt-2 w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm font-semibold outline-none focus:border-neutral-900"
+                          className="mt-2 w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm font-semibold outline-hidden focus:border-neutral-900"
                         />
                       ) : (
                         <p className="mt-1 text-sm font-semibold text-neutral-900">
@@ -1055,7 +1055,7 @@ export default function LibraryClient() {
                             updateDraft(style.id, { seoDescription: event.target.value })
                           }
                           rows={8}
-                          className="mt-2 w-full resize-y rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm leading-relaxed outline-none focus:border-neutral-900"
+                          className="mt-2 w-full resize-y rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm leading-relaxed outline-hidden focus:border-neutral-900"
                         />
                       ) : (
                         <p className="mt-1 text-sm leading-relaxed text-neutral-700">
@@ -1128,7 +1128,7 @@ export default function LibraryClient() {
                                     } as Partial<LibraryDraft>)
                                   }
                                   placeholder={label}
-                                  className="rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs outline-none focus:border-neutral-900"
+                                  className="rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs outline-hidden focus:border-neutral-900"
                                 />
                               ))}
                             </div>
@@ -1141,7 +1141,7 @@ export default function LibraryClient() {
                               }
                               rows={2}
                               placeholder="Library tags, comma separated"
-                              className="w-full resize-y rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs outline-none focus:border-neutral-900"
+                              className="w-full resize-y rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs outline-hidden focus:border-neutral-900"
                             />
                             <textarea
                               value={draft.seoTags.join(", ")}
@@ -1152,7 +1152,7 @@ export default function LibraryClient() {
                               }
                               rows={2}
                               placeholder="Faire/search tags, comma separated"
-                              className="w-full resize-y rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs outline-none focus:border-neutral-900"
+                              className="w-full resize-y rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs outline-hidden focus:border-neutral-900"
                             />
                             <textarea
                               value={draft.faireBullets.join("\n")}
@@ -1163,7 +1163,7 @@ export default function LibraryClient() {
                               }
                               rows={4}
                               placeholder="Faire bullets, one per line"
-                              className="w-full resize-y rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs outline-none focus:border-neutral-900"
+                              className="w-full resize-y rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs outline-hidden focus:border-neutral-900"
                             />
                           </div>
                         )}
@@ -1185,7 +1185,7 @@ export default function LibraryClient() {
                                   }}
                                   className="text-left"
                                 >
-                                  <div className="aspect-[4/5] overflow-hidden rounded-lg bg-white">
+                                  <div className="aspect-4/5 overflow-hidden rounded-lg bg-white">
                                     <Thumb
                                       src={item.views[0]?.imageUrl}
                                       size={256}
@@ -1250,7 +1250,7 @@ export default function LibraryClient() {
                 loading="eager"
                 upgrade
                 alt={preview.title}
-                className="max-h-[calc(92vh-90px)] w-auto max-w-full rounded-lg object-contain shadow-sm"
+                className="max-h-[calc(92vh-90px)] w-auto max-w-full rounded-lg object-contain shadow-xs"
               />
             </div>
           </div>

@@ -40,7 +40,7 @@ export default function StudioDrawer({
         if (!next) onClose();
       }}
       ariaLabel={title}
-      className={wide ? "w-[46rem]" : "w-[26rem]"}
+      className={wide ? "w-184" : "w-104"}
     >
       <div className="flex shrink-0 items-start gap-3 border-b border-neutral-200 px-5 py-3.5">
         <div className="min-w-0 flex-1">

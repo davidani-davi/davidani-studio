@@ -655,7 +655,7 @@ export default function PromptPanel(p: Props) {
               className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold transition disabled:cursor-not-allowed ${
                 p.disabled || p.loading || p.analyzing || batchActive
                   ? "border-neutral-200 bg-neutral-100 text-neutral-400"
-                  : "border-neutral-300 bg-white text-neutral-700 shadow-sm hover:bg-neutral-50"
+                  : "border-neutral-300 bg-white text-neutral-700 shadow-xs hover:bg-neutral-50"
               }`}
             >
               {p.analyzing ? <Spinner className="h-3.5 w-3.5" /> : IconSparkle}
@@ -679,7 +679,7 @@ export default function PromptPanel(p: Props) {
                   })
                 }
                 disabled={p.loading || p.analyzing}
-                className="w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs font-medium text-neutral-800 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100 disabled:bg-neutral-100 disabled:text-neutral-400"
+                className="w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs font-medium text-neutral-800 outline-hidden transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100 disabled:bg-neutral-100 disabled:text-neutral-400"
               />
             </label>
             <label className="block">
@@ -696,7 +696,7 @@ export default function PromptPanel(p: Props) {
                 }
                 disabled={p.loading || p.analyzing}
                 rows={3}
-                className="w-full resize-none rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs leading-relaxed text-neutral-800 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100 disabled:bg-neutral-100 disabled:text-neutral-400"
+                className="w-full resize-none rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs leading-relaxed text-neutral-800 outline-hidden transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100 disabled:bg-neutral-100 disabled:text-neutral-400"
               />
             </label>
           </div>
@@ -732,9 +732,9 @@ export default function PromptPanel(p: Props) {
               onChange={(e) => p.onPromptChange(e.target.value)}
               placeholder="Your brief will appear here after Analyze. Most users can leave this alone."
               rows={8}
-              className="prompt-mono w-full resize-y px-4 py-3 text-[12px] leading-relaxed outline-none placeholder:text-neutral-400"
+              className="prompt-mono w-full resize-y px-4 py-3 text-[12px] leading-relaxed outline-hidden placeholder:text-neutral-400"
             />
-            <div className="pointer-events-none absolute bottom-2 right-3 rounded-full bg-white/80 px-2 py-0.5 text-[10px] font-mono text-neutral-400 backdrop-blur">
+            <div className="pointer-events-none absolute bottom-2 right-3 rounded-full bg-white/80 px-2 py-0.5 text-[10px] font-mono text-neutral-400 backdrop-blur-sm">
               {words} words · {chars} chars
             </div>
           </div>
@@ -765,7 +765,7 @@ export default function PromptPanel(p: Props) {
                   className={`min-w-[28px] rounded-md border px-2 py-1 text-xs font-medium transition disabled:opacity-40 ${
                     active
                       ? "border-neutral-900 bg-neutral-900 text-white"
-                      : "border-neutral-200 bg-white text-neutral-600 hover:border-[color:var(--fg)]"
+                      : "border-neutral-200 bg-white text-neutral-600 hover:border-(--fg)"
                   }`}
                 >
                   {n}
@@ -794,7 +794,7 @@ export default function PromptPanel(p: Props) {
               className={`group relative inline-flex items-center gap-2 rounded-xl border px-4 py-3 text-sm font-semibold transition disabled:cursor-not-allowed ${
                 !p.canBatch || p.loading || p.analyzing || batchActive
                   ? "border-neutral-200 bg-white text-neutral-400"
-                  : "border-brand-300 bg-white text-brand-700 hover:bg-brand-50 hover:shadow-sm active:scale-[0.98]"
+                  : "border-brand-300 bg-white text-brand-700 hover:bg-brand-50 hover:shadow-xs active:scale-[0.98]"
               }`}
             >
               {batchActive ? (
@@ -825,10 +825,10 @@ export default function PromptPanel(p: Props) {
           <button
             onClick={p.onGenerate}
             disabled={p.disabled || p.loading || p.analyzing || batchActive}
-            className={`group relative inline-flex items-center gap-2 whitespace-nowrap rounded-xl px-6 py-3 text-sm font-semibold shadow-sm transition disabled:cursor-not-allowed ${
+            className={`group relative inline-flex items-center gap-2 whitespace-nowrap rounded-xl px-6 py-3 text-sm font-semibold shadow-xs transition disabled:cursor-not-allowed ${
               p.disabled || p.loading || p.analyzing || batchActive
                 ? "bg-neutral-300 text-neutral-500"
-                : "bg-gradient-to-b from-neutral-800 to-neutral-950 text-white hover:from-neutral-700 hover:to-neutral-900 hover:shadow-md active:scale-[0.98]"
+                : "bg-linear-to-b from-neutral-800 to-neutral-950 text-white hover:from-neutral-700 hover:to-neutral-900 hover:shadow-md active:scale-[0.98]"
             }`}
           >
             {p.analyzing ? (

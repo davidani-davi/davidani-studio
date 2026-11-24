@@ -264,7 +264,7 @@ export function ImageGeneration({
             }
             transition={reduce ? { duration: 0 } : { duration: 0.4, ease: EASE_OUT }}
             className={cn(
-              "absolute inset-0 [&>*]:size-full [&>*]:object-cover [&_img]:size-full [&_img]:object-cover",
+              "absolute inset-0 *:size-full *:object-cover [&_img]:size-full [&_img]:object-cover",
               mediaClassName
             )}
           >
@@ -330,7 +330,7 @@ export function ImageGeneration({
             onClick={onRetry}
             whileTap={reduce ? undefined : { scale: 0.96 }}
             transition={SPRING_PRESS}
-            className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-full px-3 text-sm font-medium text-foreground outline-none transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+            className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-full px-3 text-sm font-medium text-foreground outline-hidden transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
           >
             <RotateCcw aria-hidden="true" className="size-4" />
             Try again

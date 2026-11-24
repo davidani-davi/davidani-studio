@@ -1,11 +1,85 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
 
+@theme {
+  --radius: 3px;
+  --radius-sm: 3px;
+  --radius-md: 3px;
+  --radius-lg: 3px;
+  --radius-xl: 3px;
+  --radius-2xl: 3px;
+  --radius-3xl: 3px;
+
+  --font-weight-semibold: 500;
+  --font-weight-bold: 500;
+  --font-weight-extrabold: 500;
+  --font-weight-black: 500;
+
+  --color-brand-50: #f4f3ef;
+  --color-brand-100: #eeede8;
+  --color-brand-200: #e6e5e0;
+  --color-brand-500: #1c1c1a;
+  --color-brand-600: #333330;
+  --color-brand-700: #1c1c1a;
+
+  --color-border: rgb(var(--ui-border));
+  --color-background: rgb(var(--ui-background));
+  --color-foreground: rgb(var(--ui-foreground));
+  --color-card: rgb(var(--ui-card));
+  --color-muted: rgb(var(--ui-muted));
+  --color-muted-foreground: rgb(var(--ui-muted-foreground));
+
+  --color-primary: rgb(var(--ui-primary));
+  --color-primary-foreground: rgb(var(--ui-primary-foreground));
+
+  --color-destructive: rgb(var(--ui-destructive));
+  --color-ring: rgb(var(--ui-ring));
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-inter), Georgia, serif;
+  --font-mono: var(--font-inter), ui-monospace, SFMono-Regular, monospace;
+
+  /* v3 line heights: fixed rem values, so a phone rule that bumps an input to 16px keeps its v3 height. */
+  --text-xs--line-height: 1rem;
+  --text-sm--line-height: 1.25rem;
+  --text-base--line-height: 1.5rem;
+  --text-lg--line-height: 1.75rem;
+  --text-xl--line-height: 1.75rem;
+  --text-2xl--line-height: 2rem;
+  --text-3xl--line-height: 2.25rem;
+  --text-4xl--line-height: 2.5rem;
+}
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+
+  /* v3 placeholder colour (gray-400); v4 defaults to half-strength text colour. */
+  input::placeholder,
+  textarea::placeholder {
+    opacity: 1;
+    color: #9ca3af;
+  }
+}
+
+/* Tailwind v4 puts its utilities in a CSS layer. Studio CSS lives in that same layer, after them, so specificity and order decide exactly as they did on v3 (unlayered CSS would beat every utility, hover states included). */
+@layer utilities {
 :root {
   color-scheme: light;
   /*
-   * beUI token bridge. See the colors block in tailwind.config.ts for why
+   * beUI token bridge. See the @theme colours at the top of this file for why
    * these exist and why they are channel triples rather than hex.
    *
    * The values are the studio's, not shadcn's defaults: primary is the ink the
@@ -118,6 +192,7 @@ body .hover\:text-brand-700:hover,
 body .hover\:text-neutral-800:hover {
   color: var(--polieco-ink);
 }
+body .shadow-xs,
 body .shadow-sm,
 body .shadow-md,
 body .shadow-lg,
@@ -960,4 +1035,5 @@ select {
   .variant-grid > * {
     min-width: 88vw;
   }
+}
 }
