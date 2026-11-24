@@ -52,3 +52,20 @@ it('rejects a mockup over 6 MB with 413', async () => {
   const big = Buffer.alloc(6_000_001).toString('base64');
   expect((await call({ action: 'complete', id: j.id, lease: c.job.lease.token, mockups: [{ wording: ['A'], png_base64: big }] })).status).toBe(413);
 });
+it('mockup action stores one JPEG under the lease and complete accepts its URL', async () => {
+  const j = await createJob(store, { photoUrl: 'https://x/a.jpg' });
+  const c = await (await call({ action: 'claim' })).json();
+  await call({ action: 'complete', id: j.id, lease: c.job.lease.token, ideas: [{ main: ['A'], evidence: 'untested', why: '' }] });
+  const { chooseIdeas } = await import('@/lib/wording-studio/jobs');
+  await chooseIdeas(store, j.id, [['A']]);
+  const m = await (await call({ action: 'claim' })).json();
+  const jpeg = Buffer.concat([Buffer.from('ffd8ff', 'hex'), Buffer.alloc(40)]).toString('base64');
+  expect((await call({ action: 'mockup', id: j.id, lease: 'stale', n: 1, image_base64: jpeg })).status).toBe(409);
+  const up = await call({ action: 'mockup', id: j.id, lease: m.job.lease.token, n: 1, image_base64: jpeg });
+  expect(up.status).toBe(200);
+  const { url } = await up.json();
+  expect(url).toMatch(/\/mockup-1-.+\.jpg$/);
+  expect((await call({ action: 'complete', id: j.id, lease: m.job.lease.token, mockups: [{ wording: ['A'], url: 'https://evil.com/x.jpg' }] })).status).toBe(400);
+  expect((await call({ action: 'complete', id: j.id, lease: m.job.lease.token, mockups: [{ wording: ['A'], url }] })).status).toBe(200);
+  expect((await store.read(j.id))?.mockups[0].url).toBe(url);
+});

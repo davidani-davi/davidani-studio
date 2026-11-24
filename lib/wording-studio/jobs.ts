@@ -33,7 +33,7 @@ export async function claimNext(store: JobStore, now = Date.now()): Promise<Job 
   return store.write({ ...queued, status: RUNNING[queued.status], lease: { token: randomUUID(), until: now + LEASE_MS }, attempts: queued.attempts + 1 });
 }
 
-async function leased(store: JobStore, id: string, token: string, now: number) {
+export async function leased(store: JobStore, id: string, token: string, now: number) {
   const j = await store.read(id);
   if (!j || !j.lease || j.lease.token !== token || j.lease.until < now || !REQUEUE[j.status]) throw new LeaseError();
   return j;
