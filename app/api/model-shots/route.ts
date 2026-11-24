@@ -1,6 +1,7 @@
 import { directOutfitInput, renderDirectOutfit, DIRECT_IDENTITIES } from '@/lib/direct-outfit';
 import { isPantsReference, pantsReferences } from "@/lib/pants-references";
 import { simpleReferenceShot, simpleFaceMask, isReviewedContour, faceProtectionOf, simpleImageSize, parseGarmentBorrowed, borrowRefusal } from '@/lib/simple-reference-shot';
+import { simpleQualityOf, simpleQualityRefusal, simpleGptResolution } from '@/lib/simple-quality';
 import sharp from 'sharp';
 import { referencePixels, validateEdit, editMask, compositeGarment, providerMask, donutsFaceMask } from '@/lib/garment-only';
 import { checkFace, faceBadness, type FaceCheck } from '@/lib/face-check';
@@ -196,6 +197,10 @@ export async function POST(req: Request) {
     view: String(body.view || "front"), hasBackPhoto: Array.isArray(body.garmentImageUrls) && Boolean(body.garmentImageUrls[1]),
     anchorImageUrl: typeof body.anchorImageUrl === "string" ? body.anchorImageUrl : "" });
   if (borrowError) return json({ ok: false, error: borrowError }, 400);
+  // High quality for Simple renders (2026-11-03): refused before anything is queued or paid for.
+  const qualityError = simpleQualityRefusal({ quality: body.quality, editMode: body.editMode,
+    nano: body.engine === "nano" || body.modelId === NANO_REFERENCE_MODEL });
+  if (qualityError) return json({ ok: false, error: qualityError }, 400);
 
   /**
    * `async: true` — answer with a task id now, render after the response and
@@ -258,6 +263,7 @@ async function renderShot(req: Request, body: any): Promise<Response> {
   }
   if (body.editMode && !['simple','native','garment-only','face-locked'].includes(body.editMode)) return json({ok:false,error:'Choose a valid editing mode.'},400);
   const simple = body.editMode === 'simple';
+  const simpleQuality = simpleQualityOf(body.quality);
   let heal: HealInput | undefined;
   if (body.heal != null) {
     if (!simple) return json({ok:false,error:'Heal works on Simple garment swap renders.'},400);
@@ -509,13 +515,14 @@ async function renderShot(req: Request, body: any): Promise<Response> {
         body: JSON.stringify({ modelId, humanModelId, poseId, view,
           canvasImageUrl: prepared?.canvasUrl || referenceUrl, garmentImageUrls: simpleInput?.garmentImageUrls || garmentImageUrls,
           preserveSecondaryReferences: true, rawPrompt: true, prompt: input.prompt,
-          imageSize: simple ? simpleImageSize(simpleRef) : prepared ? {width:prepared.ref.width,height:prepared.ref.height} : GPT_NATIVE_SIZE, maskUrl: prepared?.maskUrl, aspectRatio: "2:3", resolution: simple ? "2K" : "4K", format: "png", numImages: 1 }),
+          imageSize: simple ? simpleImageSize(simpleRef) : prepared ? {width:prepared.ref.width,height:prepared.ref.height} : GPT_NATIVE_SIZE, maskUrl: prepared?.maskUrl, aspectRatio: "2:3", resolution: simple ? simpleGptResolution(simpleQuality) : "4K", format: "png", numImages: 1 }),
       }));
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || "Image generation failed");
       return result.images?.[0]?.url;
     };
-    // Simple GPT renders at medium quality ("2K"); Nano keeps its own 1K path.
+    // Simple GPT renders at medium quality ("2K") unless the caller asks for High (lib/simple-quality.ts,
+    // same 2048x3072 frame); Nano keeps its own 1K path. `resolution` below names the size, `quality` the setting.
     let outputResolution = nanoReference ? "1K" : simple ? "2K" : "4K";
     if (heal) {
       if (!simplePrepared) throw Error('This reference has no face outline, so there is nothing to heal.');
@@ -582,7 +589,8 @@ async function renderShot(req: Request, body: any): Promise<Response> {
       modelId: body.engine === "tryon" ? undefined : modelId,
       engine: body.engine === "tryon" ? "tryon" : nanoReference ? "nano" : modelId === "gpt-image-25" ? "gpt25" : "gpt2",
       faceProtection: simple ? faceProtectionOf(reference.publicPath, reference.autoContour, Boolean(simplePrepared)) : undefined,
-      resolution: outputResolution, editMode: simple ? "simple" : faceLocked ? "face-locked" : locked ? "garment-only" : "native", preservation, ...(faceCheck ? { faceCheck } : {}), humanModelId,
+      resolution: outputResolution, ...(simple && !nanoReference && !heal ? { quality: simpleQuality } : {}),
+      editMode: simple ? "simple" : faceLocked ? "face-locked" : locked ? "garment-only" : "native", preservation, ...(faceCheck ? { faceCheck } : {}), humanModelId,
       // A recast set reports the pose it shot on and why; the catalogue pose id stays on `reference`.
       poseId: setPose ? setPose.pose.id : poseId, assigned, category, hem, framing,
       ...(setPose ? { poseReason: setPose.reason, pose: { id: setPose.pose.id, view: setPose.pose.view, framing: setPose.pose.framing, stance: setPose.pose.stance, arms: setPose.pose.arms, thumbUrl: setPose.pose.thumbUrl } } : {}),
