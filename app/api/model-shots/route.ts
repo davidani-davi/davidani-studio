@@ -1,5 +1,6 @@
 import { directOutfitInput, renderDirectOutfit, DIRECT_IDENTITIES } from '@/lib/direct-outfit';
 import { isPantsReference, pantsReferences } from "@/lib/pants-references";
+import { PEOPLE, personOf } from '@/lib/people';
 import { simpleReferenceShot, simpleFaceMask, isReviewedContour, faceProtectionOf, simpleImageSize, parseGarmentBorrowed, borrowRefusal, parsePromptRules } from '@/lib/simple-reference-shot';
 import sharp from 'sharp';
 import { referencePixels, validateEdit, editMask, compositeGarment, providerMask, donutsFaceMask } from '@/lib/garment-only';
@@ -134,6 +135,8 @@ export async function GET(req: Request) {
     ok: true,
     views: MULTI_MODEL_VIEWS,
     directIdentities: DIRECT_IDENTITIES,
+    // The person library (lib/people.ts): who wears the clothes; each model below names its person.
+    people: PEOPLE,
     plateTags: plateTagStats(),
     // the crop/low families are the house plates re-framed, never picked by
     // hand — but their fronts ride along as previews, so a picker can show the
@@ -155,6 +158,7 @@ export async function GET(req: Request) {
         // picker can fold the plates into one card per pose with the
         // expressions inside, and keep the wardrobe variants off the front row
         ...(m.character ? { character: m.character } : {}),
+        ...(personOf(m) ? { person: personOf(m) } : {}),
         ...(m.expression ? { expression: m.expression } : {}),
         ...(m.poseKey ? { poseKey: m.poseKey } : {}),
         ...(m.pose ? { pose: m.pose } : {}),

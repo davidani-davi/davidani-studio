@@ -55,6 +55,15 @@ describe("/api/model-shots auth", () => {
     expect((await GET(req())).status).toBe(401);
   });
 
+  it("lists the person library and tags each house plate with its person", async () => {
+    process.env.MODEL_SHOTS_TOKEN = "s3cret";
+    const { GET } = await load();
+    const body = await (await GET(req({ "X-DDTO-TOKEN": "s3cret" }))).json();
+    expect(body.people.map((p: { id: string }) => p.id)).toEqual(["vision", "celine"]);
+    const studio98 = body.models.find((m: { id: string }) => m.id === "studio 98");
+    expect(studio98?.person).toBe("celine");
+  });
+
   it("falls back to APP_PASSWORD, which already unlocks the studio anyway", async () => {
     process.env.APP_PASSWORD = "team-password";
     const { GET } = await load();
