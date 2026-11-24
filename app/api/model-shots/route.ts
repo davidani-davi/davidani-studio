@@ -1,6 +1,6 @@
 import { directOutfitInput, renderDirectOutfit, DIRECT_IDENTITIES } from '@/lib/direct-outfit';
 import { isPantsReference, pantsReferences } from "@/lib/pants-references";
-import { simpleReferenceShot, simpleFaceMask, isReviewedContour, faceProtectionOf, simpleImageSize, parseGarmentBorrowed, borrowRefusal } from '@/lib/simple-reference-shot';
+import { simpleReferenceShot, simpleFaceMask, isReviewedContour, faceProtectionOf, simpleImageSize, parseGarmentBorrowed, borrowRefusal, parsePromptRules } from '@/lib/simple-reference-shot';
 import sharp from 'sharp';
 import { referencePixels, validateEdit, editMask, compositeGarment, providerMask, donutsFaceMask } from '@/lib/garment-only';
 import { checkFace, faceBadness, type FaceCheck } from '@/lib/face-check';
@@ -461,7 +461,7 @@ async function renderShot(req: Request, body: any): Promise<Response> {
       fitSource, styleNotes, garmentDescription: typeof known.description === 'string' ? known.description : undefined,
       // A real side photo of the garment (2026-10-30): the side view's garment photo, a check image elsewhere.
       garmentSideUrl: typeof body.garmentSideImageUrl === 'string' && /^https:\/\//.test(body.garmentSideImageUrl) ? body.garmentSideImageUrl : undefined,
-      garmentFacts: cleanFacts(body.garmentFacts), garmentBorrowed: parseGarmentBorrowed(body.garmentBorrowed) }) : undefined;
+      garmentFacts: cleanFacts(body.garmentFacts), garmentBorrowed: parseGarmentBorrowed(body.garmentBorrowed), promptRules: parsePromptRules(body.promptRules) }) : undefined;
     if (simpleInput) { input.prompt = simpleInput.prompt; input.image_urls = simpleInput.image_urls; }
     let simplePrepared: { ref: Awaited<ReturnType<typeof referencePixels>>; mask: Buffer } | undefined;
     let simpleRef: Awaited<ReturnType<typeof referencePixels>> | undefined;
@@ -590,7 +590,7 @@ async function renderShot(req: Request, body: any): Promise<Response> {
       ...(cropped ? { referenceCrop: { from: uncroppedUrl, box: cropped.box, scale: cropped.scale, width: cropped.ref.width, height: cropped.ref.height } }
         : cropError ? { referenceCrop: { from: uncroppedUrl, error: cropError } } : {}),
       garmentBackInferred: view === "back" && garmentImageUrls.length < 2,
-      anchored: Boolean(simpleInput?.anchored), fitSource: simpleInput?.fitSource, garmentSideUsed: simpleInput ? simpleInput.garmentSideUsed : undefined, garmentBorrowedUsed: simpleInput?.garmentBorrowedUsed, garmentFactsUsed: simpleInput ? simpleInput.garmentFactsUsed : undefined, restore: { applied: false }, photoFinish: { method: protectedInput ? "original-face-pixels" : "native", applied: !!protectedInput }, corrections: [] });
+      anchored: Boolean(simpleInput?.anchored), fitSource: simpleInput?.fitSource, garmentSideUsed: simpleInput ? simpleInput.garmentSideUsed : undefined, garmentBorrowedUsed: simpleInput?.garmentBorrowedUsed, garmentFactsUsed: simpleInput ? simpleInput.garmentFactsUsed : undefined, promptRules: simpleInput?.promptRules, restore: { applied: false }, photoFinish: { method: protectedInput ? "original-face-pixels" : "native", applied: !!protectedInput }, corrections: [] });
   } catch (err: any) {
     return json({ ok: false, view, error: String(err?.message || err) }, 502);
   }
