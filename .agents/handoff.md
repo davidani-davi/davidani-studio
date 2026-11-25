@@ -1,21 +1,20 @@
-# Handoff — Wording Studio (2026-11-24, Claude Code)
+# Handoff — Studio redesign Phase 1: Kobra foundation (2026-11-24, Claude Code)
 
-LIVE: https://davidani-studio.vercel.app/wording-studio (PR #66 merged 4c2b9bd). Worker fixes PR on `claude/wording-dedupe`.
+Branch `claude/kobra-foundation` (off main 85c1b1d); PR open, see `gh pr list`. Previous handoff (Wording Studio, live ops notes) is in git history: `git show 85c1b1d:.agents/handoff.md`.
 
-## State
-- Page + API on production; jobs are encrypted Vercel Blob records (optimistic writes, 2 versions kept).
-- Mini worker: launchd `com.davidani.wording-worker` (RUNNING) → `~/Services/davidani-wording-worker/*.mjs`
-  (a COPY of `mini-worker/wording/`, tests excluded), config `~/.config/davidani/wording-worker.json` (chmod 600),
-  log `~/Library/Logs/wording-worker.log`. Vercel prod env `WORDING_WORKER_TOKEN`.
-- flatlay needs `/usr/bin/python3` (numpy/Pillow); Homebrew python3 lacks them (`WORDING_PYTHON` overrides).
-- Verified live 2026-11-24 on DT78036: 8 ideas in ~18 s with real evidence, 2 mockups in ~2 min, screenshots
-  1280/430/440 clean (no overflow, no broken images). Run kit: `~/Library/Archive/wording-studio-e2e-2026-11-24/e2e.py`.
+## Done
+- David picked look **B · Kobra**. Plan: `docs/superpowers/plans/2026-11-24-studio-redesign.md`.
+- Kobra registry in `components.json` (needs `KOBRA_TOKEN` in `.env.local`; value in `~/.claude.json` mcpServers.kobra). Components in `components/ui/`.
+- Opt-in scope: wrap a screen's root in `.kobra`. Paper rules in `app/paper.css` sit in `@scope (html) to (.kobra, popups)`; the 3px `.rounded-*` rule in `app/globals.css` skips Kobra areas; `.kobra` sets its own radii and `--muted`.
+- `lib/render-status.ts` (+ tests) and `components/kit/RenderStatus.tsx`: the one render card (steps, elapsed vs usual time, slow warning, failure + Retry, photo fade-in), driven by `studio-job-store` statuses.
+- `/ui-kit` gallery page (login-gated, not linked).
+- Checked: 1,595 tests, `next build`, `@scope` survives minify, screenshots 1280/440/430 clean, Image studio unchanged.
 
-## Changing the worker
-Edit `mini-worker/wording/`, test, merge, then copy the non-test `.mjs` files to ~/Services/davidani-wording-worker
-and `launchctl kickstart -k gui/$(id -u)/com.davidani.wording-worker`.
+## Next
+- Phase 2: one PR per screen in order of use (plan doc). Wrap the screen in `.kobra`, swap controls for `components/ui`, use `RenderStatus` for every job.
+- Not checked: dark mode, real iPhone, every existing screen.
 
-## Open
-- David still picks DREAM FREE vs GROW IN GRACE (or WALK BY FAITH) for DT78036 → reply to Jessa @ JNS.
-- Deferred minors: Blob host checks (#4/#5 in review), no retry after a mid-mockup allowance stop, WebP saved
-  as .jpg, X-DDTO-TOKEN alone is redirected by proxy, two "New job" buttons on the done view.
+## Gotchas
+- A `node_modules` symlink is tracked in git; `npm ci` replaces it. Never stage its deletion.
+- Kobra ships React 19 types; `components/ui/image-gallery.tsx` has a local fix for React 18.
+- Kobra's tokens (`--muted`, `--radius-*`, `--color-foreground`) collide with Paper names; keep overrides inside `.kobra`.
