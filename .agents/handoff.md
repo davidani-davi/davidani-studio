@@ -24,9 +24,10 @@
 
 ## Next
 1. **A/B done (David's OK, 35 renders, ~$4.20):** https://claude.ai/artifact/MqtoJX5NrFXbV5AtNvp8MM
-   - Look sheet won 2 of 5 backs and lost none: A shortened a long duster and copied dye blotches.
-   - roles-v1 front: 1 win, 1 loss, 8 ties. Keep it opt-in.
-   - Next: David decides whether the look sheet becomes the default for back/side.
+   - Tallies include David's review (he overruled 2 calls).
+   - roles-v1 front: 2 wins, 0 losses, 8 ties. Candidate for the default (David's call).
+   - Look sheet back: 1 win (dye blotches), 0 losses, 2 ties, 1 mixed, 1 both wrong (DT70171 duster: the sheet itself drew it knee length, not mid-calf).
+   - Next: put the product's length into the look-sheet prompt (or a length check) before making the sheet the default.
 2. Once David approves the new page, retire `/model-studio-legacy` and point the Library and JobCenter links back at it.
 3. Upload to ERP stays disabled until ERP-load PR #43 lands.
 
