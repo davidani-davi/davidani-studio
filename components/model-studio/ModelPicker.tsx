@@ -77,6 +77,15 @@ export default function ModelPicker({ catalogue, setup, person, personHint, cate
   const groups = useMemo(() => (catalogue.data ? lookGroups(catalogue.data, category) : null), [catalogue.data, category]);
   const auto = !setup || setup.humanModelId === core.AUTO_MODEL;
   const chosen = groups?.people.find((p) => p.id === person);
+  // A long hem on a set whose back and side stop at the thigh gets its hem cut short (plates.json full_length).
+  const fullLength = (modelId: string) => Boolean(catalogue.data?.models.find((m) => m.id === modelId)?.fullLength);
+  const shortSet = hem === "long" && !auto && !core.isBottoms(category) && Boolean(setup) && !fullLength(setup!.humanModelId);
+  const fullPlate = shortSet && groups
+    ? [...(chosen?.looks || []), ...groups.people.flatMap((p) => p.looks), ...groups.other].flatMap((l) => l.plates).find((p) => fullLength(p.modelId))
+      // No full-length look in the groups (e.g. the category list hides them): fall back to the person's full-length sets, then any.
+      || [...(catalogue.data?.models || [])].sort((a, b) => Number(b.person === person) - Number(a.person === person))
+        .filter((m) => m.fullLength && m.poses?.[0]).map((m) => ({ modelId: m.id, poseId: m.poses[0].id }))[0]
+    : undefined;
 
   return (
     <Section title="Model" hint={personHint ? "Same person as this style's other colours." : "Auto picks a plate for the style. Choose a person to pick the look yourself."}>
@@ -108,6 +117,16 @@ export default function ModelPicker({ catalogue, setup, person, personHint, cate
           </div>
 
           {groups.note && <p className="text-[12px] text-muted-foreground">{groups.note}</p>}
+
+          {shortSet && (
+            <Alert variant="warning" className="rounded-[12px]" data-testid="short-set-warning">
+              <AlertTitle>This set is too short for a long hem</AlertTitle>
+              <AlertDescription>
+                Its back and side photos stop at the thigh, so a mid-calf or longer hem gets cut short in those views.
+                {fullPlate && <div className="mt-2"><Button size="sm" variant="outline" onClick={() => onPick(fullPlate.modelId, fullPlate.poseId)}>Use a full-length set</Button></div>}
+              </AlertDescription>
+            </Alert>
+          )}
 
           {chosen && (
             chosen.looks.length ? (
