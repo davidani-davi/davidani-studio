@@ -92,6 +92,8 @@ export interface HumanModel {
   /** false = plates.json `auto: false`: never assigned by style, hand-pick only
    *  (the wardrobe variants) — lib/plate-assign.ts. */
   autoPool?: boolean;
+  /** plates.json full_length: front, side and back all reach the shoes (lib/plate-wear.ts). */
+  fullLength?: boolean;
 }
 
 const IMAGE_EXTS = new Set(["png", "jpg", "jpeg", "webp"]);

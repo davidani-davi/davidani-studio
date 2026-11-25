@@ -165,6 +165,7 @@ export async function GET(req: Request) {
         // A recast set's live poses per view (GET /api/user-models/<id>/poses?view= lists them for Other pose)
         ...(m.userPoses?.length ? { poseCounts: Object.fromEntries(MULTI_MODEL_VIEWS.map((v) => [v, slotPoses(m.userPoses!, v as PresetView).length])) } : {}),
         autoPool: m.autoPool !== false,
+        ...(m.fullLength ? { fullLength: true } : {}),
         poses: m.poses.map((p) => {
           const references = referenceCoverage(models, m.id, p.id);
           return ({
@@ -381,7 +382,7 @@ async function renderShot(req: Request, body: any): Promise<Response> {
     const pool = category === "skirt" ? (bareLegs.length ? bareLegs : shared) : category === "pants" ? shared : catalogue.filter(m => !isPantsReference(m.id));
     const choice = assignPlate(styleCode, pool, {
       preferPrefix: body.platePrefix, category,
-      silhouette: silhouetteOf((known as { title?: unknown }).title ?? body.title),
+      silhouette: silhouetteOf((known as { title?: unknown }).title ?? body.title), hem,
     });
     if (!choice) return json({ ok: false, error: "no plates installed" }, 500);
     humanModelId = choice.humanModelId;

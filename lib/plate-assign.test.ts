@@ -137,3 +137,32 @@ describe("plates kept out of automatic assignment (studio 65, 2026-09-08)", () =
     expect(assignPlate("DWT62170", plates, { preferPrefix: "studio 65" })!.humanModelId).toBe("studio 65");
   });
 });
+
+describe("long hems draw from full-length sets (DT70171, 2026-11-24)", () => {
+  const pose = [{ id: "p" }];
+  const plates = [
+    { id: "studio 97", poses: pose },
+    { id: "studio 99", poses: pose },
+    { id: "studio 110", poses: pose, autoPool: false, fullLength: true },
+    { id: "studio 114", poses: pose, autoPool: false, fullLength: true },
+  ];
+  it("a long top or coat lands only on a full-length set, even one kept out of the everyday pool", () => {
+    for (const code of ["DT70171", "DJ67094", "DCJ1", "DT2", "DT3", "DT4", "DT5", "DT6"]) {
+      const c = assignPlate(code, plates, { category: "outerwear", hem: "long" });
+      expect(["studio 110", "studio 114"]).toContain(c?.humanModelId);
+    }
+  });
+  it("any other hem keeps the everyday pool", () => {
+    for (const code of ["DT70171", "DT2", "DT3", "DT4"]) {
+      expect(["studio 97", "studio 99"]).toContain(assignPlate(code, plates, { category: "top", hem: "" })?.humanModelId);
+      expect(["studio 97", "studio 99"]).toContain(assignPlate(code, plates, { category: "top", hem: "mid" })?.humanModelId);
+    }
+  });
+  it("falls back to the everyday pool when no set is full length", () => {
+    const c = assignPlate("DT70171", plates.slice(0, 2), { category: "outerwear", hem: "long" });
+    expect(["studio 97", "studio 99"]).toContain(c?.humanModelId);
+  });
+  it("an explicit prefix still wins", () => {
+    expect(assignPlate("DT70171", plates, { category: "top", hem: "long", preferPrefix: "studio 97" })?.humanModelId).toBe("studio 97");
+  });
+});

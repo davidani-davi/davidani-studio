@@ -23,6 +23,11 @@ export type PlateWear = {
    *  (studio 65, 2026-09-08: an off-centre front and a different face on the
    *  full view; the wardrobe plates wait for QC). */
   autoPool?: boolean;
+  /** plates.json `full_length: true` — the front, side AND back plates show the whole figure to the shoes. Most
+   *  house sets are head-to-thigh in those three views (only their extra full shot is full length), so a long
+   *  duster or maxi coat on them gets its hem cut to fit the frame (DT70171, 2026-11-24). Only the
+   *  "studio NN" plate carries it, never its crop/low siblings. */
+  fullLength?: boolean;
 };
 
 /** One plates.json row, as written by faire-management plate_install.py / plate_wear.py. */
@@ -32,6 +37,8 @@ export type PlateRow = {
   face?: string; expression?: string; slug?: string; outfit_above?: string; outfit_below?: string;
   /** false = kept out of automatic assignment (still pickable by hand) until it passes plate QC. */
   auto?: boolean;
+  /** true = front, side and back are all full-length photographs (PlateWear.fullLength). */
+  full_length?: boolean;
 };
 
 /**
@@ -168,12 +175,15 @@ export function mergePlateWear<T extends { id: string } & PlateWear>(
         // restored build cache is the only explanation left, and a changed
         // source line is what evicts it
         autoPool: p.auto !== false,
+        ...(p.full_length === true ? { fullLength: true } : {}),
       });
     }
   }
   return (models || []).map((model) => {
     const m = /^(studio|crop|knee|low)\s*(\d+)$/i.exec(String(model.id || "").trim());
-    const tag = m ? byNum.get(Number(m[2])) : undefined;
+    const found = m ? byNum.get(Number(m[2])) : undefined;
+    // a crop/knee/low sibling is cut from the same photograph, so it is not full length
+    const tag = found && m && m[1].toLowerCase() !== "studio" && found.fullLength ? { ...found, fullLength: undefined } : found;
     return tag ? { ...model, ...tag } : model;
   });
 }

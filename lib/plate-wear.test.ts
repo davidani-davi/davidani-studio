@@ -86,3 +86,19 @@ describe("plates.json auto:false", () => {
     expect(by).toEqual({ "studio 65": false, "crop 65": false, "studio 31": true });
   });
 });
+
+describe("full_length (2026-11-24)", () => {
+  it("tags the studio plate and never its crop sibling", () => {
+    const out = mergePlateWear([{ id: "studio 112", poses: [] }, { id: "crop 112", poses: [] }, { id: "studio 99", poses: [] }] as any[],
+      [{ name: "studio 112", wears: "pants", full_length: true }, { name: "studio 99", wears: "pants" }]);
+    expect(out.find((m) => m.id === "studio 112")?.fullLength).toBe(true);
+    expect(out.find((m) => m.id === "crop 112")?.fullLength).toBeUndefined();
+    expect(out.find((m) => m.id === "crop 112")?.wears).toBe("pants");
+    expect(out.find((m) => m.id === "studio 99")?.fullLength).toBeUndefined();
+  });
+  it("the shipped plates.json marks exactly the sets whose front, side and back reach the shoes", async () => {
+    const { readFileSync } = await import("node:fs");
+    const rows = JSON.parse(readFileSync("public/models/plates.json", "utf8")).plates as { name: string; full_length?: boolean }[];
+    expect(rows.filter((r) => r.full_length).map((r) => r.name)).toEqual(["studio 110", "studio 111", "studio 112", "studio 113", "studio 114", "studio 115"]);
+  });
+});

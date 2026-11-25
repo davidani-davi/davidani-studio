@@ -185,7 +185,10 @@ export default function ModelStudio() {
   const setSlots = (fn: (slots: Slot[]) => Slot[]) => updateSetup((s, st) => ({ ...s, slots: fn(slotsFor(s, knownFor(st))) }));
 
   const firstLookOf = (person: string): { humanModelId: string; poseId: string } => {
-    const plate = catalogue.data ? lookGroups(catalogue.data, category).people.find((p) => p.id === person)?.looks[0]?.plates[0] : undefined;
+    const looks = catalogue.data ? lookGroups(catalogue.data, category).people.find((p) => p.id === person)?.looks || [] : [];
+    // A long hem needs a set whose back and side are full length too (plates.json full_length), else its hem is cut.
+    const full = (modelId: string) => Boolean(catalogue.data?.models.find((m) => m.id === modelId)?.fullLength);
+    const plate = (hem === "long" ? looks.flatMap((l) => l.plates).find((p) => full(p.modelId)) : undefined) || looks[0]?.plates[0];
     return plate ? { humanModelId: plate.modelId, poseId: plate.poseId } : { humanModelId: core.AUTO_MODEL, poseId: "" };
   };
 

@@ -13,7 +13,7 @@ export interface CorePose { id: string; label?: string; preview?: string; previe
 /** A catalogue model (a pose set) as GET /api/model-shots lists it. */
 export interface CoreModel {
   id: string; name?: string; categories?: string[]; referenceKind?: string; userAdded?: boolean; managed?: boolean; createdAt?: string;
-  wears?: string; character?: string; person?: string; expression?: string; poseKey?: string; pose?: string; autoPool?: boolean; poses: CorePose[];
+  wears?: string; character?: string; person?: string; expression?: string; poseKey?: string; pose?: string; autoPool?: boolean; fullLength?: boolean; poses: CorePose[];
 }
 export interface CoreLook {
   key: string; label: string; own: boolean; draft?: boolean; createdAt?: string;
