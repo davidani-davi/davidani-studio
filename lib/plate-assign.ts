@@ -1,3 +1,4 @@
+import houseUserSets from "./house-user-sets.json";
 import { bottomPlates, isBottom, silhouettePlates } from "./plate-wear";
 
 /**
@@ -27,8 +28,11 @@ import { bottomPlates, isBottom, silhouettePlates } from "./plate-wear";
  * plates explicitly still works.
  */
 export function housePlates<T extends { id: string }>(plates: T[]): T[] {
-  return (plates || []).filter((p) => /^studio\s*\d+$/i.test(p.id.trim()));
+  return (plates || []).filter((p) => /^studio\s*\d+$/i.test(p.id.trim()) || HOUSE_USER_SETS.has(p.id.trim()));
 }
+
+/** Saved reference sets that David put in the house pool (lib/house-user-sets.json): Jeonga's VISION and CELINE sets. */
+export const HOUSE_USER_SETS: ReadonlySet<string> = new Set(houseUserSets.ids);
 
 export interface PlateChoice {
   humanModelId: string;

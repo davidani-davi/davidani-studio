@@ -39,3 +39,10 @@
 - **Dev server:** open it on `localhost`, not 127.0.0.1, or it never hydrates (allowedDevOrigins).
 - **node_modules:** the tracked `node_modules` symlink is set to skip-worktree here. Never stage its deletion.
 - **Flaky test:** one test failed once under full-suite load and passed on rerun.
+
+## 2026-11-25 (Claude Code): Auto uses Jeonga's sets
+- d449186: long-hem warning in the model picker ("Use a full-length set").
+- David found the 7 library poses boring. Codex head+hair recasts of new real-shoot poses (scratchpad trial) looked "a little off" to him; dropped.
+- David: "Use her sets as-is". `lib/house-user-sets.json` adds Jeonga's latest VISION 1-3,5,6 and CELINE 1-7 (12 saved Studio sets) to the Auto house pool (`housePlates`). Their outlines are her draft outlines (auto-draft-v1), not reviewed contours; face check still runs.
+- Effect: Auto re-hashes over 27 sets, so styles already shot on Auto can land on a different model next time.
+- Next: after merge, check the first Auto renders on her sets for "Face needs a look"; long hems still use only the full-length studio 110-115 sets.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { assignPlate, housePlates, plateHash, spread } from "./plate-assign";
+import { assignPlate, HOUSE_USER_SETS, housePlates, plateHash, spread } from "./plate-assign";
 
 const PLATES = Array.from({ length: 8 }, (_, i) => ({
   id: `studio ${String(i + 1).padStart(2, "0")}`,
@@ -72,6 +72,24 @@ describe("assignPlate", () => {
       expect(assignPlate(code, mixed)!.humanModelId).toMatch(/^studio /);
     }
     expect(housePlates(mixed).map((p) => p.id)).toEqual(PLATES.map((p) => p.id));
+  });
+
+  it("puts Jeonga's VISION and CELINE sets in the Auto pool, but not her other drafts", () => {
+    const mixed = [
+      ...PLATES,
+      { id: "draft-jeonga-celine-7-mwtj90t6", poses: [{ id: "draft-jeonga-celine-7-mwtj90t6-pose" }] },
+      { id: "draft-jeonga-vision-6-mwdqmit0", poses: [{ id: "draft-jeonga-vision-6-mwdqmit0-pose" }] },
+      { id: "draft-jeonga-bottom-1-x", poses: [{ id: "draft-jeonga-bottom-1-x-pose" }] },
+      { id: "celine-dct78115-mvy5e2r2", poses: [{ id: "celine-dct78115-mvy5e2r2-pose" }] },
+    ];
+    const house = housePlates(mixed).map((p) => p.id);
+    expect(house).toContain("draft-jeonga-celine-7-mwtj90t6");
+    expect(house).toContain("draft-jeonga-vision-6-mwdqmit0");
+    expect(house).not.toContain("draft-jeonga-bottom-1-x");
+    expect(house).not.toContain("celine-dct78115-mvy5e2r2");
+    expect(HOUSE_USER_SETS.size).toBe(12);
+    const picked = new Set(Array.from({ length: 200 }, (_, i) => assignPlate(`DT${70000 + i}`, mixed)!.humanModelId));
+    expect(picked.has("draft-jeonga-celine-7-mwtj90t6")).toBe(true);
   });
 
   it("still uses whatever exists when no house plate is installed", () => {
