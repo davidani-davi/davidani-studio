@@ -1,7 +1,7 @@
 "use client";
 
-import { StatefulButton, type ButtonState } from "@/components/motion/button";
-import { Flip, IntakeSlot } from "./ComposerParts";
+import { ComposerActions, FoldedComposer, FoldHandle, Flip, IntakeSlot, StyleField, useComposerFold } from "./ComposerParts";
+import { cn } from "@/lib/utils";
 import type { PresetView } from "@/lib/models-registry";
 import { modelPoseLine } from "@/lib/model-pose-line";
 
@@ -87,11 +87,33 @@ export default function ModelComposer({
   /** No human model chosen yet — the one blocker Setup is the fix for. */
   needsModel: boolean;
 }) {
-  const buttonState: ButtonState = analyzing || busy ? "loading" : "idle";
   const who = modelPoseLine(modelName, poseName);
 
+  const [folded, setFolded] = useComposerFold();
+
+  if (folded) {
+    return (
+      <FoldedComposer
+        intakeUrl={slots[0]?.url ?? null}
+        styleId="model-composer-style"
+        styleNumber={styleNumber}
+        onStyleNumberChange={onStyleNumberChange}
+        onDropFiles={(files) => onAddFiles(files, 0)}
+        onUnfold={() => setFolded(false)}
+        generate={{
+          onGenerate,
+          label: generateLabel,
+          disabled: generateDisabled,
+          busy,
+          analyzing,
+        }}
+      />
+    );
+  }
+
   return (
-    <div className="shrink-0 border-t border-neutral-200 bg-white px-4 pb-4 pt-3.5">
+    <div className="shrink-0 border-t border-border bg-white px-4 pb-4 pt-4">
+      <FoldHandle onFold={() => setFolded(true)} />
       <div className="mb-3 flex gap-2.5">
         {slots.map((slot, i) => (
           <IntakeSlot
@@ -107,27 +129,10 @@ export default function ModelComposer({
         ))}
       </div>
 
-      <div className="mb-3">
-        <label
-          htmlFor="model-composer-style"
-          className="mb-1.5 block font-mono text-[9.5px] font-semibold uppercase tracking-[0.12em] text-neutral-500"
-        >
-          Style number
-        </label>
-        <input
-          id="model-composer-style"
-          type="text"
-          value={styleNumber}
-          onChange={(e) => onStyleNumberChange(e.target.value)}
-          placeholder="DWTS67099"
-          spellCheck={false}
-          autoCapitalize="characters"
-          className="h-10 w-full rounded-lg border border-neutral-200 bg-white px-3 font-mono text-[13px] uppercase tracking-wide outline-hidden transition placeholder:text-neutral-300 focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
-        />
-      </div>
+      <StyleField id="model-composer-style" value={styleNumber} onChange={onStyleNumberChange} />
 
       {needsModel && (
-        <p className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] leading-snug text-amber-800">
+        <p className="mb-3 rounded-lg bg-[#fdf3e1] px-3 py-2 text-xs leading-snug text-[#8a5a12] shadow-[inset_0_0_0_1px_rgb(138_90_18/.15)]">
           No human model chosen yet — pick one in Setup and this run has someone to dress.
         </p>
       )}
@@ -136,12 +141,12 @@ export default function ModelComposer({
         The facts line, read as a sentence: who is wearing it, in what pose,
         and what the garment is being treated as.
       */}
-      <div className="mb-3 flex flex-wrap items-baseline gap-x-1 gap-y-1 text-[12px] text-neutral-500">
-        <span className="text-[12.5px] font-bold text-neutral-800">{who.model}</span>
+      <div className="mb-3 flex flex-wrap items-baseline gap-x-1 gap-y-1 text-[13px] text-muted-foreground">
+        <span className="text-[13px] font-medium text-foreground">{who.model}</span>
         {who.pose && (
           <>
             {!who.joined && <span>·</span>}
-            <span className={who.joined ? "text-[12.5px] font-bold text-neutral-800" : undefined}>
+            <span className={who.joined ? "text-[13px] font-medium text-foreground" : undefined}>
               {who.pose}
             </span>
           </>
@@ -158,11 +163,11 @@ export default function ModelComposer({
       </div>
 
       {multiView ? (
-        <p className="mb-2 text-[11.5px] text-neutral-500">
+        <p className="mb-3 text-xs text-muted-foreground">
           {pantsMode ? "Front, side and back — three waist-down views." : "Front, side, back and full — all four in one run."}
         </p>
       ) : (
-        <div className="mb-3 flex items-center gap-1" role="group" aria-label="View to render">
+        <div className="mb-3 flex items-center gap-0.5 rounded-[10px] bg-muted p-0.5" role="group" aria-label="View to render">
           {VIEWS.filter(option => !pantsMode || option.value !== "full").map((option) => (
             <button
               key={option.value}
@@ -170,11 +175,12 @@ export default function ModelComposer({
               onClick={() => onViewChange(option.value)}
               disabled={busy}
               aria-pressed={view === option.value}
-              className={`h-7 flex-1 rounded-md border text-[11px] font-bold transition disabled:cursor-not-allowed ${
+              className={cn(
+                "h-8 flex-1 rounded-lg text-[13px] font-medium transition-[background-color,color,box-shadow] duration-150 disabled:cursor-not-allowed disabled:opacity-60",
                 view === option.value
-                  ? "border-neutral-900 bg-neutral-900 text-white"
-                  : "border-neutral-200 bg-white text-neutral-600 hover:border-neutral-400 hover:text-neutral-900"
-              }`}
+                  ? "bg-white text-foreground shadow-[0_0_0_1px_rgb(0_0_0/.06),0_1px_2px_rgb(0_0_0/.08)]"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
             >
               {option.label}
             </button>
@@ -182,46 +188,18 @@ export default function ModelComposer({
         </div>
       )}
 
-      <p className="mb-2 truncate font-mono text-[9.5px] uppercase tracking-[0.12em] text-neutral-400">
-        {modelLabel}
-      </p>
-
-      <div className="flex items-center gap-3">
-        <button
-          type="button"
-          onClick={onOpenSetup}
-          className="shrink-0 text-[11.5px] font-semibold text-neutral-500 underline-offset-2 transition hover:text-neutral-900 hover:underline"
-        >
-          Setup
-        </button>
-        {onBatch && (
-          <button
-            type="button"
-            onClick={onBatch}
-            disabled={!canBatch || busy}
-            title={batchDisabledReason}
-            className="shrink-0 text-[11.5px] font-semibold text-neutral-500 underline-offset-2 transition hover:text-neutral-900 hover:underline disabled:cursor-not-allowed disabled:text-neutral-400 disabled:no-underline"
-          >
-            Batch
-          </button>
-        )}
-        <span className="flex-1" />
-        <StatefulButton
-          state={buttonState}
-          onClick={onGenerate}
-          disabled={generateDisabled}
-          size="sm"
-          loadingText={analyzing ? "Analyzing" : "Generating"}
-          icon={
-            <kbd className="rounded border border-white/30 px-1 font-mono text-[9px] opacity-80 max-[480px]:hidden">
-              ⌘↵
-            </kbd>
-          }
-          className="h-11 shrink-0 rounded-xl px-5 text-[13px] font-bold"
-        >
-          {generateLabel}
-        </StatefulButton>
-      </div>
+      <ComposerActions
+        modelLabel={modelLabel}
+        onOpenSetup={onOpenSetup}
+        onBatch={onBatch}
+        canBatch={canBatch}
+        batchDisabledReason={batchDisabledReason}
+        busy={busy}
+        analyzing={analyzing}
+        onGenerate={onGenerate}
+        generateLabel={generateLabel}
+        generateDisabled={generateDisabled}
+      />
     </div>
   );
 }

@@ -1,20 +1,24 @@
-# Handoff — Studio redesign Phase 1: Kobra foundation (2026-11-24, Claude Code)
+# Handoff — Studio redesign Phase 2: Image + Model studio on Kobra, Image studio canvas-first (2026-11-24, Claude Code)
 
-Branch `claude/kobra-foundation` (off main 85c1b1d); PR open, see `gh pr list`. Previous handoff (Wording Studio, live ops notes) is in git history: `git show 85c1b1d:.agents/handoff.md`.
+Branch `claude/kobra-image-studio`, stacked on `claude/kobra-foundation` (PR #69). Model Studio upgrade is a separate PR #70 (also on #69).
 
 ## Done
-- David picked look **B · Kobra**. Plan: `docs/superpowers/plans/2026-11-24-studio-redesign.md`.
-- Kobra registry in `components.json` (needs `KOBRA_TOKEN` in `.env.local`; value in `~/.claude.json` mcpServers.kobra). Components in `components/ui/`.
-- Opt-in scope: wrap a screen's root in `.kobra`. Paper rules in `app/paper.css` sit in `@scope (html) to (.kobra, popups)`; the 3px `.rounded-*` rule in `app/globals.css` skips Kobra areas; `.kobra` sets its own radii and `--muted`.
-- `lib/render-status.ts` (+ tests) and `components/kit/RenderStatus.tsx`: the one render card (steps, elapsed vs usual time, slow warning, failure + Retry, photo fade-in), driven by `studio-job-store` statuses.
-- `/ui-kit` gallery page (login-gated, not linked).
-- Checked: 1,595 tests, `next build`, `@scope` survives minify, screenshots 1280/440/430 clean, Image studio unchanged.
+- Image studio and Model studio wrapped in `.kobra`, ledger/stage/composer restyled with `components/ui` (Phase 2).
+- Image studio is now **canvas-first** (David approved the preview https://claude.ai/artifact/QkvHBjkMT2MEEZS6EC6gh5):
+  - `StudioHeader compact` = one 48px row; `components/ToolMenu.tsx` lists every page/tool as links.
+  - `components/ledger/HistoryStrip.tsx` (88px thumbnail column, verdict dot, hover label, "N check" filter).
+  - `StageView canvas` = intake chips instead of the rail, variants on open ground, room for the composer.
+  - `components/ledger/FloatComposer.tsx` floats over the stage; Options opens upward (intake tiles, side/mode, Setup, Batch).
+  - `components/ledger/SidePanel.tsx`: Details/Setup docked at >=1024px (`lib/hooks/use-media-query.ts`), drawers below.
+  - Phone (<=560px): stage first, history row, composer fixed at the bottom. CSS at the end of `app/globals.css`.
+- Model studio still uses RunLedger + docked Composer (not canvas-first).
+- Checked: 1,602 tests, `next build`, screenshots 1280/900/440/430 incl. mid-render, options, panels, menu, empty.
 
 ## Next
-- Phase 2: one PR per screen in order of use (plan doc). Wrap the screen in `.kobra`, swap controls for `components/ui`, use `RenderStatus` for every job.
-- Not checked: dark mode, real iPhone, every existing screen.
+- David's review of the PR; then decide whether Model studio gets the canvas-first layout too.
+- Not checked: real iPhone Safari, a live render against the API, dark mode.
 
 ## Gotchas
-- A `node_modules` symlink is tracked in git; `npm ci` replaces it. Never stage its deletion.
-- Kobra ships React 19 types; `components/ui/image-gallery.tsx` has a local fix for React 18.
-- Kobra's tokens (`--muted`, `--radius-*`, `--color-foreground`) collide with Paper names; keep overrides inside `.kobra`.
+- A `node_modules` symlink is tracked in git; never stage its deletion. Leave `tsconfig.tsbuildinfo` unstaged.
+- RunLedger/Composer/PaneSplitter are still used by Model studio; don't delete them.
+- Kobra tokens collide with Paper names; keep overrides inside `.kobra`. The compact header sits OUTSIDE `.kobra` so JobCenter keeps Paper styles.
