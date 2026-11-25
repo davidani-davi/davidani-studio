@@ -50,5 +50,5 @@ export async function downloadAs(url: string, name: string): Promise<void> {
 
 /** #3: one paid look sheet from the finished front (app/api/model-studio/look-sheet). */
 export const makeLookSheet = (body: {
-  frontRenderUrl: string; backPhotoUrl?: string; sidePhotoUrl?: string; title?: string; color?: string; humanModelId: string; poseId: string;
+  frontRenderUrl: string; frontPhotoUrl?: string; hem?: string; backPhotoUrl?: string; sidePhotoUrl?: string; title?: string; color?: string; humanModelId: string; poseId: string;
 }) => api<{ url: string }>("/api/model-studio/look-sheet", { method: "POST", body: JSON.stringify({ confirmSpend: true, ...body }) });

@@ -263,7 +263,7 @@ export default function ModelStudio() {
     setSheet({ status: "loading", error: "" });
     try {
       const r = await makeLookSheet({
-        frontRenderUrl: front.url, backPhotoUrl: setup.picked[1] || undefined, sidePhotoUrl: setup.garmentSide || undefined,
+        frontRenderUrl: front.url, frontPhotoUrl: setup.picked[0] || undefined, hem: hem || undefined, backPhotoUrl: setup.picked[1] || undefined, sidePhotoUrl: setup.garmentSide || undefined,
         title: state.title || undefined, color: state.color || undefined,
         humanModelId: front.humanModelId || setup.humanModelId, poseId: front.poseId || setup.poseId,
       });

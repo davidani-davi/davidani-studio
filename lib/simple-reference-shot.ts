@@ -28,13 +28,13 @@ export interface SimpleShot extends ReferenceShot {
   /** The donor colour per slot when the back or side photo is another colourway's (David, 2026-11-03: DET60372
    *  Pink from Deep Blue's photos). Those photos lend shape and print placement only, never colour. */
   garmentBorrowed?: GarmentBorrowed;
-  /** Opt-in prompt rules (2026-11-24, Higgsfield research): 'roles-v1' opens the prompt with one line per image
-   *  naming its role and a priority order for when the images disagree. Off by default until an A/B on real
-   *  renders shows it helps, so every production render keeps today's exact prompt. */
+  /** Prompt rules (2026-11-24, Higgsfield research): 'roles-v1' opens the prompt with one line per image naming its
+   *  role and a priority order for when the images disagree. Default since the A/B of 2026-11-24 (10 styles, David
+   *  reviewed: 2 wins, 0 losses, 8 ties). 'off' sends the older prompt without the roles line. */
   promptRules?: PromptRules;
 }
-export type PromptRules = 'roles-v1';
-export const parsePromptRules = (raw: unknown): PromptRules | undefined => raw === 'roles-v1' ? 'roles-v1' : undefined;
+export type PromptRules = 'roles-v1' | 'off';
+export const parsePromptRules = (raw: unknown): PromptRules | undefined => raw === 'roles-v1' || raw === 'off' ? raw : undefined;
 export type GarmentBorrowed = { back?: string; side?: string };
 
 const BORROW_ENGINE = 'Borrowed photos need GPT Image 2.5 in Simple mode.';
@@ -272,11 +272,11 @@ export function simpleReferenceShot(o: SimpleShot) {
   const sideNote = !side ? '' : sideView
     ? ` SIDE PHOTO: Image 2 is the product photographed from the side, the same angle as this view: it decides the side silhouette, body depth and drape, side seams, slits and pockets, the sleeve profile and the hem line seen from the side. Image ${extraN} is the same product photographed from the front: use it only for print, colour and front construction that turns into view, never to change image 2's side shape.`
     : ` SIDE PHOTO: Image ${extraN} is the same product photographed from the side. Use it only to confirm body depth and drape, garment length, side seams, slits and pockets${inferred ? ', and how the hem, any slit or vent and the length fall at the back, since no back photo is supplied' : ''}. Image 2 stays the authority for this view; never move a detail that only shows from the side onto the ${o.view === 'back' ? 'back' : 'front'}.`;
-  const roles = o.promptRules === 'roles-v1' ? imageRoles(sent, target, scope, o.anchorKind) : '';
+  const roles = (o.promptRules ?? 'roles-v1') === 'roles-v1' ? imageRoles(sent, target, scope, o.anchorKind) : '';
   const prompt = `Edit image 1 as the exact base photograph.${roles} Replace only the ${scope} with the garment in image 2. ${lentImage2 ? 'Match its cut, length, construction and print placement; take its colours only from the images named in BORROWED PHOTO below.' : 'Match its fabric, cut, length, print and construction.'}${fitFromStyle ? poseOnly(o, scope) : ''}${factsText}${inner} ${details}${surface}${closure}${fit}${sleeves}${setScope}${legs}${cut}${layerLength} ${colour}${sideNote}${borrowNote} Allow natural fold shadows and highlights, but do not tint the garment to match image 1’s clothing or background. ${keep} Preserve the face, expression, head position and hairstyle unchanged. No sharpening, retouching or enhancement. One clean photograph of one person.${inferred ? ' No back garment photo is supplied; use a plain continuation of the fabric without invented rear graphics.' : ''}${o.note ? ` Requested change: ${o.note}` : ''}`;
   const secondary = [garment, anchor, extra].filter(Boolean);
   const image_urls = [o.referenceUrl, ...secondary];
-  return {prompt, openFront, garmentImageUrls: secondary, image_urls, garmentBackInferred:inferred, anchored: Boolean(anchor), anchorKind: anchor ? (o.anchorKind || 'front') : undefined, garmentSideUsed: Boolean(side), garmentBorrowedUsed: lent ? { ...(backLent ? { back: true as const } : {}), ...(sideLent ? { side: true as const } : {}) } : undefined, garmentFactsUsed: Boolean(factsText), promptRules: roles ? o.promptRules : undefined, fitSource: (fitFromStyle ? 'style' : 'reference') as FitSource};
+  return {prompt, openFront, garmentImageUrls: secondary, image_urls, garmentBackInferred:inferred, anchored: Boolean(anchor), anchorKind: anchor ? (o.anchorKind || 'front') : undefined, garmentSideUsed: Boolean(side), garmentBorrowedUsed: lent ? { ...(backLent ? { back: true as const } : {}), ...(sideLent ? { side: true as const } : {}) } : undefined, garmentFactsUsed: Boolean(factsText), promptRules: roles ? 'roles-v1' as const : undefined, fitSource: (fitFromStyle ? 'style' : 'reference') as FitSource};
 }
 
 /** Exact source-bound review. Never fall back to horizontal head restoration. */

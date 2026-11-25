@@ -52,6 +52,24 @@ describe('look sheet render input', () => {
     expect(i.prompt).toContain('NAVY Cotton Shirt');
     expect(i.prompt).not.toMatch(/\b(eyes?|nose|lips|jaw|cheek)\b/i);
   });
+  it('sends the product front as image 2 to decide the hem, and states a long hem as a body position', () => {
+    const p = parseLookSheet({ frontRenderUrl: 'https://gen/front.png', frontPhotoUrl: 'https://erp/front.png', backPhotoUrl: 'https://erp/back.png', hem: 'long', title: 'Plaid Duster' });
+    if (typeof p === 'string') throw Error(p);
+    const i = lookSheetInput(p);
+    expect(i.garmentImageUrls).toEqual(['https://erp/front.png', 'https://erp/back.png']);
+    expect(i.prompt).toContain('image 2 = the product photographed from the front: the truth for the hem length');
+    expect(i.prompt).toContain('image 3 = the product photographed from the back');
+    expect(i.prompt).toContain('HEM LENGTH: measure where the hem of image 2 falls against the body');
+    expect(i.prompt).toContain('mid-calf or lower. Never end it at the hip, thigh or knee.');
+    expect(i.prompt).toContain('the product photographs for construction and hem length, then image 1 for colour and fit');
+    expect(i.prompt).not.toContain('the truth for colour, fit, length');
+  });
+  it('ignores an unknown hem', () => {
+    const p = parseLookSheet({ frontRenderUrl: 'https://gen/front.png', hem: 'ankle' });
+    if (typeof p === 'string') throw Error(p);
+    expect(p.hem).toBeUndefined();
+    expect(lookSheetInput(p).prompt).not.toContain('HEM LENGTH');
+  });
   it('with no product back or side photo it still has one garment image', () => {
     const p = parseLookSheet({ frontRenderUrl: 'https://gen/front.png' });
     if (typeof p === 'string') throw Error(p);

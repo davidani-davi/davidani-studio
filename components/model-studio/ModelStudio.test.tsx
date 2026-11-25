@@ -135,7 +135,7 @@ describe("look sheet (#3)", () => {
     fireEvent.click(await screen.findByRole("button", { name: /Make look sheet \(1 render, about \$0\.12\)/ }));
     const post = calls.find((c) => c.url === "/api/model-studio/look-sheet");
     expect(JSON.parse(String(post?.init?.body))).toEqual({
-      confirmSpend: true, frontRenderUrl: "https://fal.media/front.png", backPhotoUrl: BACK, sidePhotoUrl: "https://system.davidani.com/upload/style/DT78080 NAVY_3.jpg",
+      confirmSpend: true, frontRenderUrl: "https://fal.media/front.png", frontPhotoUrl: FRONT, backPhotoUrl: BACK, sidePhotoUrl: "https://system.davidani.com/upload/style/DT78080 NAVY_3.jpg",
       title: "Linen Top", color: "NAVY", humanModelId: "studio 97", poseId: "p1",
     });
     expect(await screen.findByAltText("Look sheet")).toHaveAttribute("src", "https://fal.media/sheet.png");
