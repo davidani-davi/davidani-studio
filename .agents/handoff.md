@@ -23,11 +23,15 @@
   - Screenshots at 1440/430/440, with mocked renders.
 
 ## Next
-1. **Paid A/B, needs David's OK first:** roles-v1 and the look sheet against today's prompts, on a fixed 10-style set. Review the real images. No live render has been made yet.
+1. **A/B done (David's OK, 35 renders, ~$4.20):** https://claude.ai/artifact/MqtoJX5NrFXbV5AtNvp8MM
+   - Look sheet won 2 of 5 backs and lost none: A shortened a long duster and copied dye blotches.
+   - roles-v1 front: 1 win, 1 loss, 8 ties. Keep it opt-in.
+   - Next: David decides whether the look sheet becomes the default for back/side.
 2. Once David approves the new page, retire `/model-studio-legacy` and point the Library and JobCenter links back at it.
 3. Upload to ERP stays disabled until ERP-load PR #43 lands.
 
 ## Gotchas
+- **Local pants plates:** `getPoseUrl` (local dev only) now includes the pants references. Before this fix, Auto on bottoms threw "Unknown model: pants-*".
 - **Workspace race:** two PUTs at the same moment can both pass the revision check. It needs compare-and-swap or a lock.
 - **Search has no thumbnails:** the search endpoint returns no photos, so results show none.
 - **Long phone page:** on a phone the results sit below the long model list.
