@@ -27,7 +27,7 @@ const ACTIVE_STATUSES = new Set<StudioJobStatus>(["queued", "analyzing", "genera
 
 const STUDIO_LABELS: Record<StudioJobKind, string> = {
   image: "Image studio",
-  model: "Single model",
+  model: "Model Studio (old)",
   "model-beta": "Multi model",
   prompt: "Prompt studio",
   techpack: "Techpack studio",
@@ -36,7 +36,7 @@ const STUDIO_LABELS: Record<StudioJobKind, string> = {
 
 const STUDIO_HREFS: Record<StudioJobKind, string> = {
   image: "/",
-  model: "/model-studio",
+  model: "/model-studio-legacy",
   "model-beta": "/model-studio-beta",
   prompt: "/prompt-studio",
   techpack: "/techpack-studio",

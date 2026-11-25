@@ -60,7 +60,10 @@ describe('simple garment swap',()=>{
    expect(shot.prompt).toContain('sole garment-color reference');
    expect(shot.prompt).toContain('hue, saturation and midtone brightness');
    expect(shot.prompt).toContain('natural fold shadows and highlights');
-   expect(shot.prompt).not.toContain('BROWN');
+   // roles-v1 (the default since the 2026-11-24 A/B) names the colourway once as a label in its roles line; no
+   // colour instruction ever uses the ERP name, and with the rules off it never appears at all.
+   expect(shot.prompt.replace(/ IMAGE ROLES:.*?Image 1's own clothing never decides anything about the new garment\./,'')).not.toContain('BROWN');
+   expect(simpleReferenceShot({...base,view,color:'BROWN',promptRules:'off'}).prompt).not.toContain('BROWN');
    expect(shot.image_urls).toHaveLength(2);
   }
  });

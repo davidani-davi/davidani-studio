@@ -13,6 +13,8 @@ export const SIMPLE_IMAGE_SIZE = { width: 1024, height: 1536 };
  *  from the product photo, the title's fit words and notes typed for the style's other colours. */
 export type FitSource = 'reference' | 'style';
 export interface SimpleShot extends ReferenceShot {
+  /** What anchorImageUrl is (2026-11-24): the approved front render (default) or a look sheet made from it. */
+  anchorKind?: AnchorKind;
   fitSource?: FitSource;
   /** The listing description, read for fit words when the fit comes from the style. */
   garmentDescription?: string;
@@ -26,7 +28,13 @@ export interface SimpleShot extends ReferenceShot {
   /** The donor colour per slot when the back or side photo is another colourway's (David, 2026-11-03: DET60372
    *  Pink from Deep Blue's photos). Those photos lend shape and print placement only, never colour. */
   garmentBorrowed?: GarmentBorrowed;
+  /** Prompt rules (2026-11-24, Higgsfield research): 'roles-v1' opens the prompt with one line per image naming its
+   *  role and a priority order for when the images disagree. Default since the A/B of 2026-11-24 (10 styles, David
+   *  reviewed: 2 wins, 0 losses, 8 ties). 'off' sends the older prompt without the roles line. */
+  promptRules?: PromptRules;
 }
+export type PromptRules = 'roles-v1' | 'off';
+export const parsePromptRules = (raw: unknown): PromptRules | undefined => raw === 'roles-v1' || raw === 'off' ? raw : undefined;
 export type GarmentBorrowed = { back?: string; side?: string };
 
 const BORROW_ENGINE = 'Borrowed photos need GPT Image 2.5 in Simple mode.';
@@ -66,6 +74,24 @@ const SHAPES: Array<[RegExp, string]> = [
   [/\ba[- ]line\b/i, 'A-line: fitted at the waist, widening evenly to the hem'],
   [/\bpencil\b/i, 'pencil: close over the hips and thighs, straight to the hem'],
 ];
+
+/** IMAGE ROLES + PRIORITY (Higgsfield's reference contract): every image named by what it is for, one order for
+ *  conflicts. Names no facial feature and no failure: the face is pixel-protected, and a named flaw can be drawn. */
+export type AnchorKind = 'front' | 'look-sheet';
+export const parseAnchorKind = (raw: unknown): AnchorKind | undefined => raw === 'look-sheet' ? 'look-sheet' : raw === 'front' ? 'front' : undefined;
+const SHEET_ROLE = 'a look sheet of this garment as rendered for this set (front, back and side panels on a plain ground): colour continuity, and the back and side details image 2 cannot show; its faces and figures are never a reference';
+export function imageRoles(sent: { n: number; kind: string; donor: string }[], target: string, scope: string, anchorKind: AnchorKind = 'front'): string {
+  const what = (s: { kind: string; donor: string }) => s.kind === 'anchor'
+    ? (anchorKind === 'look-sheet' ? SHEET_ROLE : 'this garment already rendered on the front view of this set: colour and lighting continuity')
+    : s.donor
+      ? `the ${s.donor} colourway of this product photographed from the ${s.kind}: shape, construction and print placement only, never colour`
+      : `the ${target ? `${target} ` : ''}product photographed from the ${s.kind}: the truth for the garment`;
+  const lines = sent.map(s => `image ${s.n} = ${what(s)}`);
+  const order = sent.some(s => s.kind === 'anchor')
+    ? 'the requested change at the end, then the product photographs, then image 3 for colour, then the garment title'
+    : 'the requested change at the end, then the product photographs, then the garment title';
+  return ` IMAGE ROLES: image 1 = the base photograph: the wearer exactly as photographed (face, hair, body and pose), the framing, the background and the one light in the scene; only its ${scope} is replaced. ${lines.join('. ')}. PRIORITY when they disagree: ${order}. Image 1's own clothing never decides anything about the new garment.`;
+}
 
 function poseOnly(o: SimpleShot, scope: 'top' | 'bottoms' | 'outfit'): string {
   const what = scope === 'bottoms' ? 'rise, leg or skirt width, taper or flare and hem length'
@@ -147,7 +173,10 @@ export function simpleReferenceShot(o: SimpleShot) {
     const its = one ? 'its' : 'their';
     return ` BORROWED PHOTO: ${which} this same garment in another colourway (${donor}). Copy only ${its} shape, seams, construction, and the placement, size and lettering of any print or text. Never copy ${its} colours. Every colour (body, ribbing, trims, patches and print ink) comes from ${listOf(own.map(ownName))}. A print or text that only ${one ? `image ${ns[0]} shows` : `images ${listOf(ns)} show`} uses the same ink colour as the print on image ${inkN}; if image ${inkN} shows no print, ${one ? `keep image ${ns[0]}'s ink colour` : 'keep their ink colour'}. No ${donor.toLowerCase()} on the garment.`;
   }).join('');
-  const colour = !anchor && lentImage2 ? `Image ${own[0].n} is the sole garment-color reference: match its hue, saturation and midtone brightness exactly.` : anchor
+  const sheet = Boolean(anchor) && o.anchorKind === 'look-sheet';
+  const colour = !anchor && lentImage2 ? `Image ${own[0].n} is the sole garment-color reference: match its hue, saturation and midtone brightness exactly.` : sheet
+    ? 'Image 3 is a look sheet of this same garment as already rendered for this set, shown as front, back and side panels on a plain ground. Match its garment hue, saturation and midtone brightness exactly, overriding the lighting of image 2, and take from its matching panel any back or side detail image 2 cannot show; image 2 remains the authority for construction and small details. The wearer, her face, hair, body and the light come only from image 1, never from the figures on the sheet. Keep the garment one single layer with one hem, as shown in the product photograph.'
+    : anchor
     ? 'Image 3 is this same garment already rendered on the front view of this set: use it for consistent garment body colour and lighting, but image 2 remains the authority for construction and small details. Match image 3’s garment hue, saturation and midtone brightness exactly, overriding the lighting of image 2. Keep the garment one single layer with one hem, as shown in the product photograph; do not add an under-layer or a second hemline' + (openFront ? ' to the garment itself; the plain inner top described under INNER LAYER stays, matching image 3.' : '.')
     : 'Image 2 is the sole garment-color reference: match its hue, saturation and midtone brightness exactly.';
   // A top is worn alone: the plate's own tee must not peek out at the
@@ -243,10 +272,11 @@ export function simpleReferenceShot(o: SimpleShot) {
   const sideNote = !side ? '' : sideView
     ? ` SIDE PHOTO: Image 2 is the product photographed from the side, the same angle as this view: it decides the side silhouette, body depth and drape, side seams, slits and pockets, the sleeve profile and the hem line seen from the side. Image ${extraN} is the same product photographed from the front: use it only for print, colour and front construction that turns into view, never to change image 2's side shape.`
     : ` SIDE PHOTO: Image ${extraN} is the same product photographed from the side. Use it only to confirm body depth and drape, garment length, side seams, slits and pockets${inferred ? ', and how the hem, any slit or vent and the length fall at the back, since no back photo is supplied' : ''}. Image 2 stays the authority for this view; never move a detail that only shows from the side onto the ${o.view === 'back' ? 'back' : 'front'}.`;
-  const prompt = `Edit image 1 as the exact base photograph. Replace only the ${scope} with the garment in image 2. ${lentImage2 ? 'Match its cut, length, construction and print placement; take its colours only from the images named in BORROWED PHOTO below.' : 'Match its fabric, cut, length, print and construction.'}${fitFromStyle ? poseOnly(o, scope) : ''}${factsText}${inner} ${details}${surface}${closure}${fit}${sleeves}${setScope}${legs}${cut}${layerLength} ${colour}${sideNote}${borrowNote} Allow natural fold shadows and highlights, but do not tint the garment to match image 1’s clothing or background. ${keep} Preserve the face, expression, head position and hairstyle unchanged. No sharpening, retouching or enhancement. One clean photograph of one person.${inferred ? ' No back garment photo is supplied; use a plain continuation of the fabric without invented rear graphics.' : ''}${o.note ? ` Requested change: ${o.note}` : ''}`;
+  const roles = (o.promptRules ?? 'roles-v1') === 'roles-v1' ? imageRoles(sent, target, scope, o.anchorKind) : '';
+  const prompt = `Edit image 1 as the exact base photograph.${roles} Replace only the ${scope} with the garment in image 2. ${lentImage2 ? 'Match its cut, length, construction and print placement; take its colours only from the images named in BORROWED PHOTO below.' : 'Match its fabric, cut, length, print and construction.'}${fitFromStyle ? poseOnly(o, scope) : ''}${factsText}${inner} ${details}${surface}${closure}${fit}${sleeves}${setScope}${legs}${cut}${layerLength} ${colour}${sideNote}${borrowNote} Allow natural fold shadows and highlights, but do not tint the garment to match image 1’s clothing or background. ${keep} Preserve the face, expression, head position and hairstyle unchanged. No sharpening, retouching or enhancement. One clean photograph of one person.${inferred ? ' No back garment photo is supplied; use a plain continuation of the fabric without invented rear graphics.' : ''}${o.note ? ` Requested change: ${o.note}` : ''}`;
   const secondary = [garment, anchor, extra].filter(Boolean);
   const image_urls = [o.referenceUrl, ...secondary];
-  return {prompt, openFront, garmentImageUrls: secondary, image_urls, garmentBackInferred:inferred, anchored: Boolean(anchor), garmentSideUsed: Boolean(side), garmentBorrowedUsed: lent ? { ...(backLent ? { back: true as const } : {}), ...(sideLent ? { side: true as const } : {}) } : undefined, garmentFactsUsed: Boolean(factsText), fitSource: (fitFromStyle ? 'style' : 'reference') as FitSource};
+  return {prompt, openFront, garmentImageUrls: secondary, image_urls, garmentBackInferred:inferred, anchored: Boolean(anchor), anchorKind: anchor ? (o.anchorKind || 'front') : undefined, garmentSideUsed: Boolean(side), garmentBorrowedUsed: lent ? { ...(backLent ? { back: true as const } : {}), ...(sideLent ? { side: true as const } : {}) } : undefined, garmentFactsUsed: Boolean(factsText), promptRules: roles ? 'roles-v1' as const : undefined, fitSource: (fitFromStyle ? 'style' : 'reference') as FitSource};
 }
 
 /** Exact source-bound review. Never fall back to horizontal head restoration. */
