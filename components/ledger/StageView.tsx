@@ -3,8 +3,7 @@
 import { useEffect, useState } from "react";
 import { ArrowLeft, Check, Download, Expand, FileOutput } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ImageGeneration } from "@/components/ui/image-generation";
-import { estimatedProgress } from "@/lib/render-status";
+import { ImageGeneration } from "@/components/agents/image-generation";
 import { cn } from "@/lib/utils";
 import PipelineStrip from "./PipelineStrip";
 import type { HistoryItem } from "../types";
@@ -171,10 +170,12 @@ function PaintingFrame({
           style={{ aspectRatio: `${aspect.width} / ${aspect.height}` }}
         >
           <ImageGeneration
-            resolution={`${aspect.width} × ${aspect.height}`}
-            progress={estimatedProgress(elapsed * 1000, expected * 1000)}
-            step={over ? "Still generating" : "Generating"}
-            className="h-full max-w-none rounded-xl"
+            status="generating"
+            size="fluid"
+            aspectRatio={`${aspect.width} / ${aspect.height}`}
+            resolution=""
+            showStatus={false}
+            statusText={over ? "Still generating" : "Generating"}
           />
         </div>
       </div>
