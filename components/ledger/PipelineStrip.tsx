@@ -20,9 +20,9 @@ const TONE_DOT: Record<StepTone, string> = {
 };
 
 const TONE_TEXT: Record<StepTone, string> = {
-  ok: "text-neutral-600",
-  warn: "text-amber-700",
-  muted: "text-neutral-400",
+  ok: "text-foreground/80",
+  warn: "text-[#8a5a12]",
+  muted: "text-muted-foreground/70",
 };
 
 export default function PipelineStrip({
@@ -33,16 +33,16 @@ export default function PipelineStrip({
   /** "sm" for run cards, "md" for the stage header. */
   size?: "sm" | "md";
 }) {
-  const text = size === "md" ? "text-[10px]" : "text-[9px]";
+  const text = size === "md" ? "text-xs" : "text-[11px]";
   const dot = size === "md" ? "h-1.5 w-1.5" : "h-[5px] w-[5px]";
 
   return (
     <div className={`flex flex-wrap items-center gap-x-1.5 gap-y-1 ${text}`}>
       {steps.map((step, i) => (
         <div key={step.key} className="flex items-center gap-1.5">
-          {i > 0 && <span className="text-neutral-400">›</span>}
+          {i > 0 && <span className="text-muted-foreground/60">›</span>}
           <span
-            className={`flex items-center gap-1 font-medium uppercase tracking-[0.09em] ${
+            className={`flex items-center gap-1 font-medium ${
               TONE_TEXT[step.tone]
             }`}
             title={step.detail}

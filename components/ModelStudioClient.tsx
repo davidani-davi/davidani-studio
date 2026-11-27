@@ -2930,7 +2930,7 @@ export default function ModelStudioClient({ initialHumanModels, beta = false, le
       />
 
       <div
-        className="model-studio-layout min-h-0 flex-1"
+        className="kobra model-studio-layout min-h-0 flex-1"
         style={{ "--ledger-w": `${ledgerWidth}px` } as CSSProperties}
       >
         <RunLedger
