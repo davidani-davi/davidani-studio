@@ -2,7 +2,8 @@
 
 // The run controls: method, engine (Advanced), front takes, the one Generate button the core decides
 // (front preview first, then "Generate remaining N"), and what to do with the finished set.
-import { Download, FolderOpen, Play, Save, Upload } from "lucide-react";
+import type { ReactNode } from "react";
+import { Download, FolderOpen, Play, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertAction, AlertDescription } from "@/components/ui/alert";
 import { ENGINES, type Engine } from "@/lib/model-studio/types";
@@ -10,7 +11,6 @@ import { variantCostText, MAX_VARIANTS } from "@/lib/model-studio/variants";
 import { cn } from "@/lib/utils";
 import { Row, Section, Segmented, Tag } from "./bits";
 
-export const ERP_UPLOAD_REASON = "ERP upload is paused while the ERP write load is fixed (PR #43). Download the kept views instead.";
 
 export function RenderSettings({ engine, variantCount, frontNext, onEngine, onVariants }: {
   engine: Engine; variantCount: number; frontNext: boolean; onEngine: (e: Engine) => void; onVariants: (n: number) => void;
@@ -43,8 +43,10 @@ export function RenderSettings({ engine, variantCount, frontNext, onEngine, onVa
   );
 }
 
-export function RunBar({ label, canRun, blocker, changeNote, summary, staleCount, kept, savedCount, busy, saveText, onRun, onRedoStale, onDownload, onSave, onLoadSaved }: {
+export function RunBar({ label, canRun, blocker, changeNote, summary, staleCount, kept, savedCount, busy, saveText, sendTo, onRun, onRedoStale, onDownload, onSave, onLoadSaved }: {
   label: string; canRun: boolean; blocker: string; changeNote: string; summary: string; staleCount: number; kept: number; savedCount: number;
+  /** The Send to menu (Faire listing, ERP file); it sits first in the finished-set row. */
+  sendTo?: ReactNode;
   busy: "" | "download" | "save"; saveText: string;
   onRun: () => void; onRedoStale: () => void; onDownload: () => void; onSave: () => void; onLoadSaved: () => void;
 }) {
@@ -67,11 +69,11 @@ export function RunBar({ label, canRun, blocker, changeNote, summary, staleCount
       )}
 
       <div className="ms-keep grid grid-cols-2 gap-2 min-[481px]:flex min-[481px]:flex-wrap min-[481px]:items-center">
+        {sendTo}
         <Button variant="outline" disabled={!kept || busy !== ""} onClick={onDownload}><Download data-icon="inline-start" aria-hidden />{busy === "download" ? "Downloading…" : `Download selected${kept ? ` (${kept})` : ""}`}</Button>
         <Button variant="outline" disabled={!kept || busy !== ""} onClick={onSave}><Save data-icon="inline-start" aria-hidden />{busy === "save" ? "Saving…" : "Save set"}</Button>
         <Button variant="ghost" disabled={!savedCount} onClick={onLoadSaved}><FolderOpen data-icon="inline-start" aria-hidden />Load saved set{savedCount ? ` (${savedCount})` : ""}</Button>
-        <Button variant="ghost" disabled title={ERP_UPLOAD_REASON}><Upload data-icon="inline-start" aria-hidden />Upload to ERP</Button>
-        <p className="col-span-2 text-[11px] text-muted-foreground min-[481px]:basis-full">{kept ? "" : "Tick Keep on the views you want, then download or save them. "}{ERP_UPLOAD_REASON}</p>
+        <p className="col-span-2 text-[11px] text-muted-foreground min-[481px]:basis-full">{kept ? "Send to puts the kept views on the Faire listing or in an ERP file." : "Tick Keep on the views you want, then send, download or save them."}</p>
       </div>
     </div>
   );

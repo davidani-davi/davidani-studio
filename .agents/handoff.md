@@ -52,3 +52,17 @@
 - Kobra tokens collide with Paper names; keep overrides inside `.kobra`. The compact header sits outside `.kobra` so JobCenter keeps Paper styles.
 - Screenshot recipe: `next start` with a throwaway AUTH_SECRET, sign a session cookie with it, seed `davidani_history_v1` in localStorage, route `/api/**` in Playwright (`/api/upload/direct` 500 so it falls back to `/api/upload`; leave `/api/generate` pending for the mid-render state).
 
+
+---
+
+# Handoff: Send to (Faire listing, ERP file)
+- Branch `claude/project-thread-bnasxx`. Pairs with davidani-faire-management branch `claude/model-studio-send-to` (extension 2.205.0).
+- Finding: both Model Studios already share one backend (the extension calls this app's `/api/model-shots` and `/api/saved-shots`); only the screens differ, and `lib/model-shots-core/` is copied from the extension by `scripts/sync-model-shots-core.sh` (in sync at f5880f33).
+- **Send to menu** (`components/model-studio/SendTo.tsx`, `lib/model-studio/send-to.ts`) replaces the disabled Upload to ERP button in RunBar:
+  - ERP file: client-side store-only ZIP of the kept views (core.shotFilename names) + `manifest.csv` (Style, Color, View, File, Link, Model, Engine; formula-safe).
+  - Faire listing: `GET /api/model-studio/faire-destination` asks Faire Daily's read-only `listing-destination` (needs Vercel env `FAIRE_DAILY_TOKEN` = Faire Daily's PORTAL_TOKEN; optional `FAIRE_DAILY_URL`). Without it the dialog takes a pasted listing link. Send saves the set, then opens `…/products/<id>#ddto-studio=<saved ids>`; extension 2.205.0 puts those shots into their views ticked, and the usual Add to listing → square editor → Upload on Faire finishes it. Nothing reaches Faire without that click. Faire's API only refreshes drafts, which is why this goes through the extension.
+  - Upload to ERP stays disabled until ERP PR #43.
+- `components/ui/dialog.tsx` overlay: dropped backdrop blur (no glass rule). First user of Dialog/DropdownMenu in the app.
+- Checks: vitest 1746 pass (2 known failures: ModelAdmin download, mini-worker sqlite). next build passes. Screenshots at 1280/900/440/430 in project files `model-studio-send-to/` (mocked API, no renders).
+- Next: David sets FAIRE_DAILY_TOKEN, reloads the extension, tries one style end to end. Then a CI check that fails when lib/model-shots-core drifts from the extension (needs a read token for the Faire repo).
+- Canvas-first Model Studio thread: RunBar now takes a `sendTo` node; keep it in the floating bar.
