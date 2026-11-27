@@ -1,3 +1,19 @@
+# Handoff: redesign shipped to production (2026-11-27, Claude Code)
+
+- **Merged in order** (David's OK): #71 canvas-first Image studio (92a2f55), #72 Photoshoot Studio (2c24f18), #73 Send to (47c00a2), plus davidani-faire-management #274 (extension 2.205.0, 8282e51). That repo has no GitHub workflows, so merging #274 publishes nothing by itself; David reloads the extension to get 2.205.0.
+- **Re-syncs:** #72 and #73 each got a merge of main pushed to their branch. Only `.agents/handoff.md` conflicted; this file now stacks the Photoshoot, Image studio and Send to handoffs below.
+- **Checks** on the combined tree (main + 71 + 72 + 73, identical to final main): vitest 1759 pass, only the 2 known failures (ModelAdmin download, mini-worker sqlite3). `next build` passes. Main + 71 + 72 also checked: same 2 failures, build passes.
+- **Deploy:** Vercel project `davidani-studio` (prj_1NgPbpog3Hys3e6MxO4tIZHENndp), production builds for each merge.
+- **Still not set:** `FAIRE_DAILY_TOKEN` in Vercel, so Send to → Faire listing falls back to a pasted listing link.
+- **Cloud sessions can't reach *.vercel.app** (egress proxy 403). Check the live site from David's computer (built-in browser or Chrome).
+
+## Next
+1. David: set FAIRE_DAILY_TOKEN, reload the extension, try one style end to end.
+2. Model Studio canvas-first (own thread, was waiting on #71).
+3. Remaining screens: Job Center + navigation, Library + Inspiration, then CAD/Techpack/Prompt/Playground.
+
+---
+
 # Handoff: Photoshoot Studio on Kobra (2026-11-27, Claude Code)
 
 - **Branch:** `claude/project-thread-uy83q6`, off main a7fe60b (#69 + #70 merged). PR: see `gh pr list` ("Photoshoot Studio on Kobra").
