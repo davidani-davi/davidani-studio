@@ -1,6 +1,9 @@
 "use client";
 
-import { AnimatedBadge, type AnimatedBadgeStatus } from "@/components/motion/animated-badge";
+import { Check, TriangleAlert } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Spinner } from "@/components/ui/spinner";
+import { cn } from "@/lib/utils";
 import PipelineStrip from "./PipelineStrip";
 import type { HistoryItem } from "../types";
 import {
@@ -24,18 +27,17 @@ import Thumb from "@/components/Thumb";
  */
 
 /**
- * Verdict tone -> beUI badge status.
- *
- * "loading" is not a spelling of "running" here, it is the whole point: the
- * badge spins its own icon and pulses for that status, so a run in flight
- * announces itself from the feed without this component owning an animation.
+ * Verdict tone -> Kobra badge. A run in flight carries a spinner, so it
+ * announces itself from the feed without the card owning an animation.
  */
-const VERDICT_STATUS: Record<RunTone, AnimatedBadgeStatus> = {
-  running: "loading",
-  kept: "success",
-  check: "warning",
-  clean: "neutral",
+const VERDICT_BADGE: Record<Exclude<RunTone, "clean">, "outline" | "green" | "amber"> = {
+  running: "outline",
+  kept: "green",
+  check: "amber",
 };
+
+const CARD_SHADOW =
+  "shadow-[0_0_0_1px_rgb(0_0_0/.06),0_1px_1px_rgb(0_0_0/.03),0_2px_4px_-1px_rgb(0_0_0/.03)]";
 
 export interface RunCardProps {
   run: HistoryItem;
@@ -85,42 +87,44 @@ export default function RunCard({
       type="button"
       onClick={onSelect}
       aria-current={active ? "true" : undefined}
-      className={`w-full rounded-xl border p-3 text-left transition ${
+      className={cn(
+        "w-full rounded-xl bg-white p-3 text-left transition-shadow duration-150",
         active
-          ? "border-neutral-900 bg-white shadow-xs ring-1 ring-neutral-900"
-          : "border-neutral-200 bg-white hover:border-neutral-400"
-      }`}
+          ? "shadow-[0_0_0_1.5px_var(--color-foreground),0_4px_12px_-4px_rgb(0_0_0/.12)]"
+          : cn(CARD_SHADOW, "hover:shadow-[0_0_0_1px_rgb(0_0_0/.12),0_2px_8px_-2px_rgb(0_0_0/.08)]"),
+      )}
     >
-      <div className="mb-2.5 flex items-center gap-2">
-        <span className="font-mono text-[10px] font-bold tracking-tight">
-          #{run.id.slice(0, 4)}
-        </span>
-        <span className="text-[9.5px] text-neutral-500">{time}</span>
+      <div className="mb-2 flex items-center gap-2">
+        <span className="font-mono text-xs font-medium text-foreground">#{run.id.slice(0, 4)}</span>
+        <span className="text-xs text-muted-foreground">{time}</span>
         {run.batch && (
-          <span className="rounded-full bg-indigo-100 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wider text-indigo-700">
+          <Badge variant="secondary" size="sm">
             Batch
-          </span>
+          </Badge>
         )}
         <span className="flex-1" />
         {/* No badge for an unremarkable run. A badge on every card is not a
             signal, and "Clean" collided with the backdrop step's own "Clean"
             in the strip below — two different meanings, one word, one card. */}
         {verdict.tone !== "clean" && (
-          <AnimatedBadge
-            status={VERDICT_STATUS[verdict.tone]}
-            size="sm"
-            className="h-5 px-1.5 text-[8.5px] font-bold uppercase tracking-wider"
-          >
+          <Badge variant={VERDICT_BADGE[verdict.tone]} size="sm">
+            {verdict.tone === "running" ? (
+              <Spinner data-icon="inline-start" className="size-3" aria-hidden />
+            ) : verdict.tone === "kept" ? (
+              <Check data-icon="inline-start" className="size-3" aria-hidden />
+            ) : (
+              <TriangleAlert data-icon="inline-start" className="size-3" aria-hidden />
+            )}
             {verdict.label}
-          </AnimatedBadge>
+          </Badge>
         )}
       </div>
 
       {/* Its own line. Sharing the row with the thumbnails it had about
           fourteen characters and clamped almost every garment name. */}
-      <div className="mb-2.5">
-        <div className="line-clamp-2 text-[12px] font-bold leading-tight">{title(run)}</div>
-        <div className="mt-0.5 font-mono text-[9.5px] text-neutral-500">{runSubtitle(run)}</div>
+      <div className="mb-2">
+        <div className="line-clamp-2 text-[13px] font-medium leading-snug text-foreground">{title(run)}</div>
+        <div className="mt-0.5 text-xs text-muted-foreground">{runSubtitle(run)}</div>
       </div>
 
       {/*
@@ -133,32 +137,32 @@ export default function RunCard({
         fill the row at their natural size, and a Model Studio run's four views
         share it instead of running off the edge of the card.
       */}
-      <div className="mb-2.5 flex items-center gap-1.5">
+      <div className="mb-2 flex items-center gap-1.5">
         {intake.length > 0 && (
           <>
             <div className="flex gap-1">
               {intake.slice(0, 2).map((shot) => (
-                <div key={shot.url} className="flex w-12 shrink-0 flex-col items-center gap-1">
+                <div key={shot.url} className="flex w-10 shrink-0 flex-col items-center gap-1">
                   {/* A 2:3 box (Paper's 48x72 list-row photo). Contain, because
                       an intake photo is whatever shape the phone took it in —
                       cover cropped the hem off. */}
-                  <div className="relative h-[72px] w-12 overflow-hidden rounded-md border border-neutral-200 bg-[#edeeee]">
+                  <div className="relative h-[60px] w-10 overflow-hidden rounded-lg bg-[#edeeee] shadow-[inset_0_0_0_1px_rgb(0_0_0/.06)]">
                     <Thumb
                       src={shot.url}
                       size={256}
                       alt={`${shot.label} intake photo`}
                       className="h-full w-full object-contain"
-                      fallback={<span className="flex h-full w-full items-center justify-center px-1 text-center text-[9px] leading-tight text-neutral-400">Expired</span>}
+                      fallback={<span className="flex h-full w-full items-center justify-center px-1 text-center text-[11px] leading-tight text-muted-foreground">Expired</span>}
                     />
                   </div>
-                  <span className="text-[9px] leading-none text-neutral-500">{shot.label}</span>
+                  <span className="text-[11px] leading-none text-muted-foreground">{shot.label}</span>
                 </div>
               ))}
             </div>
             {/* A rule, not an arrow: four boxes of the same size in a row
                 read as four takes. The intake pair is also drawn smaller, so
                 the size says which side of the rule you are on. */}
-            <span aria-hidden="true" className="mx-1 h-14 w-px shrink-0 bg-neutral-200" />
+            <span aria-hidden="true" className="mx-1 h-12 w-px shrink-0 bg-border" />
           </>
         )}
         {slots.map((url, i) => {
@@ -167,7 +171,7 @@ export default function RunCard({
               <div
                 key={`awaited-${i}`}
                 aria-label={`Variant ${i + 1} is being generated`}
-                className="h-24 min-w-0 max-w-[76px] flex-1 animate-pulse rounded-md border border-dashed border-neutral-300 bg-neutral-100"
+                className="studio-skeleton relative h-20 min-w-0 max-w-[64px] flex-1 overflow-hidden rounded-lg"
               />
             );
           }
@@ -176,22 +180,25 @@ export default function RunCard({
           return (
             <div
               key={`${url}-${i}`}
-              className={`h-24 min-w-0 max-w-[76px] flex-1 overflow-hidden rounded-md border bg-[#edeeee] ${
-                isPick ? "border-neutral-900 ring-1 ring-neutral-900" : "border-neutral-200"
-              } ${dimmed ? "opacity-50" : ""}`}
+              data-picked={isPick ? "" : undefined}
+              className={cn(
+                "h-20 min-w-0 max-w-[64px] flex-1 overflow-hidden rounded-lg bg-[#edeeee]",
+                isPick ? "shadow-[0_0_0_1.5px_var(--color-foreground)]" : "shadow-[inset_0_0_0_1px_rgb(0_0_0/.06)]",
+                dimmed && "opacity-50",
+              )}
             >
               <Thumb
                 src={url}
                 size={256}
                 alt={`${title(run)} variant ${i + 1}`}
                 className="h-full w-full object-cover"
-                fallback={<span className="flex h-full w-full items-center justify-center px-1 text-center text-[9px] leading-tight text-neutral-400">Expired</span>}
+                fallback={<span className="flex h-full w-full items-center justify-center px-1 text-center text-[11px] leading-tight text-muted-foreground">Expired</span>}
               />
             </div>
           );
         })}
         {slotCount === 0 && (
-          <div className="flex h-24 w-[76px] items-center justify-center rounded-md border border-dashed border-neutral-300 text-[9px] text-neutral-400">
+          <div className="flex h-20 w-[64px] items-center justify-center rounded-lg bg-muted text-xs text-muted-foreground">
             —
           </div>
         )}

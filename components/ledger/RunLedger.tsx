@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/motion/tabs";
+import { Plus } from "lucide-react";
 import RunCard, { type RunCardProps } from "./RunCard";
 import type { HistoryItem } from "../types";
 import { filterRuns, wantsSecondLook, type LedgerFilter } from "@/lib/run-pipeline";
@@ -84,19 +85,18 @@ export default function RunLedger({
   }, []);
 
   return (
-    <aside className="image-studio-ledger relative flex h-full min-h-0 flex-col bg-neutral-50">
-      <div className="flex shrink-0 items-center gap-2 border-b border-neutral-200 bg-white px-3 py-2.5">
-        <span className="font-mono text-[9px] font-semibold uppercase tracking-[0.15em] text-neutral-500">
-          Run ledger
-        </span>
+    <aside className="image-studio-ledger relative flex h-full min-h-0 flex-col bg-[#fafafa]">
+      <div className="flex shrink-0 items-center gap-2 border-b border-border bg-white px-3 py-2">
+        <span className="text-[13px] font-medium text-foreground">Run ledger</span>
         <span className="flex-1" />
         {onNewRun && (
           <button
             type="button"
             onClick={onNewRun}
             title="Clear the composer and start a fresh run"
-            className="rounded-[3px] border border-neutral-200 bg-white px-2 py-1 text-[10px] font-bold text-neutral-700 transition hover:border-neutral-400 hover:text-black"
+            className="inline-flex h-7 items-center gap-1 rounded-lg bg-white px-2.5 text-xs font-medium text-foreground shadow-[0_0_0_1px_rgb(0_0_0/.08),0_1px_2px_rgb(0_0_0/.05)] transition hover:bg-muted"
           >
+            <Plus className="size-3.5" aria-hidden />
             New
           </button>
         )}
@@ -107,19 +107,20 @@ export default function RunLedger({
           because the ledger is not the only thing that reads it.
         */}
         <Tabs value={filter} onValueChange={(v) => onFilterChange(v as LedgerFilter)} variant="segment">
-          <TabsList className="border border-neutral-200 bg-neutral-100/70">
+          <TabsList className="rounded-[10px] bg-muted p-0.5">
             {FILTERS.map((f) => (
               <TabsTrigger
                 key={f.value}
                 value={f.value}
-                className="gap-1 px-2.5 py-1 text-[10px] font-bold"
+                className={`h-7 gap-1 rounded-lg px-2.5 py-0 text-xs font-medium ${
+                  filter === f.value ? "text-foreground" : ""
+                }`}
+                indicatorClassName="rounded-lg bg-white shadow-[0_0_0_1px_rgb(0_0_0/.06),0_1px_2px_rgb(0_0_0/.08)]"
               >
                 {f.label}
                 {f.value === "check" && flagged ? (
                   <span
-                    className={`font-mono text-[9px] ${
-                      filter === "check" ? "text-white/70" : "text-amber-600"
-                    }`}
+                    className="rounded-md bg-[#fdf3e1] px-1 text-[11px] tabular-nums text-[#8a5a12]"
                   >
                     {flagged}
                   </span>
@@ -132,7 +133,7 @@ export default function RunLedger({
 
       <div
         ref={feed}
-        className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto p-3"
+        className="flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto p-3"
         style={{ paddingBottom: dockHeight + 12 }}
       >
         {shown.map((run) => (
@@ -150,7 +151,7 @@ export default function RunLedger({
         ))}
 
         {shown.length === 0 && (
-          <p className="px-1 py-6 text-center text-[11px] leading-relaxed text-neutral-500">
+          <p className="px-4 py-10 text-center text-[13px] leading-relaxed text-muted-foreground">
             {runs.length === 0
               ? emptyHint
               : filter === "check"
@@ -163,7 +164,7 @@ export default function RunLedger({
           <button
             type="button"
             onClick={onClearHistory}
-            className="mt-1 shrink-0 self-center rounded-md px-2 py-1 text-[9.5px] font-semibold text-neutral-400 transition hover:text-neutral-700"
+            className="mt-1 shrink-0 self-center rounded-lg px-2.5 py-1 text-xs font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
           >
             Clear {runs.length} run{runs.length === 1 ? "" : "s"}
           </button>

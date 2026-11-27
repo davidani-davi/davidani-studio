@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import JobCenter from "@/components/JobCenter";
 import StudioBootOverlay from "@/components/StudioBootOverlay";
 import TopTabs, { type StudioTab } from "@/components/TopTabs";
+import ToolMenu from "@/components/ToolMenu";
 import { activeStudioJobCount, subscribeStudioJobs } from "@/components/studio-job-store";
 
 interface Metric {
@@ -21,6 +22,12 @@ interface Props {
   badge?: string;
   metrics?: Metric[];
   action?: ReactNode;
+  /**
+   * One slim row for canvas-first screens: brand, the current tool as a menu
+   * of every page and tool, the job indicator and `action`. Subtitle, metrics
+   * and the two nav rows are dropped so the stage gets the height.
+   */
+  compact?: boolean;
 }
 
 export default function StudioHeader({
@@ -30,6 +37,7 @@ export default function StudioHeader({
   subtitle,
   metrics = [],
   action,
+  compact,
 }: Props) {
   const [globalActiveJobs, setGlobalActiveJobs] = useState(0);
 
@@ -53,6 +61,21 @@ export default function StudioHeader({
           { label: "Active", value: globalActiveJobs },
         ]
       : metrics;
+
+  if (compact) {
+    return (
+      <header className="studio-header-compact">
+        <StudioBootOverlay />
+        <Link href="/" className="studio-header-compact__brand">{eyebrow}</Link>
+        <span className="studio-header-compact__sep" aria-hidden="true">/</span>
+        <ToolMenu active={active} />
+        <div className="studio-header-compact__meta">
+          <JobCenter />
+          {action}
+        </div>
+      </header>
+    );
+  }
 
   return (
     <header className="studio-header">

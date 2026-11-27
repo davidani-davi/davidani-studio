@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, onTestFinished, vi } from "vitest";
 import { render, screen, within, fireEvent } from "@testing-library/react";
 import RunLedger from "./RunLedger";
 import RunCard from "./RunCard";
@@ -128,7 +128,8 @@ describe("run card", () => {
     );
     expect(screen.getByText("Kept · V2")).toBeInTheDocument();
     const [first, second] = screen.getAllByRole("img").map((img) => img.parentElement!);
-    expect(second.className).toContain("ring-1");
+    expect(second).toHaveAttribute("data-picked");
+    expect(first).not.toHaveAttribute("data-picked");
     expect(first.className).toContain("opacity-50");
   });
 
@@ -478,6 +479,23 @@ describe("composer", () => {
     );
     return { ...utils, onGenerate, onAddFiles, onFlipView };
   }
+
+  it("folds to one line that still generates, and opens again when a photo is dropped on it", () => {
+    window.localStorage.clear();
+    onTestFinished(() => window.localStorage.clear());
+    const { onGenerate, onAddFiles } = renderComposer();
+    fireEvent.click(screen.getByRole("button", { name: /fold the composer/i }));
+    expect(screen.queryByText(/drop or click/i)).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Style number")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /generate front/i }));
+    expect(onGenerate).toHaveBeenCalled();
+    const bar = screen.getByRole("button", { name: "Open the composer" }).parentElement!;
+    const file = new File(["x"], "front.jpg", { type: "image/jpeg" });
+    fireEvent.drop(bar, { dataTransfer: { files: [file], types: ["Files"] } });
+    expect(onAddFiles).toHaveBeenCalledWith(expect.anything(), "front");
+    expect(screen.getAllByText(/drop or click/i).length).toBeGreaterThan(0);
+    window.localStorage.clear();
+  });
 
   it("puts the warning about an inferred canvas next to the field that fixes it", () => {
     renderComposer({ canvasNeedsStyleNumber: true });

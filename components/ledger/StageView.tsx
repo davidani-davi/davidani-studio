@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ArrowLeft, Check, Download, Expand, FileOutput } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { ImageGeneration } from "@/components/agents/image-generation";
-import { Button } from "@/components/motion/button";
+import { cn } from "@/lib/utils";
 import PipelineStrip from "./PipelineStrip";
 import type { HistoryItem } from "../types";
 import {
@@ -77,50 +79,38 @@ function ShotFrame({
           upgrade
           alt={alt}
           fallback={
-            <span className="max-w-[280px] rounded-md border border-neutral-200 bg-white px-3 py-10 sm:px-6 text-center text-[13px] leading-snug text-neutral-500">
+            <span className="max-w-[280px] rounded-xl bg-white px-3 py-10 text-center text-[13px] leading-snug text-muted-foreground shadow-[0_0_0_1px_rgb(0_0_0/.06),0_2px_4px_-1px_rgb(0_0_0/.04)] sm:px-6">
               This image could not be loaded. On an older run, the host it was saved on may have deleted it.
             </span>
           }
-          className={`max-h-full max-w-full rounded-md border bg-[#edeeee] object-contain shadow-md ${
-            kept ? "border-neutral-900 ring-2 ring-neutral-900" : "border-neutral-200"
-          }`}
+          className={cn(
+            "max-h-full max-w-full rounded-xl bg-[#edeeee] object-contain",
+            kept
+              ? "shadow-[0_0_0_2px_var(--color-foreground),0_8px_24px_-8px_rgb(0_0_0/.25)]"
+              : "shadow-[0_0_0_1px_rgb(0_0_0/.06),0_2px_4px_-1px_rgb(0_0_0/.04),0_12px_28px_-12px_rgb(0_0_0/.18)]",
+          )}
         />
       </button>
       <figcaption className="flex max-w-full shrink-0 flex-wrap items-center justify-center gap-x-2 gap-y-1">
-        <span className="whitespace-nowrap font-mono text-[9px] font-medium uppercase tracking-[0.15em] text-neutral-400">
-          {label}
-        </span>
+        <span className="whitespace-nowrap text-xs font-medium text-muted-foreground">{label}</span>
         {onKeep && (
-          <button
-            type="button"
-            onClick={onKeep}
-            className={`flex items-center gap-1.5 rounded-md border px-2 py-1 text-[10px] font-bold transition ${
-              kept
-                ? "border-neutral-900 bg-neutral-900 text-white"
-                : "border-neutral-200 bg-white text-neutral-700 hover:border-neutral-400"
-            }`}
-          >
+          <Button type="button" size="sm" variant={kept ? "default" : "outline"} onClick={onKeep}>
+            <Check data-icon="inline-start" aria-hidden />
             {kept ? "Kept" : "Keep"}
-            <kbd className="rounded border border-current/30 px-1 font-mono text-[8px] opacity-70">
+            <kbd className="ml-0.5 rounded border border-current/25 px-1 font-mono text-[10px] opacity-60">
               {hotkey}
             </kbd>
-          </button>
+          </Button>
         )}
         {/* Under the render it belongs to, rather than only in the header's
             Export, which downloads whatever happens to be visible. Most exports
             are of one take — usually the kept one — and this is where the
             operator is already looking when they decide that. */}
         {onDownload && (
-          <button
-            type="button"
-            onClick={onDownload}
-            className="flex items-center gap-1 rounded-md border border-neutral-200 bg-white px-2 py-1 text-[10px] font-bold text-neutral-700 transition hover:border-neutral-400 hover:text-neutral-900"
-          >
-            <span aria-hidden="true" className="text-[11px] leading-none">
-              ↓
-            </span>
+          <Button type="button" size="sm" variant="ghost" onClick={onDownload}>
+            <Download data-icon="inline-start" aria-hidden />
             Download
-          </button>
+          </Button>
         )}
       </figcaption>
     </figure>
@@ -173,27 +163,27 @@ function PaintingFrame({
   return (
     <figure className="flex min-h-0 w-full flex-1 flex-col items-center gap-2">
       <div className="flex min-h-0 w-full flex-1 items-center justify-center">
-        <div className="h-full max-w-full" style={{ aspectRatio: `${aspect.width} / ${aspect.height}` }}>
+        <div
+          role="group"
+          aria-label={`${label} is being generated`}
+          className="h-full max-w-full"
+          style={{ aspectRatio: `${aspect.width} / ${aspect.height}` }}
+        >
           <ImageGeneration
-            size="fluid"
             status="generating"
+            size="fluid"
             aspectRatio={`${aspect.width} / ${aspect.height}`}
-            resolution={`${aspect.width} × ${aspect.height}`}
+            resolution=""
             showStatus={false}
-            label={`${label} is being generated`}
-            className="h-full"
+            statusText={over ? "Still generating" : "Generating"}
           />
         </div>
       </div>
       <figcaption className="flex max-w-full shrink-0 flex-wrap items-center justify-center gap-x-2 gap-y-1">
-        <span className="whitespace-nowrap font-mono text-[9px] font-medium uppercase tracking-[0.15em] text-neutral-400">
-          {label}
-        </span>
+        <span className="whitespace-nowrap text-xs font-medium text-foreground">{label}</span>
         <span
           aria-live="polite"
-          className={`font-mono text-[10px] font-semibold tabular-nums ${
-            over ? "text-amber-700" : "text-neutral-500"
-          }`}
+          className={cn("text-xs tabular-nums", over ? "text-[#8a5a12]" : "text-muted-foreground")}
         >
           {over ? `${elapsed}s · longer than usual` : `${elapsed}s of about ${expected}s`}
         </span>
@@ -225,11 +215,9 @@ function IntakeRail({
     <div
       role="region"
       aria-label="Intake photos"
-      className="flex w-[124px] shrink-0 flex-col gap-2 overflow-y-auto border-r border-neutral-200 bg-white p-2.5"
+      className="flex w-[124px] shrink-0 flex-col gap-2.5 overflow-y-auto border-r border-border bg-white p-3"
     >
-      <span className="shrink-0 font-mono text-[9px] font-bold uppercase tracking-[0.15em] text-neutral-400">
-        Intake
-      </span>
+      <span className="shrink-0 text-xs font-medium text-muted-foreground">Intake</span>
       {shots.map((shot, i) => (
         <button
           key={shot.url}
@@ -237,11 +225,12 @@ function IntakeRail({
           onClick={() => onOpen(opened === i ? null : i)}
           aria-pressed={opened === i}
           title={opened === i ? "Back to the renders" : `Open the ${shot.label.toLowerCase()} photo`}
-          className={`group relative shrink-0 overflow-hidden rounded-lg border bg-[#edeeee] transition ${
+          className={cn(
+            "group relative shrink-0 overflow-hidden rounded-lg bg-[#edeeee] transition-shadow duration-150",
             opened === i
-              ? "border-neutral-900 ring-1 ring-neutral-900"
-              : "border-neutral-200 hover:border-neutral-400"
-          }`}
+              ? "shadow-[0_0_0_1.5px_var(--color-foreground)]"
+              : "shadow-[inset_0_0_0_1px_rgb(0_0_0/.06)] hover:shadow-[0_0_0_1px_rgb(0_0_0/.16)]",
+          )}
           style={{ aspectRatio: "2 / 3" }}
         >
           <Thumb
@@ -250,7 +239,7 @@ function IntakeRail({
             alt={`${shot.label} intake photo`}
             className="h-full w-full object-contain"
           />
-          <span className="absolute inset-x-0 bottom-0 bg-white/90 py-0.5 text-center text-[10px] font-medium text-neutral-600">
+          <span className="absolute inset-x-1.5 bottom-1.5 rounded-md bg-white/90 py-0.5 text-center text-[11px] font-medium text-foreground shadow-[0_0_0_1px_rgb(0_0_0/.06)]">
             {shot.label}
           </span>
         </button>
@@ -269,6 +258,7 @@ export default function StageView({
   emptyHint = "Upload a product photo and press Generate. Finished runs land here at full size, and stack up in the run ledger.",
   pipeline = runPipeline,
   title = runTitle,
+  canvas,
 }: {
   run: HistoryItem | null;
   running?: boolean;
@@ -287,6 +277,12 @@ export default function StageView({
   /** How this studio reads a run — the header strip and the run's name. */
   pipeline?: (run: HistoryItem) => PipelineStep[];
   title?: (run: HistoryItem) => string;
+  /**
+   * Canvas-first layout (Image studio): intake as chips under the header
+   * instead of a rail, variants on open ground with room kept at the bottom
+   * for the floating composer.
+   */
+  canvas?: boolean;
 }) {
   /**
    * Which variant, if any, has the stage to itself.
@@ -332,9 +328,16 @@ export default function StageView({
 
   if (!run) {
     return (
-      <section className="image-studio-stage flex h-full flex-col items-center justify-center gap-3 bg-neutral-50 p-8 text-center">
-        <div className="h-16 w-12 rounded border border-dashed border-neutral-300 bg-[#edeeee]" />
-        <p className="max-w-xs text-[12px] leading-relaxed text-neutral-500">{emptyHint}</p>
+      <section
+        className={cn(
+          "image-studio-stage flex h-full flex-col items-center justify-center gap-4 bg-[#fafafa] p-8 text-center",
+          canvas && "stage-canvas stage-canvas--empty",
+        )}
+      >
+        <span className="grid size-12 place-items-center rounded-xl bg-white text-muted-foreground shadow-[0_0_0_1px_rgb(0_0_0/.06),0_2px_4px_-1px_rgb(0_0_0/.05)]">
+          <Expand className="size-5" aria-hidden />
+        </span>
+        <p className="max-w-xs text-[13px] leading-relaxed text-muted-foreground">{emptyHint}</p>
       </section>
     );
   }
@@ -353,18 +356,19 @@ export default function StageView({
     : [];
 
   return (
-    <section className="image-studio-stage flex h-full min-h-0 flex-col bg-neutral-50">
+    <section className={cn("image-studio-stage flex h-full min-h-0 flex-col bg-[#fafafa]", canvas && "stage-canvas")}>
       {/* header — one line, because the images need the rest */}
-      <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1.5 border-b border-neutral-200 bg-white px-4 py-2.5">
+      <div
+        className={cn(
+          "flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1.5",
+          canvas ? "stage-canvas__head" : "border-b border-border bg-white px-4 py-2",
+        )}
+      >
         {/* min-w-0 + truncate on the title so a long garment name shortens
             instead of pushing the controls onto a second row. */}
-        <span className="font-mono text-[10px] font-bold tracking-tight">
-          Run #{run.id.slice(0, 4)}
-        </span>
-        <span className="min-w-0 max-w-[22ch] truncate text-[11px] font-semibold">
-          {title(run)}
-        </span>
-        <span className="font-mono text-[9.5px] text-neutral-500">{runSubtitle(run)}</span>
+        <span className="font-mono text-xs text-muted-foreground">Run #{run.id.slice(0, 4)}</span>
+        <span className="min-w-0 max-w-[26ch] truncate text-sm font-medium text-foreground">{title(run)}</span>
+        <span className="text-xs text-muted-foreground">{runSubtitle(run)}</span>
         {/* 2xl, not lg: at ~880px of stage the strip pushed Export onto a
             second row, and a two-line header costs the images the height. The
             run card carries the same strip, so this one is a convenience. */}
@@ -383,32 +387,26 @@ export default function StageView({
         {(openedShot || (soloIndex !== null && shots.length > 1)) && (
           <Button
             type="button"
-            variant="primary"
             size="sm"
             onClick={() => {
               setOpenedIntake(null);
               setSoloed(null);
             }}
-            className="h-auto gap-1.5 rounded-md px-2.5 py-1 text-[10px] font-bold"
           >
-            <span aria-hidden="true" className="text-[11px] leading-none">
-              ←
-            </span>
+            <ArrowLeft data-icon="inline-start" aria-hidden />
             {openedShot ? "Back to the renders" : "Back to both variants"}
-            <kbd className="rounded border border-white/30 px-1 font-mono text-[8px] opacity-80">
+            <kbd className="ml-0.5 rounded border border-white/25 px-1 font-mono text-[10px] opacity-70">
               Esc
             </kbd>
           </Button>
         )}
 
-        <button
-          type="button"
-          onClick={onOpenDetails}
-          className="rounded-md border border-neutral-200 bg-white px-2 py-1 text-[10px] font-bold text-neutral-700 transition hover:border-neutral-400"
-        >
+        <Button type="button" size="sm" variant="ghost" onClick={onOpenDetails}>
           Details
-        </button>
-        <button
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
           type="button"
           /* By slot, not by position in `visible`: soloed on variant 2 the
              list is one long, so this used to export it named "...-1". */
@@ -419,20 +417,41 @@ export default function StageView({
           }
           disabled={visible.length === 0 || Boolean(openedShot)}
           title={openedShot ? "Go back to the renders to export them" : undefined}
-          className="rounded-md border border-neutral-200 bg-white px-2 py-1 text-[10px] font-bold text-neutral-700 transition hover:border-neutral-400 disabled:opacity-40"
         >
+          <FileOutput data-icon="inline-start" aria-hidden />
           Export
-        </button>
+        </Button>
       </div>
+
+      {canvas && intake.length > 0 && (
+        <div className="stage-canvas__intake" role="region" aria-label="Intake photos">
+          <span className="text-xs text-muted-foreground">From</span>
+          {intake.map((shot, i) => (
+            <button
+              key={shot.url}
+              type="button"
+              className="stage-canvas__chip"
+              aria-pressed={openedIntake === i}
+              onClick={() => setOpenedIntake(openedIntake === i ? null : i)}
+              title={openedIntake === i ? "Back to the renders" : `Open the ${shot.label.toLowerCase()} photo`}
+            >
+              <span className="stage-canvas__chip-img">
+                <Thumb src={shot.url} size={96} alt="" className="h-full w-full object-contain" />
+              </span>
+              {shot.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* the stage */}
       <div className="flex min-h-0 flex-1">
-        {intake.length > 0 && (
+        {!canvas && intake.length > 0 && (
           <IntakeRail shots={intake} opened={openedIntake} onOpen={setOpenedIntake} />
         )}
 
         {openedShot ? (
-          <div className="flex min-h-0 flex-1 justify-center bg-neutral-50 p-4">
+          <div className={cn("flex min-h-0 flex-1 justify-center", canvas ? "stage-canvas__vars" : "bg-[#fafafa] p-4")}>
             <ShotFrame
               url={openedShot.url}
               alt={`${openedShot.label} intake photo`}
@@ -444,16 +463,18 @@ export default function StageView({
           </div>
         ) : (
           <div
-            className={`grid min-h-0 flex-1 gap-px bg-neutral-200 ${
-              visible.length + awaited.length > 1 ? "grid-cols-2" : "grid-cols-1"
-            }`}
+            className={cn(
+              "grid min-h-0 flex-1",
+              canvas ? "stage-canvas__vars" : "gap-px bg-border",
+              visible.length + awaited.length > 1 ? "grid-cols-2" : "grid-cols-1",
+            )}
           >
         {visible.map((url, i) => {
           const slotIndex = soloIndex !== null ? soloIndex : i;
           const kept =
             (picked === "left" && slotIndex === 0) || (picked === "right" && slotIndex === 1);
           return (
-            <div key={`${url}-${slotIndex}`} className="flex min-h-0 justify-center bg-neutral-50 p-4">
+            <div key={`${url}-${slotIndex}`} className={cn("flex min-h-0 justify-center", canvas ? "stage-canvas__cell" : "bg-[#fafafa] p-4")}>
               <ShotFrame
                 url={url}
                 alt={labels[slotIndex] ?? `${title(run)} variant ${slotIndex + 1}`}
@@ -473,7 +494,7 @@ export default function StageView({
           );
         })}
         {awaited.map((slot) => (
-          <div key={`awaited-${slot}`} className="flex min-h-0 justify-center bg-neutral-50 p-4">
+          <div key={`awaited-${slot}`} className={cn("flex min-h-0 justify-center", canvas ? "stage-canvas__cell" : "bg-[#fafafa] p-4")}>
             <PaintingFrame
               label={labels[slot] ?? `Variant ${slot + 1}`}
               startedAt={slotClock(run, slot).startedAt}
@@ -484,10 +505,10 @@ export default function StageView({
         ))}
         {/* Odd count in a 2-up grid: fill the last cell so the gap colour doesn't show as a slab. */}
         {visible.length + awaited.length > 1 && (visible.length + awaited.length) % 2 === 1 && (
-          <div aria-hidden className="bg-neutral-50" />
+          <div aria-hidden className={canvas ? "hidden" : "bg-[#fafafa]"} />
         )}
             {visible.length === 0 && awaited.length === 0 && (
-              <div className="flex items-center justify-center text-[12px] text-neutral-500">
+              <div className="flex items-center justify-center text-[13px] text-muted-foreground">
                 {running ? "Painting variants…" : "This run produced no images."}
               </div>
             )}

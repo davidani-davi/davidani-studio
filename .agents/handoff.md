@@ -25,3 +25,30 @@
 - **Screenshots without the API:** run `next start` with any `AUTH_SECRET`, sign a `davidani_session` cookie (HMAC-SHA256 like `lib/auth.ts`), and stub `/api/upload/direct`, `/api/user-references`, `/api/prompt-studio/photoshoot`, `/api/generate` with Playwright routes.
 - Full-page phone screenshots show the fixed bottom bar in the middle of the page. That's how the capture works; the viewport shots are what a phone shows.
 - #71 uses a 560px phone breakpoint. The project rule is 480px; worth fixing in #71 or its follow-up.
+
+---
+
+# Handoff: canvas-first Image studio (PR #71) on main (2026-11-27, Claude Code)
+
+- **Branch:** `claude/kobra-image-studio`, PR #71, now based on `main` (#69 and #70 are merged).
+- **Earlier handoffs:** the Model Studio upgrade one follows below; the original #71 handoff is in git history: `git show a4beab6:.agents/handoff.md`.
+
+## Done this session
+- Retargeted #71 from `claude/kobra-foundation` to `main` and merged `main` in (only `.agents/handoff.md` conflicted).
+- Phone breakpoint of the canvas layout moved from 560px to the project's 480px (`app/globals.css` phone block, `max-[480px]` in `components/ledger/FloatComposer.tsx`).
+- Checks: vitest 1737 pass; 2 failures are pre-existing and fail on `main` too (`app/admin/models/ModelAdmin.test.tsx` download test, and `mini-worker/wording/evidence.test.mjs` needs the `sqlite3` binary). `next build` passes.
+- Screenshots 1280/900/440/430 (finished run, empty, Options open, mid-render with the beUI animation), mocked APIs, no renders: `/mnt/project-files/image-studio-shots/` in the project.
+
+## What the merge means
+- #71's Kobra restyle of the old Model studio (`components/ModelStudioClient.tsx`) now shows at `/model-studio-legacy`; `/model-studio` is #70's new page.
+
+## Next
+1. David reviews and merges #71.
+2. Next screens in order of daily use. Ask David before making Model studio canvas-first.
+3. Still not checked: real iPhone Safari, a live render, dark mode.
+
+## Gotchas (Image studio)
+- RunLedger/Composer/PaneSplitter are still used by the legacy Model studio; don't delete them.
+- Kobra tokens collide with Paper names; keep overrides inside `.kobra`. The compact header sits outside `.kobra` so JobCenter keeps Paper styles.
+- Screenshot recipe: `next start` with a throwaway AUTH_SECRET, sign a session cookie with it, seed `davidani_history_v1` in localStorage, route `/api/**` in Playwright (`/api/upload/direct` 500 so it falls back to `/api/upload`; leave `/api/generate` pending for the mid-render state).
+
