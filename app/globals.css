@@ -2221,3 +2221,117 @@ select {
   }
   .float-composer__options[data-open] .float-composer__options-inner { max-height: 60dvh; overflow-y: auto; }
 }
+
+/* ── Model Studio, canvas-first ─────────────────────────────────────────────
+   Stage (views + floating run bar) | Setup docked at 1024px and up.
+   Below 1024px Setup is the slide-over drawer; at phone width the page
+   scrolls and the run bar is fixed to the bottom. */
+.ms-canvas {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  min-height: 560px;
+  background: #f6f6f5;
+}
+.ms-canvas__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  background: #f6f6f5;
+}
+.ms-canvas__body[data-panel="open"] { grid-template-columns: minmax(0, 1fr) 440px; }
+.ms-canvas__stage {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.ms-canvas__scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px 24px var(--ms-bar-space, 168px);
+}
+.ms-canvas__start { width: min(560px, 100%); margin: 0 auto; display: flex; flex-direction: column; gap: 8px; padding-bottom: 32px; }
+.ms-views { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; align-items: start; }
+@media (max-width: 1279px) { .ms-canvas__body[data-panel="open"] .ms-views { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 899px) { .ms-views { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; } }
+
+/* floating run bar */
+.ms-bar {
+  position: absolute;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  width: min(820px, calc(100% - 32px));
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.07), 0 2px 4px -1px rgb(0 0 0 / 0.04), 0 16px 40px -12px rgb(0 0 0 / 0.22);
+}
+.ms-bar__notes { display: flex; flex-direction: column; gap: 8px; padding: 10px 10px 0; }
+.ms-bar__main { display: flex; align-items: center; gap: 10px; padding: 10px 10px 6px; min-width: 0; }
+.ms-bar__slots { display: flex; gap: 4px; flex: none; }
+.ms-bar__slot {
+  width: 32px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 7px;
+  background: #edeeee;
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.06);
+  font-size: 11px;
+  font-weight: 600;
+  color: #a1a1aa;
+}
+.ms-bar__slot img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ms-bar__slot.is-empty { background: #fafafa; box-shadow: inset 0 0 0 1px #d4d4d8; }
+.ms-bar__slot:hover { box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.22); }
+.ms-bar__slot:focus-visible { outline: 2px solid #a1a1aa; outline-offset: 1px; }
+.ms-bar__text { flex: 1 1 auto; min-width: 0; }
+.ms-bar__run { flex: none; }
+.ms-bar__keep { display: flex; align-items: center; gap: 4px; padding: 0 10px 10px; min-width: 0; flex-wrap: wrap; }
+.ms-bar__saved { margin-left: auto; padding-left: 8px; }
+
+/* docked Setup */
+.ms-panel {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  box-shadow: -1px 0 0 #e4e4e7;
+}
+.ms-panel__head { display: flex; align-items: center; justify-content: space-between; height: 48px; flex: none; padding: 0 8px 0 16px; box-shadow: 0 1px 0 #f0f0f1; }
+.ms-panel__body { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+.ms-panel .ms-section, .ms-setup .ms-section { border-color: #ececee; }
+
+/* phone: the page scrolls, the run bar docks to the bottom */
+@media (max-width: 480px) {
+  .ms-canvas { height: auto; min-height: 100dvh; }
+  .ms-canvas .studio-header-compact { position: sticky; top: 0; padding: 0 8px 0 12px; }
+  .ms-canvas__scroll { overflow: visible; padding: 12px 16px 190px; gap: 12px; }
+  .ms-views { gap: 10px; }
+  .ms-bar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    transform: none;
+    width: auto;
+    border-radius: 16px 16px 0 0;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .ms-bar__main { flex-wrap: wrap; }
+  .ms-bar__text { flex-basis: calc(100% - 80px); }
+  .ms-bar__run { width: 100%; order: 3; }
+  .ms-bar__saved { display: none; }
+}

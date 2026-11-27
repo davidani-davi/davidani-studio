@@ -1,7 +1,7 @@
 "use client";
 
-// The run controls: method, engine (Advanced), front takes, the one Generate button the core decides
-// (front preview first, then "Generate remaining N"), and what to do with the finished set.
+// The run controls: method, engine (Advanced) and front takes for Setup; the floating run bar with the one Generate
+// button the core decides (front preview first, then "Generate remaining N") and what to do with the finished set.
 import { Download, FolderOpen, Play, Save, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertAction, AlertDescription } from "@/components/ui/alert";
@@ -43,35 +43,56 @@ export function RenderSettings({ engine, variantCount, frontNext, onEngine, onVa
   );
 }
 
-export function RunBar({ label, canRun, blocker, changeNote, summary, staleCount, kept, savedCount, busy, saveText, onRun, onRedoStale, onDownload, onSave, onLoadSaved }: {
+/**
+ * Canvas-first: the bar floats over the foot of the stage (fixed to the bottom on phones). It holds what every run
+ * needs in view: the garment photos it will use, the setup as one line, the Generate button the core decides, and
+ * what to do with the finished set. Everything else lives in Setup.
+ */
+export function RunBar({ label, canRun, blocker, changeNote, summary, recipe, front, back, staleCount, kept, savedCount, busy, saveText, onRun, onRedoStale, onDownload, onSave, onLoadSaved, onSetup }: {
   label: string; canRun: boolean; blocker: string; changeNote: string; summary: string; staleCount: number; kept: number; savedCount: number;
+  /** The setup as one line (person, look, engine, photos), so a run on the wrong person shows before it starts. */
+  recipe: string;
+  /** Thumbnails of the photos assigned as Front and Back ("" when empty). */
+  front: string; back: string;
   busy: "" | "download" | "save"; saveText: string;
-  onRun: () => void; onRedoStale: () => void; onDownload: () => void; onSave: () => void; onLoadSaved: () => void;
+  onRun: () => void; onRedoStale: () => void; onDownload: () => void; onSave: () => void; onLoadSaved: () => void; onSetup: () => void;
 }) {
+  const slot = (src: string, name: string) => (
+    <button type="button" onClick={onSetup} className={cn("ms-bar__slot", !src && "is-empty")} aria-label={`${name} photo: ${src ? "change in Setup" : "pick in Setup"}`}>
+      {src ? <img src={src} alt="" /> : <span aria-hidden>{name[0]}</span>}
+    </button>
+  );
   return (
-    <div className="ms-runbar space-y-2.5">
-      <div className="flex flex-wrap items-center gap-2.5 rounded-[12px] border border-border bg-card p-2.5">
-        <Button size="lg" className="rounded-[10px]" disabled={!canRun} onClick={onRun}><Play data-icon="inline-start" aria-hidden />{label}</Button>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-[13px] text-foreground" data-testid="run-summary">{blocker || summary}</p>
-          <p className="truncate text-[11px] text-muted-foreground">{saveText}</p>
+    <div className="ms-bar" role="region" aria-label="Run">
+      {(changeNote || staleCount > 0) && (
+        <div className="ms-bar__notes">
+          {changeNote && <Alert variant="warning" className="rounded-[12px]"><AlertDescription>{changeNote}</AlertDescription></Alert>}
+          {staleCount > 0 && (
+            <Alert variant="info" className="rounded-[12px]">
+              <AlertDescription>{staleCount} finished view{staleCount === 1 ? " was" : "s were"} made from an older front.</AlertDescription>
+              <AlertAction><Button size="sm" variant="outline" onClick={onRedoStale}>Redo {staleCount} view{staleCount === 1 ? "" : "s"}</Button></AlertAction>
+            </Alert>
+          )}
         </div>
-      </div>
-
-      {changeNote && <Alert variant="warning" className="rounded-[12px]"><AlertDescription>{changeNote}</AlertDescription></Alert>}
-      {staleCount > 0 && (
-        <Alert variant="info" className="rounded-[12px]">
-          <AlertDescription>{staleCount} finished view{staleCount === 1 ? " was" : "s were"} made from an older front.</AlertDescription>
-          <AlertAction><Button size="sm" variant="outline" onClick={onRedoStale}>Redo {staleCount} view{staleCount === 1 ? "" : "s"}</Button></AlertAction>
-        </Alert>
       )}
-
-      <div className="ms-keep grid grid-cols-2 gap-2 min-[481px]:flex min-[481px]:flex-wrap min-[481px]:items-center">
-        <Button variant="outline" disabled={!kept || busy !== ""} onClick={onDownload}><Download data-icon="inline-start" aria-hidden />{busy === "download" ? "Downloading…" : `Download selected${kept ? ` (${kept})` : ""}`}</Button>
-        <Button variant="outline" disabled={!kept || busy !== ""} onClick={onSave}><Save data-icon="inline-start" aria-hidden />{busy === "save" ? "Saving…" : "Save set"}</Button>
-        <Button variant="ghost" disabled={!savedCount} onClick={onLoadSaved}><FolderOpen data-icon="inline-start" aria-hidden />Load saved set{savedCount ? ` (${savedCount})` : ""}</Button>
-        <Button variant="ghost" disabled title={ERP_UPLOAD_REASON}><Upload data-icon="inline-start" aria-hidden />Upload to ERP</Button>
-        <p className="col-span-2 text-[11px] text-muted-foreground min-[481px]:basis-full">{kept ? "" : "Tick Keep on the views you want, then download or save them. "}{ERP_UPLOAD_REASON}</p>
+      <div className="ms-bar__main">
+        <div className="ms-bar__slots">{slot(front, "Front")}{slot(back, "Back")}</div>
+        <div className="ms-bar__text">
+          <p className="truncate text-[13px] font-medium tracking-[-0.01em] text-foreground" data-testid="recipe">{recipe}</p>
+          <p className="truncate text-[12px] text-muted-foreground" data-testid="run-summary">{blocker || summary}</p>
+        </div>
+        <Button size="lg" className="ms-bar__run rounded-[10px]" disabled={!canRun} onClick={onRun}><Play data-icon="inline-start" aria-hidden />{label}</Button>
+      </div>
+      <div className="ms-bar__keep">
+        <Button size="sm" variant="outline" disabled={!kept || busy !== ""} onClick={onDownload} title={kept ? undefined : "Tick Keep on the views you want first."}>
+          <Download data-icon="inline-start" aria-hidden />{busy === "download" ? "Downloading…" : `Download${kept ? ` (${kept})` : ""}`}
+        </Button>
+        <Button size="sm" variant="outline" disabled={!kept || busy !== ""} onClick={onSave} title={kept ? undefined : "Tick Keep on the views you want first."}>
+          <Save data-icon="inline-start" aria-hidden />{busy === "save" ? "Saving…" : "Save set"}
+        </Button>
+        <Button size="sm" variant="ghost" disabled={!savedCount} onClick={onLoadSaved}><FolderOpen data-icon="inline-start" aria-hidden />Load saved{savedCount ? ` (${savedCount})` : ""}</Button>
+        <Button size="sm" variant="ghost" disabled title={ERP_UPLOAD_REASON} aria-label="Upload to ERP (paused)"><Upload data-icon="inline-start" aria-hidden />ERP</Button>
+        <span className="ms-bar__saved truncate text-[11px] text-muted-foreground">{saveText}</span>
       </div>
     </div>
   );
