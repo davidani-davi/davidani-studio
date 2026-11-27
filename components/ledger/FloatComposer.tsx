@@ -186,7 +186,7 @@ export default function FloatComposer(props: FloatComposerProps) {
           type="button"
           variant="ghost"
           size="sm"
-          className="h-10 shrink-0 max-[560px]:px-2"
+          className="h-10 shrink-0 max-[480px]:px-2"
           aria-expanded={open}
           aria-label={open ? "Close options" : "Options"}
           onClick={() => setOpen((v) => !v)}
@@ -196,7 +196,7 @@ export default function FloatComposer(props: FloatComposerProps) {
             aria-hidden
             className={cn("transition-transform duration-200", open && "rotate-180")}
           />
-          <span className="max-[560px]:hidden">Options</span>
+          <span className="max-[480px]:hidden">Options</span>
         </Button>
         <GenerateButton
           onGenerate={onGenerate}
@@ -218,8 +218,8 @@ export default function FloatComposer(props: FloatComposerProps) {
         <span>{side}</span>
         <span aria-hidden>·</span>
         <span>{controls.isSet ? "Coordinated set" : "Single garment"}</span>
-        <span aria-hidden className="max-[560px]:hidden">·</span>
-        <span className="truncate max-[560px]:hidden" title={modelLabel}>
+        <span aria-hidden className="max-[480px]:hidden">·</span>
+        <span className="truncate max-[480px]:hidden" title={modelLabel}>
           {modelLabel}
         </span>
       </div>

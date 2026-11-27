@@ -2172,7 +2172,7 @@ select {
 .studio-side-panel__body { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
 
 /* phone: stage first, history as a row, composer docked */
-@media (max-width: 560px) {
+@media (max-width: 480px) {
   .image-studio-canvas { height: auto; min-height: 100dvh; }
   .studio-header-compact { position: sticky; top: 0; padding: 0 8px 0 12px; }
   .image-studio-canvas__body,
