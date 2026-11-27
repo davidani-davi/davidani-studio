@@ -92,6 +92,8 @@ export interface HumanModel {
   /** false = plates.json `auto: false`: never assigned by style, hand-pick only
    *  (the wardrobe variants) — lib/plate-assign.ts. */
   autoPool?: boolean;
+  /** plates.json full_length: front, side and back all reach the shoes (lib/plate-wear.ts). */
+  fullLength?: boolean;
 }
 
 const IMAGE_EXTS = new Set(["png", "jpg", "jpeg", "webp"]);
@@ -517,7 +519,8 @@ export async function getPoseUrl(
   if (existing) return existing;
 
   const upload = (async () => {
-    const models = listHumanModels();
+    // Pants plates live in public/pants-references, not public/models (local dev only; Vercel uses publicPath).
+    const models = withPantsReferences(listHumanModels());
     const model = models.find((m) => m.id === modelId);
     if (!model) throw new Error(`Unknown model: ${modelId}`);
     const pose = model.poses.find((p) => p.id === poseId);
@@ -536,7 +539,8 @@ export async function getPoseUrl(
       ? path.join(baseDir, pose.subdir, chosenView.filename)
       : path.join(baseDir, chosenView.filename);
 
-    const buffer = fs.readFileSync(resolvedPath);
+    const buffer = fs.readFileSync(isPantsReference(model.id) && chosenView.publicPath.startsWith("/")
+      ? path.join(process.cwd(), "public", chosenView.publicPath.split("?")[0]) : resolvedPath);
     const ext = path.extname(chosenView.filename).slice(1).toLowerCase();
     const mime = ext === "jpg" || ext === "jpeg" ? "image/jpeg" : `image/${ext}`;
     const blob = new Blob([buffer], { type: mime });

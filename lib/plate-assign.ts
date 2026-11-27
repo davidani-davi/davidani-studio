@@ -1,3 +1,4 @@
+import houseUserSets from "./house-user-sets.json";
 import { bottomPlates, isBottom, silhouettePlates } from "./plate-wear";
 
 /**
@@ -27,8 +28,11 @@ import { bottomPlates, isBottom, silhouettePlates } from "./plate-wear";
  * plates explicitly still works.
  */
 export function housePlates<T extends { id: string }>(plates: T[]): T[] {
-  return (plates || []).filter((p) => /^studio\s*\d+$/i.test(p.id.trim()));
+  return (plates || []).filter((p) => /^studio\s*\d+$/i.test(p.id.trim()) || HOUSE_USER_SETS.has(p.id.trim()));
 }
+
+/** Saved reference sets that David put in the house pool (lib/house-user-sets.json): Jeonga's VISION and CELINE sets. */
+export const HOUSE_USER_SETS: ReadonlySet<string> = new Set(houseUserSets.ids);
 
 export interface PlateChoice {
   humanModelId: string;
@@ -59,8 +63,8 @@ export function plateHash(styleCode: string): number {
  */
 export function assignPlate(
   styleCode: string,
-  plates: Array<{ id: string; poses: Array<{ id: string }>; lowOk?: boolean; silhouette?: string; autoPool?: boolean }>,
-  opts: { preferPrefix?: string; category?: string; silhouette?: string } = {}
+  plates: Array<{ id: string; poses: Array<{ id: string }>; lowOk?: boolean; silhouette?: string; autoPool?: boolean; fullLength?: boolean }>,
+  opts: { preferPrefix?: string; category?: string; silhouette?: string; hem?: string } = {}
 ): PlateChoice | null {
   // plates.json `auto: false` keeps a plate out of every automatic pool — an
   // explicit preferPrefix still reaches it, and so does the picker.
@@ -82,6 +86,14 @@ export function assignPlate(
     // on a plate photographed in that body, when one is tagged (silhouetteOf).
     const shaped = silhouettePlates(usable, opts.silhouette);
     if (shaped.length) preferred = shaped;
+  }
+  // A long hem (a duster, a maxi coat) shot on a head-to-thigh plate gets cut to fit the frame, so a long top or
+  // outerwear piece draws only from the sets whose front, side and back are full length (plate-wear fullLength).
+  // Those sets may be auto:false for everyday use: being the only plates that fit is the reason to reach them,
+  // the same way a bottom reaches the shared pants collection.
+  if (!opts.preferPrefix && opts.hem === "long" && !isBottom(opts.category)) {
+    const full = (plates || []).filter((p) => p.fullLength === true && p.poses && p.poses.length);
+    if (full.length) preferred = full;
   }
   const list = preferred.length ? preferred : usable;
 

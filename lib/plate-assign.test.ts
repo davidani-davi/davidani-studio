@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { assignPlate, housePlates, plateHash, spread } from "./plate-assign";
+import { assignPlate, HOUSE_USER_SETS, housePlates, plateHash, spread } from "./plate-assign";
 
 const PLATES = Array.from({ length: 8 }, (_, i) => ({
   id: `studio ${String(i + 1).padStart(2, "0")}`,
@@ -74,6 +74,24 @@ describe("assignPlate", () => {
     expect(housePlates(mixed).map((p) => p.id)).toEqual(PLATES.map((p) => p.id));
   });
 
+  it("puts Jeonga's VISION and CELINE sets in the Auto pool, but not her other drafts", () => {
+    const mixed = [
+      ...PLATES,
+      { id: "draft-jeonga-celine-7-mwtj90t6", poses: [{ id: "draft-jeonga-celine-7-mwtj90t6-pose" }] },
+      { id: "draft-jeonga-vision-6-mwdqmit0", poses: [{ id: "draft-jeonga-vision-6-mwdqmit0-pose" }] },
+      { id: "draft-jeonga-bottom-1-x", poses: [{ id: "draft-jeonga-bottom-1-x-pose" }] },
+      { id: "celine-dct78115-mvy5e2r2", poses: [{ id: "celine-dct78115-mvy5e2r2-pose" }] },
+    ];
+    const house = housePlates(mixed).map((p) => p.id);
+    expect(house).toContain("draft-jeonga-celine-7-mwtj90t6");
+    expect(house).toContain("draft-jeonga-vision-6-mwdqmit0");
+    expect(house).not.toContain("draft-jeonga-bottom-1-x");
+    expect(house).not.toContain("celine-dct78115-mvy5e2r2");
+    expect(HOUSE_USER_SETS.size).toBe(12);
+    const picked = new Set(Array.from({ length: 200 }, (_, i) => assignPlate(`DT${70000 + i}`, mixed)!.humanModelId));
+    expect(picked.has("draft-jeonga-celine-7-mwtj90t6")).toBe(true);
+  });
+
   it("still uses whatever exists when no house plate is installed", () => {
     const old = [{ id: "kylie 1", poses: [{ id: "kylie 1" }] }];
     expect(assignPlate("DA1", old)!.humanModelId).toBe("kylie 1");
@@ -135,5 +153,34 @@ describe("plates kept out of automatic assignment (studio 65, 2026-09-08)", () =
   });
   it("still reaches it when asked for by prefix", () => {
     expect(assignPlate("DWT62170", plates, { preferPrefix: "studio 65" })!.humanModelId).toBe("studio 65");
+  });
+});
+
+describe("long hems draw from full-length sets (DT70171, 2026-11-24)", () => {
+  const pose = [{ id: "p" }];
+  const plates = [
+    { id: "studio 97", poses: pose },
+    { id: "studio 99", poses: pose },
+    { id: "studio 110", poses: pose, autoPool: false, fullLength: true },
+    { id: "studio 114", poses: pose, autoPool: false, fullLength: true },
+  ];
+  it("a long top or coat lands only on a full-length set, even one kept out of the everyday pool", () => {
+    for (const code of ["DT70171", "DJ67094", "DCJ1", "DT2", "DT3", "DT4", "DT5", "DT6"]) {
+      const c = assignPlate(code, plates, { category: "outerwear", hem: "long" });
+      expect(["studio 110", "studio 114"]).toContain(c?.humanModelId);
+    }
+  });
+  it("any other hem keeps the everyday pool", () => {
+    for (const code of ["DT70171", "DT2", "DT3", "DT4"]) {
+      expect(["studio 97", "studio 99"]).toContain(assignPlate(code, plates, { category: "top", hem: "" })?.humanModelId);
+      expect(["studio 97", "studio 99"]).toContain(assignPlate(code, plates, { category: "top", hem: "mid" })?.humanModelId);
+    }
+  });
+  it("falls back to the everyday pool when no set is full length", () => {
+    const c = assignPlate("DT70171", plates.slice(0, 2), { category: "outerwear", hem: "long" });
+    expect(["studio 97", "studio 99"]).toContain(c?.humanModelId);
+  });
+  it("an explicit prefix still wins", () => {
+    expect(assignPlate("DT70171", plates, { category: "top", hem: "long", preferPrefix: "studio 97" })?.humanModelId).toBe("studio 97");
   });
 });

@@ -1,0 +1,7 @@
+{
+  "_doc": "The house people (2026-11-24). A person is who wears the clothes; a model set/plate is one shoot of that person in poses. Faces stay protected per photo by reviewed contours; the portrait here is only for picking. Add a person only after David approves the face.",
+  "people": [
+    { "id": "vision", "name": "Vision", "portrait": "/identity-masters/vision-approved.png", "about": "House model: Vision identity master (GPT 2.5 reference identity)." },
+    { "id": "celine", "name": "Celine", "portrait": "/identity-masters/celine-loose.png", "about": "House model: Celine identity master, dark brunette, straight hair." }
+  ]
+}

@@ -334,9 +334,11 @@ async function fetchJson(label: string, input: string, init?: RequestInit): Prom
 interface Props {
   initialHumanModels: HumanModel[];
   beta?: boolean;
+  /** The old single-model page now lives at /model-studio-legacy. */
+  legacy?: boolean;
 }
 
-export default function ModelStudioClient({ initialHumanModels, beta = false }: Props) {
+export default function ModelStudioClient({ initialHumanModels, beta = false, legacy = false }: Props) {
   const historyKey = beta ? BETA_HISTORY_KEY : HISTORY_KEY;
   const currentIdKey = beta ? BETA_CURRENT_ID_KEY : CURRENT_ID_KEY;
   const cloudHistoryStudio: CloudHistoryStudio = beta ? "model-beta" : "model";
@@ -2914,7 +2916,7 @@ export default function ModelStudioClient({ initialHumanModels, beta = false }: 
   return (
     <main className="flex min-h-screen flex-col bg-neutral-50 lg:h-screen">
       <StudioHeader
-        active={beta ? "model-beta" : "model"}
+        active={beta ? "model-beta" : legacy ? "model-legacy" : "model"}
         title={beta ? "Multi model" : "Single model"}
         subtitle={
           beta

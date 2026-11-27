@@ -564,7 +564,7 @@ export default function LibraryClient() {
           importedAt: new Date().toISOString(),
         })
       );
-      window.location.href = "/model-studio";
+      window.location.href = "/model-studio-legacy";
     } catch {
       setError("Could not send this image to Single model.");
     }
