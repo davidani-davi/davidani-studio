@@ -1,16 +1,16 @@
 "use client";
 
-import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import { type BatchProgress, type ProductShotMode } from "@/components/PromptPanel";
 import type { RoutingControls } from "@/components/RoutingPanel";
 import OutputPanel from "@/components/OutputPanel";
-import RunLedger from "@/components/ledger/RunLedger";
+import HistoryStrip from "@/components/ledger/HistoryStrip";
+import SidePanel, { type SidePanelTab } from "@/components/ledger/SidePanel";
+import { useMediaQuery } from "@/lib/hooks/use-media-query";
 import StageView from "@/components/ledger/StageView";
-import Composer from "@/components/ledger/Composer";
+import FloatComposer from "@/components/ledger/FloatComposer";
 import ErpPicker, { type ErpPhotoOption } from "@/components/ledger/ErpPicker";
-import PaneSplitter from "@/components/ledger/PaneSplitter";
-import { LEDGER_DEFAULT, clampLedgerWidth, readLedgerWidth } from "@/lib/pane-size";
 import StudioDrawer from "@/components/ledger/StudioDrawer";
 import { dropStrandedRuns, wantsSecondLook, type LedgerFilter } from "@/lib/run-pipeline";
 import StudioHeader from "@/components/StudioHeader";
@@ -51,7 +51,6 @@ import {
 
 const HISTORY_KEY = "davidani_history_v1";
 const CURRENT_ID_KEY = "davidani_image_current_run_v1";
-const LEDGER_WIDTH_KEY = "image-studio:ledger-width";
 const IMAGE_JOBS_KEY = "davidani_image_jobs_v1";
 const USER_ID_KEY = "davidani_user_id_v1";
 const IMAGE_STUDIO_VERSION = "2.3";
@@ -483,24 +482,19 @@ export default function StudioPage() {
    * space between the operator and the render.
    */
   const [ledgerFilter, setLedgerFilter] = useState<LedgerFilter>("all");
-  /**
-   * How wide the operator has dragged the ledger.
-   *
-   * Starts at the default rather than reading localStorage during render:
-   * the server has no localStorage, so seeding from it directly would make
-   * the first client render disagree with the markup it is hydrating.
-   */
-  const [ledgerWidth, setLedgerWidth] = useState(LEDGER_DEFAULT);
   /** Which intake slot the ERP gallery search is open for, if any. */
   const [erpSlot, setErpSlot] = useState<"front" | "back" | null>(null);
 
-  useEffect(() => {
-    const saved = readLedgerWidth(localStorage.getItem(LEDGER_WIDTH_KEY));
-    if (saved !== null) setLedgerWidth(clampLedgerWidth(saved, window.innerWidth));
-  }, []);
 
   const [setupOpen, setSetupOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  // Wide screens dock Details and Setup beside the stage; narrow ones slide them over.
+  const docked = useMediaQuery("(min-width: 1024px)");
+  const panel: SidePanelTab | null = detailsOpen ? "details" : setupOpen ? "setup" : null;
+  const openPanel = (next: SidePanelTab | null) => {
+    setDetailsOpen(next === "details");
+    setSetupOpen(next === "setup");
+  };
 
   // Load history on mount
   useEffect(() => {
@@ -1654,137 +1648,7 @@ export default function StudioPage() {
     a.remove();
   }
 
-  return (
-    <main className="flex min-h-screen flex-col bg-neutral-50 lg:h-screen">
-      <StudioHeader
-        active="image"
-        title="Image studio"
-        subtitle="Generate clean product photos from uploaded garments."
-        badge="V2.3"
-        metrics={[
-          { label: "Runs", value: history.length },
-          {
-            label: "Active",
-            value: loading ? 1 : 0,
-          },
-        ]}
-      />
-
-      <div
-        className="image-studio-layout min-h-0 flex-1"
-        style={{ "--ledger-w": `${ledgerWidth}px` } as CSSProperties}
-      >
-        <RunLedger
-          runs={history}
-          currentId={currentId}
-          runningId={history.find((run) => run.pending)?.id ?? null}
-          filter={ledgerFilter}
-          onFilterChange={setLedgerFilter}
-          onSelect={(id) => {
-            setCurrentId(id);
-            localStorage.setItem(CURRENT_ID_KEY, id);
-          }}
-          onClearHistory={clearHistory}
-          onNewRun={startNewRun}
-          composer={
-            <>
-              {batchProgress && (
-                <div className="shrink-0 border-t border-neutral-200 bg-brand-50/60 px-3 py-2">
-                  <div className="mb-1 flex items-center justify-between text-[9.5px] font-semibold text-brand-800">
-                    <span>
-                      Batch · {batchProgress.done}/{batchProgress.total}
-                      {batchProgress.failed > 0 ? ` · ${batchProgress.failed} failed` : ""}
-                    </span>
-                    <span className="capitalize text-brand-600">{batchProgress.stage}</span>
-                  </div>
-                  <div className="h-1 overflow-hidden rounded-full bg-brand-100">
-                    <div
-                      className="h-full rounded-full bg-brand-500 transition-all"
-                      style={{
-                        width: `${Math.round(
-                          (batchProgress.done / Math.max(1, batchProgress.total)) * 100
-                        )}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-              )}
-              <Composer
-                frontIntakeUrl={frontIntakeUrl}
-                backIntakeUrl={backIntakeUrl}
-                onAddFiles={addFiles}
-                onClearIntake={removeUpload}
-                styleNumber={styleNumber}
-                onStyleNumberChange={setStyleNumber}
-                controls={routingControls}
-                modelLabel={`${MODELS[modelId].label} · ${IMAGE_STUDIO_OUTPUT_SIZE.width}×${IMAGE_STUDIO_OUTPUT_SIZE.height}`}
-                onGenerate={runGeneration}
-                generateLabel={generateLabel}
-                generateDisabled={generateDisabled}
-                busy={loading || uploading}
-                analyzing={analyzing}
-                onBatch={runBatchGeneration}
-                canBatch={batchEligibility(productShotMode, selected.length).enabled}
-                batchDisabledReason={
-                  batchEligibility(productShotMode, selected.length).reason ?? undefined
-                }
-                onOpenSetup={() => setSetupOpen(true)}
-              onSearchErp={setErpSlot}
-                canvasNeedsStyleNumber={routingCanvas?.fallbackReason === "category-inferred"}
-              />
-            </>
-          }
-        />
-        <PaneSplitter
-          width={ledgerWidth}
-          onWidth={setLedgerWidth}
-          onCommit={(width) => localStorage.setItem(LEDGER_WIDTH_KEY, String(width))}
-        />
-
-        <StageView
-          run={currentRun ?? null}
-          running={loading}
-          onKeep={
-            currentRun?.abTest
-              ? (slot) =>
-                  recordPick({
-                    generationId: currentRun.id,
-                    selectedImage: slot,
-                    promptUsed: currentRun.prompt,
-                  })
-              : undefined
-          }
-          onDownload={downloadOutput}
-          onOpenDetails={() => setDetailsOpen(true)}
-        />
-      </div>
-
-      <StudioDrawer
-        open={erpSlot !== null}
-        title={`ERP photos · ${erpSlot === "back" ? "Back" : "Front"}`}
-        subtitle="Every photo the ERP holds for a style, grouped as the ERP files them."
-        wide
-        onClose={() => setErpSlot(null)}
-      >
-        {erpSlot && (
-          <ErpPicker
-            slot={erpSlot}
-            initialStyle={styleNumber}
-            onPick={async (photo, style) => {
-              await importErpPhoto(erpSlot, photo, style);
-              setErpSlot(null);
-            }}
-            onClose={() => setErpSlot(null)}
-          />
-        )}
-      </StudioDrawer>
-
-      <StudioDrawer
-        open={setupOpen}
-        title="Setup"
-        subtitle="Canvas, model and export — the controls a run does not usually need."
-        onClose={() => setSetupOpen(false)}
-      >
+  const setupBody = (
           <Sidebar
             modelId={modelId}
             // Used to also force format back to PNG for Nano Banana. The
@@ -1815,15 +1679,9 @@ export default function StudioPage() {
             onReferenceReset={resetReferenceImage}
             referenceUploading={referenceUploading}
           />
-      </StudioDrawer>
+  );
 
-      <StudioDrawer
-        open={detailsOpen}
-        title="Run details"
-        subtitle="Feedback, batch grids and the full routing trail for this run."
-        wide
-        onClose={() => setDetailsOpen(false)}
-      >
+  const detailsBody = (
           <OutputPanel
             current={currentRun}
             history={history}
@@ -1860,6 +1718,138 @@ export default function StudioPage() {
               // don't click Generate, which matches the rest of the flow.
             }}
           />
+  );
+
+  return (
+    <main className="image-studio-canvas">
+      <StudioHeader active="image" title="Image studio" compact />
+
+      <div className="image-studio-canvas__body kobra" data-panel={docked && panel ? "open" : undefined}>
+        <HistoryStrip
+          runs={history}
+          currentId={currentId}
+          filter={ledgerFilter}
+          onFilterChange={setLedgerFilter}
+          onSelect={(run) => {
+            setCurrentId(run.id);
+            localStorage.setItem(CURRENT_ID_KEY, run.id);
+          }}
+          onNewRun={startNewRun}
+        />
+
+        <div className="image-studio-canvas__stage">
+          <StageView
+            run={currentRun ?? null}
+            running={loading}
+            onKeep={
+              currentRun?.abTest
+                ? (slot) =>
+                    recordPick({
+                      generationId: currentRun.id,
+                      selectedImage: slot,
+                      promptUsed: currentRun.prompt,
+                    })
+                : undefined
+            }
+            onDownload={downloadOutput}
+            onOpenDetails={() => openPanel(panel === "details" ? null : "details")}
+            canvas
+            emptyHint="Drop a garment photo on the bar below, or type a style number, then press Generate. Finished runs land here at full size and stay in the history on the left."
+          />
+          <FloatComposer
+                  frontIntakeUrl={frontIntakeUrl}
+                  backIntakeUrl={backIntakeUrl}
+                  onAddFiles={addFiles}
+                  onClearIntake={removeUpload}
+                  styleNumber={styleNumber}
+                  onStyleNumberChange={setStyleNumber}
+                  controls={routingControls}
+                  modelLabel={`${MODELS[modelId].label} · ${IMAGE_STUDIO_OUTPUT_SIZE.width}×${IMAGE_STUDIO_OUTPUT_SIZE.height}`}
+                  onGenerate={runGeneration}
+                  generateLabel={generateLabel}
+                  generateDisabled={generateDisabled}
+                  busy={loading || uploading}
+                  analyzing={analyzing}
+                  onBatch={runBatchGeneration}
+                  canBatch={batchEligibility(productShotMode, selected.length).enabled}
+                  batchDisabledReason={
+                    batchEligibility(productShotMode, selected.length).reason ?? undefined
+                  }
+                  onOpenSetup={() => openPanel("setup")}
+                  onSearchErp={setErpSlot}
+                  canvasNeedsStyleNumber={routingCanvas?.fallbackReason === "category-inferred"}
+            progress={
+              batchProgress ? (
+                <div className="float-composer__batch">
+                  <div className="mb-1 flex items-center justify-between text-[11px] font-medium text-foreground">
+                    <span>
+                      Batch · {batchProgress.done}/{batchProgress.total}
+                      {batchProgress.failed > 0 ? ` · ${batchProgress.failed} failed` : ""}
+                    </span>
+                    <span className="capitalize text-muted-foreground">{batchProgress.stage}</span>
+                  </div>
+                  <div className="h-1 overflow-hidden rounded-full bg-muted">
+                    <div
+                      className="h-full rounded-full bg-foreground transition-all"
+                      style={{
+                        width: `${Math.round((batchProgress.done / Math.max(1, batchProgress.total)) * 100)}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              ) : null
+            }
+          />
+        </div>
+
+        {docked && panel ? (
+          <SidePanel
+            tab={panel}
+            onTabChange={openPanel}
+            onClose={() => openPanel(null)}
+            details={detailsBody}
+            setup={setupBody}
+          />
+        ) : null}
+      </div>
+
+      <StudioDrawer
+        open={erpSlot !== null}
+        title={`ERP photos · ${erpSlot === "back" ? "Back" : "Front"}`}
+        subtitle="Every photo the ERP holds for a style, grouped as the ERP files them."
+        wide
+        onClose={() => setErpSlot(null)}
+      >
+        {erpSlot && (
+          <ErpPicker
+            slot={erpSlot}
+            initialStyle={styleNumber}
+            onPick={async (photo, style) => {
+              await importErpPhoto(erpSlot, photo, style);
+              setErpSlot(null);
+            }}
+            onClose={() => setErpSlot(null)}
+          />
+        )}
+      </StudioDrawer>
+
+      <StudioDrawer
+        open={!docked && setupOpen}
+        title="Setup"
+        subtitle="Canvas, model and export — the controls a run does not usually need."
+        onClose={() => setSetupOpen(false)}
+      >
+        {setupBody}
+      </StudioDrawer>
+
+      <StudioDrawer
+        open={!docked && detailsOpen}
+        title="Run details"
+        subtitle="Feedback, batch grids and the full routing trail for this run."
+        wide
+        onClose={() => setDetailsOpen(false)}
+      >
+        {detailsBody}
       </StudioDrawer>
 
       {/* Batch report — informational, so it is not styled as a failure.

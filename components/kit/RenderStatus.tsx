@@ -12,7 +12,7 @@ import { useEffect, useState } from "react";
 import { AlertCircle, Check, RotateCcw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { ImageGeneration } from "@/components/ui/image-generation";
+import { ImageGeneration, type ImageGenerationStatus } from "@/components/agents/image-generation";
 import { Progress } from "@/components/ui/progress";
 import { Spinner } from "@/components/ui/spinner";
 import type { StudioJobStatus } from "@/components/studio-job-store";
@@ -79,13 +79,16 @@ export function RenderStatus({
           </div>
         ) : (
           <ImageGeneration
-            className="max-w-none rounded-lg"
-            src={status === "done" ? imageUrl : undefined}
-            alt={title ? `${title} view` : "Rendered image"}
-            resolution={resolution}
-            progress={view.progress}
-            step={current?.label}
-          />
+            status={generationStatus(status, imageUrl)}
+            size="fluid"
+            aspectRatio={aspect(resolution)}
+            resolution=""
+            showStatus={false}
+            statusText={current?.label}
+            label={title ? `${title} view` : "Rendered image"}
+          >
+            {status === "done" && imageUrl ? <img src={imageUrl} alt="" /> : null}
+          </ImageGeneration>
         )}
       </div>
 
@@ -151,6 +154,13 @@ function useClock(running: boolean) {
     return () => window.clearInterval(t);
   }, [running]);
   return now;
+}
+
+function generationStatus(status: StudioJobStatus, imageUrl?: string): ImageGenerationStatus {
+  if (status === "done") return imageUrl ? "complete" : "refining";
+  if (status === "queued") return "queued";
+  if (status === "saving") return "refining";
+  return "generating";
 }
 
 function aspect(resolution: string) {

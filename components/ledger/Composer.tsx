@@ -1,8 +1,7 @@
 "use client";
 
-import { StatefulButton, type ButtonState } from "@/components/motion/button";
 import type { RoutingControls } from "../RoutingPanel";
-import { Flip, IntakeSlot } from "./ComposerParts";
+import { ComposerActions, FoldedComposer, FoldHandle, Flip, IntakeSlot, StyleField, useComposerFold } from "./ComposerParts";
 
 /**
  * The docked bar at the foot of the ledger: what the next run will be.
@@ -69,10 +68,32 @@ export default function Composer({
   canvasNeedsStyleNumber: boolean;
 }) {
   const contract = controls.mode === "front-back-contract";
-  const buttonState: ButtonState = analyzing || busy ? "loading" : "idle";
+
+  const [folded, setFolded] = useComposerFold();
+
+  if (folded) {
+    return (
+      <FoldedComposer
+        intakeUrl={frontIntakeUrl}
+        styleId="composer-style"
+        styleNumber={styleNumber}
+        onStyleNumberChange={onStyleNumberChange}
+        onDropFiles={(files) => onAddFiles(files, "front")}
+        onUnfold={() => setFolded(false)}
+        generate={{
+          onGenerate,
+          label: generateLabel,
+          disabled: generateDisabled,
+          busy,
+          analyzing,
+        }}
+      />
+    );
+  }
 
   return (
-    <div className="shrink-0 border-t border-neutral-200 bg-white px-4 pb-4 pt-3.5">
+    <div className="shrink-0 border-t border-border bg-white px-4 pb-4 pt-4">
+      <FoldHandle onFold={() => setFolded(true)} />
       {/*
         Intake is two tiles on their own row, not two thumbnails wedged beside
         the style field. They were 42x52 — smaller than the favicon — for the
@@ -99,31 +120,15 @@ export default function Composer({
         />
       </div>
 
-      <div className="mb-3">
-        <label
-          htmlFor="composer-style"
-          className="mb-1.5 block font-mono text-[9.5px] font-semibold uppercase tracking-[0.12em] text-neutral-500"
-        >
-          Style number
-        </label>
-        <input
-          id="composer-style"
-          type="text"
-          value={styleNumber}
-          onChange={(e) => onStyleNumberChange(e.target.value)}
-          placeholder="DWTS67099"
-          spellCheck={false}
-          autoCapitalize="characters"
-          className={`h-10 w-full rounded-lg border bg-white px-3 font-mono text-[13px] uppercase tracking-wide outline-hidden transition placeholder:text-neutral-300 focus:ring-2 focus:ring-brand-100 ${
-            canvasNeedsStyleNumber
-              ? "border-amber-300 focus:border-amber-400"
-              : "border-neutral-200 focus:border-brand-500"
-          }`}
-        />
-      </div>
+      <StyleField
+        id="composer-style"
+        value={styleNumber}
+        onChange={onStyleNumberChange}
+        warn={canvasNeedsStyleNumber}
+      />
 
       {canvasNeedsStyleNumber && (
-        <p className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] leading-snug text-amber-800">
+        <p className="mb-3 rounded-lg bg-[#fdf3e1] px-3 py-2 text-xs leading-snug text-[#8a5a12] shadow-[inset_0_0_0_1px_rgb(138_90_18/.15)]">
           Category read from the photo alone, so this run goes to the empty sweep. A style number
           buys the approved flat lay.
         </p>
@@ -133,9 +138,9 @@ export default function Composer({
         One line, read as a sentence: what this run is, and where that came
         from. It replaces four segmented pills and a separate note underneath.
       */}
-      <div className="mb-3 flex flex-wrap items-baseline gap-x-1 gap-y-1 text-[12px] text-neutral-500">
+      <div className="mb-3 flex flex-wrap items-baseline gap-x-1 gap-y-1 text-[13px] text-muted-foreground">
         {contract ? (
-          <span className="text-[12.5px] font-bold text-neutral-800">Front + back</span>
+          <span className="text-[13px] font-medium text-foreground">Front + back</span>
         ) : (
           <Flip
             label="Product shot side"
@@ -156,55 +161,18 @@ export default function Composer({
         <span className="ml-0.5">— {VIEW_NOTE[controls.viewSource]}</span>
       </div>
 
-      {/* Its own line. Sharing the button row, the label was truncating
-          mid-word — "CHATGPT IMAGE GENERATO…" — which is the one thing it
-          exists to tell you. */}
-      <p className="mb-2 truncate font-mono text-[9.5px] uppercase tracking-[0.12em] text-neutral-400">
-        {modelLabel}
-      </p>
-
-      <div className="flex items-center gap-3">
-        {/* Quiet text, not bordered buttons. Neither is pressed on a normal
-            run, and drawn as buttons they competed with the one that is. */}
-        <button
-          type="button"
-          onClick={onOpenSetup}
-          className="shrink-0 text-[11.5px] font-semibold text-neutral-500 underline-offset-2 transition hover:text-neutral-900 hover:underline"
-        >
-          Setup
-        </button>
-        <button
-          type="button"
-          onClick={onBatch}
-          disabled={!canBatch || busy}
-          title={batchDisabledReason}
-          className="shrink-0 text-[11.5px] font-semibold text-neutral-500 underline-offset-2 transition hover:text-neutral-900 hover:underline disabled:cursor-not-allowed disabled:text-neutral-400 disabled:no-underline"
-        >
-          Batch
-        </button>
-        <span className="flex-1" />
-        {/*
-          beUI StatefulButton. Generate is a ~110 second action, so its label
-          is the only place the interface can say so continuously — the button
-          carries analyzing -> generating itself, spinner and all, instead of
-          this bar owning a separate progress affordance.
-        */}
-        <StatefulButton
-          state={buttonState}
-          onClick={onGenerate}
-          disabled={generateDisabled}
-          size="sm"
-          loadingText={analyzing ? "Analyzing" : "Generating"}
-          icon={
-            <kbd className="rounded border border-white/30 px-1 font-mono text-[9px] opacity-80 max-[480px]:hidden">
-              ⌘↵
-            </kbd>
-          }
-          className="h-11 shrink-0 rounded-xl px-5 text-[13px] font-bold"
-        >
-          {generateLabel}
-        </StatefulButton>
-      </div>
+      <ComposerActions
+        modelLabel={modelLabel}
+        onOpenSetup={onOpenSetup}
+        onBatch={onBatch}
+        canBatch={canBatch}
+        batchDisabledReason={batchDisabledReason}
+        busy={busy}
+        analyzing={analyzing}
+        onGenerate={onGenerate}
+        generateLabel={generateLabel}
+        generateDisabled={generateDisabled}
+      />
     </div>
   );
 }
