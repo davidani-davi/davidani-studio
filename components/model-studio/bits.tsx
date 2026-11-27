@@ -2,7 +2,7 @@
 
 // Small shared pieces of the Model Studio page: a photo that fades in over a shimmer and falls back to a designed
 // tile, a segmented control, and the titled section every panel uses (12 px cards, 10 px controls, 6 px tags).
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ImageOff } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -10,7 +10,13 @@ import { cn } from "@/lib/utils";
 export function Thumb({ src, alt, className, fit = "cover", label }: { src?: string; alt: string; className?: string; fit?: "cover" | "contain"; label?: string }) {
   const [state, setState] = useState<"loading" | "ready" | "broken">(src ? "loading" : "broken");
   const [shown, setShown] = useState(src);
+  const img = useRef<HTMLImageElement>(null);
   if (src !== shown) { setShown(src); setState(src ? "loading" : "broken"); }
+  // A server-rendered <img> can finish loading before React hydrates and attaches onLoad; catch that here.
+  useEffect(() => {
+    const el = img.current;
+    if (el?.complete) setState(el.naturalWidth > 0 ? "ready" : "broken");
+  }, [shown]);
   return (
     <div className={cn("ms-thumb relative overflow-hidden rounded-[10px] bg-muted", className)}>
       {state === "loading" && <Skeleton className="absolute inset-0 rounded-none" />}
@@ -22,6 +28,7 @@ export function Thumb({ src, alt, className, fit = "cover", label }: { src?: str
       ) : (
         // eslint-disable-next-line @next/next/no-img-element
         <img
+          ref={img}
           src={src}
           alt={alt}
           loading="lazy"

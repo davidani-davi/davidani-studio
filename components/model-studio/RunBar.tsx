@@ -2,7 +2,8 @@
 
 // The run controls: method, engine (Advanced) and front takes for Setup; the floating run bar with the one Generate
 // button the core decides (front preview first, then "Generate remaining N") and what to do with the finished set.
-import { Download, FolderOpen, Play, Save, Upload } from "lucide-react";
+import type { ReactNode } from "react";
+import { Download, FolderOpen, Play, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertAction, AlertDescription } from "@/components/ui/alert";
 import { ENGINES, type Engine } from "@/lib/model-studio/types";
@@ -10,7 +11,6 @@ import { variantCostText, MAX_VARIANTS } from "@/lib/model-studio/variants";
 import { cn } from "@/lib/utils";
 import { Row, Section, Segmented, Tag } from "./bits";
 
-export const ERP_UPLOAD_REASON = "ERP upload is paused while the ERP write load is fixed (PR #43). Download the kept views instead.";
 
 export function RenderSettings({ engine, variantCount, frontNext, onEngine, onVariants }: {
   engine: Engine; variantCount: number; frontNext: boolean; onEngine: (e: Engine) => void; onVariants: (n: number) => void;
@@ -48,12 +48,14 @@ export function RenderSettings({ engine, variantCount, frontNext, onEngine, onVa
  * needs in view: the garment photos it will use, the setup as one line, the Generate button the core decides, and
  * what to do with the finished set. Everything else lives in Setup.
  */
-export function RunBar({ label, canRun, blocker, changeNote, summary, recipe, front, back, staleCount, kept, savedCount, busy, saveText, onRun, onRedoStale, onDownload, onSave, onLoadSaved, onSetup }: {
+export function RunBar({ label, canRun, blocker, changeNote, summary, recipe, front, back, staleCount, kept, savedCount, busy, saveText, sendTo, onRun, onRedoStale, onDownload, onSave, onLoadSaved, onSetup }: {
   label: string; canRun: boolean; blocker: string; changeNote: string; summary: string; staleCount: number; kept: number; savedCount: number;
   /** The setup as one line (person, look, engine, photos), so a run on the wrong person shows before it starts. */
   recipe: string;
   /** Thumbnails of the photos assigned as Front and Back ("" when empty). */
   front: string; back: string;
+  /** The Send to menu (Faire listing, ERP file); it sits first in the finished-set row. */
+  sendTo?: ReactNode;
   busy: "" | "download" | "save"; saveText: string;
   onRun: () => void; onRedoStale: () => void; onDownload: () => void; onSave: () => void; onLoadSaved: () => void; onSetup: () => void;
 }) {
@@ -84,6 +86,7 @@ export function RunBar({ label, canRun, blocker, changeNote, summary, recipe, fr
         <Button size="lg" className="ms-bar__run rounded-[10px]" disabled={!canRun} onClick={onRun}><Play data-icon="inline-start" aria-hidden />{label}</Button>
       </div>
       <div className="ms-bar__keep">
+        {sendTo}
         <Button size="sm" variant="outline" disabled={!kept || busy !== ""} onClick={onDownload} title={kept ? undefined : "Tick Keep on the views you want first."}>
           <Download data-icon="inline-start" aria-hidden />{busy === "download" ? "Downloading…" : `Download${kept ? ` (${kept})` : ""}`}
         </Button>
@@ -91,7 +94,6 @@ export function RunBar({ label, canRun, blocker, changeNote, summary, recipe, fr
           <Save data-icon="inline-start" aria-hidden />{busy === "save" ? "Saving…" : "Save set"}
         </Button>
         <Button size="sm" variant="ghost" disabled={!savedCount} onClick={onLoadSaved}><FolderOpen data-icon="inline-start" aria-hidden />Load saved{savedCount ? ` (${savedCount})` : ""}</Button>
-        <Button size="sm" variant="ghost" disabled title={ERP_UPLOAD_REASON} aria-label="Upload to ERP (paused)"><Upload data-icon="inline-start" aria-hidden />ERP</Button>
         <span className="ms-bar__saved truncate text-[11px] text-muted-foreground">{saveText}</span>
       </div>
     </div>

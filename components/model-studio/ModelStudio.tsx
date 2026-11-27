@@ -25,6 +25,7 @@ import { Tag, Thumb } from "./bits";
 import IntakeCard, { type IntakeAnswer } from "./IntakeCard";
 import ModelPicker, { lookGroups } from "./ModelPicker";
 import { RenderSettings, RunBar } from "./RunBar";
+import { SendTo } from "./SendTo";
 import { LookSheetPanel, TakesStrip } from "./RunExtras";
 import StylePanel, { colorsOf, groupsFor, type Load, type Role } from "./StylePanel";
 import ViewCard from "./ViewCard";
@@ -296,15 +297,18 @@ export default function ModelStudio() {
     }
   };
 
-  const saveSet = async () => {
-    if (!state || !setup) return;
+  /** Saves the kept views to the shared saved set (the extension reads the same one); null when it failed. */
+  const saveSet = async (): Promise<SavedShot[] | null> => {
+    if (!state || !setup) return null;
     setBusy("save");
     try {
       const r = await saveShots(state.style, kept.map((s) => ({ view: s.view, url: s.url, humanModelId: s.humanModelId || setup.humanModelId, engine: s.engine, editMode: s.editMode, note: s.note || undefined })));
       setSaved(r.shots);
       setSlots((list) => list.map((s) => { const m = core.savedMatch(s, r.shots); return m ? { ...s, savedId: m.id } : s; }));
+      return r.shots;
     } catch (err) {
       setNotice(message(err, "The set was not saved."));
+      return null;
     } finally {
       setBusy("");
     }
@@ -454,6 +458,7 @@ export default function ModelStudio() {
             <RunBar label={action.label} canRun={Boolean(setup.picked[0]) && !running} blocker={blocker} changeNote={changeNote}
               recipe={recipeLine(state, setup, personName)} front={thumbOf(setup.picked[0] || "")} back={thumbOf(setup.picked[1] || "")}
               summary={baseIssue || core.runSummary(slots)} staleCount={stale.length} kept={kept.length} savedCount={saved.length} busy={busy} saveText={saveText}
+              sendTo={<SendTo style={state.style} color={state.color} kept={kept} model={setup.humanModelId} disabled={!kept.length || busy !== ""} size="sm" onSave={saveSet} onNotice={setNotice} />}
               onRun={run} onRedoStale={() => start(stale)} onDownload={() => void download()} onSave={() => void saveSet()} onLoadSaved={loadSavedSet} onSetup={showSetup} />
           )}
         </section>
