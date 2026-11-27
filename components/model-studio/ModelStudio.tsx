@@ -2,14 +2,17 @@
 
 // The web Model Studio (Simple garment swap), ported from the Faire extension's Model Studio panel:
 // style → ERP photos → Front/Back/Side → person and look → front preview → remaining views anchored on it →
-// keep, download, save. One workspace record per style keeps the setup and the running jobs across reloads.
+// keep, download, save. Canvas-first: the views own the stage, Setup is a side panel (a drawer under 1024px) and
+// the run bar floats over the stage with the recipe line, so the setup stays visible while it is out of the way. One workspace record per style keeps the setup and the running jobs across reloads.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ImageIcon } from "lucide-react";
+import { ImageIcon, SlidersHorizontal, X } from "lucide-react";
+import StudioDrawer from "@/components/ledger/StudioDrawer";
 import StudioHeader from "@/components/StudioHeader";
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useMediaQuery } from "@/lib/hooks/use-media-query";
 import core, { type View } from "@/lib/model-shots-core";
 import { applyPreset, questionsFor, recipeLine, type Question } from "@/lib/model-studio/intake";
 import {
@@ -67,6 +70,10 @@ export default function ModelStudio() {
   const [busy, setBusy] = useState<"" | "download" | "save">("");
   const [skipped, setSkipped] = useState<Question["id"][]>([]);
   const personTouched = useRef(false);
+  // Canvas-first: Setup docks beside the stage at 1024px and up (open until closed), and is a drawer below that.
+  const docked = useMediaQuery("(min-width: 1024px)");
+  const [dockOpen, setDockOpen] = useState(true);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const ws = useWorkspace(state);
   const stateRef = useRef(state);
   stateRef.current = state;
@@ -318,114 +325,159 @@ export default function ModelStudio() {
   const conflictText = core.syncConflictText(null);
   const saveText = ws.status === "saving" ? "Saving setup…" : ws.status === "saved" ? `Setup saved${ws.savedAt ? ` ${new Date(ws.savedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}` : ""}` : ws.status === "error" && !ws.conflict ? `Not saved: ${ws.error}` : "";
   const styleThumb = groups[0]?.photos[0]?.thumb || gallery.data?.groups[0]?.photos[0]?.thumb;
+  const thumbOf = (url: string) => {
+    if (!url) return "";
+    for (const g of gallery.data?.groups || []) for (const p of g.photos) if (p.full === url) return p.thumb;
+    return url;
+  };
+  const showSetup = () => (docked ? setDockOpen(true) : setDrawerOpen(true));
+  const toggleSetup = () => (docked ? setDockOpen((o) => !o) : setDrawerOpen((o) => !o));
+
+  const stylePanel = (
+    <StylePanel state={state} setup={setup} gallery={gallery} bottoms={bottoms} planLabel={planLabel}
+      onOpen={(s) => void open(s)} onColor={setColor} onAssign={assign}
+      onField={(field, value) => setState((s) => (s ? { ...s, [field]: value } : s))} />
+  );
+  // Setup: the style and its photos, who wears it, how it renders. Docked beside the stage at 1024px and up, a drawer below.
+  const setupBody = state && setup && (
+    <div className="ms-setup flex flex-col gap-4 p-4" id="ms-style">
+      {stylePanel}
+      <ModelPicker catalogue={catalogue} setup={setup} person={state.person} personHint={Boolean(state.person) && state.person === defaultPerson && Object.keys(state.drafts).length > 1}
+        category={category} hem={hem} onPerson={setPerson} onRetry={fetchCatalogue}
+        onPick={(humanModelId, poseId) => {
+          personTouched.current = true;
+          const person = personOfModel(catalogue.data || null, humanModelId);
+          setState((s) => (s ? { ...s, person: person || s.person, drafts: { ...s.drafts, [colorKey(s.color)]: { ...setupOf(s), humanModelId, poseId } } } : s));
+        }}
+        onFit={(fitSource) => updateSetup((s) => ({ ...s, fitSource }))} />
+      <RenderSettings engine={setup.engine} variantCount={setup.variantCount ?? 1} frontNext={action.kind === "front"}
+        onEngine={(engine) => updateSetup((s) => ({ ...s, engine }))} onVariants={(variantCount) => updateSetup((s) => ({ ...s, variantCount }))} />
+    </div>
+  );
+  const panelOpen = Boolean(setupBody) && docked && dockOpen;
 
   return (
-    <>
-    {/* Paper's shell styles are @scope'd to stop at .kobra, so the shared header sits outside the Kobra wrapper. */}
-    <StudioHeader active="model" title="Model Studio" subtitle="Simple garment swap: front preview first, then the other views follow it." />
-    <main className="kobra min-h-dvh bg-[#fafafa]">
-      <div className="ms-layout mx-auto grid max-w-[1440px] gap-4 px-4 py-4 min-[481px]:px-6 lg:grid-cols-[minmax(360px,440px)_minmax(0,1fr)] lg:items-start">
-        <div className="ms-left flex min-w-0 flex-col gap-4" id="ms-style">
-          <StylePanel state={state} setup={setup} gallery={gallery} bottoms={bottoms} planLabel={planLabel}
-            onOpen={(s) => void open(s)} onColor={setColor} onAssign={assign}
-            onField={(field, value) => setState((s) => (s ? { ...s, [field]: value } : s))} />
-          {state && setup && (
-            <>
-              <ModelPicker catalogue={catalogue} setup={setup} person={state.person} personHint={Boolean(state.person) && state.person === defaultPerson && Object.keys(state.drafts).length > 1}
-                category={category} hem={hem} onPerson={setPerson} onRetry={fetchCatalogue}
-                onPick={(humanModelId, poseId) => {
-                  personTouched.current = true;
-                  const person = personOfModel(catalogue.data || null, humanModelId);
-                  setState((s) => (s ? { ...s, person: person || s.person, drafts: { ...s.drafts, [colorKey(s.color)]: { ...setupOf(s), humanModelId, poseId } } } : s));
-                }}
-                onFit={(fitSource) => updateSetup((s) => ({ ...s, fitSource }))} />
-              <RenderSettings engine={setup.engine} variantCount={setup.variantCount ?? 1} frontNext={action.kind === "front"}
-                onEngine={(engine) => updateSetup((s) => ({ ...s, engine }))} onVariants={(variantCount) => updateSetup((s) => ({ ...s, variantCount }))} />
-            </>
-          )}
-        </div>
+    <div className="ms-canvas">
+      {/* Paper's shell styles are @scope'd to stop at .kobra, so the shared header sits outside the Kobra wrapper. */}
+      <StudioHeader active="model" title="Model Studio" compact
+        action={state ? (
+          <Button size="sm" variant={panelOpen || drawerOpen ? "secondary" : "outline"} className="rounded-[10px]" onClick={toggleSetup} aria-expanded={panelOpen || drawerOpen}>
+            <SlidersHorizontal data-icon="inline-start" aria-hidden />Setup
+          </Button>
+        ) : undefined} />
+      <main className="kobra ms-canvas__body" data-panel={panelOpen ? "open" : "closed"}>
+        <section className="ms-canvas__stage" aria-label="Views">
+          <div className="ms-canvas__scroll">
+            {ws.conflict && (
+              <Alert variant="warning" className="rounded-[12px]">
+                <AlertTitle>This style was saved somewhere else</AlertTitle>
+                <AlertDescription>{conflictText.message}</AlertDescription>
+                <AlertAction className="flex gap-1.5">
+                  <Button size="sm" onClick={ws.keepMine}>Keep my setup</Button>
+                  <Button size="sm" variant="outline" onClick={() => { const c = ws.conflict!; if (c.studio) { ws.adopt(c.revision, c.savedAt); setState(reopen(c.studio)); } }}>{conflictText.use}</Button>
+                </AlertAction>
+              </Alert>
+            )}
+            {notice && (
+              <Alert variant="error" className="rounded-[12px]">
+                <AlertDescription>{notice}</AlertDescription>
+                <AlertAction><Button size="sm" variant="ghost" onClick={() => setNotice("")}>Dismiss</Button></AlertAction>
+              </Alert>
+            )}
 
-        <div className="ms-right flex min-w-0 flex-col gap-4">
-          {ws.conflict && (
-            <Alert variant="warning" className="rounded-[12px]">
-              <AlertTitle>This style was saved somewhere else</AlertTitle>
-              <AlertDescription>{conflictText.message}</AlertDescription>
-              <AlertAction className="flex gap-1.5">
-                <Button size="sm" onClick={ws.keepMine}>Keep my setup</Button>
-                <Button size="sm" variant="outline" onClick={() => { const c = ws.conflict!; if (c.studio) { ws.adopt(c.revision, c.savedAt); setState(reopen(c.studio)); } }}>{conflictText.use}</Button>
-              </AlertAction>
-            </Alert>
-          )}
-          {notice && (
-            <Alert variant="error" className="rounded-[12px]">
-              <AlertDescription>{notice}</AlertDescription>
-              <AlertAction><Button size="sm" variant="ghost" onClick={() => setNotice("")}>Dismiss</Button></AlertAction>
-            </Alert>
-          )}
+            {!state && (
+              <div className="ms-canvas__start">
+                {!opening && (
+                  <Empty className="max-w-none py-8">
+                    <EmptyHeader>
+                      <EmptyMedia variant="icon"><ImageIcon aria-hidden /></EmptyMedia>
+                      <EmptyTitle>Open a style to start</EmptyTitle>
+                      <EmptyDescription>Type a style code. The ERP photos load by colour; pick the front, back and side, choose who wears it, then make the front preview.</EmptyDescription>
+                    </EmptyHeader>
+                  </Empty>
+                )}
+                {stylePanel}
+              </div>
+            )}
 
-          {!state && !opening && (
-            <Empty className="max-w-none rounded-[12px] border border-dashed border-border bg-card py-16">
-              <EmptyHeader>
-                <EmptyMedia variant="icon"><ImageIcon aria-hidden /></EmptyMedia>
-                <EmptyTitle>Open a style to start</EmptyTitle>
-                <EmptyDescription>Type a style code on the left. The ERP photos load by colour; pick the front, back and side, choose who wears it, then make the front preview.</EmptyDescription>
-              </EmptyHeader>
-            </Empty>
-          )}
+            {opening && (
+              <div className="space-y-4" aria-busy="true" aria-label="Opening style">
+                <Skeleton className="h-12 rounded-[12px]" />
+                <div className="ms-views">{[0, 1, 2, 3].map((i) => <Skeleton key={i} className="aspect-[2/3] rounded-[12px]" />)}</div>
+              </div>
+            )}
 
-          {opening && (
-            <div className="space-y-4" aria-busy="true" aria-label="Opening style">
-              <Skeleton className="h-28 rounded-[12px]" />
-              <Skeleton className="h-14 rounded-[12px]" />
-              <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">{[0, 1, 2, 3].map((i) => <Skeleton key={i} className="aspect-[2/3] rounded-[12px]" />)}</div>
-            </div>
-          )}
+            {state && setup && !opening && (
+              <>
+                <div className="flex items-center gap-3">
+                  <Thumb src={styleThumb} alt={state.style} className="h-12 w-9 shrink-0 rounded-[6px]" label="" />
+                  <div className="min-w-0">
+                    <h1 className="truncate text-[17px] font-semibold tracking-[-0.02em]">{state.style}{state.color ? ` · ${state.color}` : ""}</h1>
+                    <div className="mt-0.5 flex flex-wrap items-center gap-1.5"><Tag>{planLabel}</Tag>{state.title && <span className="truncate text-[12px] text-muted-foreground">{state.title}</span>}</div>
+                  </div>
+                </div>
+
+                {gallery.status === "error" && !panelOpen && (
+                  <Alert variant="error" className="rounded-[12px]">
+                    <AlertTitle>Could not read the ERP photos</AlertTitle>
+                    <AlertDescription>{gallery.error}</AlertDescription>
+                    <AlertAction><Button size="sm" variant="outline" onClick={showSetup}>Open Setup</Button></AlertAction>
+                  </Alert>
+                )}
+
+                <IntakeCard recipe={recipeLine(state, setup, personName)} showRecipe={false} questions={questions} people={catalogue.data?.people || []}
+                  firstPhoto={colourPhotos[0]?.full || ""} secondPhoto={colourPhotos[1]?.full || ""} onPick={showSetup}
+                  onAnswer={answer} onSkip={(id) => { if (id === "person") personTouched.current = true; setSkipped((s) => [...s, id]); }} />
+
+                {takes.length > 0 && (
+                  <TakesStrip takes={takes} onResume={(i) => resume(takes[i])}
+                    onUse={(i) => updateSetup((s, st) => ({ ...s, slots: takeVariant(slotsFor(s, knownFor(st)), s.takes || [], i), takes: undefined }))} />
+                )}
+
+                <div className="ms-views">
+                  {slots.map((slot, i) => (
+                    <ViewCard key={`${slot.view}-${i}`} slot={slot} index={i} stale={stale.includes(i)} healing={healing === i}
+                      waiting={slot.view === "full" ? baseIssue : ""}
+                      actions={{
+                        onRedo: redo, onResume: (idx) => resume(slots[idx]), onHeal: (idx) => void heal(idx),
+                        onPrevious: (idx) => setSlots((list) => list.map((s, j) => (j === idx ? core.restorePrevious(s) : s))),
+                        onKeep: (idx) => setSlots((list) => list.map((s, j) => (j === idx ? { ...s, approved: !s.approved } : s))),
+                      }} />
+                  ))}
+                </div>
+
+                {frontDone && (
+                  <LookSheetPanel sheetUrl={setup.sheetUrl || ""} useSheet={Boolean(setup.useSheet)} status={sheet.status} error={sheet.error}
+                    onMake={() => void makeSheet()} onToggle={(on) => updateSetup((s) => ({ ...s, useSheet: on }))} />
+                )}
+              </>
+            )}
+          </div>
 
           {state && setup && !opening && (
-            <>
-              <div className="flex items-center gap-3">
-                <Thumb src={styleThumb} alt={state.style} className="h-14 w-10 shrink-0 rounded-[6px]" label="" />
-                <div className="min-w-0">
-                  <h1 className="truncate text-[18px] font-semibold tracking-[-0.02em]">{state.style}{state.color ? ` · ${state.color}` : ""}</h1>
-                  <div className="mt-0.5 flex flex-wrap items-center gap-1.5"><Tag>{planLabel}</Tag>{state.title && <span className="truncate text-[12px] text-muted-foreground">{state.title}</span>}</div>
-                </div>
-              </div>
-
-              <IntakeCard recipe={recipeLine(state, setup, personName)} questions={questions} people={catalogue.data?.people || []}
-                firstPhoto={colourPhotos[0]?.full || ""} secondPhoto={colourPhotos[1]?.full || ""}
-                onAnswer={answer} onSkip={(id) => { if (id === "person") personTouched.current = true; setSkipped((s) => [...s, id]); }} />
-
-              <RunBar label={action.label} canRun={Boolean(setup.picked[0]) && !running} blocker={blocker} changeNote={changeNote}
-                summary={baseIssue || core.runSummary(slots)} staleCount={stale.length} kept={kept.length} savedCount={saved.length} busy={busy} saveText={saveText}
-                sendTo={<SendTo style={state.style} color={state.color} kept={kept} model={setup.humanModelId} disabled={!kept.length || busy !== ""} onSave={saveSet} onNotice={setNotice} />}
-                onRun={run} onRedoStale={() => start(stale)} onDownload={() => void download()} onSave={() => void saveSet()} onLoadSaved={loadSavedSet} />
-
-              {takes.length > 0 && (
-                <TakesStrip takes={takes} onResume={(i) => resume(takes[i])}
-                  onUse={(i) => updateSetup((s, st) => ({ ...s, slots: takeVariant(slotsFor(s, knownFor(st)), s.takes || [], i), takes: undefined }))} />
-              )}
-
-              <div className="ms-views grid grid-cols-2 gap-3 xl:grid-cols-4">
-                {slots.map((slot, i) => (
-                  <ViewCard key={`${slot.view}-${i}`} slot={slot} index={i} stale={stale.includes(i)} healing={healing === i}
-                    waiting={slot.view === "full" ? baseIssue : ""}
-                    actions={{
-                      onRedo: redo, onResume: (idx) => resume(slots[idx]), onHeal: (idx) => void heal(idx),
-                      onPrevious: (idx) => setSlots((list) => list.map((s, j) => (j === idx ? core.restorePrevious(s) : s))),
-                      onKeep: (idx) => setSlots((list) => list.map((s, j) => (j === idx ? { ...s, approved: !s.approved } : s))),
-                    }} />
-                ))}
-              </div>
-
-              {frontDone && (
-                <LookSheetPanel sheetUrl={setup.sheetUrl || ""} useSheet={Boolean(setup.useSheet)} status={sheet.status} error={sheet.error}
-                  onMake={() => void makeSheet()} onToggle={(on) => updateSetup((s) => ({ ...s, useSheet: on }))} />
-              )}
-            </>
+            <RunBar label={action.label} canRun={Boolean(setup.picked[0]) && !running} blocker={blocker} changeNote={changeNote}
+              recipe={recipeLine(state, setup, personName)} front={thumbOf(setup.picked[0] || "")} back={thumbOf(setup.picked[1] || "")}
+              summary={baseIssue || core.runSummary(slots)} staleCount={stale.length} kept={kept.length} savedCount={saved.length} busy={busy} saveText={saveText}
+              sendTo={<SendTo style={state.style} color={state.color} kept={kept} model={setup.humanModelId} disabled={!kept.length || busy !== ""} size="sm" onSave={saveSet} onNotice={setNotice} />}
+              onRun={run} onRedoStale={() => start(stale)} onDownload={() => void download()} onSave={() => void saveSet()} onLoadSaved={loadSavedSet} onSetup={showSetup} />
           )}
-        </div>
-      </div>
-    </main>
-    </>
+        </section>
+
+        {panelOpen && (
+          <aside className="ms-panel" aria-label="Setup">
+            <div className="ms-panel__head">
+              <h2 className="text-[13px] font-semibold">Setup</h2>
+              <Button type="button" variant="ghost" size="icon" onClick={() => setDockOpen(false)} aria-label="Close setup"><X aria-hidden /></Button>
+            </div>
+            <div className="ms-panel__body">{setupBody}</div>
+          </aside>
+        )}
+      </main>
+      {!docked && setupBody && (
+        <StudioDrawer open={drawerOpen} title="Setup" subtitle="Style photos, who wears it, and how it renders." onClose={() => setDrawerOpen(false)}>
+          <div className="kobra">{setupBody}</div>
+        </StudioDrawer>
+      )}
+    </div>
   );
 }

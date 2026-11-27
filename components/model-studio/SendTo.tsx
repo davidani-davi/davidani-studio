@@ -46,8 +46,10 @@ function saveBlob(bytes: Uint8Array, name: string, type: string) {
   setTimeout(() => URL.revokeObjectURL(href), 10_000);
 }
 
-export function SendTo({ style, color, kept, model, disabled, onSave, onNotice }: {
+export function SendTo({ style, color, kept, model, disabled, size, onSave, onNotice }: {
   style: string; color: string; kept: Slot[]; model: string; disabled: boolean;
+  /** "sm" in the canvas run bar. */
+  size?: "sm";
   /** Saves the kept views to the shared saved set and returns the set as the studio now has it. */
   onSave: () => Promise<SavedShot[] | null>;
   onNotice: (text: string) => void;
@@ -73,7 +75,7 @@ export function SendTo({ style, color, kept, model, disabled, onSave, onNotice }
   return (
     <>
       <DropdownMenu>
-        <DropdownMenuTrigger render={<Button variant="default" disabled={disabled || zipping} />}>
+        <DropdownMenuTrigger render={<Button variant="default" size={size} disabled={disabled || zipping} />}>
           <Send data-icon="inline-start" aria-hidden />{zipping ? "Making file…" : `Send to${kept.length ? ` (${kept.length})` : ""}`}
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-72" align="start">

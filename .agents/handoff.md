@@ -1,3 +1,27 @@
+# Handoff: canvas-first Model Studio (2026-11-27, Claude Code)
+
+- **Branch:** `claude/project-thread-ok1v6c`, on `main` after #71 merged. David approved it ("Yes, after #71 merges"); proposal page: https://claude.ai/artifact/1ukk2h2A4WrGUnxoX3kRuW
+- **Earlier handoffs** (#73 Send to, #71 on main) follow below.
+
+## Done
+- `/model-studio` (#70's page, `components/model-studio/*`) is now canvas-first. Layout only: state, polling, workspace saving and paid renders are unchanged.
+  - Compact header (`StudioHeader compact`) with a **Setup** toggle.
+  - Stage: style title, intake questions (only while one is open; "Pick in Setup" opens Setup), takes, the 4 view cards, look sheet.
+  - `RunBar` is now the floating bar: Front/Back photo thumbs, the recipe line (`data-testid="recipe"`), run summary, Generate, Send to (from #73) / Download / Save set / Load saved, "Setup saved".
+  - Setup = StylePanel + ModelPicker + RenderSettings. Docked 440px panel at >=1024px (open by default, closable); `StudioDrawer` below 1024px. With no style open, the style search sits on the stage.
+  - Phone (<=480px): page scrolls, run bar fixed to the bottom, views 2 across.
+  - CSS: "Model Studio, canvas-first" block at the end of `app/globals.css` (`.ms-canvas`, `.ms-bar`, `.ms-panel`).
+- Tests: `ModelStudio.test.tsx` stubs matchMedia by width (`stubWidth`), 3 new layout tests. vitest 1740 pass; the same 2 pre-existing failures as main (ModelAdmin download, mini-worker sqlite3). `next build` passes.
+- Screenshots (mocked APIs, house plates standing in for renders, no paid renders): `docs/screenshots/model-studio-canvas/`.
+
+## Next
+- #73 (Send to) merged first; main was merged into this branch and Send to sits first in `.ms-bar__keep` (size sm).
+- New reference sets (David, 2026-11-27): improved sets live on his Mac mini (`~/Library/Archive/model-studio-reference-sets-2026-11-27/`, e.g. vision6). vision6 is internal-only (Chloe-shoot bodies, swapped face). Upload NOTHING until David clears a specific set; then he drops the 4 views + README into the project, and they go in through the Model library upload (`/api/user-models`) plus an id in `lib/house-user-sets.json`. View mapping 3/4->side, arm-out->full is a guess to confirm.
+- Not checked: real iPhone Safari, a live render, dark mode.
+
+## Gotchas
+- The old ledger Model studio (`components/ModelStudioClient.tsx`, RunLedger/ModelComposer) is `/model-studio-legacy`; don't confuse it with this page.
+- Workspace drafts are keyed by the UPPERCASE colour (`colorKey`) when seeding mocks.
 # Handoff: Photoshoot Studio on Kobra (2026-11-27, Claude Code)
 
 - **Branch:** `claude/project-thread-uy83q6`, off main a7fe60b (#69 + #70 merged). PR: see `gh pr list` ("Photoshoot Studio on Kobra").

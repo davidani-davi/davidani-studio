@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 
-vi.mock("@/components/StudioHeader", () => ({ default: ({ title }: { title: string }) => <header>{title}</header> }));
+vi.mock("@/components/StudioHeader", () => ({ default: ({ title, action }: { title: string; action?: React.ReactNode }) => <header>{title}{action}</header> }));
 // The kit's forming-canvas animation loads a CSS-only package jsdom cannot import.
 vi.mock("@/components/ui/image-generation", () => ({ ImageGeneration: ({ step }: { step?: string }) => <div data-testid="forming">{step}</div> }));
 // …and its spinner runs on the Web Animations API, which jsdom lacks.
@@ -45,6 +45,14 @@ const setupWith = (over: Record<string, unknown> = {}) => ({
   slots: [doneFront, queued("side"), queued("back"), queued("full")], ...over,
 });
 
+/** matchMedia for a window this wide: min-width queries match when the window is at least that wide. */
+function stubWidth(width: number) {
+  vi.stubGlobal("matchMedia", (q: string) => {
+    const min = /min-width:\s*(\d+)px/.exec(q);
+    return { matches: min ? width >= Number(min[1]) : false, media: q, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {} };
+  });
+}
+
 beforeEach(() => {
   routes = {
     "GET /api/model-shots": () => ({ body: catalogue }),
@@ -54,7 +62,7 @@ beforeEach(() => {
     "PUT /api/model-studio/workspace": () => ({ body: { ok: true, style: "DT78080", revision: 4, savedAt: "2026-11-24T20:01:00Z" } }),
   };
   mockFetch();
-  vi.stubGlobal("matchMedia", (q: string) => ({ matches: false, media: q, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {} }));
+  stubWidth(1280);
   window.history.replaceState(null, "", "/model-studio");
 });
 afterEach(() => vi.unstubAllGlobals());
@@ -154,5 +162,40 @@ describe("workspace conflict", () => {
     expect(await screen.findByText("This style was saved somewhere else", {}, { timeout: 2000 })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Use saved version" }));
     await waitFor(() => expect(screen.getByLabelText("Title")).toHaveValue("Theirs"));
+  });
+});
+
+describe("canvas-first layout", () => {
+  it("docks Setup beside the stage on a wide screen and closes it from the header", async () => {
+    routes["GET /api/model-studio/workspace"] = workspace({ style: "DT78080", title: "Linen Top", type: "", color: "NAVY", person: "vision", drafts: { NAVY: setupWith() } });
+    openStyle();
+    render(<ModelStudio />);
+    const panel = await screen.findByRole("complementary", { name: "Setup" });
+    expect(within(panel).getByLabelText("Title")).toHaveValue("Linen Top");
+    fireEvent.click(screen.getByRole("button", { name: "Close setup" }));
+    expect(screen.queryByRole("complementary", { name: "Setup" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Setup" }));
+    expect(await screen.findByRole("complementary", { name: "Setup" })).toBeInTheDocument();
+  });
+
+  it("keeps the recipe and the assigned photos in the run bar", async () => {
+    routes["GET /api/model-studio/workspace"] = workspace({ style: "DT78080", title: "", type: "", color: "NAVY", person: "vision", drafts: { NAVY: setupWith() } });
+    openStyle();
+    render(<ModelStudio />);
+    const bar = await screen.findByRole("region", { name: "Run" });
+    expect(within(bar).getByTestId("recipe").textContent).toContain("Vision");
+    expect(within(bar).getByRole("button", { name: "Front photo: change in Setup" })).toBeInTheDocument();
+    expect(within(bar).getByRole("button", { name: "Back photo: change in Setup" })).toBeInTheDocument();
+  });
+
+  it("puts Setup in a drawer under 1024px, opened from the header", async () => {
+    stubWidth(900);
+    routes["GET /api/model-studio/workspace"] = workspace({ style: "DT78080", title: "Linen Top", type: "", color: "NAVY", person: "vision", drafts: { NAVY: setupWith() } });
+    openStyle();
+    render(<ModelStudio />);
+    await screen.findByRole("region", { name: "Run" });
+    expect(screen.queryByLabelText("Title")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Setup" }));
+    expect(await screen.findByLabelText("Title")).toHaveValue("Linen Top");
   });
 });
